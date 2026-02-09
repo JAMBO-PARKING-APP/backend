@@ -18,3 +18,4 @@ sentry-sdk==1.39.0
 gevent>=24.2.1
 brotli==1.1.0
 setuptools
+dj-database-url>=2.1.0
