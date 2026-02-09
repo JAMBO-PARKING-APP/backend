@@ -1,0 +1,438 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+
+{% block title %}{% if object %}{% trans "Edit Zone" %}{% else %}{% trans "Add Zone" %}{% endif %} - {% trans "Smart
+Parking Admin" %}{% endblock %}
+{% block page_title %}{% if object %}{% trans "Edit Zone" %}{% else %}{% trans "Add Zone" %}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-{% if object %}pencil{% else %}geo-alt-fill{% endif %} me-2"></i>
+                    {% if object %}{% trans "Edit Zone" %}: {{ object.name }}{% else %}{% trans "Add New Parking Zone"
+                    %}{% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" id="zoneForm">
+                    {% csrf_token %}
+
+                    <!-- Basic Information -->
+                    <h6 class="text-primary mb-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        {% trans "Basic Information" %}
+                    </h6>
+
+                    <div class="mb-3">
+                        <label for="id_name" class="form-label">{% trans "Zone Name *" %}</label>
+                        <input type="text" class="form-control" name="name" id="id_name"
+                            value="{{ form.name.value|default:'' }}" required>
+                        {% if form.name.errors %}
+                        <div class="text-danger small">{{ form.name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_description" class="form-label">{% trans "Description" %}</label>
+                        <textarea class="form-control" name="description" id="id_description"
+                            rows="3">{{ form.description.value|default:'' }}</textarea>
+                        <div class="form-text">{% trans "Brief description of the parking zone" %}</div>
+                        {% if form.description.errors %}
+                        <div class="text-danger small">{{ form.description.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Pricing & Rules -->
+                    <h6 class="text-primary mb-3 mt-4">
+                        <i class="bi bi-currency-dollar me-2"></i>
+                        {% trans "Pricing & Rules" %}
+                    </h6>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_hourly_rate" class="form-label">{% trans "Hourly Rate ($) *" %}</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" name="hourly_rate" id="id_hourly_rate"
+                                    step="0.01" min="0" value="{{ form.hourly_rate.value|default:'' }}" required>
+                            </div>
+                            {% if form.hourly_rate.errors %}
+                            <div class="text-danger small">{{ form.hourly_rate.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_max_duration_hours" class="form-label">{% trans "Max Duration (Hours) *"
+                                %}</label>
+                            <input type="number" class="form-control" name="max_duration_hours"
+                                id="id_max_duration_hours" min="1" max="168"
+                                value="{{ form.max_duration_hours.value|default:'24' }}" required>
+                            <div class="form-text">{% trans "Maximum parking duration allowed" %}</div>
+                            {% if form.max_duration_hours.errors %}
+                            <div class="text-danger small">{{ form.max_duration_hours.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_total_slots" class="form-label">{% trans "Total Parking Slots *" %}</label>
+                        <input type="number" class="form-control" name="total_slots" id="id_total_slots" min="1"
+                            max="500" value="{{ form.total_slots.value|default:'50' }}" required>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            {% trans "Number of parking slots to create. Slots will be auto-generated and can be
+                            arranged in the diagram editor." %}
+                        </div>
+                        {% if form.total_slots.errors %}
+                        <div class="text-danger small">{{ form.total_slots.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Location -->
+                    <h6 class="text-primary mb-3 mt-4">
+                        <i class="bi bi-geo-alt me-2"></i>
+                        {% trans "Location" %}
+                    </h6>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="id_latitude" class="form-label">{% trans "Latitude *" %}</label>
+                            <input type="number" class="form-control" name="latitude" id="id_latitude" step="0.000001"
+                                value="{{ form.latitude.value|default:'' }}" required>
+                            {% if form.latitude.errors %}
+                            <div class="text-danger small">{{ form.latitude.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="id_longitude" class="form-label">{% trans "Longitude *" %}</label>
+                            <input type="number" class="form-control" name="longitude" id="id_longitude" step="0.000001"
+                                value="{{ form.longitude.value|default:'' }}" required>
+                            {% if form.longitude.errors %}
+                            <div class="text-danger small">{{ form.longitude.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label for="id_radius_meters" class="form-label">{% trans "Radius (Meters) *" %}</label>
+                            <input type="number" class="form-control" name="radius_meters" id="id_radius_meters"
+                                min="10" max="1000" value="{{ form.radius_meters.value|default:'100' }}" required>
+                            {% if form.radius_meters.errors %}
+                            <div class="text-danger small">{{ form.radius_meters.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Images & Diagram -->
+                    <h6 class="text-primary mb-3 mt-4">
+                        <i class="bi bi-image me-2"></i>
+                        {% trans "Images & Parking Diagram" %}
+                    </h6>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_zone_image" class="form-label">{% trans "Zone Photo" %}</label>
+                            <input type="file" class="form-control" name="zone_image" id="id_zone_image"
+                                accept="image/*">
+                            <div class="form-text">{% trans "Upload a photo of actual parking zone" %}</div>
+                            {% if object.zone_image %}
+                            <div class="mt-2">
+                                <img src="{{ object.zone_image.url }}" alt="Zone Image" class="img-thumbnail"
+                                    style="max-height: 100px;">
+                                <div class="small text-muted">{% trans "Current image" %}</div>
+                            </div>
+                            {% endif %}
+                            {% if form.zone_image.errors %}
+                            <div class="text-danger small">{{ form.zone_image.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_diagram_image" class="form-label">{% trans "Parking Layout Diagram"
+                                %}</label>
+                            <input type="file" class="form-control" name="diagram_image" id="id_diagram_image"
+                                accept="image/*">
+                            <div class="form-text">{% trans "Upload a parking layout diagram (optional - can create
+                                interactive diagram later)" %}</div>
+                            {% if object.diagram_image %}
+                            <div class="mt-2">
+                                <img src="{{ object.diagram_image.url }}" alt="Diagram" class="img-thumbnail"
+                                    style="max-height: 100px;">
+                                <div class="small text-muted">{% trans "Current diagram" %}</div>
+                            </div>
+                            {% endif %}
+                            {% if form.diagram_image.errors %}
+                            <div class="text-danger small">{{ form.diagram_image.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_diagram_width" class="form-label">{% trans "Diagram Width (px)" %}</label>
+                            <input type="number" class="form-control" name="diagram_width" id="id_diagram_width"
+                                min="400" max="2000" value="{{ form.diagram_width.value|default:'800' }}">
+                            <div class="form-text">{% trans "Width for interactive parking diagram" %}</div>
+                            {% if form.diagram_width.errors %}
+                            <div class="text-danger small">{{ form.diagram_width.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_diagram_height" class="form-label">{% trans "Diagram Height (px)" %}</label>
+                            <input type="number" class="form-control" name="diagram_height" id="id_diagram_height"
+                                min="300" max="1500" value="{{ form.diagram_height.value|default:'600' }}">
+                            <div class="form-text">{% trans "Height for interactive parking diagram" %}</div>
+                            {% if form.diagram_height.errors %}
+                            <div class="text-danger small">{{ form.diagram_height.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_active" id="id_is_active" {% if form.is_active.value %}checked{% endif %}>
+                            <label class="form-check-label" for="id_is_active">
+                                {% trans "Active Zone" %}
+                            </label>
+                        </div>
+                        <div class="form-text">{% trans "Inactive zones are not available for parking" %}</div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'zone-list' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>
+                            {% trans "Back to Zones" %}
+                        </a>
+
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <span class="loading-spinner spinner-border spinner-border-sm me-2"></span>
+                            <i class="bi bi-{% if object %}check{% else %}plus{% endif %} me-2"></i>
+                            {% if object %}{% trans "Update Zone" %}{% else %}{% trans "Create Zone" %}{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if object %}
+        <!-- Diagram Management -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-grid-3x3 me-2"></i>
+                        {% trans "Parking Slots Management" %}
+                    </h6>
+                    <a href="{% url 'zone-diagram' object.pk %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-diagram-3 me-2"></i>
+                        {% trans "Manage Diagram" %}
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h4 class="text-primary">{{ object.total_slots_count }}</h4>
+                            <small class="text-muted">{% trans "Total Slots" %}</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h4 class="text-success">{{ object.available_slots_count }}</h4>
+                            <small class="text-muted">{% trans "Available" %}</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h4 class="text-info">{{ object.occupancy_rate|floatformat:1 }}%</h4>
+                            <small class="text-muted">{% trans "Occupancy" %}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Location Helper -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-map me-2"></i>
+                    {% trans "Location Helper" %}
+                </h6>
+            </div>
+            <div class="card-body">
+                <button type="button" class="btn btn-outline-primary w-100 mb-3" onclick="getCurrentLocation()">
+                    <i class="bi bi-geo-alt me-2"></i>
+                    {% trans "Use Current Location" %}
+                </button>
+
+                <div class="alert alert-info">
+                    <small>
+                        <strong>{% trans "Tip:" %}</strong> {% trans 'You can use GPS coordinates or click "Use Current
+                        Location" to automatically fill in your current position.' %}
+                    </small>
+                </div>
+
+                <div id="locationPreview" class="mt-3" style="display: none;">
+                    <small class="text-muted">{% trans "Preview Location:" %}</small>
+                    <div id="locationText" class="small"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Image Upload Tips -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-camera me-2"></i>
+                    {% trans "Image Guidelines" %}
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="small">
+                    <div class="mb-2">
+                        <strong>{% trans "Zone Photo:" %}</strong>
+                        <ul class="mt-1 mb-2">
+                            <li>{% trans "Real photo of parking area" %}</li>
+                            <li>{% trans "Clear view of boundaries" %}</li>
+                            <li>{% trans "JPG/PNG format" %}</li>
+                            <li>{% trans "Max 5MB size" %}</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong>{% trans "Diagram:" %}</strong>
+                        <ul class="mt-1 mb-0">
+                            <li>{% trans "Top-down layout view" %}</li>
+                            <li>{% trans "Clear slot markings" %}</li>
+                            <li>{% trans "Can be hand-drawn or CAD" %}</li>
+                            <li>{% trans "Will be used as background for interactive slots" %}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pricing Guide -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-currency-dollar me-2"></i>
+                    {% trans "Pricing Guide" %}
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="small">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{% trans "Downtown:" %}</span>
+                        <span class="fw-bold">$3.00 - $5.00/{% trans "hr" %}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{% trans "Commercial:" %}</span>
+                        <span class="fw-bold">$2.00 - $3.50/{% trans "hr" %}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{% trans "Residential:" %}</span>
+                        <span class="fw-bold">$1.00 - $2.00/{% trans "hr" %}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>{% trans "Airport/Events:" %}</span>
+                        <span class="fw-bold">$5.00 - $10.00/{% trans "hr" %}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('zoneForm').addEventListener('submit', function (e) {
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.classList.add('loading');
+        submitBtn.disabled = true;
+    });
+
+    function getCurrentLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function (position) {
+                document.getElementById('id_latitude').value = position.coords.latitude.toFixed(6);
+                document.getElementById('id_longitude').value = position.coords.longitude.toFixed(6);
+
+                const preview = document.getElementById('locationPreview');
+                const text = document.getElementById('locationText');
+                text.textContent = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
+                preview.style.display = 'block';
+
+                // Show success message
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-success alert-dismissible fade show mt-2';
+                alert.innerHTML = `
+                    <i class="bi bi-check-circle me-2"></i>
+                    {% trans "Location updated successfully!" %}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.querySelector('.card-body').appendChild(alert);
+
+                setTimeout(() => {
+                    bootstrap.Alert.getOrCreateInstance(alert).close();
+                }, 3000);
+            }, function (error) {
+                alert('{% trans "Error getting location:" %} ' + error.message);
+            });
+        } else {
+            alert('{% trans "Geolocation is not supported by this browser." %}');
+        }
+    }
+
+    // Update location preview when coordinates change
+    ['id_latitude', 'id_longitude'].forEach(id => {
+        document.getElementById(id).addEventListener('input', function () {
+            const lat = document.getElementById('id_latitude').value;
+            const lng = document.getElementById('id_longitude').value;
+
+            if (lat && lng) {
+                const preview = document.getElementById('locationPreview');
+                const text = document.getElementById('locationText');
+                text.textContent = `${lat}, ${lng}`;
+                preview.style.display = 'block';
+            }
+        });
+    });
+
+    // Image preview functionality
+    ['id_zone_image', 'id_diagram_image'].forEach(id => {
+        document.getElementById(id).addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    // Create preview if doesn't exist
+                    let preview = document.querySelector(`#${id}_preview`);
+                    if (!preview) {
+                        preview = document.createElement('div');
+                        preview.id = `${id}_preview`;
+                        preview.className = 'mt-2';
+                        e.target.parentNode.appendChild(preview);
+                    }
+
+                    preview.innerHTML = `
+                        <img src="${e.target.result}" alt="Preview" class="img-thumbnail" style="max-height: 100px;">
+                        <div class="small text-muted">{% trans "New image preview" %}</div>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    });
+</script>
+{% endblock %}

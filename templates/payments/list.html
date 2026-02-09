@@ -1,0 +1,409 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Payments" %} - {% trans "Smart Parking Admin" %}{% endblock %}
+{% block page_title %}{% trans "Payment Management" %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0">{% trans "Payments & Transactions" %}</h4>
+        <p class="text-muted mb-0">{% trans "Monitor payment transactions and financial records" %}</p>
+    </div>
+    <div class="btn-group">
+        <button class="btn btn-success" onclick="exportTransactions()">
+            <span class="export-spinner spinner-border spinner-border-sm me-2" style="display: none;"></span>
+            <i class="bi bi-download me-2"></i>
+            {% trans "Export" %}
+        </button>
+        <button class="btn btn-primary" onclick="showRefundModal()">
+            <i class="bi bi-arrow-counterclockwise me-2"></i>
+            {% trans "Process Refund" %}
+        </button>
+    </div>
+</div>
+
+<!-- Payment Stats with Real Data -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <h4 class="mb-0">{{ currency_symbol }}{{ today_revenue|floatformat:2 }}</h4>
+                <small>{% trans "Today's Revenue" %}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <h4 class="mb-0">{{ today_transactions }}</h4>
+                <small>{% trans "Transactions Today" %}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <h4 class="mb-0">{{ currency_symbol }}{{ pending_refunds|floatformat:2 }}</h4>
+                <small>{% trans "Pending Refunds" %}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body text-center">
+                <h4 class="mb-0">{{ success_rate|floatformat:1 }}%</h4>
+                <small>{% trans "Success Rate" %}</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3" id="filterForm">
+            <div class="col-md-3">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="search"
+                        placeholder="{% trans 'Search by transaction ID or user...' %}"
+                        value="{{ request.GET.search }}">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <span class="filter-spinner spinner-border spinner-border-sm me-2"
+                            style="display: none;"></span>
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="status">
+                    <option value="">{% trans "All Status" %}</option>
+                    <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>{% trans "Completed" %}</option>
+                    <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>{% trans "Pending" %}</option>
+                    <option value="failed" {% if request.GET.status == 'failed' %}selected{% endif %}>{% trans "Failed" %}</option>
+                    <option value="refunded" {% if request.GET.status == 'refunded' %}selected{% endif %}>{% trans "Refunded" %}</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input type="date" class="form-control" name="date_from" value="{{ request.GET.date_from }}">
+            </div>
+            <div class="col-md-2">
+                <input type="date" class="form-control" name="date_to" value="{{ request.GET.date_to }}">
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'payment-list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-clockwise"></i>
+                    {% trans "Reset" %}
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Transactions Table -->
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0">{% trans "Recent Transactions" %}</h6>
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary active" onclick="filterTransactions('all')">{% trans "All" %}</button>
+                <button class="btn btn-outline-secondary" onclick="filterTransactions('completed')">{% trans "Completed" %}</button>
+                <button class="btn btn-outline-secondary" onclick="filterTransactions('pending')">{% trans "Pending" %}</button>
+                <button class="btn btn-outline-secondary" onclick="filterTransactions('failed')">{% trans "Failed" %}</button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>{% trans "Transaction ID" %}</th>
+                        <th>{% trans "User" %}</th>
+                        <th>{% trans "Type" %}</th>
+                        <th>{% trans "Amount" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Payment Method" %}</th>
+                        <th>{% trans "Date" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                    <tr class="transaction-row" data-status="{{ transaction.status }}">
+                        <td>
+                            <code class="text-primary">{{ transaction.id|slice:":8" }}...</code>
+                        </td>
+                        <td>
+                            <div>
+                                <strong>{{ transaction.user.full_name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ transaction.user.phone }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            {% if transaction.parking_session %}
+                            <span class="badge bg-primary">
+                                <i class="bi bi-car-front me-1"></i>
+                                {% trans "Parking" %}
+                            </span>
+                            <br>
+                            <small class="text-muted">{{ transaction.parking_session.zone.name }}</small>
+                            {% elif transaction.reservation %}
+                            <span class="badge bg-info">
+                                <i class="bi bi-calendar me-1"></i>
+                                {% trans "Reservation" %}
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary">{% trans "Other" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="fw-bold text-success">{{ currency_symbol }}{{ transaction.amount }}</div>
+                        </td>
+                        <td>
+                            {% if transaction.status == 'completed' %}
+                            <span class="badge bg-success">
+                                <i class="bi bi-check-circle me-1"></i>
+                                {% trans "Completed" %}
+                            </span>
+                            {% elif transaction.status == 'pending' %}
+                            <span class="badge bg-warning">
+                                <i class="bi bi-clock me-1"></i>
+                                {% trans "Pending" %}
+                            </span>
+                            {% elif transaction.status == 'failed' %}
+                            <span class="badge bg-danger">
+                                <i class="bi bi-x-circle me-1"></i>
+                                {% trans "Failed" %}
+                            </span>
+                            {% elif transaction.status == 'refunded' %}
+                            <span class="badge bg-info">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i>
+                                {% trans "Refunded" %}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if transaction.payment_method %}
+                            <div>
+                                <i class="bi bi-credit-card me-1"></i>
+                                {{ transaction.payment_method.card_brand|title }}
+                                <br>
+                                <small class="text-muted">****{{ transaction.payment_method.card_last_four }}</small>
+                            </div>
+                            {% else %}
+                            <span class="text-muted">{% trans "N/A" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div>
+                                {{ transaction.created_at|date:"M d, Y" }}
+                                <br>
+                                <small class="text-muted">{{ transaction.created_at|date:"H:i" }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-info"
+                                    onclick="viewTransactionDetails('{{ transaction.pk }}')"
+                                    title="{% trans 'View Details' %}">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                {% if transaction.status == 'completed' %}
+                                <button class="btn btn-outline-warning" onclick="initiateRefund('{{ transaction.pk }}')"
+                                    title="{% trans 'Refund' %}">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                </button>
+                                {% endif %}
+                                <button class="btn btn-outline-secondary"
+                                    onclick="downloadReceipt('{{ transaction.pk }}')" title="{% trans 'Receipt' %}">
+                                    <i class="bi bi-receipt"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="bi bi-credit-card display-4"></i>
+                                <p class="mt-2">{% trans "No transactions found" %}</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Refund Modal -->
+<div class="modal fade" id="refundModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-arrow-counterclockwise me-2"></i>
+                    {% trans "Process Refund" %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="refundForm">
+                    <div class="mb-3">
+                        <label class="form-label">{% trans "Transaction ID" %}</label>
+                        <input type="text" class="form-control" id="refundTransactionId"
+                            placeholder="{% trans 'Enter transaction ID' %}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{% trans "Refund Amount" %} ({{ currency_symbol }})</label>
+                        <input type="number" class="form-control" id="refundAmount" step="0.01" min="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{% trans "Reason" %}</label>
+                        <select class="form-select" id="refundReason">
+                            <option value="">{% trans "Select Reason" %}</option>
+                            <option value="customer_request">{% trans "Customer Request" %}</option>
+                            <option value="system_error">{% trans "System Error" %}</option>
+                            <option value="duplicate_charge">{% trans "Duplicate Charge" %}</option>
+                            <option value="service_issue">{% trans "Service Issue" %}</option>
+                            <option value="other">{% trans "Other" %}</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{% trans "Additional Notes" %}</label>
+                        <textarea class="form-control" id="refundNotes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                <button type="button" class="btn btn-warning" onclick="processRefund()" id="processRefundBtn">
+                    <span class="loading-spinner spinner-border spinner-border-sm me-2" style="display: none;"></span>
+                    {% trans "Process Refund" %}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction Details Modal -->
+<div class="modal fade" id="transactionDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{% trans "Transaction Details" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="transactionDetailsContent">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">{% trans "Loading..." %}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Filter form loading state
+    document.getElementById('filterForm').addEventListener('submit', function () {
+        const spinner = document.querySelector('.filter-spinner');
+        spinner.style.display = 'inline-block';
+    });
+
+    function filterTransactions(status) {
+        const rows = document.querySelectorAll('.transaction-row');
+        const buttons = document.querySelectorAll('.btn-group .btn');
+
+        // Update button states
+        buttons.forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+
+        // Filter rows
+        rows.forEach(row => {
+            if (status === 'all') {
+                row.style.display = '';
+            } else {
+                const rowStatus = row.dataset.status;
+                row.style.display = rowStatus === status ? '' : 'none';
+            }
+        });
+    }
+
+    function showRefundModal() {
+        new bootstrap.Modal(document.getElementById('refundModal')).show();
+    }
+
+    function processRefund() {
+        const btn = document.getElementById('processRefundBtn');
+        const spinner = btn.querySelector('.loading-spinner');
+
+        // Show loading state
+        btn.disabled = true;
+        spinner.style.display = 'inline-block';
+
+        // TODO: Implement refund processing
+        setTimeout(() => {
+            alert('{% trans "Refund processing will be implemented" %}');
+            btn.disabled = false;
+            spinner.style.display = 'none';
+        }, 2000);
+    }
+
+    function viewTransactionDetails(transactionId) {
+        const modal = new bootstrap.Modal(document.getElementById('transactionDetailsModal'));
+        modal.show();
+
+        // TODO: Load transaction details via AJAX
+        setTimeout(() => {
+            document.getElementById('transactionDetailsContent').innerHTML = `
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    {% trans "Transaction details for ID:" %} ${transactionId}
+                    <br><br>
+                    {% trans "This will show:" %}
+                    <ul class="mt-2 mb-0">
+                        <li>{% trans "Complete transaction information" %}</li>
+                        <li>{% trans "Payment processor details" %}</li>
+                        <li>{% trans "Related parking session" %}</li>
+                        <li>{% trans "Refund history" %}</li>
+                        <li>{% trans "Audit trail" %}</li>
+                    </ul>
+                </div>
+            `;
+        }, 1000);
+    }
+
+    function initiateRefund(transactionId) {
+        document.getElementById('refundTransactionId').value = transactionId;
+        showRefundModal();
+    }
+
+    function downloadReceipt(transactionId) {
+        // TODO: Implement receipt download
+        alert('{% trans "Receipt download will be implemented" %}');
+    }
+
+    function exportTransactions() {
+        const btn = event.target;
+        const spinner = btn.querySelector('.export-spinner');
+
+        // Show loading state
+        btn.disabled = true;
+        spinner.style.display = 'inline-block';
+
+        // TODO: Implement transaction export
+        setTimeout(() => {
+            alert('{% trans "Transaction export will be implemented" %}');
+            btn.disabled = false;
+            spinner.style.display = 'none';
+        }, 2000);
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,186 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+
+{% block title %}{% if object %}{% trans "Edit User" %}{% else %}{% trans "Add User" %}{% endif %} - {% trans "Smart
+Parking Admin" %}{% endblock %}
+{% block page_title %}{% if object %}{% trans "Edit User" %}{% else %}{% trans "Add User" %}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-{% if object %}pencil{% else %}person-plus{% endif %} me-2"></i>
+                    {% if object %}{% trans "Edit User" %}: {{ object.full_name }}{% else %}{% trans "Add New User" %}{%
+                    endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="userForm">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_first_name" class="form-label">{% trans "First Name *" %}</label>
+                            <input type="text" class="form-control" name="first_name" id="id_first_name"
+                                value="{{ form.first_name.value|default:'' }}" required>
+                            {% if form.first_name.errors %}
+                            <div class="text-danger small">{{ form.first_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_last_name" class="form-label">{% trans "Last Name *" %}</label>
+                            <input type="text" class="form-control" name="last_name" id="id_last_name"
+                                value="{{ form.last_name.value|default:'' }}" required>
+                            {% if form.last_name.errors %}
+                            <div class="text-danger small">{{ form.last_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_phone" class="form-label">{% trans "Phone Number *" %}</label>
+                            <input type="tel" class="form-control" name="phone" id="id_phone"
+                                value="{{ form.phone.value|default:'' }}" required>
+                            <div class="form-text">{% trans "Include country code (e.g., +1234567890)" %}</div>
+                            {% if form.phone.errors %}
+                            <div class="text-danger small">{{ form.phone.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="id_email" class="form-label">{% trans "Email" %}</label>
+                            <input type="email" class="form-control" name="email" id="id_email"
+                                value="{{ form.email.value|default:'' }}">
+                            {% if form.email.errors %}
+                            <div class="text-danger small">{{ form.email.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_role" class="form-label">{% trans "User Role *" %}</label>
+                            <select class="form-select" name="role" id="id_role" required>
+                                <option value="">{% trans "Select Role" %}</option>
+                                <option value="driver" {% if form.role.value == 'driver' %}selected{% endif %}>{% trans
+                                    "Driver" %}</option>
+                                <option value="officer" {% if form.role.value == 'officer' %}selected{% endif %}>{% trans
+                                    "Officer" %}</option>
+                                {% if user.role == 'admin' %}
+                                <option value="admin" {% if form.role.value == 'admin' %}selected{% endif %}>{% trans
+                                    "Admin" %}</option>
+                                {% endif %}
+                            </select>
+                            {% if form.role.errors %}
+                            <div class="text-danger small">{{ form.role.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% trans "Status" %}</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="id_is_active" {% if
+                                    form.is_active.value %}checked{% endif %}>
+                                <label class="form-check-label" for="id_is_active">
+                                    {% trans "Active User" %}
+                                </label>
+                            </div>
+                            <div class="form-text">{% trans "Inactive users cannot log in" %}</div>
+                        </div>
+                    </div>
+
+                    {% if not object %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>{% trans "Password:" %}</strong> {% trans "A temporary password will be generated and
+                        sent to the user's phone via SMS." %}
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'user-list' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>
+                            {% trans "Back to Users" %}
+                        </a>
+
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <span class="loading-spinner spinner-border spinner-border-sm me-2"></span>
+                            <i class="bi bi-{% if object %}check{% else %}plus{% endif %} me-2"></i>
+                            {% if object %}{% trans "Update User" %}{% else %}{% trans "Create User" %}{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if object %}
+        <!-- Additional Info Card -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    {% trans "Additional Information" %}
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>{% trans "Created:" %}</strong> {{ object.created_at|date:"M d, Y H:i" }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>{% trans "Last Updated:" %}</strong> {{ object.updated_at|date:"M d, Y H:i" }}
+                    </div>
+                </div>
+
+                {% if object.role == 'driver' %}
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <strong>{% trans "Registered Vehicles:" %}</strong>
+                        {% if object.vehicles.exists %}
+                        <ul class="list-unstyled mt-2">
+                            {% for vehicle in object.vehicles.all %}
+                            <li class="mb-1">
+                                <span class="badge bg-primary">{{ vehicle.license_plate }}</span>
+                                {{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.color }})
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <span class="text-muted">{% trans "No vehicles registered" %}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('userForm').addEventListener('submit', function (e) {
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.classList.add('loading');
+        submitBtn.disabled = true;
+    });
+
+    // Phone number formatting
+    document.getElementById('id_phone').addEventListener('input', function (e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value && !value.startsWith('1')) {
+            value = '1' + value;
+        }
+        if (value) {
+            value = '+' + value;
+        }
+        e.target.value = value;
+    });
+</script>
+{% endblock %}

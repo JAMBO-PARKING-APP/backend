@@ -1,0 +1,342 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+
+{% block title %}
+{{ vehicle.license_plate }} - {% trans "Vehicle Details" %}
+{% endblock %}
+
+{% block page_title %}{% trans "Vehicle Details" %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="mb-1">{{ vehicle.license_plate }}</h3>
+        <p class="text-muted mb-0">{{ vehicle.make }} {{ vehicle.model }} - {{ vehicle.color }}</p>
+    </div>
+    <a href="{% url 'vehicle-list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>{% trans "Back to Vehicles" %}
+    </a>
+</div>
+
+<!-- Vehicle Info Card -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-car-front me-2"></i>{% trans "Vehicle Information" %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td class="fw-medium">{% trans "License Plate:" %}</td>
+                                <td><code class="fs-6">{{ vehicle.license_plate }}</code></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-medium">{% trans "Owner:" %}</td>
+                                <td>{{ vehicle.user.full_name }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-medium">{% trans "Phone:" %}</td>
+                                <td>{{ vehicle.user.phone }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-medium">{% trans "Email:" %}</td>
+                                <td>{{ vehicle.user.email|default:_("Not provided") }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td class="fw-medium">{% trans "Make:" %}</td>
+                                <td>{{ vehicle.make }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-medium">{% trans "Model:" %}</td>
+                                <td>{{ vehicle.model }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-medium">{% trans "Color:" %}</td>
+                                <td>{{ vehicle.color }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-medium">{% trans "Status:" %}</td>
+                                <td>
+                                    {% if vehicle.is_active %}
+                                    <span class="badge bg-success">{% trans "Active" %}</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">{% trans "Inactive" %}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Card -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-graph-up me-2"></i>{% trans "Statistics" %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="h4 mb-0 text-primary">{{ total_sessions }}</div>
+                        <small class="text-muted">{% trans "Total Sessions" %}</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="h4 mb-0 text-success">{{ completed_sessions }}</div>
+                        <small class="text-muted">{% trans "Completed" %}</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="h4 mb-0 text-warning">{{ total_violations }}</div>
+                        <small class="text-muted">{% trans "Violations" %}</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="h4 mb-0 text-info">{{ currency_symbol }}{{ total_spent }}</div>
+                        <small class="text-muted">{% trans "Total Spent" %}</small>
+                    </div>
+                </div>
+
+                {% if unpaid_violations > 0 %}
+                <div class="alert alert-warning py-2 mb-0">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>{{ unpaid_violations }}</strong>
+                    {% if unpaid_violations == 1 %}
+                    {% trans "unpaid violation" %}
+                    {% else %}
+                    {% trans "unpaid violations" %}
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Current Session Alert -->
+{% if current_session %}
+<div class="alert alert-info mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <i class="bi bi-clock me-2"></i>
+            <strong>{% trans "Currently Parked" %}</strong>
+            {% trans "in" %} {{ current_session.zone.name }}
+            {% if current_session.parking_slot %}
+            - {% trans "Slot" %} {{ current_session.parking_slot.slot_code }}
+            {% endif %}
+        </div>
+        <div>
+            <small>
+                {% trans "Started:" %} {{ current_session.start_time|date:"M d, H:i" }}
+            </small>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Tabs for History -->
+<div class="card">
+    <div class="card-header">
+        <ul class="nav nav-tabs card-header-tabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="tab" href="#parking-history" role="tab">
+                    <i class="bi bi-clock-history me-2"></i>{% trans "Parking History" %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#violations" role="tab">
+                    <i class="bi bi-exclamation-triangle me-2"></i>{% trans "Violations" %}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#transactions" role="tab">
+                    <i class="bi bi-credit-card me-2"></i>{% trans "Transactions" %}
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body">
+        <div class="tab-content">
+            <!-- Parking History Tab -->
+            <div class="tab-pane fade show active" id="parking-history" role="tabpanel">
+                {% if parking_sessions %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Zone" %}</th>
+                                <th>{% trans "Slot" %}</th>
+                                <th>{% trans "Start Time" %}</th>
+                                <th>{% trans "End Time" %}</th>
+                                <th>{% trans "Duration" %}</th>
+                                <th>{% trans "Cost" %}</th>
+                                <th>{% trans "Status" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for session in parking_sessions %}
+                            <tr>
+                                <td>{{ session.zone.name }}</td>
+                                <td>
+                                    {% if session.parking_slot %}
+                                    {{ session.parking_slot.slot_code }}
+                                    {% else %}
+                                    <span class="text-muted">{% trans "N/A" %}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ session.start_time|date:"M d, H:i" }}</td>
+                                <td>
+                                    {% if session.actual_end_time %}
+                                    {{ session.actual_end_time|date:"M d, H:i" }}
+                                    {% else %}
+                                    <span class="text-muted">{% trans "Ongoing" %}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ session.duration_minutes }} {% trans "min" %}</td>
+                                <td>
+                                    {% if session.final_cost %}
+                                    {{ currency_symbol }}{{ session.final_cost }}
+                                    {% else %}
+                                    {{ currency_symbol }}{{ session.estimated_cost }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if session.status == 'active' %}bg-success
+                                        {% elif session.status == 'completed' %}bg-primary
+                                        {% elif session.status == 'expired' %}bg-warning
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ session.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-clock-history display-4 text-muted"></i>
+                    <p class="text-muted mt-3">{% trans "No parking history found" %}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Violations Tab -->
+            <div class="tab-pane fade" id="violations" role="tabpanel">
+                {% if violations %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Date" %}</th>
+                                <th>{% trans "Type" %}</th>
+                                <th>{% trans "Zone" %}</th>
+                                <th>{% trans "Officer" %}</th>
+                                <th>{% trans "Fine Amount" %}</th>
+                                <th>{% trans "Status" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for violation in violations %}
+                            <tr>
+                                <td>{{ violation.created_at|date:"M d, Y H:i" }}</td>
+                                <td>{{ violation.get_violation_type_display }}</td>
+                                <td>{{ violation.zone.name|default:_("N/A") }}</td>
+                                <td>{{ violation.officer.full_name }}</td>
+                                <td>{{ currency_symbol }}{{ violation.fine_amount }}</td>
+                                <td>
+                                    {% if violation.is_paid %}
+                                    <span class="badge bg-success">{% trans "Paid" %}</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">{% trans "Unpaid" %}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-shield-check display-4 text-success"></i>
+                    <p class="text-muted mt-3">{% trans "No violations found" %}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Transactions Tab -->
+            <div class="tab-pane fade" id="transactions" role="tabpanel">
+                {% if transactions %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Date" %}</th>
+                                <th>{% trans "Amount" %}</th>
+                                <th>{% trans "Method" %}</th>
+                                <th>{% trans "Session" %}</th>
+                                <th>{% trans "Status" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in transactions %}
+                            <tr>
+                                <td>{{ transaction.created_at|date:"M d, Y H:i" }}</td>
+                                <td>{{ currency_symbol }}{{ transaction.amount }}</td>
+                                <td>{{ transaction.payment_method.name|default:_("N/A") }}</td>
+                                <td>
+                                    {% if transaction.parking_session %}
+                                    {{ transaction.parking_session.zone.name }}
+                                    {% else %}
+                                    <span class="text-muted">{% trans "N/A" %}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if transaction.status == 'completed' %}bg-success
+                                        {% elif transaction.status == 'pending' %}bg-warning
+                                        {% elif transaction.status == 'failed' %}bg-danger
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ transaction.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-credit-card display-4 text-muted"></i>
+                    <p class="text-muted mt-3">{% trans "No transactions found" %}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function () {
+        const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        tooltips.forEach(tooltip => {
+            new bootstrap.Tooltip(tooltip);
+        });
+    });
+</script>
+{% endblock %}

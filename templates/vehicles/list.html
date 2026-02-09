@@ -1,0 +1,323 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+
+{% block title %}
+{% trans "Vehicles" %} - Smart Parking
+{% endblock %}
+
+{% block page_title %}{% trans "Vehicles Management" %}{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-body">
+        {% with req_make=request.GET.make req_status=request.GET.status %}
+        <form method="GET" class="row g-3 align-items-center" id="vehicleFilterForm">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="bi bi-search text-muted"></i>
+                    </span>
+                    <input type="text" name="search" class="form-control border-start-0"
+                        placeholder="{% trans 'Search by plate or owner...' %}" value="{{ request.GET.search }}">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <span class="search-spinner spinner-border spinner-border-sm me-2"
+                            style="display: none;"></span>
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="make">
+                    <option value="">{% trans "All Makes" %}</option>
+
+                    {% if req_make == "Toyota" %}
+                    <option value="Toyota" selected>Toyota</option>
+                    {% else %}
+                    <option value="Toyota">Toyota</option>
+                    {% endif %}
+
+                    {% if req_make == "Honda" %}
+                    <option value="Honda" selected>Honda</option>
+                    {% else %}
+                    <option value="Honda">Honda</option>
+                    {% endif %}
+
+                    {% if req_make == "Ford" %}
+                    <option value="Ford" selected>Ford</option>
+                    {% else %}
+                    <option value="Ford">Ford</option>
+                    {% endif %}
+
+                    {% if req_make == "BMW" %}
+                    <option value="BMW" selected>BMW</option>
+                    {% else %}
+                    <option value="BMW">BMW</option>
+                    {% endif %}
+
+                    {% if req_make == "Mercedes" %}
+                    <option value="Mercedes" selected>Mercedes</option>
+                    {% else %}
+                    <option value="Mercedes">Mercedes</option>
+                    {% endif %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="status">
+                    <option value="">{% trans "All Status" %}</option>
+
+                    {% if req_status == "active" %}
+                    <option value="active" selected>{% trans "Active" %}</option>
+                    {% else %}
+                    <option value="active">{% trans "Active" %}</option>
+                    {% endif %}
+
+                    {% if req_status == "inactive" %}
+                    <option value="inactive" selected>{% trans "Inactive" %}</option>
+                    {% else %}
+                    <option value="inactive">{% trans "Inactive" %}</option>
+                    {% endif %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <a href="{% url 'vehicle-list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-clockwise"></i>
+                    {% trans "Reset" %}
+                </a>
+            </div>
+        </form>
+        {% endwith %}
+    </div>
+</div>
+
+<!-- Vehicles Table -->
+<div class="card table-modern position-relative">
+    <div class="loading-overlay d-none" id="tableLoader">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-modern mb-0">
+                <thead>
+                    <tr>
+                        <th>{% trans "License Plate" %}</th>
+                        <th>{% trans "Owner" %}</th>
+                        <th>{% trans "Vehicle Details" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Parking Status" %}</th>
+                        <th>{% trans "Violations" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody id="vehicleTableBody">
+                    {% for vehicle in vehicles %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary text-white rounded px-2 py-1 me-2"
+                                    style="font-family: monospace; font-weight: bold; cursor: pointer;"
+                                    onclick="viewVehicleDetails('{{ vehicle.pk }}')" data-bs-toggle="tooltip"
+                                    title="{% trans 'Click to view details' %}">
+                                    {{ vehicle.license_plate }}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div
+                                    class="skeleton-avatar bg-light rounded-circle me-2 d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-person text-muted"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-medium">{{ vehicle.user.full_name }}</div>
+                                    <small class="text-muted">{{ vehicle.user.phone }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                <div class="fw-medium">{{ vehicle.make }} {{ vehicle.model }}</div>
+                                <small class="text-muted">{{ vehicle.color }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            {% if vehicle.is_active %}
+                            <span class="badge badge-status badge-active">{% trans "Active" %}</span>
+                            {% else %}
+                            <span class="badge badge-status badge-inactive">{% trans "Inactive" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% with active_session=vehicle.parking_sessions.first %}
+                            {% if active_session %}
+                            {% if active_session.status == "active" %}
+                            <span class="badge badge-status badge-pending">
+                                <i class="bi bi-car-front me-1"></i>
+                                {% blocktrans with zone=active_session.zone.name %}
+                                Parked in {{ zone }}
+                                {% endblocktrans %}
+                            </span>
+                            <br>
+                            <small class="text-muted">
+                                {% blocktrans with time=active_session.start_time|date:"H:i" %}
+                                Since {{ time }}
+                                {% endblocktrans %}
+                            </small>
+                            {% else %}
+                            <span class="badge badge-status badge-completed">
+                                <i class="bi bi-circle me-1"></i>
+                                {% trans "Not Parked" %}
+                            </span>
+                            {% endif %}
+                            {% else %}
+                            <span class="badge badge-status badge-completed">
+                                <i class="bi bi-circle me-1"></i>
+                                {% trans "Not Parked" %}
+                            </span>
+                            {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>
+                            {% with unpaid_violations=vehicle.violations.count %}
+                            {% if unpaid_violations > 0 %}
+                            <span class="badge badge-status badge-inactive">
+                                {% blocktrans count count=unpaid_violations %}
+                                {{ count }} Unpaid
+                                {% plural %}
+                                {{ count }} Unpaid
+                                {% endblocktrans %}
+                            </span>
+                            {% else %}
+                            <span class="badge badge-status badge-active">
+                                <i class="bi bi-check-circle me-1"></i>
+                                {% trans "Clean" %}
+                            </span>
+                            {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'vehicle-detail' vehicle.pk %}" class="btn btn-outline-primary"
+                                    title="{% trans 'View Details' %}">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <button class="btn btn-outline-warning" onclick="reportViolation('{{ vehicle.pk }}')"
+                                    title="{% trans 'Report Violation' %}">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <i class="bi bi-car-front display-4 text-muted"></i>
+                            <p class="text-muted mt-2">{% trans "No vehicles found matching your search." %}</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if is_paginated %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="nav-item">
+            <a class="page-link"
+                href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.make %}&make={{ request.GET.make }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>
+        {% endif %}
+
+        {% for i in paginator.page_range %}
+        {% if page_obj.number == i %}
+        <li class="page-item active">
+            <span class="page-link">{{ i }}</span>
+        </li>
+        {% else %}
+        <li class="page-item">
+            <a class="page-link"
+                href="?page={{ i }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.make %}&make={{ request.GET.make }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">{{
+                i }}</a>
+        </li>
+        {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link"
+                href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.make %}&make={{ request.GET.make }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+<!-- Modal for Violation Reporting -->
+<div class="modal fade" id="violationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{% trans "Report Violation" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>{% trans "Report a parking violation for vehicle" %} <strong id="violationPlate"></strong></p>
+                <form id="violationForm">
+                    <div class="mb-3">
+                        <label class="form-label">{% trans "Violation Type" %}</label>
+                        <select class="form-select" required>
+                            <option value="overtime">{% trans "Overtime Parking" %}</option>
+                            <option value="unauthorized">{% trans "Unauthorized Zone" %}</option>
+                            <option value="wrong_slot">{% trans "Wrong Parking Slot" %}</option>
+                            <option value="other">{% trans "Other" %}</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                <button type="button" class="btn btn-danger">{% trans "Submit Report" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function viewVehicleDetails(pk) {
+        window.location.href = `/vehicles/${pk}/`;
+    }
+
+    function reportViolation(pk) {
+        // Logic to show modal and pre-fill vehicle info
+        const modal = new bootstrap.Modal(document.getElementById('violationModal'));
+        modal.show();
+    }
+
+    // Auto-submit form on filter change
+    document.addEventListener('DOMContentLoaded', function () {
+        const filters = document.querySelectorAll('select[name="make"], select[name="status"]');
+        filters.forEach(filter => {
+            filter.addEventListener('change', function () {
+                document.getElementById('vehicleFilterForm').submit();
+            });
+        });
+
+        // Show loading overlay on form submit
+        document.getElementById('vehicleFilterForm').addEventListener('submit', function () {
+            document.getElementById('tableLoader').classList.remove('d-none');
+        });
+    });
+</script>
+{% endblock %}

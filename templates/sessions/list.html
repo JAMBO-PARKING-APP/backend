@@ -1,0 +1,304 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Parking Sessions" %} - {% trans "Smart Parking Admin" %}{% endblock %}
+{% block page_title %}{% trans "Parking Sessions" %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0">{% trans "Parking Sessions" %}</h4>
+        <p class="text-muted mb-0">{% trans "Monitor active and completed parking sessions" %}</p>
+    </div>
+    <div class="btn-group">
+        <button class="btn btn-outline-primary" onclick="refreshSessions()">
+            <i class="bi bi-arrow-clockwise me-2"></i>
+            {% trans "Refresh" %}
+        </button>
+    </div>
+</div>
+
+<!-- Session Stats -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-white-50">{% trans "Active Sessions" %}</h6>
+                        <h4 class="mb-0">{{ sessions|length }}</h4>
+                    </div>
+                    <i class="bi bi-car-front display-6 text-white-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-white-50">{% trans "Today's Sessions" %}</h6>
+                        <h4 class="mb-0">--</h4>
+                    </div>
+                    <i class="bi bi-calendar-day display-6 text-white-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-white-50">{% trans "Expired Sessions" %}</h6>
+                        <h4 class="mb-0">--</h4>
+                    </div>
+                    <i class="bi bi-clock display-6 text-white-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-white-50">{% trans "Revenue Today" %}</h6>
+                        <h4 class="mb-0">$--</h4>
+                    </div>
+                    <i class="bi bi-currency-dollar display-6 text-white-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sessions Table -->
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0">{% trans "All Sessions" %}</h6>
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary active" onclick="filterSessions('all')">{% trans "All"
+                    %}</button>
+                <button class="btn btn-outline-secondary" onclick="filterSessions('active')">{% trans "Active"
+                    %}</button>
+                <button class="btn btn-outline-secondary" onclick="filterSessions('completed')">{% trans "Completed"
+                    %}</button>
+                <button class="btn btn-outline-secondary" onclick="filterSessions('expired')">{% trans "Expired"
+                    %}</button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>{% trans "Vehicle" %}</th>
+                        <th>{% trans "Zone" %}</th>
+                        <th>{% trans "Slot" %}</th>
+                        <th>{% trans "Start Time" %}</th>
+                        <th>{% trans "Duration" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Cost" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for session in sessions %}
+                    <tr class="session-row" data-status="{{ session.status }}">
+                        <td>
+                            <div>
+                                <strong>{{ session.vehicle.license_plate }}</strong>
+                                <br>
+                                <small class="text-muted">{{ session.vehicle.user.full_name }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary">{{ session.zone.name }}</span>
+                        </td>
+                        <td>
+                            {% if session.parking_slot %}
+                            <span class="badge bg-info">{{ session.parking_slot.slot_code }}</span>
+                            {% else %}
+                            <span class="text-muted">{% trans "Open Zone" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div>
+                                {{ session.start_time|date:"M d, H:i" }}
+                                <br>
+                                <small class="text-muted">{% blocktrans with time=session.start_time|timesince %}{{ time
+                                    }} ago{% endblocktrans %}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                <strong>{{ session.duration_minutes }} {% trans "min" %}</strong>
+                                {% if session.status == 'active' %}
+                                <br>
+                                <small class="text-muted">
+                                    {% trans "Ends:" %} {{ session.planned_end_time|date:"H:i" }}
+                                </small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if session.status == 'active' %}
+                            {% if session.planned_end_time < now %} <span class="badge bg-danger">{% trans "Expired"
+                                %}</span>
+                                {% else %}
+                                <span class="badge bg-success">{% trans "Active" %}</span>
+                                {% endif %}
+                                {% elif session.status == 'completed' %}
+                                <span class="badge bg-primary">{% trans "Completed" %}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ session.get_status_display }}</span>
+                                {% endif %}
+                        </td>
+                        <td>
+                            <div>
+                                {% if session.final_cost %}
+                                <strong class="text-success">${{ session.final_cost }}</strong>
+                                {% else %}
+                                <span class="text-muted">${{ session.estimated_cost }}</span>
+                                <br>
+                                <small class="text-muted">{% trans "Estimated" %}</small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-info" onclick="viewSessionDetails('{{ session.pk }}')"
+                                    title="{% trans 'View Details' %}">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                {% if session.status == 'active' %}
+                                <button class="btn btn-outline-warning" onclick="endSession('{{ session.pk }}')"
+                                    title="{% trans 'End Session' %}">
+                                    <i class="bi bi-stop-circle"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="bi bi-clock-history display-4"></i>
+                                <p class="mt-2">{% trans "No parking sessions found" %}</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">{% trans "Previous" %}</a>
+        </li>
+        {% endif %}
+
+        <li class="page-item active">
+            <span class="page-link">{% blocktrans with number=page_obj.number total=page_obj.paginator.num_pages %}{{
+                number }} of {{ total }}{% endblocktrans %}</span>
+        </li>
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">{% trans "Next" %}</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+<!-- Session Details Modal -->
+<div class="modal fade" id="sessionDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{% trans "Session Details" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="sessionDetailsContent">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">{% trans "Loading..." %}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function refreshSessions() {
+        location.reload();
+    }
+
+    function filterSessions(status) {
+        const rows = document.querySelectorAll('.session-row');
+        const buttons = document.querySelectorAll('.btn-group .btn');
+
+        // Update button states
+        buttons.forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+
+        // Filter rows
+        rows.forEach(row => {
+            if (status === 'all') {
+                row.style.display = '';
+            } else {
+                const rowStatus = row.dataset.status;
+                if (status === 'expired') {
+                    // Check if session is expired (you'd need to add this logic)
+                    row.style.display = rowStatus === 'active' ? '' : 'none';
+                } else {
+                    row.style.display = rowStatus === status ? '' : 'none';
+                }
+            }
+        });
+    }
+
+    function viewSessionDetails(sessionId) {
+        const modal = new bootstrap.Modal(document.getElementById('sessionDetailsModal'));
+        modal.show();
+
+        // TODO: Load session details via AJAX
+        document.getElementById('sessionDetailsContent').innerHTML = `
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                {% trans "Session details for ID:" %} ${sessionId}
+            </div>
+        `;
+    }
+
+    function endSession(sessionId) {
+        if (confirm('{% trans "Are you sure you want to end this parking session?" %}')) {
+            // TODO: Implement end session functionality
+            alert('{% trans "End session functionality will be implemented" %}');
+        }
+    }
+
+    // Auto-refresh every 30 seconds for active sessions
+    setInterval(() => {
+        if (document.hasFocus()) {
+            refreshSessions();
+        }
+    }, 30000);
+</script>
+{% endblock %}

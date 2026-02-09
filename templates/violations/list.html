@@ -1,0 +1,385 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Violations" %} - {% trans "Smart Parking Admin" %}{% endblock %}
+{% block page_title %}{% trans "Parking Violations" %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0">{% trans "Parking Violations" %}</h4>
+        <p class="text-muted mb-0">{% trans "Monitor and manage parking violations" %}</p>
+    </div>
+    <div class="btn-group">
+        <button class="btn btn-warning" onclick="showIssueViolationModal()">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            {% trans "Issue Violation" %}
+        </button>
+    </div>
+</div>
+
+<!-- Violation Stats -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-white-50">{% trans "Unpaid Violations" %}</h6>
+                        <h4 class="mb-0">{{ violations|length }}</h4>
+                    </div>
+                    <i class="bi bi-exclamation-triangle display-6 text-white-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-white-50">{% trans "Paid Today" %}</h6>
+                        <h4 class="mb-0">--</h4>
+                    </div>
+                    <i class="bi bi-check-circle display-6 text-white-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-white-50">{% trans "This Month" %}</h6>
+                        <h4 class="mb-0">--</h4>
+                    </div>
+                    <i class="bi bi-calendar-month display-6 text-white-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-white-50">{% trans "Total Revenue" %}</h6>
+                        <h4 class="mb-0">$--</h4>
+                    </div>
+                    <i class="bi bi-currency-dollar display-6 text-white-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Violations Table -->
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0">{% trans "All Violations" %}</h6>
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary active" onclick="filterViolations('all')">{% trans "All"
+                    %}</button>
+                <button class="btn btn-outline-secondary" onclick="filterViolations('unpaid')">{% trans "Unpaid"
+                    %}</button>
+                <button class="btn btn-outline-secondary" onclick="filterViolations('paid')">{% trans "Paid" %}</button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>{% trans "Vehicle" %}</th>
+                        <th>{% trans "Violation Type" %}</th>
+                        <th>{% trans "Zone" %}</th>
+                        <th>{% trans "Officer" %}</th>
+                        <th>{% trans "Fine Amount" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Date" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for violation in violations %}
+                    <tr class="violation-row" data-status="{% if violation.is_paid %}paid{% else %}unpaid{% endif %}">
+                        <td>
+                            <div>
+                                <strong>{{ violation.vehicle.license_plate }}</strong>
+                                <br>
+                                <small class="text-muted">{{ violation.vehicle.user.full_name }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                <span
+                                    class="badge bg-{% if violation.violation_type == 'expired' %}warning{% elif violation.violation_type == 'no_payment' %}danger{% else %}secondary{% endif %}">
+                                    {{ violation.get_violation_type_display }}
+                                </span>
+                                {% if violation.description %}
+                                <br>
+                                <small class="text-muted">{{ violation.description|truncatechars:50 }}</small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary">{{ violation.zone.name }}</span>
+                        </td>
+                        <td>
+                            <div>
+                                <strong>{{ violation.officer.full_name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ violation.officer.get_role_display }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-bold text-danger">
+                                ${{ violation.fine_amount }}
+                            </div>
+                        </td>
+                        <td>
+                            {% if violation.is_paid %}
+                            <span class="badge bg-success">{% trans "Paid" %}</span>
+                            {% if violation.paid_at %}
+                            <br>
+                            <small class="text-muted">{{ violation.paid_at|date:"M d, Y" }}</small>
+                            {% endif %}
+                            {% else %}
+                            <span class="badge bg-danger">{% trans "Unpaid" %}</span>
+                            <br>
+                            <small class="text-muted">{% blocktrans with time=violation.created_at|timesince %}{{ time }} ago{% endblocktrans %}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div>
+                                {{ violation.created_at|date:"M d, Y" }}
+                                <br>
+                                <small class="text-muted">{{ violation.created_at|date:"H:i" }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-info"
+                                    onclick="viewViolationDetails('{{ violation.pk }}')"
+                                    title="{% trans 'View Details' %}">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                {% if not violation.is_paid %}
+                                <button class="btn btn-outline-success" onclick="markAsPaid('{{ violation.pk }}')"
+                                    title="{% trans 'Mark as Paid' %}">
+                                    <i class="bi bi-check-circle"></i>
+                                </button>
+                                {% endif %}
+                                <button class="btn btn-outline-secondary" onclick="viewEvidence('{{ violation.pk }}')"
+                                    title="{% trans 'View Evidence' %}">
+                                    <i class="bi bi-camera"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="bi bi-shield-check display-4"></i>
+                                <p class="mt-2">{% trans "No violations found" %}</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">{% trans "Previous" %}</a>
+        </li>
+        {% endif %}
+
+        <li class="page-item active">
+            <span class="page-link">{% blocktrans with number=page_obj.number total=page_obj.paginator.num_pages %}{{ number }} of {{ total }}{% endblocktrans %}</span>
+        </li>
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">{% trans "Next" %}</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+<!-- Issue Violation Modal -->
+<div class="modal fade" id="issueViolationModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    {% trans "Issue Parking Violation" %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="violationForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% trans "License Plate" %} *</label>
+                            <input type="text" class="form-control" id="violationPlate" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% trans "Violation Type" %} *</label>
+                            <select class="form-select" id="violationType" required>
+                                <option value="">{% trans "Select Type" %}</option>
+                                <option value="expired">{% trans "Expired Parking" %}</option>
+                                <option value="no_payment">{% trans "No Payment" %}</option>
+                                <option value="wrong_zone">{% trans "Wrong Zone" %}</option>
+                                <option value="disabled_spot">{% trans "Disabled Spot Violation" %}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% trans "Fine Amount ($)" %} *</label>
+                            <input type="number" class="form-control" id="fineAmount" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% trans "Zone" %} *</label>
+                            <select class="form-select" id="violationZone" required>
+                                <option value="">{% trans "Select Zone" %}</option>
+                                <!-- Zones will be populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">{% trans "Description" %}</label>
+                        <textarea class="form-control" id="violationDescription" rows="3"
+                            placeholder="{% trans 'Additional details about the violation...' %}"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% trans "Latitude" %}</label>
+                            <input type="number" class="form-control" id="violationLat" step="0.000001">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% trans "Longitude" %}</label>
+                            <input type="number" class="form-control" id="violationLng" step="0.000001">
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-outline-primary mb-3"
+                        onclick="getCurrentLocationForViolation()">
+                        <i class="bi bi-geo-alt me-2"></i>
+                        {% trans "Use Current Location" %}
+                    </button>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                <button type="button" class="btn btn-warning" onclick="submitViolation()">
+                    <span class="loading-spinner spinner-border spinner-border-sm me-2"></span>
+                    {% trans "Issue Violation" %}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Violation Details Modal -->
+<div class="modal fade" id="violationDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{% trans "Violation Details" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="violationDetailsContent">
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">{% trans "Loading..." %}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function filterViolations(status) {
+        const rows = document.querySelectorAll('.violation-row');
+        const buttons = document.querySelectorAll('.btn-group .btn');
+
+        // Update button states
+        buttons.forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+
+        // Filter rows
+        rows.forEach(row => {
+            if (status === 'all') {
+                row.style.display = '';
+            } else {
+                const rowStatus = row.dataset.status;
+                row.style.display = rowStatus === status ? '' : 'none';
+            }
+        });
+    }
+
+    function showIssueViolationModal() {
+        new bootstrap.Modal(document.getElementById('issueViolationModal')).show();
+    }
+
+    function getCurrentLocationForViolation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function (position) {
+                document.getElementById('violationLat').value = position.coords.latitude.toFixed(6);
+                document.getElementById('violationLng').value = position.coords.longitude.toFixed(6);
+            });
+        }
+    }
+
+    function submitViolation() {
+        // TODO: Implement violation submission
+        alert('{% trans "Violation submission will be implemented" %}');
+    }
+
+    function viewViolationDetails(violationId) {
+        const modal = new bootstrap.Modal(document.getElementById('violationDetailsModal'));
+        modal.show();
+
+        // TODO: Load violation details via AJAX
+        document.getElementById('violationDetailsContent').innerHTML = `
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                {% trans "Violation details for ID:" %} ${violationId}
+            </div>
+        `;
+    }
+
+    function markAsPaid(violationId) {
+        if (confirm('{% trans "Mark this violation as paid?" %}')) {
+            // TODO: Implement mark as paid functionality
+            alert('{% trans "Mark as paid functionality will be implemented" %}');
+        }
+    }
+
+    function viewEvidence(violationId) {
+        // TODO: Implement evidence viewer
+        alert('{% trans "Evidence viewer will be implemented" %}');
+    }
+</script>
+{% endblock %}

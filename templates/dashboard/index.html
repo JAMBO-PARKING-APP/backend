@@ -1,0 +1,342 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Dashboard" %} - {% trans "Smart Parking Admin" %}{% endblock %}
+{% block page_title %}{% trans "Dashboard" %}{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Cards with Consistent Colors -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-white-50 mb-1">{% trans "Total Users" %}</h6>
+                        <h3 class="text-white mb-0">
+                            <span class="loading-number" data-target="{{ total_users }}">0</span>
+                        </h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-people display-6 text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-white-50 mb-1">{% trans "Active Sessions" %}</h6>
+                        <h3 class="text-white mb-0">
+                            <span class="loading-number" data-target="{{ active_sessions }}">0</span>
+                        </h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-car-front display-6 text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-white-50 mb-1">{% trans "Parking Zones" %}</h6>
+                        <h3 class="text-white mb-0">
+                            <span class="loading-number" data-target="{{ total_zones }}">0</span>
+                        </h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-geo-alt display-6 text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card bg-danger text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-white-50 mb-1">{% trans "Today's Revenue" %}</h6>
+                        <h3 class="text-white mb-0">
+                            {{ currency_symbol }}<span class="loading-number"
+                                data-target="{{ today_revenue|floatformat:0 }}">0</span>
+                        </h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-currency-dollar display-6 text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-graph-up me-2"></i>
+                    {% trans "Revenue Trend (Last 7 Days)" %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="revenueChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-pie-chart me-2"></i>
+                    {% trans "Zone Occupancy" %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="occupancyChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning me-2"></i>
+                    {% trans "Quick Actions" %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <button class="btn btn-primary w-100" onclick="showCheckPlateModal()">
+                            <i class="bi bi-search me-2"></i>
+                            {% trans "Check Vehicle" %}
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'zone-create' %}" class="btn btn-success w-100">
+                            <i class="bi bi-plus-circle me-2"></i>
+                            {% trans "Add Zone" %}
+                        </a>
+                    </div>
+                    {% if user.role == 'admin' %}
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'user-create' %}" class="btn btn-info w-100">
+                            <i class="bi bi-person-plus me-2"></i>
+                            {% trans "Add User" %}
+                        </a>
+                    </div>
+                    {% endif %}
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'violation-list' %}" class="btn btn-warning w-100">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            {% trans "View Violations" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-clock-history me-2"></i>
+                    {% trans "Recent Parking Sessions" %}
+                </h5>
+                <a href="{% url 'session-list' %}" class="btn btn-sm btn-outline-primary">{% trans "View All" %}</a>
+            </div>
+            <div class="card-body">
+                {% if recent_sessions %}
+                <div class="list-group list-group-flush">
+                    {% for session in recent_sessions %}
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ session.vehicle.license_plate }}</h6>
+                                <p class="mb-1 text-muted">{{ session.zone.name }}</p>
+                                <small class="text-muted">{% blocktrans with time=session.created_at|timesince %}{{ time }} ago{% endblocktrans %}</small>
+                            </div>
+                            <div class="text-end">
+                                <span
+                                    class="badge bg-{% if session.status == 'active' %}success{% elif session.status == 'completed' %}primary{% else %}secondary{% endif %}">
+                                    {{ session.get_status_display }}
+                                </span>
+                                {% if session.final_cost %}
+                                <div class="small text-success mt-1">{{ currency_symbol }}{{ session.final_cost }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-inbox display-4"></i>
+                    <p class="mt-2">{% trans "No recent sessions" %}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    {% trans "Recent Violations" %}
+                </h5>
+                <a href="{% url 'violation-list' %}" class="btn btn-sm btn-outline-primary">{% trans "View All" %}</a>
+            </div>
+            <div class="card-body">
+                {% if recent_violations %}
+                <div class="list-group list-group-flush">
+                    {% for violation in recent_violations %}
+                    <div class="list-group-item border-0 px-0">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ violation.vehicle.license_plate }}</h6>
+                                <p class="mb-1 text-muted">{{ violation.get_violation_type_display }}</p>
+                                <small class="text-muted">{% blocktrans with officer=violation.officer.full_name
+                                    time=violation.created_at|timesince %}By {{ officer }} • {{ time }} ago{%
+                                    endblocktrans %}</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold text-danger">{{ currency_symbol }}{{ violation.fine_amount }}</div>
+                                <span class="badge bg-{% if violation.is_paid %}success{% else %}danger{% endif %}">
+                                    {% if violation.is_paid %}{% trans "Paid" %}{% else %}{% trans "Unpaid" %}{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-shield-check display-4"></i>
+                    <p class="mt-2">{% trans "No recent violations" %}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Animate numbers on load
+    document.addEventListener('DOMContentLoaded', function () {
+        const numbers = document.querySelectorAll('.loading-number');
+        numbers.forEach(number => {
+            const target = parseInt(number.getAttribute('data-target'));
+            let current = 0;
+            const increment = target / 50;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                number.textContent = Math.floor(current);
+            }, 20);
+        });
+    });
+
+    // Revenue Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: {{ revenue_labels| safe }},
+        datasets: [{
+            label: '{% trans "Revenue" %} ({{ currency_symbol }})',
+            data: {{ revenue_data| safe }},
+        borderColor: '#ff6b35',
+        backgroundColor: 'rgba(255, 107, 53, 0.1)',
+        tension: 0.4,
+        fill: true
+            }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function (value) {
+                        return '{{ currency_symbol }}' + value;
+                    }
+                }
+            }
+        }
+    }
+    });
+
+    // Occupancy Chart
+    const occupancyCtx = document.getElementById('occupancyChart').getContext('2d');
+    new Chart(occupancyCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ occupancy_labels| safe }},
+        datasets: [{
+            data: {{ occupancy_data| safe }},
+        backgroundColor: [
+            '#28a745',
+            '#ffc107',
+            '#dc3545',
+            '#6c757d'
+        ]
+            }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+    });
+
+    // Auto-refresh dashboard every 30 seconds
+    setInterval(() => {
+        if (document.hasFocus()) {
+            location.reload();
+        }
+    }, 30000);
+</script>
+{% endblock %}

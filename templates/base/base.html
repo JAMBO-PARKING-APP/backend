@@ -1,0 +1,931 @@
+{% load static %}
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% trans "Smart Parking Admin" %}{% endblock %}</title>
+
+    <!-- Fonts: Public Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Mantis / Professional Palette */
+            --mantis-primary: #1890ff;
+            --mantis-primary-hover: #096dd9;
+            --mantis-secondary: #00a9d9;
+            --mantis-success: #52c41a;
+            --mantis-warning: #faad14;
+            --mantis-error: #ff4d4f;
+            --mantis-text-primary: #262626;
+            --mantis-text-secondary: #8c8c8c;
+            --mantis-bg-light: #f4f6f8;
+            /* Soft blue-grey background */
+            --mantis-sidebar-bg: #ffffff;
+            --mantis-border-color: #f0f0f0;
+
+            --sidebar-width: 280px;
+            --header-height: 70px;
+        }
+
+        body {
+            font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--mantis-bg-light);
+            color: var(--mantis-text-primary);
+            overflow-x: hidden;
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        /* =========================================
+           TOP LOADER & SKELETONS
+           ========================================= */
+        .top-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--mantis-primary), var(--mantis-secondary));
+            z-index: 9999;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .top-loader.loading {
+            animation: topLoading 2s ease-in-out infinite;
+        }
+
+        @keyframes topLoading {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            50% {
+                transform: translateX(0%);
+            }
+
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        /* Modern Skeleton Loader Class */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f2f5 25%, #e6e8eb 50%, #f0f2f5 75%);
+            background-size: 200% 100%;
+            animation: skeleton-shimmer 1.5s infinite;
+            border-radius: 4px;
+        }
+
+        @keyframes skeleton-shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        /* =========================================
+           SIDEBAR
+           ========================================= */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background: var(--mantis-sidebar-bg);
+            border-right: 1px solid var(--mantis-border-color);
+            z-index: 1000;
+            transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Collapsed Sidebar Styles */
+        body.sidebar-collapsed {
+            --sidebar-width: 80px;
+        }
+
+        body.sidebar-collapsed .nav-link span,
+        body.sidebar-collapsed .nav-section-title,
+        body.sidebar-collapsed .sidebar-footer span,
+        body.sidebar-collapsed .sidebar-brand h6,
+        body.sidebar-collapsed .sidebar-brand small {
+            display: none;
+        }
+
+        body.sidebar-collapsed .nav-link {
+            justify-content: center;
+            padding: 12px 0;
+        }
+
+        body.sidebar-collapsed .nav-link i {
+            margin-right: 0;
+            font-size: 1.25rem;
+        }
+
+        body.sidebar-collapsed .sidebar-brand {
+            justify-content: center;
+            padding: 0;
+        }
+
+        body.sidebar-collapsed .sidebar-content {
+            padding: 8px;
+        }
+
+        body.sidebar-collapsed .nav-section-title {
+            margin: 16px 0 4px 0;
+            text-align: center;
+        }
+        body.sidebar-collapsed .nav-section-title::after {
+            content: '...';
+            display: block;
+        }
+
+        body.sidebar-collapsed .sidebar-footer .btn {
+            padding: 8px;
+        }
+
+        .sidebar-brand {
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--mantis-border-color);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .sidebar-content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb {
+            background-color: #e6e6e6;
+            border-radius: 4px;
+        }
+
+        .nav-section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--mantis-text-secondary);
+            font-weight: 700;
+            margin: 24px 0 8px 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-item {
+            margin-bottom: 4px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 10px 16px;
+            color: #595959;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--mantis-primary);
+            background-color: rgba(24, 144, 255, 0.05);
+        }
+
+        .nav-link.active {
+            color: var(--mantis-primary);
+            background-color: rgba(24, 144, 255, 0.1);
+            font-weight: 600;
+        }
+
+        .nav-link i {
+            font-size: 1.1rem;
+            margin-right: 12px;
+            color: #8c8c8c;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover i,
+        .nav-link.active i {
+            color: var(--mantis-primary);
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid var(--mantis-border-color);
+            background-color: #fafafa;
+        }
+
+        /* =========================================
+           MAIN LAYOUT
+           ========================================= */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: margin-left 0.3s cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        /* HEADER */
+        .topbar {
+            height: var(--header-height);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--mantis-border-color);
+            padding: 0 24px;
+            position: sticky;
+            top: 0;
+            z-index: 990;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .hamburger {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: var(--mantis-text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .hamburger:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--mantis-text-primary);
+        }
+
+        .user-profile {
+            cursor: pointer;
+            padding: 4px 12px;
+            border-radius: 20px;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-profile:hover {
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+
+        .avatar-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--mantis-primary), var(--mantis-secondary));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* CONTENT WRAPPER */
+        .content-wrapper {
+            padding: 24px;
+            flex: 1;
+        }
+
+        /* =========================================
+           COMPONENTS
+           ========================================= */
+        /* Cards */
+        .card {
+            border: 1px solid var(--mantis-border-color);
+            border-radius: 12px;
+            background: #fff;
+            box-shadow: 0px 9px 24px rgba(0, 0, 0, 0.02), 0px 2px 2px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s ease;
+            margin-bottom: 24px;
+        }
+
+        .card:hover {
+            box-shadow: 0px 12px 32px rgba(24, 144, 255, 0.08);
+            transform: translateY(-2px);
+            border-color: rgba(24, 144, 255, 0.2);
+        }
+
+        .card-header {
+            background: transparent;
+            border-bottom: 1px solid var(--mantis-border-color);
+            padding: 20px 24px;
+            font-weight: 600;
+            color: var(--mantis-text-primary);
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        /* Buttons */
+        .btn {
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.015);
+        }
+
+        .btn-primary {
+            background-color: var(--mantis-primary);
+            border-color: var(--mantis-primary);
+        }
+
+        .btn-primary:hover,
+        .btn-primary:active,
+        .btn-primary:focus {
+            background-color: var(--mantis-primary-hover);
+            border-color: var(--mantis-primary-hover);
+            box-shadow: 0 4px 12px rgba(24, 144, 255, 0.2);
+        }
+
+        /* Tables */
+        .table-modern {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .table-modern thead th {
+            background-color: #fafafa;
+            color: var(--mantis-text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            padding: 16px;
+            border-bottom: 1px solid var(--mantis-border-color);
+        }
+
+        .table-modern tbody td {
+            padding: 16px;
+            border-bottom: 1px solid var(--mantis-border-color);
+            vertical-align: middle;
+            color: #262626 !important;
+        }
+
+        .table-modern tbody td * {
+            color: inherit;
+        }
+
+        .table-modern tbody td .text-muted {
+            color: #8c8c8c !important;
+        }
+
+        .table-modern tbody td .fw-medium {
+            color: #262626 !important;
+        }
+
+        .table-modern tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .table-modern tbody tr:hover td {
+            background-color: #fafafa;
+        }
+
+        /* Badges */
+        .badge {
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .bg-success-soft {
+            background-color: rgba(82, 196, 26, 0.1);
+            color: #52c41a;
+        }
+
+        .bg-warning-soft {
+            background-color: rgba(250, 173, 20, 0.1);
+            color: #faad14;
+        }
+
+        .bg-danger-soft {
+            background-color: rgba(255, 77, 79, 0.1);
+            color: #ff4d4f;
+        }
+
+        .bg-primary-soft {
+            background-color: rgba(24, 144, 255, 0.1);
+            color: #1890ff;
+        }
+
+        /* =========================================
+           MOBILE RESPONSIVENESS
+           ========================================= */
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .sidebar-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.4);
+                z-index: 998;
+                display: none;
+                backdrop-filter: blur(2px);
+            }
+
+            .sidebar-overlay.show {
+                display: block;
+            }
+        }
+
+        /* =========================================
+           CONFIRMATION MODAL & ALERTS
+           ========================================= */
+        /* Professional Modal Styling */
+        .modal-content {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--mantis-border-color);
+            padding: 20px 24px;
+        }
+
+        .modal-footer {
+            border-top: none;
+            padding: 16px 24px 24px;
+            background: #fafafa;
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 16px;
+        }
+
+        /* Animation for Modals */
+        .modal.fade .modal-dialog {
+            transform: scale(0.95);
+            transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        .modal.show .modal-dialog {
+            transform: scale(1);
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+    <!-- Top Loading Bar -->
+    <div class="top-loader" id="topLoader"></div>
+
+    <!-- Mobile Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="d-flex align-items-center gap-2">
+                <!-- Fallback Icon if Image Fails -->
+                <div class="d-flex align-items-center justify-content-center bg-primary-soft rounded p-1"
+                    style="width: 40px; height: 40px;">
+                    <img src="{% static 'JAMBO.png' %}" alt="Logo"
+                        style="width: 100%; height: auto; object-fit: contain;"
+                        onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <i class="bi bi-p-square-fill text-primary" style="font-size: 1.5rem; display: none;"></i>
+                </div>
+                <div>
+                    <h6 class="mb-0 fw-bold" style="letter-spacing: -0.5px;">{% trans "Smart Parking" %}</h6>
+                    <small class="text-muted" style="font-size: 0.7rem;">{% trans "Admin Console" %}</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar-content">
+            <div class="nav-section-title">{% trans "Main" %}</div>
+            <div class="nav-item">
+                <a href="{% url 'dashboard' %}"
+                    class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="bi bi-grid-1x2-fill"></i>
+                    <span>{% trans "Dashboard" %}</span>
+                </a>
+            </div>
+
+            <div class="nav-section-title">{% trans "Management" %}</div>
+            {% if user.role == 'admin' %}
+            <div class="nav-item">
+                <a href="{% url 'user-list' %}"
+                    class="nav-link {% if 'user' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-people"></i>
+                    <span>{% trans "Users" %}</span>
+                </a>
+            </div>
+            {% endif %}
+
+            <div class="nav-item">
+                <a href="{% url 'vehicle-list' %}"
+                    class="nav-link {% if 'vehicle' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-car-front"></i>
+                    <span>{% trans "Vehicles" %}</span>
+                </a>
+            </div>
+
+            <div class="nav-item">
+                <a href="{% url 'zone-list' %}"
+                    class="nav-link {% if 'zone' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-geo-alt"></i>
+                    <span>{% trans "Parking Zones" %}</span>
+                </a>
+            </div>
+
+            <div class="nav-item">
+                <a href="{% url 'zone-map' %}"
+                    class="nav-link {% if request.resolver_match.url_name == 'zone-map' %}active{% endif %}">
+                    <i class="bi bi-map"></i>
+                    <span>{% trans "Zone Map" %}</span>
+                </a>
+            </div>
+
+            <div class="nav-section-title">{% trans "Operations" %}</div>
+            <div class="nav-item">
+                <a href="{% url 'session-list' %}"
+                    class="nav-link {% if 'session' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-clock-history"></i>
+                    <span>{% trans "Sessions" %}</span>
+                </a>
+            </div>
+
+            <div class="nav-item">
+                <a href="{% url 'payment-list' %}"
+                    class="nav-link {% if 'payment' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-credit-card"></i>
+                    <span>{% trans "Payments" %}</span>
+                </a>
+            </div>
+
+            <div class="nav-item">
+                <a href="{% url 'violation-list' %}"
+                    class="nav-link {% if 'violation' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <span>{% trans "Violations" %}</span>
+                </a>
+            </div>
+
+            <div class="nav-section-title">{% trans "Tools" %}</div>
+            <div class="nav-item">
+                <a href="#" class="nav-link" onclick="showCheckPlateModal()">
+                    <i class="bi bi-search"></i>
+                    <span>{% trans "Check Plate" %}</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit"
+                    class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>{% trans "Logout" %}</span>
+                </button>
+            </form>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Sticky Header -->
+        <header class="topbar">
+            <div class="d-flex align-items-center gap-3">
+                <!-- Mobile Toggle -->
+                <button class="hamburger d-lg-none" onclick="toggleSidebar()">
+                    <i class="bi bi-list"></i>
+                </button>
+                <!-- Desktop Toggle -->
+                <button class="hamburger d-none d-lg-block" onclick="toggleDesktopSidebar()">
+                    <i class="bi bi-list"></i>
+                </button>
+                <h5 class="mb-0 fw-bold text-dark">{% block page_title %}{% trans "Dashboard" %}{% endblock %}</h5>
+            </div>
+
+            <div class="d-flex align-items-center gap-4">
+                <!-- Language Switcher -->
+                <form action="{% url 'set_language' %}" method="post" class="d-none d-sm-block">
+                    {% csrf_token %}
+                    <input name="next" type="hidden" value="{{ redirect_to }}">
+                    <select name="language" class="form-select form-select-sm border-0 bg-light fw-bold text-secondary"
+                        style="width: auto; cursor: pointer;" onchange="this.form.submit()">
+                        {% get_current_language as LANGUAGE_CODE %}
+                        {% get_available_languages as LANGUAGES %}
+                        {% get_language_info_list for LANGUAGES as languages %}
+                        {% for language in languages %}
+                        <option value="{{ language.code }}" {% if language.code == LANGUAGE_CODE %}selected{% endif %}>
+                            {{ language.name_local }} ({{ language.code }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
+
+                <!-- User Profile Dropdown / Area -->
+                <div class="dropdown">
+                    <div class="user-profile" data-bs-toggle="dropdown">
+                        <div class="text-end me-2 d-none d-md-block">
+                            <div class="fw-bold" style="font-size: 0.9rem;">{{ user.full_name }}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">{{ user.get_role_display }}</div>
+                        </div>
+                        <div class="avatar-circle">
+                            {{ user.first_name|first|default:"U" }}
+                        </div>
+                    </div>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2" style="border-radius: 12px;">
+                        <li>
+                            <h6 class="dropdown-header">{% trans "Account" %}</h6>
+                        </li>
+                        <li>
+                            <!-- Mobile Language Switcher inside dropdown -->
+                            <form action="{% url 'set_language' %}" method="post" class="px-3 py-2 d-block d-sm-none">
+                                {% csrf_token %}
+                                <label class="form-label small text-muted">{% trans "Language" %}</label>
+                                <select name="language" class="form-select form-select-sm"
+                                    onchange="this.form.submit()">
+                                    {% for language in languages %}
+                                    <option value="{{ language.code }}" {% if language.code == LANGUAGE_CODE %}selected{% endif %}>
+                                        {{ language.name_local }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        </li>
+                        <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>{% trans "Profile" %}</a>
+                        </li>
+                        <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>{% trans "Settings" %}</a>
+                        </li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li>
+                            <form method="post" action="{% url 'logout' %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item text-danger"><i
+                                        class="bi bi-box-arrow-right me-2"></i>{% trans "Logout" %}</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="content-wrapper">
+            <!-- Global Messages -->
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show border-0 shadow-sm" role="alert"
+                style="border-radius: 8px;">
+                <i
+                    class="bi bi-{% if message.tags == 'success' %}check-circle-fill{% elif message.tags == 'error' %}exclamation-circle-fill{% else %}info-circle-fill{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Check Plate Modal (Global) -->
+    <div class="modal fade" id="checkPlateModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">{% trans "Check Vehicle Plate" %}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="checkPlateForm" class="mb-4">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="licensePlate" placeholder="ABC-123" required
+                                style="text-transform: uppercase;">
+                            <label for="licensePlate">{% trans "License Plate Number" %}</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-2">
+                            <i class="bi bi-search me-2"></i>{% trans "Search Vehicle" %}
+                        </button>
+                    </form>
+                    <div id="plateResult"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Confirmation Modal -->
+    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content text-center overflow-hidden">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <div class="mx-auto d-flex align-items-center justify-content-center bg-warning-soft rounded-circle"
+                            style="width: 64px; height: 64px;">
+                            <i class="bi bi-exclamation-lg text-warning" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                    <h5 class="mb-2 fw-bold" id="confirmTitle">{% trans "Are you sure?" %}</h5>
+                    <p class="text-muted mb-4" id="confirmMessage" style="font-size: 0.9rem;">{% trans "This action
+                        cannot be undone." %}</p>
+
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button type="button" class="btn btn-light w-50" data-bs-dismiss="modal">{% trans "Cancel"
+                            %}</button>
+                        <button type="button" class="btn btn-primary w-50" id="confirmBtn">{% trans "Confirm"
+                            %}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <script>
+        // TOP LOADER functionality
+        const showLoader = () => document.getElementById('topLoader').classList.add('loading');
+        const hideLoader = () => document.getElementById('topLoader').classList.remove('loading');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Attach loader to forms and links
+            document.querySelectorAll('form').forEach(f => f.addEventListener('submit', showLoader));
+            document.querySelectorAll('a:not([href^="#"]):not([target="_blank"])').forEach(a => a.addEventListener('click', (e) => {
+                if (!e.ctrlKey && !e.shiftKey) showLoader();
+            }));
+        });
+        window.addEventListener('load', hideLoader);
+
+        // SIDEBAR TOGGLE
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            if (window.innerWidth <= 992) {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('show');
+            }
+        }
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 992) {
+                document.getElementById('sidebar').classList.remove('show');
+                document.getElementById('sidebarOverlay').classList.remove('show');
+            }
+        });
+
+        // DESKTOP SIDEBAR COLLAPSE
+        function toggleDesktopSidebar() {
+            document.body.classList.toggle('sidebar-collapsed');
+            const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+            localStorage.setItem('sidebarCollapsed', isCollapsed);
+        }
+
+        // Restore sidebar state
+        document.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('sidebarCollapsed') === 'true') {
+                document.body.classList.add('sidebar-collapsed');
+            }
+        });
+
+        // CHECK PLATE MODAL
+        function showCheckPlateModal() {
+            new bootstrap.Modal(document.getElementById('checkPlateModal')).show();
+        }
+
+        document.getElementById('checkPlateForm')?.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const btn = this.querySelector('button[type="submit"]');
+            const input = document.getElementById('licensePlate');
+            const resultDiv = document.getElementById('plateResult');
+            const plate = input.value.trim();
+
+            if (!plate) return;
+
+            // Loading state
+            const originalBtnContent = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>{% trans "Searching..." %}';
+            btn.disabled = true;
+
+            fetch(`{% url 'check-plate-ajax' %}?plate=${encodeURIComponent(plate)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) {
+                        resultDiv.innerHTML = `<div class="alert alert-warning mt-3 mb-0">${data.error}</div>`;
+                    } else {
+                        // Render Success Result
+                        resultDiv.innerHTML = `
+                            <div class="card mt-3 mb-0 border bg-light">
+                                <div class="card-body p-3">
+                                    <h6 class="fw-bold mb-1">${data.vehicle.license_plate}</h6>
+                                    <small class="text-muted d-block mb-2">${data.vehicle.make} ${data.vehicle.model}</small>
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <span class="badge ${data.violations_count > 0 ? 'bg-danger' : 'bg-success'}">
+                                            ${data.violations_count} {% trans "Violations" %}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>`;
+                    }
+                })
+                .catch(() => {
+                    resultDiv.innerHTML = `<div class="alert alert-danger mt-3 mb-0">{% trans "Network Error" %}</div>`;
+                })
+                .finally(() => {
+                    btn.innerHTML = originalBtnContent;
+                    btn.disabled = false;
+                });
+        });
+
+        // CONFIRMATION MODAL HELPER
+        /**
+         * specialized Confirmation Modal
+         * @param {string} title - Title of the modal
+         * @param {string} message - Description message
+         * @param {function} onConfirm - Callback function when confirmed
+         * @param {string} confirmText - Text for confirm button (default 'Confirm')
+         * @param {string} type - 'primary', 'danger', 'warning' (default 'primary')
+         */
+        window.showConfirmation = function (title, message, onConfirm, confirmText = '{% trans "Confirm" %}', type = 'primary') {
+            const modalEl = document.getElementById('confirmationModal');
+            const titleEl = document.getElementById('confirmTitle');
+            const msgEl = document.getElementById('confirmMessage');
+            const confirmBtn = document.getElementById('confirmBtn');
+            const iconContainer = modalEl.querySelector('.rounded-circle');
+            const icon = modalEl.querySelector('i');
+
+            // Set Content
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+            confirmBtn.textContent = confirmText;
+
+            // Reset Classes
+            confirmBtn.className = `btn w-50 btn-${type}`;
+            iconContainer.className = `mx-auto d-flex align-items-center justify-content-center rounded-circle bg-${type}-soft`;
+            icon.className = `bi bi-${type === 'danger' ? 'trash' : 'exclamation-lg'} text-${type}`;
+
+            // Handle Click
+            const modal = new bootstrap.Modal(modalEl);
+
+            // Remove previous event listeners
+            const newBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
+
+            newBtn.addEventListener('click', () => {
+                modal.hide();
+                if (onConfirm) onConfirm();
+            });
+
+            modal.show();
+        };
+
+        // Auto hide alerts
+        setTimeout(() => {
+            document.querySelectorAll('.alert-dismissible').forEach(alert => {
+                bootstrap.Alert.getOrCreateInstance(alert).close();
+            });
+        }, 5000);
+
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>
