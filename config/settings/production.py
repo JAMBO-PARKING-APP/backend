@@ -2,7 +2,7 @@ from .base import *
 
 DEBUG = False
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='backend-zvwt.onrender.com', cast=lambda v: [s.strip() for s in v.split(',')])
 
 # Security settings
 SECURE_SSL_REDIRECT = True
