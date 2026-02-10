@@ -42,9 +42,15 @@ class RegisterAPIView(APIView):
                 code=otp_code,
                 expires_at=timezone.now() + timedelta(minutes=10)
             )
-            
-            # TODO: Send SMS with OTP
-            print(f"DEBUG: OTP for {user.phone}: {otp_code}")
+
+            # Send SMS with OTP via Twilio Verify if available
+            try:
+                from apps.notifications.twilio_service import send_verification
+                # Use Verify service to send SMS (the actual code is stored in OTPCode for server-side verification)
+                send_verification(to_phone=str(user.phone), channel='sms')
+            except Exception:
+                # Fallback to debug print; do not fail registration if SMS sending is not configured
+                print(f"DEBUG: OTP for {user.phone}: {otp_code}")
             
             return Response({
                 'message': 'Registration successful. OTP sent to your phone.',
@@ -96,8 +102,10 @@ class VerifyOTPAPIView(APIView):
             user.device_session_id = timezone.now().timestamp()
             user.save(update_fields=['device_session_id'])
             
-            # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
+            # Include device_session_id in token so authentication can enforce single-device
+            refresh['device_session_id'] = str(user.device_session_id)
+            refresh.access_token['device_session_id'] = str(user.device_session_id)
             
             return Response({
                 'access': str(refresh.access_token),
@@ -133,8 +141,9 @@ class LoginAPIView(APIView):
             # Single Device Login: Invalidate all previous tokens by updating device session ID
             user.device_session_id = timezone.now().timestamp()
             user.save(update_fields=['device_session_id'])
-            
             refresh = RefreshToken.for_user(user)
+            refresh['device_session_id'] = str(user.device_session_id)
+            refresh.access_token['device_session_id'] = str(user.device_session_id)
             
             return Response({
                 'access': str(refresh.access_token),
@@ -257,9 +266,13 @@ class ResendOTPAPIView(APIView):
                 code=otp_code,
                 expires_at=timezone.now() + timedelta(minutes=10)
             )
-            
-            # TODO: Send SMS with OTP
-            print(f"DEBUG: OTP for {user.phone}: {otp_code}")
+
+            # Send SMS with OTP via Twilio Verify if available
+            try:
+                from apps.notifications.twilio_service import send_verification
+                send_verification(to_phone=str(user.phone), channel='sms')
+            except Exception:
+                print(f"DEBUG: OTP for {user.phone}: {otp_code}")
             
             return Response({
                 'message': 'OTP resent successfully',

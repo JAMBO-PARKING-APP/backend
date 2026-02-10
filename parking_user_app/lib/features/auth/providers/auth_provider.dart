@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:parking_user_app/features/auth/models/user_model.dart';
 import 'package:parking_user_app/features/auth/services/auth_service.dart';
+import 'package:parking_user_app/core/storage_manager.dart';
+import 'dart:convert';
 
 enum AuthStatus { authenticated, unauthenticated, authenticating, initial }
 
@@ -14,16 +16,40 @@ class AuthProvider with ChangeNotifier {
   AuthStatus get status => _status;
   String? get errorMessage => _errorMessage;
 
+  bool _hasRequestedPermissions = false;
+  bool get hasRequestedPermissions => _hasRequestedPermissions;
+
   Future<void> checkAuth() async {
     _status = AuthStatus.authenticating;
     notifyListeners();
+
+    final storage = StorageManager();
+    _hasRequestedPermissions = await storage.hasRequestedPermissions();
+
+    if (!_hasRequestedPermissions) {
+      _status = AuthStatus.unauthenticated; // logic in specific screen
+      notifyListeners();
+      return;
+    }
 
     final user = await _authService.getProfile();
     if (user != null) {
       _user = user;
       _status = AuthStatus.authenticated;
     } else {
-      _status = AuthStatus.unauthenticated;
+      // Fallback: if tokens exist locally, consider user authenticated offline
+      final token = await storage.getAccessToken();
+      final userJson = await storage.getUserJson();
+      if (token != null && userJson != null) {
+        try {
+          _user = User.fromJson(json.decode(userJson));
+          _status = AuthStatus.authenticated;
+        } catch (_) {
+          _status = AuthStatus.unauthenticated;
+        }
+      } else {
+        _status = AuthStatus.unauthenticated;
+      }
     }
     notifyListeners();
   }

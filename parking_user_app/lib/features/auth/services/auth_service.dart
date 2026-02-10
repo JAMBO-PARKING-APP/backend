@@ -2,6 +2,7 @@ import 'package:parking_user_app/core/api_client.dart';
 import 'package:dio/dio.dart';
 import 'package:parking_user_app/features/auth/models/user_model.dart';
 import 'package:parking_user_app/core/storage_manager.dart';
+import 'dart:convert';
 
 class AuthService {
   final ApiClient _apiClient = ApiClient();
@@ -23,10 +24,48 @@ class AuthService {
         final userData = response.data['user'];
 
         await _storageManager.saveTokens(access, refresh);
+        // decode token payload to extract device_session_id if present
+        try {
+          final parts = access.split('.');
+          if (parts.length == 3) {
+            final payload = base64Url.normalize(parts[1]);
+            final decoded = utf8.decode(base64Url.decode(payload));
+            final map = json.decode(decoded);
+            if (map['device_session_id'] != null) {
+              await _storageManager.saveDeviceSession(
+                map['device_session_id'].toString(),
+              );
+            }
+          }
+        } catch (_) {}
+
+        // persist user JSON for offline session
+        try {
+          await _storageManager.saveUserJson(json.encode(userData));
+        } catch (_) {}
+
         return {'success': true, 'user': User.fromJson(userData)};
       }
     } catch (e) {
-      return {'success': false, 'message': 'Login failed'};
+      String message = 'Login failed';
+      if (e is DioException) {
+        if (e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout ||
+            e.type == DioExceptionType.sendTimeout ||
+            e.type == DioExceptionType.connectionError) {
+          message = 'No internet connection. Please check your network.';
+        } else if (e.response?.statusCode == 400 ||
+            e.response?.statusCode == 401) {
+          message = 'Invalid phone number or password';
+          if (e.response?.data is Map && e.response?.data['error'] != null) {
+            message = e.response?.data['error'];
+          }
+        } else if (e.response?.data is Map &&
+            e.response?.data['detail'] != null) {
+          message = e.response?.data['detail'];
+        }
+      }
+      return {'success': false, 'message': message};
     }
     return {'success': false, 'message': 'Unknown error'};
   }
@@ -80,9 +119,38 @@ class AuthService {
         final userData = response.data['user'];
 
         await _storageManager.saveTokens(access, refresh);
+        try {
+          final parts = access.split('.');
+          if (parts.length == 3) {
+            final payload = base64Url.normalize(parts[1]);
+            final decoded = utf8.decode(base64Url.decode(payload));
+            final map = json.decode(decoded);
+            if (map['device_session_id'] != null) {
+              await _storageManager.saveDeviceSession(
+                map['device_session_id'].toString(),
+              );
+            }
+          }
+        } catch (_) {}
+
+        try {
+          await _storageManager.saveUserJson(json.encode(userData));
+        } catch (_) {}
+
         return {'success': true, 'user': User.fromJson(userData)};
       }
     } catch (e) {
+      if (e is DioException) {
+        if (e.type == DioExceptionType.connectionError) {
+          return {'success': false, 'message': 'No internet connection'};
+        }
+        if (e.response?.data != null) {
+          final data = e.response!.data;
+          if (data is Map && data.values.isNotEmpty) {
+            return {'success': false, 'message': data.values.first.toString()};
+          }
+        }
+      }
       return {'success': false, 'message': 'Verification failed'};
     }
     return {'success': false, 'message': 'Verification failed'};

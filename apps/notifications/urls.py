@@ -15,6 +15,9 @@ urlpatterns = [
     
     # User preferences endpoints
     path('preferences/', api_views.UserPreferencesAPIView.as_view(), name='user-preferences'),
+    # OTP endpoints
+    path('otp/send/', api_views.SendOTPAPIView.as_view(), name='otp-send'),
+    path('otp/verify/', api_views.VerifyOTPAPIView.as_view(), name='otp-verify'),
     
     # Admin endpoints
     path('create/<int:user_id>/', api_views.CreateNotificationAPIView.as_view(), name='create-notification'),

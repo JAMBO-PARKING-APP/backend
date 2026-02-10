@@ -204,3 +204,41 @@ class BulkCreateNotificationsAPIView(APIView):
             'created_count': created_count,
             'message': f'Created {created_count} notifications'
         })
+
+
+class SendOTPAPIView(APIView):
+    """Send an OTP SMS using Twilio Verify"""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        phone = request.data.get('phone')
+        channel = request.data.get('channel', 'sms')
+        if not phone:
+            return Response({'error': 'phone is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            from apps.notifications.twilio_service import send_verification
+            verification = send_verification(to_phone=phone, channel=channel)
+        except Exception as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({'sid': getattr(verification, 'sid', None), 'status': getattr(verification, 'status', None)})
+
+
+class VerifyOTPAPIView(APIView):
+    """Check an OTP code sent via Twilio Verify"""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        phone = request.data.get('phone')
+        code = request.data.get('code')
+        if not phone or not code:
+            return Response({'error': 'phone and code are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            from apps.notifications.twilio_service import check_verification
+            result = check_verification(to_phone=phone, code=code)
+        except Exception as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({'status': getattr(result, 'status', None)})

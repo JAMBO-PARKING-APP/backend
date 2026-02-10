@@ -11,8 +11,10 @@ import 'package:parking_user_app/features/parking/providers/reservation_provider
 import 'package:parking_user_app/features/auth/screens/login_screen.dart';
 import 'package:parking_user_app/features/home/screens/home_screen.dart';
 import 'package:parking_user_app/features/notifications/providers/notification_provider.dart';
+import 'package:parking_user_app/features/auth/screens/permissions_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
     MultiProvider(
       providers: [
@@ -47,6 +49,9 @@ class MyApp extends StatelessWidget {
             case AuthStatus.authenticated:
               return const HomeScreen();
             case AuthStatus.unauthenticated:
+              if (!auth.hasRequestedPermissions) {
+                return const PermissionsScreen();
+              }
               return const LoginScreen();
             default:
               return const Scaffold(
