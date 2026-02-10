@@ -37,7 +37,7 @@ class _ViolationsScreenState extends State<ViolationsScreen> {
             children: [
               if (provider.unpaidCount > 0)
                 Container(
-                  color: Colors.red.withOpacity(0.1),
+                  color: Colors.red.withValues(alpha: 0.1),
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [

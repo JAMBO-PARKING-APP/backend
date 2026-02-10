@@ -2,7 +2,7 @@
 Serializers for Notifications App
 """
 from rest_framework import serializers
-from .models import NotificationEvent, UserPreferences
+from .models import NotificationEvent, UserPreferences, ChatConversation, ChatMessage
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -94,3 +94,78 @@ class CreateNotificationSerializer(serializers.ModelSerializer):
 class MarkNotificationAsReadSerializer(serializers.Serializer):
     """Serializer for marking notifications as read"""
     is_read = serializers.BooleanField(default=True)
+
+
+class ChatMessageSerializer(serializers.ModelSerializer):
+    """Serialize individual chat messages"""
+    sender_name = serializers.SerializerMethodField()
+    sender_phone = serializers.CharField(source='sender.phone', read_only=True)
+    
+    class Meta:
+        model = ChatMessage
+        fields = [
+            'id', 'conversation', 'sender', 'sender_name', 'sender_phone',
+            'message_type', 'content', 'attachment', 'is_read', 'read_at',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'sender', 'is_read', 'read_at', 'created_at', 'updated_at']
+    
+    def get_sender_name(self, obj):
+        return obj.sender.full_name
+
+
+class ChatConversationSerializer(serializers.ModelSerializer):
+    """Serialize chat conversations"""
+    user_name = serializers.CharField(source='user.full_name', read_only=True)
+    user_phone = serializers.CharField(source='user.phone', read_only=True)
+    agent_name = serializers.SerializerMethodField()
+    agent_phone = serializers.SerializerMethodField()
+    unread_count = serializers.SerializerMethodField()
+    last_message = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ChatConversation
+        fields = [
+            'id', 'user', 'user_name', 'user_phone',
+            'subject', 'status', 'priority', 'category',
+            'assigned_agent', 'agent_name', 'agent_phone',
+            'unread_count', 'last_message',
+            'created_at', 'resolved_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+    
+    def get_agent_name(self, obj):
+        if obj.assigned_agent:
+            return obj.assigned_agent.full_name
+        return None
+    
+    def get_agent_phone(self, obj):
+        if obj.assigned_agent:
+            return obj.assigned_agent.phone
+        return None
+    
+    def get_unread_count(self, obj):
+        return obj.messages.filter(is_read=False).count()
+    
+    def get_last_message(self, obj):
+        last_msg = obj.messages.last()
+        if last_msg:
+            return ChatMessageSerializer(last_msg).data
+        return None
+
+
+class CreateChatConversationSerializer(serializers.ModelSerializer):
+    """Serializer for creating chat conversations"""
+    
+    class Meta:
+        model = ChatConversation
+        fields = ['subject', 'priority', 'category']
+
+
+class SendChatMessageSerializer(serializers.ModelSerializer):
+    """Serializer for sending chat messages"""
+    
+    class Meta:
+        model = ChatMessage
+        fields = ['message_type', 'content', 'attachment']
+

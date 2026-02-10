@@ -135,4 +135,16 @@ class AuthProvider with ChangeNotifier {
     }
     return success;
   }
+
+  Future<bool> deleteAccount() async {
+    final success = await _authService.deleteAccount();
+    if (success) {
+      final storage = StorageManager();
+      await storage.clearAuthData();
+      _user = null;
+      _status = AuthStatus.unauthenticated;
+      notifyListeners();
+    }
+    return success;
+  }
 }

@@ -314,3 +314,17 @@ class ChangePasswordAPIView(APIView):
         return Response({
             'message': 'Password changed successfully'
         }, status=status.HTTP_200_OK)
+
+class DeleteAccountAPIView(APIView):
+    """Soft delete user account"""
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request):
+        user = request.user
+        # Soft delete: set is_active to False
+        user.is_active = False
+        user.save()
+        
+        return Response({
+            'message': 'Account deleted successfully'
+        }, status=status.HTTP_204_NO_CONTENT)

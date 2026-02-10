@@ -76,7 +76,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     side: BorderSide(
                       color: note.isRead
                           ? Colors.grey.shade100
-                          : Theme.of(context).primaryColor.withOpacity(0.2),
+                          : Theme.of(
+                              context,
+                            ).primaryColor.withValues(alpha: 0.2),
                     ),
                   ),
                   child: ListTile(

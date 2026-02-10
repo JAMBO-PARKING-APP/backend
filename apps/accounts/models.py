@@ -24,6 +24,13 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     USERNAME_FIELD = 'phone'
     REQUIRED_FIELDS = ['first_name', 'last_name']
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['is_active']),
+            models.Index(fields=['phone']),
+            models.Index(fields=['device_session_id']),
+        ]
+
     def __str__(self):
         return str(self.phone)
 
@@ -47,6 +54,11 @@ class OTPCode(BaseModel):
     code = models.CharField(max_length=6)
     is_used = models.BooleanField(default=False)
     expires_at = models.DateTimeField()
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['user_id', 'is_used', 'expires_at']),
+        ]
 
     def __str__(self):
         return f"{self.user.phone} - {self.code}"

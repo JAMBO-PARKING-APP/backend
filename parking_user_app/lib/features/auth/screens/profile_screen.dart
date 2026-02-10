@@ -9,6 +9,7 @@ import 'package:parking_user_app/features/payments/screens/wallet_screen.dart';
 import 'package:parking_user_app/features/parking/screens/reservation_list_screen.dart';
 import 'package:parking_user_app/features/notifications/screens/notification_screen.dart';
 import 'package:parking_user_app/features/home/screens/about_screen.dart';
+import 'package:parking_user_app/features/auth/screens/help_center_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -54,6 +55,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Account'),
+        content: const Text(
+          'Are you sure you want to delete your account? This action cannot be undone immediately, but your data will be kept for 30 days before permanent deletion.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final success = await context.read<AuthProvider>().deleteAccount();
+      if (!success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to delete account. Please try again.'),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
@@ -74,7 +109,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.all(20),
               margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -218,7 +253,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _ProfileOption(
                   icon: Icons.help_outline,
                   title: 'Help Center',
-                  onTap: () {},
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const HelpCenterScreen(),
+                    ),
+                  ),
                 ),
                 _ProfileOption(
                   icon: Icons.location_on_outlined,
@@ -259,6 +299,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   'LOGOUT',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Delete Account Button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextButton(
+                onPressed: () => _confirmDeleteAccount(context),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.grey,
+                  minimumSize: const Size(double.infinity, 48),
+                ),
+                child: const Text('Delete Account'),
               ),
             ),
             const SizedBox(height: 40),

@@ -161,6 +161,24 @@ CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
         'LOCATION': REDIS_URL,
+        'KEY_PREFIX': 'jambo_park',
+        'TIMEOUT': 300,  # 5 minutes default
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_KWARGS': {'max_connections': 50},
+        }
+    },
+    'zones_cache': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': REDIS_URL,
+        'KEY_PREFIX': 'zones',
+        'TIMEOUT': 1800,  # 30 minutes for zones (rarely change)
+    },
+    'help_cache': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': REDIS_URL,
+        'KEY_PREFIX': 'help',
+        'TIMEOUT': 86400,  # 24 hours for help center
     }
 }
 

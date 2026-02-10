@@ -18,8 +18,8 @@ class AppTheme {
       secondary: accentColor,
       error: errorColor,
       surface: Colors.white,
-      background: backgroundColor,
     ),
+    scaffoldBackgroundColor: backgroundColor,
     textTheme: GoogleFonts.outfitTextTheme(),
     appBarTheme: const AppBarTheme(
       centerTitle: true,
@@ -55,9 +55,9 @@ class AppTheme {
       secondary: accentColor,
       error: errorColor,
       brightness: Brightness.dark,
-      surface: const Color(0xFF2D2F31),
-      background: darkBackgroundColor,
+      surface: const Color(0xFF121212),
     ),
+    scaffoldBackgroundColor: darkBackgroundColor,
     textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
     appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
     elevatedButtonTheme: ElevatedButtonThemeData(

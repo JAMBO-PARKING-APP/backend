@@ -34,6 +34,12 @@ class Transaction(BaseModel):
     # Idempotency
     idempotency_key = models.CharField(max_length=100, unique=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['user_id', 'status', 'created_at']),
+            models.Index(fields=['status', 'created_at']),
+        ]
+
     def __str__(self):
         return f"{self.user.phone} - {self.amount} ({self.status})"
 
@@ -72,6 +78,12 @@ class WalletTransaction(BaseModel):
     # Optional references
     related_transaction = models.ForeignKey(Transaction, on_delete=models.SET_NULL, null=True, blank=True)
     parking_session = models.ForeignKey('parking.ParkingSession', on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['user_id', 'transaction_type', 'created_at']),
+            models.Index(fields=['status', 'created_at']),
+        ]
     
     def __str__(self):
         return f"{self.user.phone} - {self.transaction_type} - {self.amount}"

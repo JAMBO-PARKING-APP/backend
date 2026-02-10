@@ -14,7 +14,7 @@ class ZoneService {
         return data.map((json) => Zone.fromJson(json)).toList();
       }
     } catch (e) {
-      print('DEBUG: getZones error: $e');
+      // print('DEBUG: getZones error: $e');
       return [];
     }
     return [];

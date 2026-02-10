@@ -104,8 +104,8 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
                             ),
                             decoration: BoxDecoration(
                               color: isActive
-                                  ? Colors.green.withOpacity(0.1)
-                                  : Colors.grey.withOpacity(0.1),
+                                  ? Colors.green.withValues(alpha: 0.1)
+                                  : Colors.grey.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(

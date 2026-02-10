@@ -9,6 +9,7 @@ from apps.parking import api_views_v2 as parking_views
 from apps.enforcement import api_views_v2 as enforcement_views
 from apps.payments import api_views_v2 as payments_views
 from apps.notifications import api_views as notifications_views
+from apps.common import api_views_help
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
@@ -19,6 +20,7 @@ urlpatterns = [
     path('auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/resend-otp/', accounts_views.ResendOTPAPIView.as_view(), name='resend-otp'),
     path('auth/change-password/', accounts_views.ChangePasswordAPIView.as_view(), name='change-password'),
+    path('auth/delete-account/', accounts_views.DeleteAccountAPIView.as_view(), name='delete-account'),
     
     # ========== USER PROFILE ==========
     path('profile/', accounts_views.ProfileAPIView.as_view(), name='profile'),
@@ -76,4 +78,8 @@ urlpatterns = [
     
     # ========== USER PREFERENCES ==========
     path('preferences/', notifications_views.UserPreferencesAPIView.as_view(), name='user-preferences'),
+    
+    # ========== HELP CENTER ==========
+    path('help/', api_views_help.HelpCenterListAPIView.as_view(), name='help-list'),
+    path('help/<int:item_id>/', api_views_help.HelpCenterDetailAPIView.as_view(), name='help-detail'),
 ]

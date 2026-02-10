@@ -15,14 +15,22 @@ class ActiveSessionScreen extends StatefulWidget {
 class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
   late Timer _timer;
   Duration _remaining = Duration.zero;
+  Duration _totalDuration = Duration.zero;
 
   @override
   void initState() {
     super.initState();
+    _calculateTotalDuration();
     _calculateRemaining();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _calculateRemaining();
     });
+  }
+
+  void _calculateTotalDuration() {
+    _totalDuration = widget.session.endTime!.difference(
+      widget.session.startTime,
+    );
   }
 
   void _calculateRemaining() {
@@ -73,6 +81,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
         widget.session.id,
       );
       if (success && mounted) {
+        if (!mounted) return;
         Navigator.pop(context);
         ScaffoldMessenger.of(
           context,
@@ -183,9 +192,9 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                     width: 240,
                     height: 240,
                     child: CircularProgressIndicator(
-                      value:
-                          _remaining.inSeconds /
-                          3600, // Just a visual, need total duration for real value
+                      value: _totalDuration.inSeconds > 0
+                          ? _remaining.inSeconds / _totalDuration.inSeconds
+                          : 0.0,
                       strokeWidth: 12,
                       backgroundColor: Colors.grey.shade200,
                     ),

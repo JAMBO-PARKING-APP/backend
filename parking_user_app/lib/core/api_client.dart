@@ -23,12 +23,18 @@ class ApiClient {
             final token = await _storageManager.getAccessToken();
             if (token != null) {
               options.headers['Authorization'] = 'Bearer $token';
+              print('[ApiClient] Added auth token for ${options.path}');
+            } else {
+              print('[ApiClient] ⚠️ No token found for ${options.path} - user may not be authenticated');
             }
+          } else {
+            print('[ApiClient] Skipping token for auth endpoint: ${options.path}');
           }
           return handler.next(options);
         },
         onError: (DioException e, handler) async {
           if (e.response?.statusCode == 401) {
+            print('[ApiClient] 401 Unauthorized for ${e.requestOptions.path}');
             // TODO: Implement Token Refresh Logic
           }
           return handler.next(e);
@@ -54,5 +60,9 @@ class ApiClient {
 
   Future<Response> put(String path, {dynamic data}) async {
     return await dio.put(path, data: data);
+  }
+
+  Future<Response> delete(String path, {dynamic data}) async {
+    return await dio.delete(path, data: data);
   }
 }

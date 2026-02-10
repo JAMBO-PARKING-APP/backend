@@ -102,9 +102,74 @@ class UserPreferences(BaseModel):
     
     def __str__(self):
         return f"Preferences for {self.user.phone}"
-    # Optional references
-    parking_session = models.ForeignKey('parking.ParkingSession', on_delete=models.CASCADE, null=True, blank=True)
-    transaction = models.ForeignKey('payments.Transaction', on_delete=models.CASCADE, null=True, blank=True)
 
+
+class ChatConversation(BaseModel):
+    """Live chat conversation between user and support agent"""
+    STATUS_CHOICES = [
+        ('open', 'Open'),
+        ('in_progress', 'In Progress'),
+        ('resolved', 'Resolved'),
+        ('closed', 'Closed'),
+    ]
+    
+    user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='chat_conversations')
+    subject = models.CharField(max_length=200)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+    assigned_agent = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, 
+                                       related_name='assigned_conversations', limit_choices_to={'role': 'support_agent'})
+    priority = models.CharField(max_length=10, choices=[
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ], default='medium')
+    category = models.CharField(max_length=50, choices=[
+        ('parking', 'Parking'),
+        ('payment', 'Payment'),
+        ('violation', 'Violation'),
+        ('subscription', 'Subscription'),
+        ('account', 'Account'),
+        ('technical', 'Technical'),
+        ('other', 'Other'),
+    ], default='other')
+    
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user_id', 'status']),
+            models.Index(fields=['status', 'created_at']),
+        ]
+    
     def __str__(self):
-        return f"{self.user.phone} - {self.title}"
+        return f"Chat #{self.id} - {self.user.phone}"
+
+
+class ChatMessage(BaseModel):
+    """Individual chat messages in a conversation"""
+    MESSAGE_TYPES = [
+        ('text', 'Text'),
+        ('image', 'Image'),
+        ('file', 'File'),
+        ('system', 'System'),
+    ]
+    
+    conversation = models.ForeignKey(ChatConversation, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='sent_messages')
+    message_type = models.CharField(max_length=20, choices=MESSAGE_TYPES, default='text')
+    content = models.TextField()
+    attachment = models.FileField(upload_to='chat_attachments/', null=True, blank=True)
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['created_at']
+        indexes = [
+            models.Index(fields=['conversation_id', 'created_at']),
+            models.Index(fields=['is_read', 'sender_id']),
+        ]
+    
+    def __str__(self):
+        return f"Message in conversation {self.conversation.id}"

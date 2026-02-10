@@ -45,8 +45,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
               return ListTile(
                 leading: CircleAvatar(
                   backgroundColor: isCredit
-                      ? Colors.green.withOpacity(0.1)
-                      : Colors.red.withOpacity(0.1),
+                      ? Colors.green.withValues(alpha: 0.1)
+                      : Colors.red.withValues(alpha: 0.1),
                   child: Icon(
                     isCredit ? Icons.add : Icons.remove,
                     color: isCredit ? Colors.green : Colors.red,

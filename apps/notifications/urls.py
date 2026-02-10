@@ -1,17 +1,26 @@
 """
 URL Configuration for Notifications API
 """
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from apps.notifications import api_views
+from apps.notifications import chat_views
 
 app_name = 'notifications'
 
+# Create router for chat viewset
+router = DefaultRouter()
+router.register(r'chat/conversations', chat_views.ChatConversationViewSet, basename='chat-conversation')
+
 urlpatterns = [
+    # Chat endpoints
+    path('', include(router.urls)),
+    
     # Notification endpoints
-    path('', api_views.NotificationListAPIView.as_view(), name='notification-list'),
-    path('<int:pk>/', api_views.NotificationDetailAPIView.as_view(), name='notification-detail'),
-    path('summary/', api_views.NotificationSummaryAPIView.as_view(), name='notification-summary'),
-    path('mark-all-as-read/', api_views.MarkAllNotificationsAsReadAPIView.as_view(), name='mark-all-as-read'),
+    path('notifications/', api_views.NotificationListAPIView.as_view(), name='notification-list'),
+    path('notifications/<int:pk>/', api_views.NotificationDetailAPIView.as_view(), name='notification-detail'),
+    path('notifications/summary/', api_views.NotificationSummaryAPIView.as_view(), name='notification-summary'),
+    path('notifications/mark-all-as-read/', api_views.MarkAllNotificationsAsReadAPIView.as_view(), name='mark-all-as-read'),
     
     # User preferences endpoints
     path('preferences/', api_views.UserPreferencesAPIView.as_view(), name='user-preferences'),

@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('notifications', '0002_alter_notificationevent_options_and_more'),
+        ('notifications', '0003_chat_models'),
     ]
 
     operations = [

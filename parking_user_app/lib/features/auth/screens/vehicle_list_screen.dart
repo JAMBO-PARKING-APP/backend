@@ -67,6 +67,7 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
                 color: colorController.text,
               );
               if (mounted) {
+                if (!mounted) return;
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

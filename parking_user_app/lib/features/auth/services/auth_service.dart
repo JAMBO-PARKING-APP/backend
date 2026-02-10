@@ -200,4 +200,17 @@ class AuthService {
       return false;
     }
   }
+
+  Future<bool> deleteAccount() async {
+    try {
+      final response = await _apiClient.delete('auth/delete-account/');
+      if (response.statusCode == 204) {
+        await _storageManager.clearAuthData();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
 }

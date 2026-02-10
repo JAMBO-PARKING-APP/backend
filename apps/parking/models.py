@@ -141,6 +141,11 @@ class ParkingSession(BaseModel):
                 name='one_active_session_per_vehicle'
             )
         ]
+        indexes = [
+            models.Index(fields=['vehicle_id', 'status']),
+            models.Index(fields=['status', 'start_time']),
+            models.Index(fields=['zone_id', 'status']),
+        ]
 
     def __str__(self):
         return f"{self.vehicle.license_plate} - {self.zone.name}"
