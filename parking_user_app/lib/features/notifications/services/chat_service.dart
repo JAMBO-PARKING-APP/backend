@@ -1,10 +1,36 @@
-import 'package:dio/dio.dart';
-import '../../../core/constants.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:async';
+import '../../../core/api_client.dart';
 
 class ChatService {
-  final Dio _dio;
+  final ApiClient _apiClient;
+  Timer? _pollTimer;
+  static const int pollIntervalSeconds =
+      3; // Poll every 3 seconds for real-time updates
 
-  ChatService({Dio? dio}) : _dio = dio ?? Dio();
+  ChatService({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
+
+  /// Start polling for new messages (real-time simulation)
+  void startPolling(
+    int conversationId,
+    Function(Map<String, dynamic>) onUpdate,
+  ) {
+    stopPolling();
+    _pollTimer = Timer.periodic(Duration(seconds: pollIntervalSeconds), (
+      _,
+    ) async {
+      final result = await getMessages(conversationId: conversationId);
+      if (result['success']) {
+        onUpdate(result['data']);
+      }
+    });
+  }
+
+  /// Stop polling
+  void stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+  }
 
   /// Get all chat conversations for the user
   Future<Map<String, dynamic>> getConversations({
@@ -12,20 +38,15 @@ class ChatService {
     String? status,
   }) async {
     try {
-      String url = '${AppConstants.baseUrl}chat/conversations/';
       Map<String, dynamic> queryParams = {'page': page};
 
       if (status != null) {
         queryParams['status'] = status;
       }
 
-      final response = await _dio.get(
-        url,
+      final response = await _apiClient.get(
+        'chat/conversations/',
         queryParameters: queryParams,
-        options: Options(
-          headers: {'Accept': 'application/json'},
-          contentType: 'application/json',
-        ),
       );
 
       if (response.statusCode == 200) {
@@ -33,6 +54,7 @@ class ChatService {
       }
       return {'success': false, 'message': 'Failed to fetch conversations'};
     } catch (e) {
+      debugPrint('[ChatService] Error fetching conversations: $e');
       return {'success': false, 'message': e.toString()};
     }
   }
@@ -44,15 +66,9 @@ class ChatService {
     String priority = 'medium',
   }) async {
     try {
-      String url = '${AppConstants.baseUrl}chat/conversations/';
-
-      final response = await _dio.post(
-        url,
+      final response = await _apiClient.post(
+        'chat/conversations/',
         data: {'subject': subject, 'category': category, 'priority': priority},
-        options: Options(
-          headers: {'Accept': 'application/json'},
-          contentType: 'application/json',
-        ),
       );
 
       if (response.statusCode == 201) {
@@ -60,6 +76,7 @@ class ChatService {
       }
       return {'success': false, 'message': 'Failed to create conversation'};
     } catch (e) {
+      debugPrint('[ChatService] Error creating conversation: $e');
       return {'success': false, 'message': e.toString()};
     }
   }
@@ -70,16 +87,9 @@ class ChatService {
     int page = 1,
   }) async {
     try {
-      String url =
-          '${AppConstants.baseUrl}chat/conversations/$conversationId/messages/';
-
-      final response = await _dio.get(
-        url,
+      final response = await _apiClient.get(
+        'chat/conversations/$conversationId/messages/',
         queryParameters: {'page': page},
-        options: Options(
-          headers: {'Accept': 'application/json'},
-          contentType: 'application/json',
-        ),
       );
 
       if (response.statusCode == 200) {
@@ -87,6 +97,7 @@ class ChatService {
       }
       return {'success': false, 'message': 'Failed to fetch messages'};
     } catch (e) {
+      debugPrint('[ChatService] Error fetching messages: $e');
       return {'success': false, 'message': e.toString()};
     }
   }
@@ -98,16 +109,9 @@ class ChatService {
     String messageType = 'text',
   }) async {
     try {
-      String url =
-          '${AppConstants.baseUrl}chat/conversations/$conversationId/send_message/';
-
-      final response = await _dio.post(
-        url,
+      final response = await _apiClient.post(
+        'chat/conversations/$conversationId/send_message/',
         data: {'content': content, 'message_type': messageType},
-        options: Options(
-          headers: {'Accept': 'application/json'},
-          contentType: 'application/json',
-        ),
       );
 
       if (response.statusCode == 201) {
@@ -124,15 +128,8 @@ class ChatService {
     required int conversationId,
   }) async {
     try {
-      String url =
-          '${AppConstants.baseUrl}chat/conversations/$conversationId/mark_messages_read/';
-
-      final response = await _dio.post(
-        url,
-        options: Options(
-          headers: {'Accept': 'application/json'},
-          contentType: 'application/json',
-        ),
+      final response = await _apiClient.post(
+        'chat/conversations/$conversationId/mark_messages_read/',
       );
 
       if (response.statusCode == 200) {
@@ -149,15 +146,8 @@ class ChatService {
     required int conversationId,
   }) async {
     try {
-      String url =
-          '${AppConstants.baseUrl}chat/conversations/$conversationId/close/';
-
-      final response = await _dio.post(
-        url,
-        options: Options(
-          headers: {'Accept': 'application/json'},
-          contentType: 'application/json',
-        ),
+      final response = await _apiClient.post(
+        'chat/conversations/$conversationId/close/',
       );
 
       if (response.statusCode == 200) {
@@ -172,22 +162,20 @@ class ChatService {
   /// Get unread message count
   Future<Map<String, dynamic>> getUnreadCount() async {
     try {
-      String url = '${AppConstants.baseUrl}chat/conversations/unread_count/';
-
-      final response = await _dio.get(
-        url,
-        options: Options(
-          headers: {'Accept': 'application/json'},
-          contentType: 'application/json',
-        ),
-      );
+      final response = await _apiClient.get('chat/conversations/unread_count/');
 
       if (response.statusCode == 200) {
         return {'success': true, 'data': response.data};
       }
       return {'success': false, 'message': 'Failed to fetch unread count'};
     } catch (e) {
+      debugPrint('[ChatService] Error fetching unread count: $e');
       return {'success': false, 'message': e.toString()};
     }
+  }
+
+  /// Dispose chat service (cleanup timers and resources)
+  void dispose() {
+    stopPolling();
   }
 }

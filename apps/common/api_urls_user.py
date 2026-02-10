@@ -3,7 +3,7 @@ API URL Configuration for User App
 Provides all endpoints for Flutter mobile app
 """
 
-from django.urls import path
+from django.urls import path, include
 from apps.accounts import api_views_v2 as accounts_views
 from apps.parking import api_views_v2 as parking_views
 from apps.enforcement import api_views_v2 as enforcement_views
@@ -70,11 +70,13 @@ urlpatterns = [
     path('wallet/balance/', payments_views.WalletBalanceAPIView.as_view(), name='wallet-balance'),
     path('wallet/transactions/', payments_views.WalletTransactionsListAPIView.as_view(), name='wallet-transactions'),
     
-    # ========== NOTIFICATIONS ==========
     path('notifications/', notifications_views.NotificationListAPIView.as_view(), name='notification-list'),
     path('notifications/<uuid:pk>/', notifications_views.NotificationDetailAPIView.as_view(), name='notification-detail'),
     path('notifications/summary/', notifications_views.NotificationSummaryAPIView.as_view(), name='notification-summary'),
     path('notifications/mark-all-as-read/', notifications_views.MarkAllNotificationsAsReadAPIView.as_view(), name='mark-all-as-read'),
+    
+    # ========== CHAT / SUPPORT ==========
+    path('', include('apps.notifications.urls')),
     
     # ========== USER PREFERENCES ==========
     path('preferences/', notifications_views.UserPreferencesAPIView.as_view(), name='user-preferences'),

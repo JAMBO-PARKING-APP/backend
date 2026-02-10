@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:parking_user_app/core/constants.dart';
 import 'package:parking_user_app/core/storage_manager.dart';
 
@@ -23,18 +24,24 @@ class ApiClient {
             final token = await _storageManager.getAccessToken();
             if (token != null) {
               options.headers['Authorization'] = 'Bearer $token';
-              print('[ApiClient] Added auth token for ${options.path}');
+              debugPrint('[ApiClient] Added auth token for ${options.path}');
             } else {
-              print('[ApiClient] ⚠️ No token found for ${options.path} - user may not be authenticated');
+              debugPrint(
+                '[ApiClient] ⚠️ No token found for ${options.path} - user may not be authenticated',
+              );
             }
           } else {
-            print('[ApiClient] Skipping token for auth endpoint: ${options.path}');
+            debugPrint(
+              '[ApiClient] Skipping token for auth endpoint: ${options.path}',
+            );
           }
           return handler.next(options);
         },
         onError: (DioException e, handler) async {
           if (e.response?.statusCode == 401) {
-            print('[ApiClient] 401 Unauthorized for ${e.requestOptions.path}');
+            debugPrint(
+              '[ApiClient] 401 Unauthorized for ${e.requestOptions.path}',
+            );
             // TODO: Implement Token Refresh Logic
           }
           return handler.next(e);

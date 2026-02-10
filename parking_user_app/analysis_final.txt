@@ -1,0 +1,26 @@
+﻿Analyzing parking_user_app...                                   
+
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\features\auth\services\auth_service.dart:88:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\features\auth\services\auth_service.dart:89:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\features\auth\services\auth_service.dart:90:11 - use_null_aware_elements
+   info - Unnecessary use of 'toList' in a spread - lib\features\notifications\screens\chat_screen.dart:252:20 - unnecessary_to_list_in_spreads
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\features\payments\services\payment_service.dart:47:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\features\payments\services\payment_service.dart:48:11 - use_null_aware_elements
+
+flutter : 6 issues found. 
+(ran in 4.7s)
+At line:1 char:1
++ flutter analyze --no-pub 
+2>&1 | Out-File -Encoding 
+utf8 analysis_fina ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~
+    + CategoryInfo          
+    : NotSpe    cified: (6 
+issue    s found. (ran in   
+  4.7s):String) [    ], 
+RemoteExcepti    on
+    + FullyQualified    
+ErrorId : Native    
+CommandError
+ 

@@ -279,12 +279,26 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     messageController = TextEditingController();
     _fetchMessages();
     _markAsRead();
+    // Start polling for real-time messages (every 3 seconds)
+    _startPolling();
   }
 
   @override
   void dispose() {
     messageController.dispose();
+    chatService.stopPolling(); // Stop polling when screen is closed
+    chatService.dispose();
     super.dispose();
+  }
+
+  void _startPolling() {
+    chatService.startPolling(widget.conversation['id'], (data) {
+      if (mounted) {
+        setState(() {
+          messages = data['results'] ?? data;
+        });
+      }
+    });
   }
 
   Future<void> _fetchMessages() async {

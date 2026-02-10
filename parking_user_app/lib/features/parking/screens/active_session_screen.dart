@@ -140,7 +140,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                   final success = await context
                       .read<ParkingProvider>()
                       .extendParking(widget.session.id, additionalHours);
-                  if (mounted) {
+                  if (context.mounted) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(

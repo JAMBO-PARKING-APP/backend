@@ -16,15 +16,18 @@ import 'package:parking_user_app/features/payments/screens/wallet_screen.dart';
 import 'package:parking_user_app/features/auth/screens/vehicle_list_screen.dart';
 import 'package:parking_user_app/features/parking/screens/create_reservation_screen.dart';
 import 'package:parking_user_app/features/notifications/screens/notification_screen.dart';
+import 'package:parking_user_app/features/notifications/screens/chat_screen.dart';
+import 'package:parking_user_app/features/home/screens/sidebar_navigation.dart';
+import 'package:parking_user_app/features/settings/screens/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
   @override
@@ -39,33 +42,39 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void setTab(int index) {
-    setState(() => _currentIndex = index);
-  }
-
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
-      const HomeDashboard(),
-      const ZoneListScreen(),
-      const ParkingHistoryScreen(),
-      const ProfileScreen(),
+      const HomeDashboard(), // 0: Home
+      const ZoneListScreen(), // 1: Zones
+      const ParkingHistoryScreen(), // 2: History
+      const ChatConversationListScreen(), // 3: Live Chat
+      const NotificationScreen(), // 4: Notifications
+      const WalletScreen(), // 5: Wallet
+      const ProfileScreen(), // 6: Profile
+      const SettingsScreen(), // 7: Settings
     ];
 
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: pages),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Zones'),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        title: const Text('Jambo Park'),
+        centerTitle: false,
       ),
+      drawer: SidebarNavigation(
+        currentIndex: _currentIndex,
+        onTabChanged: (index) => setState(() => _currentIndex = index),
+      ),
+      body: IndexedStack(index: _currentIndex, children: pages),
     );
+  }
+
+  void setTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
   }
 }
 
@@ -76,8 +85,66 @@ class HomeDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Jambo Park'),
+        elevation: 0,
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        title: const Text(
+          'Jambo Park',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: false,
         actions: [
+          // Featured Chat Button - Large Button
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ChatConversationListScreen(),
+                  ),
+                ),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.chat_bubble, size: 20),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Text(
+                          'CHAT',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
           Stack(
             alignment: Alignment.center,
             children: [
@@ -315,7 +382,7 @@ class HomeDashboard extends StatelessWidget {
                           TextButton(
                             onPressed: () {
                               final homeState = context
-                                  .findAncestorStateOfType<_HomeScreenState>();
+                                  .findAncestorStateOfType<HomeScreenState>();
                               if (homeState != null) homeState.setTab(2);
                             },
                             child: const Text('View All'),

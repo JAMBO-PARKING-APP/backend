@@ -96,7 +96,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
             Consumer<VehicleProvider>(
               builder: (context, provider, _) {
                 return DropdownButtonFormField<String>(
-                  value: _selectedVehicleId,
+                  initialValue: _selectedVehicleId,
                   items: provider.vehicles
                       .map(
                         (v) => DropdownMenuItem(
@@ -125,7 +125,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
             Consumer<ParkingProvider>(
               builder: (context, provider, _) {
                 return DropdownButtonFormField<String>(
-                  value: _selectedZoneId,
+                  initialValue: _selectedZoneId,
                   items: provider.zones
                       .map(
                         (z) =>

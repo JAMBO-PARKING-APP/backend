@@ -182,8 +182,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   obscureText: true,
                   validator: (val) {
                     if (val!.isEmpty) return 'Confirm your password';
-                    if (val != _passwordController.text)
+                    if (val != _passwordController.text) {
                       return 'Passwords do not match';
+                    }
                     return null;
                   },
                 ),

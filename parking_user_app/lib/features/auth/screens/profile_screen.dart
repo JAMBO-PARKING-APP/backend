@@ -44,6 +44,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Uploading photo...')));
+      if (!mounted) return;
       final success = await context.read<AuthProvider>().updateProfilePhoto(
         image.path,
       );
@@ -77,9 +78,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
 
-    if (confirmed == true && mounted) {
+    if (confirmed == true && context.mounted) {
       final success = await context.read<AuthProvider>().deleteAccount();
-      if (!success && mounted) {
+      if (!success && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to delete account. Please try again.'),

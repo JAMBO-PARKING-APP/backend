@@ -3,19 +3,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsProvider extends ChangeNotifier {
   static const String _languageKey = 'app_language';
-  static const String _themeKey = 'app_theme';
+  static const String _themeKey = 'app_theme_mode';
 
   late SharedPreferences _prefs;
   String _locale = 'en';
-  bool _isDarkMode = false;
+  ThemeMode _themeMode = ThemeMode.system;
 
   String get locale => _locale;
-  bool get isDarkMode => _isDarkMode;
+  ThemeMode get themeMode => _themeMode;
+  bool get isDarkMode => _themeMode == ThemeMode.dark;
 
   Locale get currentLocale => Locale(_locale);
-
-  ThemeMode get themeMode =>
-      _isDarkMode ? ThemeMode.dark : ThemeMode.light;
 
   SettingsProvider() {
     _initializeSettings();
@@ -24,7 +22,13 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> _initializeSettings() async {
     _prefs = await SharedPreferences.getInstance();
     _locale = _prefs.getString(_languageKey) ?? 'en';
-    _isDarkMode = _prefs.getBool(_themeKey) ?? false;
+    final savedTheme = _prefs.getString(_themeKey);
+    if (savedTheme != null) {
+      _themeMode = ThemeMode.values.firstWhere(
+        (e) => e.toString() == savedTheme,
+        orElse: () => ThemeMode.system,
+      );
+    }
     notifyListeners();
   }
 
@@ -36,16 +40,20 @@ class SettingsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> setTheme(bool isDark) async {
-    if (_isDarkMode != isDark) {
-      _isDarkMode = isDark;
-      await _prefs.setBool(_themeKey, isDark);
+  Future<void> setTheme(ThemeMode mode) async {
+    if (_themeMode != mode) {
+      _themeMode = mode;
+      await _prefs.setString(_themeKey, mode.toString());
       notifyListeners();
     }
   }
 
   void toggleTheme() async {
-    await setTheme(!_isDarkMode);
+    if (_themeMode == ThemeMode.dark) {
+      await setTheme(ThemeMode.light);
+    } else {
+      await setTheme(ThemeMode.dark);
+    }
   }
 
   List<Locale> get supportedLocales => const [
