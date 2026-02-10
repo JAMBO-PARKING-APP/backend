@@ -59,15 +59,26 @@ class AuthProvider with ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
+    debugPrint('[AuthProvider] ====== STARTING LOGIN ======');
+    debugPrint('[AuthProvider] Phone: $phoneNumber');
+
     final result = await _authService.login(phoneNumber, password);
+
+    debugPrint('[AuthProvider] Login result success: ${result['success']}');
+
     if (result['success']) {
       _user = result['user'];
       _status = AuthStatus.authenticated;
+      debugPrint('[AuthProvider] ✓ User authenticated successfully');
+      debugPrint('[AuthProvider] User: ${_user?.firstName} ${_user?.lastName}');
+      debugPrint('[AuthProvider] Status changed to: $_status');
       notifyListeners();
+      debugPrint('[AuthProvider] Notified listeners - UI should update now');
       return true;
     } else {
       _status = AuthStatus.unauthenticated;
       _errorMessage = result['message'];
+      debugPrint('[AuthProvider] ✗ Login failed: $_errorMessage');
       notifyListeners();
       return false;
     }

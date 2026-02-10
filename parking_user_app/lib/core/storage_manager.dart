@@ -1,4 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/foundation.dart';
 
 class StorageManager {
   static const _storage = FlutterSecureStorage();
@@ -9,8 +10,10 @@ class StorageManager {
   static const _permissionsRequestedKey = 'permissions_requested';
 
   Future<void> saveTokens(String access, String refresh) async {
+    debugPrint('[StorageManager] Saving tokens...');
     await _storage.write(key: _tokenKey, value: access);
     await _storage.write(key: _refreshTokenKey, value: refresh);
+    debugPrint('[StorageManager] Tokens saved successfully');
   }
 
   Future<void> saveDeviceSession(String deviceSession) async {
@@ -30,7 +33,11 @@ class StorageManager {
   }
 
   Future<String?> getAccessToken() async {
-    return await _storage.read(key: _tokenKey);
+    final token = await _storage.read(key: _tokenKey);
+    debugPrint(
+      '[StorageManager] Retrieved token: ${token != null ? "Found (${token.substring(0, 20)}...)" : "NULL"}',
+    );
+    return token;
   }
 
   Future<String?> getRefreshToken() async {

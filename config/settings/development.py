@@ -2,7 +2,7 @@ from .base import *
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '10.0.2.2', '172.17.160.1', '5bd4-102-86-1-42.ngrok-free.app', '3fa7-154-227-132-66.ngrok-free.app', '70b4-154-227-132-66.ngrok-free.app']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '10.0.2.2', '172.17.160.1', '5bd4-102-86-1-42.ngrok-free.app', '3fa7-154-227-132-66.ngrok-free.app', '70b4-154-227-132-66.ngrok-free.app', '1850-154-227-132-66.ngrok-free.app']
 
 # Development database
 DATABASES = {

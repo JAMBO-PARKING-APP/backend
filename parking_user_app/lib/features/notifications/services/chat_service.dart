@@ -12,7 +12,7 @@ class ChatService {
 
   /// Start polling for new messages (real-time simulation)
   void startPolling(
-    int conversationId,
+    String conversationId,
     Function(Map<String, dynamic>) onUpdate,
   ) {
     stopPolling();
@@ -81,9 +81,8 @@ class ChatService {
     }
   }
 
-  /// Get messages in a conversation
   Future<Map<String, dynamic>> getMessages({
-    required int conversationId,
+    required String conversationId,
     int page = 1,
   }) async {
     try {
@@ -102,9 +101,8 @@ class ChatService {
     }
   }
 
-  /// Send a message in a conversation
   Future<Map<String, dynamic>> sendMessage({
-    required int conversationId,
+    required String conversationId,
     required String content,
     String messageType = 'text',
   }) async {
@@ -123,9 +121,8 @@ class ChatService {
     }
   }
 
-  /// Mark messages as read
   Future<Map<String, dynamic>> markMessagesAsRead({
-    required int conversationId,
+    required String conversationId,
   }) async {
     try {
       final response = await _apiClient.post(
@@ -141,9 +138,8 @@ class ChatService {
     }
   }
 
-  /// Close/resolve a conversation
   Future<Map<String, dynamic>> closeConversation({
-    required int conversationId,
+    required String conversationId,
   }) async {
     try {
       final response = await _apiClient.post(

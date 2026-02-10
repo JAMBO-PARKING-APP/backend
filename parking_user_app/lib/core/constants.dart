@@ -2,8 +2,9 @@ import 'dart:io' show Platform;
 
 class AppConstants {
   // Use localhost by default. Set useNgrok = true to test with external ngrok URL.
-  static bool useNgrok = false;
-  static const String ngrokBase = 'https://70b4-154-227-132-66.ngrok-free.app/api/user/';
+  static bool useNgrok = true;
+  static const String ngrokBase =
+      'https://1850-154-227-132-66.ngrok-free.app/api/user/';
 
   static String get baseUrl {
     if (useNgrok) return ngrokBase;
@@ -13,4 +14,3 @@ class AppConstants {
 
   static const String appName = 'Jambo Park';
 }
-

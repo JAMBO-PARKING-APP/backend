@@ -1,5 +1,6 @@
 import 'package:parking_user_app/core/api_client.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:parking_user_app/features/auth/models/user_model.dart';
 import 'package:parking_user_app/core/storage_manager.dart';
 import 'dart:convert';
@@ -23,6 +24,7 @@ class AuthService {
         final refresh = response.data['refresh'];
         final userData = response.data['user'];
 
+        debugPrint('[AuthService] Login successful, saving tokens...');
         await _storageManager.saveTokens(access, refresh);
         // decode token payload to extract device_session_id if present
         try {
@@ -44,6 +46,7 @@ class AuthService {
           await _storageManager.saveUserJson(json.encode(userData));
         } catch (_) {}
 
+        debugPrint('[AuthService] Returning success with user data');
         return {'success': true, 'user': User.fromJson(userData)};
       }
     } catch (e) {
