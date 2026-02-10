@@ -46,7 +46,8 @@ class PaymentService {
           'is_wallet_topup': isWalletTopup,
           if (parkingSessionId != null) 'parking_session_id': parkingSessionId,
           if (violationId != null) 'violation_id': violationId,
-          'callback_url': 'https://jambopark.com/payment-callback',
+          'callback_url':
+              'https://1850-154-227-132-66.ngrok-free.app/api/user/payments/pesapal/callback/',
         },
       );
       if (response.statusCode == 200) {

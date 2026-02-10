@@ -66,13 +66,13 @@ class ChatConversationAdmin(admin.ModelAdmin):
 class ChatMessageAdmin(admin.ModelAdmin):
     list_display = ('id', 'conversation', 'sender_name', 'message_type', 'is_read', 'created_at')
     list_filter = ('message_type', 'is_read', 'created_at')
-    search_fields = ('conversation__subject', 'sender_id', 'content')
+    search_fields = ('conversation__subject', 'sender__phone', 'content')
     readonly_fields = ('created_at', 'read_at')
     ordering = ('-created_at',)
     
     fieldsets = (
         ('Conversation', {'fields': ('conversation',)}),
-        ('Sender', {'fields': ('sender_id', 'sender_type')}),
+        ('Sender', {'fields': ('sender',)}),
         ('Message', {'fields': ('message_type', 'content', 'attachment')}),
         ('Status', {'fields': ('is_read', 'read_at')}),
         ('Timestamps', {'fields': ('created_at',)}),
@@ -81,9 +81,9 @@ class ChatMessageAdmin(admin.ModelAdmin):
     actions = ['mark_as_read']
     
     def sender_name(self, obj):
-        if obj.sender_type == 'user':
-            return f"User: {obj.sender_id}"
-        return f"Agent: {obj.sender_id}"
+        if obj.sender:
+            return f"{obj.sender.get_role_display()}: {obj.sender.full_name or obj.sender.phone}"
+        return "Unknown"
     sender_name.short_description = 'Sender'
     
     def mark_as_read(self, request, queryset):

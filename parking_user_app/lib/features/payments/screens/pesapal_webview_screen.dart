@@ -36,7 +36,7 @@ class _PesapalWebViewScreenState extends State<PesapalWebViewScreen> {
               _isLoading = false;
             });
             // Check if we hit the callback URL
-            if (url.contains('payment-callback')) {
+            if (url.contains('pesapal/callback')) {
               Navigator.pop(context, true); // Success
             }
           },

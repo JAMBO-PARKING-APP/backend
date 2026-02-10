@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:parking_user_app/features/parking/models/parking_session_model.dart';
 import 'package:parking_user_app/features/parking/providers/parking_provider.dart';
+import 'package:parking_user_app/features/parking/screens/qr_code_view_screen.dart';
+import 'package:parking_user_app/core/app_theme.dart';
 
 class ActiveSessionScreen extends StatefulWidget {
   final ParkingSession session;
@@ -28,6 +31,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
   }
 
   void _calculateTotalDuration() {
+    if (widget.session.endTime == null) return;
     _totalDuration = widget.session.endTime!.difference(
       widget.session.startTime,
     );
@@ -40,6 +44,15 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
     setState(() {
       _remaining = diff.isNegative ? Duration.zero : diff;
     });
+  }
+
+  @override
+  void didUpdateWidget(ActiveSessionScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.session.endTime != widget.session.endTime) {
+      _calculateTotalDuration();
+      _calculateRemaining();
+    }
   }
 
   @override
@@ -200,6 +213,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                     ),
                   ),
                   Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Text(
                         'TIME LEFT',
@@ -218,6 +232,25 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                 ],
               ),
               const SizedBox(height: 60),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          QRCodeViewScreen(session: widget.session),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.qr_code_scanner),
+                label: const Text('SHOW QR PASS'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accentColor,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 56),
+                ),
+              ),
+              const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _handleExtendParking,
                 style: ElevatedButton.styleFrom(

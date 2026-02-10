@@ -1,6 +1,7 @@
 import requests
 import uuid
 import logging
+import os
 from django.conf import settings
 from decouple import config
 
@@ -11,6 +12,7 @@ class PesapalService:
         self.consumer_key = settings.PESAPAL_CONSUMER_KEY
         self.consumer_secret = settings.PESAPAL_CONSUMER_SECRET
         self.sandbox = settings.PESAPAL_SANDBOX
+        self.callback_url = settings.PESAPAL_CALLBACK_URL
         
         if self.sandbox:
             self.base_url = "https://cybqa.pesapal.com/pesapalv3"
@@ -18,7 +20,7 @@ class PesapalService:
             self.base_url = "https://pay.pesapal.com/v3"
 
     def get_token(self):
-        """Get authentication token from PesaPal"""
+        """Get authentication token from PesaPal V3"""
         url = f"{self.base_url}/api/Auth/RequestToken"
         payload = {
             "consumer_key": self.consumer_key,
@@ -26,23 +28,19 @@ class PesapalService:
         }
         
         try:
-            print(f"DEBUG: PesaPal RequestToken URL: {url}")
             response = requests.post(url, json=payload)
-            print(f"DEBUG: PesaPal RequestToken Status: {response.statusCode}")
             response.raise_for_status()
             token = response.json().get('token')
-            print(f"DEBUG: PesaPal Token received: {token[:10]}...")
             return token
         except Exception as e:
             logger.error(f"PesaPal get_token error: {str(e)}")
-            print(f"ERROR: PesaPal get_token error: {str(e)}")
             return None
 
-    def register_ipn(self, token, callback_url):
-        """Register IPN URL with PesaPal"""
+    def register_ipn(self, token):
+        """Register IPN URL with PesaPal if not already done"""
         url = f"{self.base_url}/api/URLSetup/RegisterIPN"
         payload = {
-            "url": callback_url,
+            "url": self.callback_url,
             "ipn_notification_type": "GET"
         }
         headers = {
@@ -51,39 +49,63 @@ class PesapalService:
         }
         
         try:
-            print(f"DEBUG: PesaPal RegisterIPN URL: {url}, Callback: {callback_url}")
             response = requests.post(url, json=payload, headers=headers)
-            print(f"DEBUG: PesaPal RegisterIPN Status: {response.statusCode}")
-            print(f"DEBUG: PesaPal RegisterIPN Response: {response.text}")
             response.raise_for_status()
             return response.json().get('ipn_id')
         except Exception as e:
             logger.error(f"PesaPal register_ipn error: {str(e)}")
-            print(f"ERROR: PesaPal register_ipn error: {str(e)}")
             return None
 
-    def submit_order(self, token, order_data):
-        """Submit order to PesaPal and get redirect URL"""
+    def create_payment(self, amount, merchant_reference, description, user, currency="UGX"):
+        """Create a payment request and return redirect URL"""
+        token = self.get_token()
+        if not token:
+            return None
+            
         url = f"{self.base_url}/api/Transactions/SubmitOrderRequest"
+        
+        # Registration of IPN might be needed for every transaction or once.
+        # V3 usually expects an IPN ID.
+        ipn_id = self.register_ipn(token)
+        if not ipn_id:
+            logger.error("Failed to register/get IPN ID")
+            return None
+
+        payload = {
+            "id": merchant_reference,
+            "currency": currency,
+            "amount": float(amount),
+            "description": description,
+            "callback_url": self.callback_url,
+            "notification_id": ipn_id,
+            "billing_address": {
+                "email_address": user.email or "user@jambopark.com",
+                "phone_number": user.phone or "0000000000",
+                "country_code": "UG",
+                "first_name": user.first_name or "Guest",
+                "last_name": user.last_name or "User"
+            }
+        }
+
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json"
         }
-        
+
         try:
-            print(f"DEBUG: PesaPal SubmitOrder URL: {url}")
-            response = requests.post(url, json=order_data, headers=headers)
-            print(f"DEBUG: PesaPal SubmitOrder Status: {response.statusCode}")
-            print(f"DEBUG: PesaPal SubmitOrder Response: {response.text}")
+            response = requests.post(url, json=payload, headers=headers)
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            logger.error(f"PesaPal submit_order error: {str(e)}")
-            print(f"ERROR: PesaPal submit_order error: {str(e)}")
+            logger.error(f"PesaPal create_payment error: {str(e)}")
             return None
 
-    def get_transaction_status(self, token, order_tracking_id):
+    def get_transaction_status(self, order_tracking_id):
         """Get transaction status from PesaPal"""
+        token = self.get_token()
+        if not token:
+            return None
+            
         url = f"{self.base_url}/api/Transactions/GetTransactionStatus?orderTrackingId={order_tracking_id}"
         headers = {
             "Authorization": f"Bearer {token}",

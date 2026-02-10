@@ -241,7 +241,9 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
               ),
               children: [
                 TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  urlTemplate:
+                      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  subdomains: const ['a', 'b', 'c'],
                   userAgentPackageName: 'com.example.parking_user_app',
                   maxNativeZoom: 19,
                   maxZoom: 19,

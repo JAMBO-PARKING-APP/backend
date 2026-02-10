@@ -101,20 +101,59 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                               final success = await context
                                   .read<ParkingProvider>()
                                   .startParking(
+                                    context: context,
                                     zoneId: zone.id,
                                     vehicleId: selectedVehicle!.id,
                                     durationHours: (duration / 60).ceil(),
                                   );
                               if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      success
-                                          ? 'Parking started with Wallet!'
-                                          : 'Failed to start parking',
+                                if (success) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Icon(
+                                        Icons.check_circle,
+                                        color: Colors.green,
+                                        size: 60,
+                                      ),
+                                      content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Text(
+                                            'Parking Started!',
+                                            style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Your session in ${zone.name} is now active.',
+                                          ),
+                                        ],
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.pop(
+                                              context,
+                                            ); // Close dialog
+                                            Navigator.pop(
+                                              context,
+                                            ); // Close payment selection
+                                          },
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                );
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Failed to start parking'),
+                                    ),
+                                  );
+                                }
                               }
                             },
                             onPesapalSelected: () {

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:parking_user_app/features/parking/models/parking_session_model.dart';
 import 'package:parking_user_app/features/parking/models/zone_model.dart';
 import 'package:parking_user_app/features/parking/services/parking_service.dart';
+import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
+import 'package:provider/provider.dart';
 
 class ParkingProvider with ChangeNotifier {
   final ParkingService _parkingService = ParkingService();
@@ -53,6 +55,7 @@ class ParkingProvider with ChangeNotifier {
   }
 
   Future<bool> startParking({
+    required BuildContext context,
     required String vehicleId,
     required String zoneId,
     int durationHours = 1,
@@ -62,7 +65,13 @@ class ParkingProvider with ChangeNotifier {
       zoneId: zoneId,
       durationHours: durationHours,
     );
-    if (success) await fetchSessions();
+    if (success) {
+      await fetchSessions();
+      // Refresh wallet balance in AuthProvider
+      if (context.mounted) {
+        await Provider.of<AuthProvider>(context, listen: false).checkAuth();
+      }
+    }
     return success;
   }
 

@@ -11,7 +11,7 @@ from decimal import Decimal
 from django.db import transaction
 from rest_framework import generics, status
 from rest_framework.decorators import permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -237,27 +237,24 @@ class InitiatePesapalPaymentAPIView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         pesapal = PesapalService()
-        token = pesapal.get_token()
-        if not token:
-            return Response({'error': 'Failed to authenticate with PesaPal'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        # Register IPN
-        callback_url = request.build_absolute_uri('/api/user/payments/pesapal/ipn/')
-        ipn_id = pesapal.register_ipn(token, callback_url)
-        if not ipn_id:
-            return Response({'error': 'Failed to register IPN with PesaPal'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         # Create transaction
-        idempotency_key = str(uuid.uuid4())
         merchant_reference = str(uuid.uuid4())
+        idempotency_key = merchant_reference
         
         parking_session = None
         if serializer.validated_data.get('parking_session_id'):
-            parking_session = ParkingSession.objects.get(id=serializer.validated_data['parking_session_id'])
+            try:
+                parking_session = ParkingSession.objects.get(id=serializer.validated_data['parking_session_id'])
+            except ParkingSession.DoesNotExist:
+                return Response({'error': 'Parking session not found'}, status=status.HTTP_404_NOT_FOUND)
             
         violation = None
         if serializer.validated_data.get('violation_id'):
-            violation = Violation.objects.get(id=serializer.validated_data['violation_id'])
+            try:
+                violation = Violation.objects.get(id=serializer.validated_data['violation_id'])
+            except Violation.DoesNotExist:
+                return Response({'error': 'Violation not found'}, status=status.HTTP_404_NOT_FOUND)
 
         trans = Transaction.objects.create(
             user=request.user,
@@ -269,27 +266,18 @@ class InitiatePesapalPaymentAPIView(APIView):
             processor_response={'is_wallet_topup': serializer.validated_data.get('is_wallet_topup', False)}
         )
         
-        order_data = {
-            "id": merchant_reference,
-            "currency": "UGX",
-            "amount": float(serializer.validated_data['amount']),
-            "description": serializer.validated_data['description'],
-            "callback_url": serializer.validated_data['callback_url'],
-            "notification_id": ipn_id,
-            "billing_address": {
-                "email_address": request.user.email or "user@example.com",
-                "phone_number": str(request.user.phone),
-                "country_code": "GH",
-                "first_name": request.user.first_name,
-                "last_name": request.user.last_name,
-            }
-        }
-        
-        response = pesapal.submit_order(token, order_data)
+        response = pesapal.create_payment(
+            amount=serializer.validated_data['amount'],
+            merchant_reference=merchant_reference,
+            description=serializer.validated_data['description'],
+            user=request.user,
+            currency="UGX"
+        )
+
         if not response or 'order_tracking_id' not in response:
             trans.status = 'failed'
             trans.save()
-            return Response({'error': 'Failed to submit order to PesaPal'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': 'Failed to initiate payment with PesaPal'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         trans.pesapal_order_tracking_id = response['order_tracking_id']
         trans.save()
@@ -303,23 +291,19 @@ class InitiatePesapalPaymentAPIView(APIView):
 
 class PesapalIPNAPIView(APIView):
     """Handle PesaPal IPN callbacks"""
+    permission_classes = [AllowAny]
     
     def get(self, request):
         order_tracking_id = request.query_params.get('OrderTrackingId')
         order_merchant_reference = request.query_params.get('OrderMerchantReference')
-        notification_type = request.query_params.get('OrderNotificationType')
         
         if not all([order_tracking_id, order_merchant_reference]):
             return Response({'error': 'Invalid IPN parameters'}, status=status.HTTP_400_BAD_REQUEST)
         
         pesapal = PesapalService()
-        token = pesapal.get_token()
-        if not token:
-            return Response({'error': 'Authentication failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        status_response = pesapal.get_transaction_status(token, order_tracking_id)
+        status_response = pesapal.get_transaction_status(order_tracking_id)
         if not status_response:
-            return Response({'error': 'Failed to fetch status'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': 'Failed to fetch status from PesaPal'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         try:
             trans = Transaction.objects.get(pesapal_merchant_reference=order_merchant_reference)
@@ -339,14 +323,16 @@ class PesapalIPNAPIView(APIView):
                         user.wallet_balance += trans.amount
                         user.save()
                         
+                        from django.utils.translation import gettext as _
                         WalletTransaction.objects.create(
                             user=user,
                             amount=trans.amount,
                             transaction_type='topup',
                             description=_('Wallet top-up via PesaPal'),
+                            status='completed',
                             related_transaction=trans
                         )
-            elif p_status in ['failed', 'invalid']:
+            elif p_status in ['failed', 'invalid', 'rejected']:
                 trans.status = 'failed'
             
             trans.processor_response = {**trans.processor_response, **status_response}

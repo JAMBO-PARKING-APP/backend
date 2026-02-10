@@ -163,10 +163,6 @@ CACHES = {
         'LOCATION': REDIS_URL,
         'KEY_PREFIX': 'jambo_park',
         'TIMEOUT': 300,  # 5 minutes default
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'CONNECTION_POOL_KWARGS': {'max_connections': 50},
-        }
     },
     'zones_cache': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
@@ -193,3 +189,4 @@ PHONENUMBER_DEFAULT_REGION = 'GH'
 PESAPAL_CONSUMER_KEY = config('PESAPAL_CONSUMER_KEY', default='')
 PESAPAL_CONSUMER_SECRET = config('PESAPAL_CONSUMER_SECRET', default='')
 PESAPAL_SANDBOX = config('PESAPAL_SANDBOX', default=True, cast=bool)
+PESAPAL_CALLBACK_URL = config('PESAPAL_CALLBACK_URL', default='https://1850-154-227-132-66.ngrok-free.app/api/user/payments/pesapal/callback/')

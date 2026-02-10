@@ -204,6 +204,26 @@ class ParkingSession(BaseModel):
         self.save()
         return refund_amount
 
+    @property
+    def qr_code_data(self):
+        """Generate a detailed verification string for QR code"""
+        driver = self.vehicle.owner
+        start = self.start_time.strftime("%Y-%m-%d %H:%M")
+        expiry = self.planned_end_time.strftime("%Y-%m-%d %H:%M")
+        
+        data = [
+            f"JAMBO PARK VERIFIED PASS",
+            f"ID: {self.id}",
+            f"Driver: {driver.full_name}",
+            f"Phone: {driver.phone}",
+            f"Vehicle: {self.vehicle.license_plate}",
+            f"Zone: {self.zone.name}",
+            f"Started: {start}",
+            f"Expires: {expiry}",
+            f"Status: {self.status.upper()}",
+        ]
+        return "\n".join(data)
+
 class Reservation(BaseModel):
     vehicle = models.ForeignKey('accounts.Vehicle', on_delete=models.CASCADE, related_name='reservations')
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE, related_name='reservations')
