@@ -7,6 +7,7 @@ Parking App API Endpoints for User App
 """
 
 from datetime import timedelta
+import logging
 from django.utils import timezone
 from django.db import transaction
 from decimal import Decimal
@@ -70,11 +71,11 @@ class ZoneAvailabilityAPIView(APIView):
         try:
             zone = Zone.objects.get(id=zone_id, is_active=True)
             
-            available_slots = zone.slots.filter(status=SlotStatus.AVAILABLE).count()
-            occupied_slots = zone.slots.filter(status=SlotStatus.OCCUPIED).count()
+            available_slots = zone.available_slots_count
+            occupied_slots = zone.occupied_slots_count
             reserved_slots = zone.slots.filter(status=SlotStatus.RESERVED).count()
             disabled_slots = zone.slots.filter(status=SlotStatus.DISABLED).count()
-            total_slots = zone.slots.count()
+            total_slots = zone.capacity
             
             return Response({
                 'zone_id': zone.id,
@@ -84,13 +85,13 @@ class ZoneAvailabilityAPIView(APIView):
                 'reserved_slots': reserved_slots,
                 'disabled_slots': disabled_slots,
                 'total_slots': total_slots,
+                'capacity': total_slots,
                 'occupancy_rate': round(zone.occupancy_rate, 2),
                 'hourly_rate': float(zone.hourly_rate),
                 'latitude': float(zone.latitude),
                 'longitude': float(zone.longitude),
                 'radius_meters': zone.radius_meters
             }, status=status.HTTP_200_OK)
-            
         except Zone.DoesNotExist:
             return Response({
                 'error': 'Zone not found'
@@ -109,7 +110,8 @@ class StartParkingAPIView(APIView):
         try:
             vehicle = request.user.vehicles.get(id=serializer.validated_data['vehicle_id'], is_active=True)
             zone = Zone.objects.get(id=serializer.validated_data['zone_id'], is_active=True)
-            duration_hours = serializer.validated_data.get('duration_hours', 1)
+            duration_hours = float(serializer.validated_data.get('duration_hours', 1))
+            logger = logging.getLogger(__name__)
             
             # Check for active session
             active_session = ParkingSession.objects.filter(
@@ -150,9 +152,11 @@ class StartParkingAPIView(APIView):
             parking_slot.status = SlotStatus.OCCUPIED
             parking_slot.save()
             
-            # Create parking session
+            # Create parking session with proper decimal handling
             planned_end = timezone.now() + timedelta(hours=duration_hours)
-            estimated_cost = zone.hourly_rate * duration_hours
+            estimated_cost = zone.hourly_rate * Decimal(str(duration_hours))
+            logger.debug("Starting parking: user=%s vehicle=%s zone=%s duration_hours=%s planned_end=%s estimated_cost=%s",
+                         request.user.id, vehicle.id, zone.id, duration_hours, planned_end.isoformat(), str(estimated_cost))
             
             payment_method = serializer.validated_data.get('payment_method', 'wallet')
             
@@ -253,7 +257,7 @@ class ExtendParkingAPIView(APIView):
     @transaction.atomic
     def post(self, request):
         session_id = request.data.get('session_id')
-        additional_hours = int(request.data.get('additional_hours', 1))
+        additional_hours = float(request.data.get('additional_hours', 1))
         
         if not session_id:
             return Response({
@@ -270,8 +274,8 @@ class ExtendParkingAPIView(APIView):
             # Update planned end time
             session.planned_end_time += timedelta(hours=additional_hours)
             
-            # Update estimated cost
-            additional_cost = session.zone.hourly_rate * additional_hours
+            # Update estimated cost with proper decimal handling
+            additional_cost = session.zone.hourly_rate * Decimal(str(additional_hours))
             session.estimated_cost += additional_cost
             
             session.save()

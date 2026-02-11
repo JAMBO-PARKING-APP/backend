@@ -47,6 +47,7 @@ def search_vehicle(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def zone_live_status(request, zone_id):
+    from django.utils import timezone
     zone = get_object_or_404(Zone, id=zone_id)
     
     # Get active sessions
@@ -60,14 +61,22 @@ def zone_live_status(request, zone_id):
     occupied_slots = active_sessions.count()
     
     sessions_data = []
+    now = timezone.now()
     for session in active_sessions:
+        # Calculate remaining time
+        remaining_seconds = (session.planned_end_time - now).total_seconds()
+        remaining_seconds = max(0, remaining_seconds)
+        remaining_minutes = int(remaining_seconds / 60)
+        
         sessions_data.append({
             'id': str(session.id),
             'vehicle_plate': session.vehicle.license_plate,
             'slot_code': session.parking_slot.slot_code if session.parking_slot else None,
-            'start_time': session.start_time,
+            'start_time': session.start_time.isoformat(),
+            'planned_end_time': session.planned_end_time.isoformat(),
             'duration_minutes': session.duration_minutes,
-            'amount_due': float(session.amount_due)
+            'remaining_minutes': remaining_minutes,
+            'estimated_cost': float(session.estimated_cost)
         })
     
     return Response({

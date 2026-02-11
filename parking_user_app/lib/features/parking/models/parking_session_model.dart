@@ -24,9 +24,9 @@ class ParkingSession {
       id: json['id'] ?? '',
       zoneName: json['zone_name'] ?? '',
       vehiclePlate: json['vehicle_plate'] ?? '',
-      startTime: DateTime.parse(json['start_time']),
-      endTime: json['planned_end_time'] != null
-          ? DateTime.parse(json['planned_end_time'])
+        startTime: DateTime.parse(json['start_time']).toLocal(),
+        endTime: json['planned_end_time'] != null
+          ? DateTime.parse(json['planned_end_time']).toLocal()
           : null,
       totalCost:
           double.tryParse(

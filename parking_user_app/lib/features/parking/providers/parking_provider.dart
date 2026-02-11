@@ -58,7 +58,7 @@ class ParkingProvider with ChangeNotifier {
     required BuildContext context,
     required String vehicleId,
     required String zoneId,
-    int durationHours = 1,
+    double durationHours = 1.0,
   }) async {
     final success = await _parkingService.startParking(
       vehicleId: vehicleId,

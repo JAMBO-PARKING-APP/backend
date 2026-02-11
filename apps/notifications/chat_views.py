@@ -25,7 +25,11 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
         user = self.request.user
         # Users see their conversations, support agents and officers see assigned conversations
         if user.role in ['support_agent', 'officer', 'admin']:
-            return ChatConversation.objects.filter(assigned_agent=user).order_by('-created_at')
+            # Officers should see conversations assigned to them as well as unassigned
+            from django.db.models import Q
+            return ChatConversation.objects.filter(
+                Q(assigned_agent=user) | Q(assigned_agent__isnull=True)
+            ).order_by('-created_at')
         return ChatConversation.objects.filter(user=user).order_by('-created_at')
     
     def create(self, request, *args, **kwargs):

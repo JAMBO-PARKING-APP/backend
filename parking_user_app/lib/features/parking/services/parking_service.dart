@@ -38,7 +38,7 @@ class ParkingService {
   Future<bool> startParking({
     required String zoneId,
     required String vehicleId,
-    int durationHours = 1,
+    double durationHours = 1.0,
   }) async {
     try {
       final response = await _apiClient.post(

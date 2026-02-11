@@ -77,6 +77,8 @@ class LoginSerializer(serializers.Serializer):
             if user_exists:
                 u = User.objects.get(phone=phone)
                 print(f"DEBUG: User is_active: {u.is_active}, is_verified: {u.is_verified}")
+                if not u.is_active:
+                    raise serializers.ValidationError({'detail': 'Account disabled'})
             raise serializers.ValidationError('Invalid phone or password')
         
         print(f"Authentication successful for: {phone}")

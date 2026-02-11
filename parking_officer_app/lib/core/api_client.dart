@@ -13,6 +13,10 @@ class ApiClient {
         baseUrl: AppConstants.baseUrl,
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 15),
+        validateStatus: (status) {
+          // Don't throw on any status code; we'll handle them manually
+          return status != null;
+        },
       ),
     );
 
@@ -25,11 +29,19 @@ class ApiClient {
               options.headers['Authorization'] = 'Bearer $token';
             }
           }
+          debugPrint('[ApiClient] ${options.method} ${options.path}');
           return handler.next(options);
         },
+        onResponse: (response, handler) {
+          debugPrint('[ApiClient] Response ${response.statusCode}: ${response.requestOptions.path}');
+          return handler.next(response);
+        },
         onError: (DioException e, handler) async {
+          debugPrint('[ApiClient] Error: ${e.type} - ${e.message}');
+          debugPrint('[ApiClient] Status: ${e.response?.statusCode}');
           if (e.response?.statusCode == 401) {
-            debugPrint('[ApiClient] 401 Unauthorized');
+            debugPrint('[ApiClient] 401 Unauthorized - Token may be invalid');
+            // Could implement token refresh here
           }
           return handler.next(e);
         },

@@ -65,12 +65,14 @@ class VehicleDetailSerializer(serializers.ModelSerializer):
     def get_current_session(self, obj):
         session = ParkingSession.objects.filter(vehicle=obj, status='active').first()
         if session:
+            # Calculate amount_due as estimated_cost or final_cost if available
+            amount_due = float(session.final_cost) if session.final_cost is not None else float(session.estimated_cost)
             return {
                 'id': str(session.id),
                 'zone_name': session.zone.name,
                 'start_time': session.start_time,
                 'duration_minutes': session.duration_minutes,
-                'amount_due': session.amount_due
+                'amount_due': amount_due
             }
         return None
     

@@ -6,8 +6,6 @@ from rest_framework.routers import DefaultRouter
 from apps.notifications import api_views
 from apps.notifications import chat_views
 
-app_name = 'notifications'
-
 # Create router for chat viewset
 router = DefaultRouter()
 router.register(r'chat/conversations', chat_views.ChatConversationViewSet, basename='chat-conversation')

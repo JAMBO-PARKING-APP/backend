@@ -29,6 +29,7 @@ class ViolationType(models.TextChoices):
     NO_PAYMENT = 'no_payment', _('No Payment')
     WRONG_ZONE = 'wrong_zone', _('Wrong Zone')
     DISABLED_SPOT = 'disabled_spot', _('Disabled Spot Violation')
+    OVERDUE_PARKING = 'overdue_parking', _('Overdue Parking')
 
 class Currency(models.TextChoices):
     USD = 'USD', _('US Dollar ($)')

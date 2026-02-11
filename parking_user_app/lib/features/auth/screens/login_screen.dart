@@ -20,27 +20,53 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _acceptTerms = false;
 
   void _handleLogin() async {
+    final phone = _phoneController.text.trim();
+    final password = _passwordController.text;
+
+    if (phone.isEmpty) {
+      _showError('Please enter your phone number');
+      return;
+    }
+
+    if (password.isEmpty) {
+      _showError('Please enter your password');
+      return;
+    }
+
+    // Basic phone validation (at least 7 digits)
+    if (!RegExp(r'^[0-9]{7,15}$').hasMatch(phone)) {
+      _showError('Please enter a valid phone number');
+      return;
+    }
+
     if (!_acceptTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please accept the Terms & Privacy Policy'),
-        ),
-      );
+      _showError('Please accept the Terms & Privacy Policy');
       return;
     }
 
     final authProvider = context.read<AuthProvider>();
-    final fullPhone = '$_countryCode${_phoneController.text}';
-    final success = await authProvider.login(
-      fullPhone,
-      _passwordController.text,
-    );
+    final fullPhone = '$_countryCode$phone';
+    final success = await authProvider.login(fullPhone, password);
 
     if (!success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(authProvider.errorMessage ?? 'Login failed')),
-      );
+      _showError(authProvider.errorMessage ?? 'Login failed');
     }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 4),
+      ),
+    );
   }
 
   @override

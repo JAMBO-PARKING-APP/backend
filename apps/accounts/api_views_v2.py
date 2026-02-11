@@ -151,7 +151,20 @@ class LoginAPIView(APIView):
                 'user': UserProfileSerializer(user).data,
                 'message': 'Login successful'
             }, status=status.HTTP_200_OK)
-        
+        # Log serializer errors for debugging
+        try:
+            print(f"LoginAPIView: serializer.errors = {serializer.errors}")
+        except Exception:
+            print("LoginAPIView: could not print serializer.errors")
+
+        # If serializer provided a 'detail' field (e.g., account disabled), return 403
+        errors = serializer.errors
+        if isinstance(errors, dict) and errors.get('detail'):
+            detail = errors.get('detail')
+            # detail may be a list
+            message = detail[0] if isinstance(detail, (list, tuple)) else detail
+            return Response({'error': message}, status=status.HTTP_403_FORBIDDEN)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ProfileAPIView(APIView):

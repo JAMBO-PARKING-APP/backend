@@ -37,16 +37,30 @@ class Zone(BaseModel):
         return self.slots.filter(status=SlotStatus.AVAILABLE).count()
 
     @property
+    def occupied_slots_count(self):
+        return self.slots.filter(status=SlotStatus.OCCUPIED).count()
+
+    @property
     def total_slots_count(self):
         return self.slots.count()
 
     @property
+    def capacity(self):
+        """Get the total capacity - either from configured total_slots or actual slot count"""
+        if self.total_slots > 0:
+            return self.total_slots
+        return self.total_slots_count
+
+    @property
     def occupancy_rate(self):
-        total = self.total_slots_count
-        if total == 0:
+        capacity = self.capacity
+        if capacity == 0:
             return 0
-        occupied = total - self.available_slots_count
-        return (occupied / total) * 100
+        occupied = self.occupied_slots_count
+        return (occupied / capacity) * 100
+
+    class Meta:
+        ordering = ['name']
 
 class ParkingSlot(BaseModel):
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE, related_name='slots')
@@ -160,8 +174,18 @@ class ParkingSession(BaseModel):
         return int((end_time - self.start_time).total_seconds() / 60)
 
     def calculate_cost(self):
-        duration_hours = max(1, self.duration_minutes / 60)  # Minimum 1 hour
-        return Decimal(str(duration_hours)) * self.zone.hourly_rate
+        """
+        Calculate cost using decimal hours, allow sub-hour durations with a minimum
+        of 0.25 hours (15 minutes).
+        """
+        end_time = self.actual_end_time or timezone.now()
+        duration_seconds = (end_time - self.start_time).total_seconds()
+        duration_hours = Decimal(str(duration_seconds / 3600))
+        if duration_hours < Decimal('0.25'):
+            duration_hours = Decimal('0.25')
+
+        cost = (duration_hours * self.zone.hourly_rate).quantize(Decimal('0.01'))
+        return cost
 
     def end_session(self):
         self.actual_end_time = timezone.now()

@@ -4,7 +4,9 @@ import 'package:parking_officer_app/core/app_theme.dart';
 import 'package:parking_officer_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_officer_app/features/auth/screens/login_screen.dart';
 import 'package:parking_officer_app/features/parking/providers/zone_provider.dart';
+import 'package:parking_officer_app/features/parking/providers/vehicle_search_provider.dart';
 import 'package:parking_officer_app/features/parking/screens/dashboard_screen.dart';
+import 'package:parking_officer_app/features/enforcement/providers/officer_provider.dart';
 import 'package:parking_officer_app/features/violations/providers/enforcement_provider.dart';
 import 'package:parking_officer_app/features/chat/providers/chat_provider.dart';
 
@@ -14,6 +16,8 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ZoneProvider()),
+        ChangeNotifierProvider(create: (_) => OfficerProvider()),
+        ChangeNotifierProvider(create: (_) => VehicleSearchProvider()),
         ChangeNotifierProvider(create: (_) => EnforcementProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
       ],

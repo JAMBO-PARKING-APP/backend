@@ -73,7 +73,9 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
       return;
     }
 
-    final success = await context.read<EnforcementProvider>().issueViolation(
+    bool success = false;
+    try {
+      success = await context.read<EnforcementProvider>().issueViolation(
       vehicleId:
           widget.vehicleId ?? widget.vehiclePlate, // Fallback if ID missing
       zoneId: widget.zoneId ?? '0',
@@ -84,13 +86,22 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
       lng: _currentPosition!.longitude,
       evidence: _evidence,
       sessionId: widget.sessionId,
-    );
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to issue violation: ${e.toString()}')),
+      );
+    }
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Violation issued successfully')),
       );
       Navigator.pop(context);
+    } else if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to issue violation')),
+      );
     }
   }
 

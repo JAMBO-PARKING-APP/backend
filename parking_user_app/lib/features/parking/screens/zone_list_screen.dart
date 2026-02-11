@@ -104,7 +104,7 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                                     context: context,
                                     zoneId: zone.id,
                                     vehicleId: selectedVehicle!.id,
-                                    durationHours: (duration / 60).ceil(),
+                                    durationHours: (duration / 60).toDouble(),
                                   );
                               if (context.mounted) {
                                 if (success) {

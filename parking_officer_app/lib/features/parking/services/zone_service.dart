@@ -7,9 +7,11 @@ class ZoneService {
 
   Future<List<Zone>> getZones() async {
     try {
-      final response = await _apiClient.get('officer/zones/');
+      // Use the user app endpoint which is available for officers too
+      final response = await _apiClient.get('user/zones/');
       if (response.statusCode == 200) {
-        return (response.data as List).map((z) => Zone.fromJson(z)).toList();
+        final List data = response.data is Map ? response.data['results'] ?? [] : response.data;
+        return data.map((z) => Zone.fromJson(z)).toList();
       }
     } catch (e) {
       return [];

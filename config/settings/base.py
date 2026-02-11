@@ -25,6 +25,7 @@ THIRD_PARTY_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     'phonenumber_field',
+    # 'django_crontab' removed: prefer Celery beat in production or install separately
 ]
 
 LOCAL_APPS = [
@@ -84,6 +85,9 @@ DATABASES = {
     }
 }
 
+# Cron jobs: use 'python manage.py session_alerts' manually or via Celery beat in production
+# CRONJOBS removed: django-crontab not used; prefer Celery beat for production scheduling
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -94,7 +98,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+# Use proper IANA timezone name (case-sensitive)
+TIME_ZONE = 'Africa/Kampala'
 USE_I18N = True
 USE_TZ = True
 

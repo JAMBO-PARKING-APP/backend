@@ -49,27 +49,11 @@ class AuthService {
         debugPrint('[AuthService] Returning success with user data');
         return {'success': true, 'user': User.fromJson(userData)};
       }
-    } catch (e) {
-      String message = 'Login failed';
-      if (e is DioException) {
-        if (e.type == DioExceptionType.connectionTimeout ||
-            e.type == DioExceptionType.receiveTimeout ||
-            e.type == DioExceptionType.sendTimeout ||
-            e.type == DioExceptionType.connectionError) {
-          message = 'No internet connection. Please check your network.';
-        } else if (e.response?.statusCode == 400 ||
-            e.response?.statusCode == 401) {
-          message = 'Invalid phone number or password';
-          if (e.response?.data is Map && e.response?.data['error'] != null) {
-            message = e.response?.data['error'];
-          }
-        } else if (e.response?.data is Map &&
-            e.response?.data['detail'] != null) {
-          message = e.response?.data['detail'];
-        }
-      }
+    } on DioException catch (e) {
+      String message = _handleDioError(e);
       return {'success': false, 'message': message};
-    }
+    } catch (e) {
+      return {'success': false, 'message': 'An unexpected error occurred. Please try again.'};
     return {'success': false, 'message': 'Unknown error'};
   }
 
@@ -214,6 +198,38 @@ class AuthService {
       return false;
     } catch (e) {
       return false;
+    }
+  }
+
+  String _handleDioError(DioException e) {
+    if (e.type == DioExceptionType.connectionTimeout) {
+      return 'Connection timeout. Please check your internet connection.';
+    }
+    if (e.type == DioExceptionType.receiveTimeout) {
+      return 'Server took too long to respond. Please try again.';
+    }
+    if (e.type == DioExceptionType.connectionError) {
+      return 'No internet connection. Please check your network.';
+    }
+
+    final statusCode = e.response?.statusCode;
+    final data = e.response?.data;
+
+    switch (statusCode) {
+      case 401:
+        return data?['detail'] ?? data?['error'] ?? 'Invalid phone number or password.';
+      case 400:
+        final errors = data?['error'] ?? data?['detail'] ?? 'Invalid input provided.';
+        if (errors is Map) {
+          return errors.values.first.toString();
+        }
+        return errors.toString();
+      case 404:
+        return 'User not found or service unavailable.';
+      case 500:
+        return 'Server error. Please try again later.';
+      default:
+        return data?['error'] ?? data?['detail'] ?? 'Login failed. Please try again.';
     }
   }
 }

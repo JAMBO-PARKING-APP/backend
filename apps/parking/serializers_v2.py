@@ -11,12 +11,13 @@ class ZoneDetailSerializer(serializers.ModelSerializer):
     available_slots = serializers.SerializerMethodField()
     occupied_slots = serializers.SerializerMethodField()
     occupancy_rate = serializers.SerializerMethodField()
+    capacity = serializers.SerializerMethodField()
     slots = ParkingSlotSerializer(many=True, read_only=True)
     
     class Meta:
         model = Zone
         fields = ['id', 'name', 'description', 'hourly_rate', 'max_duration_hours',
-                  'total_slots', 'available_slots', 'occupied_slots', 'occupancy_rate',
+                  'total_slots', 'capacity', 'available_slots', 'occupied_slots', 'occupancy_rate',
                   'latitude', 'longitude', 'radius_meters', 'zone_image', 'diagram_image',
                   'diagram_width', 'diagram_height', 'slots', 'created_at']
     
@@ -24,23 +25,34 @@ class ZoneDetailSerializer(serializers.ModelSerializer):
         return obj.available_slots_count
     
     def get_occupied_slots(self, obj):
-        return obj.total_slots_count - obj.available_slots_count
+        return obj.occupied_slots_count
+    
+    def get_capacity(self, obj):
+        return obj.capacity
     
     def get_occupancy_rate(self, obj):
         return round(obj.occupancy_rate, 2)
 
 class ZoneListSerializer(serializers.ModelSerializer):
     available_slots = serializers.SerializerMethodField()
+    occupied_slots = serializers.SerializerMethodField()
     occupancy_rate = serializers.SerializerMethodField()
+    capacity = serializers.SerializerMethodField()
     
     class Meta:
         model = Zone
         fields = ['id', 'name', 'description', 'hourly_rate', 'max_duration_hours',
-                  'total_slots', 'available_slots', 'occupancy_rate', 'latitude', 
+                  'total_slots', 'capacity', 'available_slots', 'occupied_slots', 'occupancy_rate', 'latitude', 
                   'longitude', 'radius_meters', 'zone_image', 'created_at']
     
     def get_available_slots(self, obj):
         return obj.available_slots_count
+    
+    def get_occupied_slots(self, obj):
+        return obj.occupied_slots_count
+    
+    def get_capacity(self, obj):
+        return obj.capacity
     
     def get_occupancy_rate(self, obj):
         return round(obj.occupancy_rate, 2)
@@ -61,7 +73,7 @@ class StartParkingSerializer(serializers.Serializer):
     vehicle_id = serializers.UUIDField()
     zone_id = serializers.UUIDField()
     slot_id = serializers.UUIDField(required=False)
-    duration_hours = serializers.IntegerField(default=1, min_value=1, max_value=24)
+    duration_hours = serializers.DecimalField(max_digits=5, decimal_places=2, default=1, min_value=0.25, max_value=24)
     payment_method = serializers.ChoiceField(choices=['wallet', 'pesapal'], default='wallet')
 
 class EndParkingSerializer(serializers.Serializer):
