@@ -86,7 +86,12 @@ class VehicleDetailSerializer(serializers.ModelSerializer):
 class ViolationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Violation
-        fields = ('id', 'vehicle', 'zone', 'violation_type', 'description', 
-                 'fine_amount', 'evidence_photo', 'location_latitude', 'location_longitude', 
-                 'is_paid', 'created_at')
-        read_only_fields = ('id', 'created_at')
+        fields = ('id', 'vehicle', 'officer', 'zone', 'parking_session', 'violation_type', 
+                 'description', 'fine_amount', 'latitude', 'longitude', 'is_paid', 'created_at')
+        read_only_fields = ('id', 'officer', 'created_at')
+
+class OfficerLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OfficerLog
+        fields = ('id', 'officer', 'action', 'details', 'latitude', 'longitude', 'created_at')
+        read_only_fields = ('id', 'officer', 'created_at')

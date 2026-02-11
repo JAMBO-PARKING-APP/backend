@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
-from .serializers import ZoneSerializer, VehicleDetailSerializer, ViolationSerializer, ParkingSlotSerializer
+from .serializers import ZoneSerializer, VehicleDetailSerializer, ViolationSerializer, ParkingSlotSerializer, OfficerLogSerializer
 from .models import Violation
 from apps.parking.models import Zone, ParkingSession
 from apps.accounts.models import Vehicle
@@ -112,3 +112,10 @@ def officer_stats(request):
         'assigned_zones': assigned_zones,
         'officer_name': officer.full_name
     })
+
+class LogOfficerActionAPIView(generics.CreateAPIView):
+    serializer_class = OfficerLogSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(officer=self.request.user)

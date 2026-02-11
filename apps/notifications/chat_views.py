@@ -23,8 +23,8 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
-        # Users see their conversations, support agents see assigned conversations
-        if user.role == 'support_agent':
+        # Users see their conversations, support agents and officers see assigned conversations
+        if user.role in ['support_agent', 'officer', 'admin']:
             return ChatConversation.objects.filter(assigned_agent=user).order_by('-created_at')
         return ChatConversation.objects.filter(user=user).order_by('-created_at')
     

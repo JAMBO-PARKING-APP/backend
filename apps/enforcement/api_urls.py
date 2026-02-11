@@ -16,4 +16,5 @@ urlpatterns = [
     
     # Officer Stats
     path('stats/', api_views.officer_stats, name='officer-stats'),
+    path('logs/create/', api_views.LogOfficerActionAPIView.as_view(), name='log-action'),
 ]
