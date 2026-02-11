@@ -44,7 +44,7 @@ class Vehicle(BaseModel):
     make = models.CharField(max_length=50)
     model = models.CharField(max_length=50)
     color = models.CharField(max_length=30)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True, db_index=True)
 
     def __str__(self):
         return self.license_plate

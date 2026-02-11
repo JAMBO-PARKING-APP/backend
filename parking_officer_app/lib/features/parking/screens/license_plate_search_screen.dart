@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:parking_officer_app/features/parking/providers/vehicle_search_provider.dart';
-import 'package:parking_officer_app/core/app_theme.dart';
 
 class LicensePlateSearchScreen extends StatefulWidget {
   const LicensePlateSearchScreen({super.key});
 
   @override
-  State<LicensePlateSearchScreen> createState() => _LicensePlateSearchScreenState();
+  State<LicensePlateSearchScreen> createState() =>
+      _LicensePlateSearchScreenState();
 }
 
 class _LicensePlateSearchScreenState extends State<LicensePlateSearchScreen> {
@@ -40,10 +40,7 @@ class _LicensePlateSearchScreenState extends State<LicensePlateSearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Search Vehicle'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Search Vehicle'), elevation: 0),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -98,14 +95,14 @@ class _LicensePlateSearchScreenState extends State<LicensePlateSearchScreen> {
                       Icon(
                         Icons.error_outline,
                         size: 64,
-                        color: Colors.red.withOpacity(0.5),
+                        color: Colors.red.withValues(alpha: 0.5),
                       ),
                       const SizedBox(height: 16),
                       Text(
                         provider.searchError ?? 'Not found',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.red,
-                            ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(color: Colors.red),
                       ),
                     ],
                   );
@@ -123,7 +120,7 @@ class _LicensePlateSearchScreenState extends State<LicensePlateSearchScreen> {
                           Icon(
                             Icons.directions_car,
                             size: 64,
-                            color: Colors.grey.withOpacity(0.5),
+                            color: Colors.grey.withValues(alpha: 0.5),
                           ),
                           const SizedBox(height: 16),
                           const Text('Search vehicle by license plate'),
@@ -156,10 +153,7 @@ class _LicensePlateSearchScreenState extends State<LicensePlateSearchScreen> {
               children: [
                 const Text(
                   'Vehicle Details',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 _buildDetailRow('License Plate', vehicle.licensePlate),
@@ -184,10 +178,7 @@ class _LicensePlateSearchScreenState extends State<LicensePlateSearchScreen> {
               children: [
                 const Text(
                   'Owner Information',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 _buildDetailRow('Name', vehicle.ownerName),
@@ -208,10 +199,7 @@ class _LicensePlateSearchScreenState extends State<LicensePlateSearchScreen> {
               children: [
                 const Text(
                   'Status',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -225,8 +213,8 @@ class _LicensePlateSearchScreenState extends State<LicensePlateSearchScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: vehicle.unpaidViolations > 0
-                            ? Colors.red.withOpacity(0.2)
-                            : Colors.green.withOpacity(0.2),
+                            ? Colors.red.withValues(alpha: 0.2)
+                            : Colors.green.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -243,7 +231,7 @@ class _LicensePlateSearchScreenState extends State<LicensePlateSearchScreen> {
                 ),
                 const SizedBox(height: 16),
                 if (vehicle.activeSession != null) ...[
-                  Divider(color: Colors.grey.withOpacity(0.3)),
+                  Divider(color: Colors.grey.withValues(alpha: 0.3)),
                   const SizedBox(height: 16),
                   const Text(
                     'Active Parking Session',
@@ -282,10 +270,7 @@ class _LicensePlateSearchScreenState extends State<LicensePlateSearchScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: const TextStyle(color: Colors.grey),
-        ),
+        Text(label, style: const TextStyle(color: Colors.grey)),
         Text(
           value,
           style: const TextStyle(fontWeight: FontWeight.bold),

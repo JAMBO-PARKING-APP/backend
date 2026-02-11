@@ -11,7 +11,7 @@ from decimal import Decimal
 from .pesapal_service import PesapalService
 from .models import Transaction
 from apps.common.constants import TransactionStatus
-from apps.parking.models import ParkingSession
+from apps.parking.models import ParkingSession, Reservation
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +30,21 @@ class PesapalInitPaymentView(APIView):
         # Generate unique merchant reference
         merchant_reference = str(uuid.uuid4())
 
-        # Optional: Link to parking session
+        # Optional: Link to parking session or reservation
         parking_session = None
+        reservation = None
+        
         if session_id:
             try:
                 parking_session = ParkingSession.objects.get(id=session_id)
             except ParkingSession.DoesNotExist:
+                pass
+                
+        reservation_id = request.data.get('reservation_id')
+        if reservation_id:
+            try:
+                reservation = Reservation.objects.get(id=reservation_id)
+            except Reservation.DoesNotExist:
                 pass
 
         # Create Transaction record
@@ -45,6 +54,7 @@ class PesapalInitPaymentView(APIView):
             pesapal_merchant_reference=merchant_reference,
             status=TransactionStatus.PENDING,
             parking_session=parking_session,
+            reservation=reservation,
             idempotency_key=merchant_reference # Using merchant_ref as idempotency key
         )
 
@@ -57,7 +67,8 @@ class PesapalInitPaymentView(APIView):
             currency=currency
         )
 
-        if response and response.get('order_tracking_id'):
+        if response and response.get('redirect_url'):
+            # API 3.0 returns 'redirect_url', 'order_tracking_id', 'merchant_reference'
             transaction.pesapal_order_tracking_id = response.get('order_tracking_id')
             transaction.processor_response = response
             transaction.save()
@@ -96,7 +107,6 @@ class PesapalCallbackView(APIView):
             
             if payment_status == "Completed":
                 transaction.status = TransactionStatus.COMPLETED
-                # If linked to a parking session, we might want to update session status too
                 if transaction.parking_session:
                     # Logic to mark session as paid if applicable
                     pass
@@ -106,9 +116,68 @@ class PesapalCallbackView(APIView):
             transaction.processor_response = status_response
             transaction.save()
 
-            logger.info(f"Transaction {merchant_reference} updated to {transaction.status}")
-            return Response({'status': transaction.status, 'payment_status': payment_status})
+            # For a mobile app callback, we usually want to show a success/failure page
+            # or redirect to a custom scheme.
+            # providing a simple HTML response for now.
+            return Response({
+                'status': 'success',
+                'payment_status': payment_status, 
+                'merchant_reference': merchant_reference
+            })
 
         except Transaction.DoesNotExist:
             logger.error(f"Transaction with reference {merchant_reference} not found")
             return Response({'error': 'Transaction not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class PesapalIPNView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        """Handle IPN POST request"""
+        data = request.data
+        return self.process_ipn(data)
+
+    def get(self, request):
+        """Handle IPN GET request"""
+        data = request.query_params
+        return self.process_ipn(data)
+
+    def process_ipn(self, data):
+        order_tracking_id = data.get('OrderTrackingId')
+        merchant_reference = data.get('OrderMerchantReference')
+        notification_type = data.get('OrderNotificationType')
+
+        if not order_tracking_id:
+             return Response({'error': 'Missing OrderTrackingId'}, status=status.HTTP_400_BAD_REQUEST)
+
+        pesapal = PesapalService()
+        status_response = pesapal.get_transaction_status(order_tracking_id)
+        
+        if not status_response:
+             # If we can't verify, we should probably return 500 so Pesapal retries
+             return Response({'error': 'Verification failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        try:
+            transaction = Transaction.objects.get(pesapal_merchant_reference=merchant_reference)
+            payment_status = status_response.get('payment_status_description')
+            
+            if payment_status == "Completed":
+                transaction.status = TransactionStatus.COMPLETED
+            elif payment_status == "Failed":
+                transaction.status = TransactionStatus.FAILED
+                
+            transaction.processor_response = status_response
+            transaction.save()
+            
+            # Respond to Pesapal as required
+            response_data = {
+                "orderNotificationType": notification_type,
+                "orderTrackingId": order_tracking_id,
+                "orderMerchantReference": merchant_reference,
+                "status": 200
+            }
+            return Response(response_data)
+
+        except Transaction.DoesNotExist:
+             logger.error(f"IPN: Transaction {merchant_reference} not found")
+             return Response({'error': 'Transaction not found'}, status=status.HTTP_404_NOT_FOUND)

@@ -5,7 +5,7 @@ import 'package:parking_officer_app/features/enforcement/services/officer_servic
 
 class OfficerProvider with ChangeNotifier {
   final OfficerService _officerService = OfficerService();
-  
+
   OfficerStatus? _officerStatus;
   List<QRCodeScan> _qrScans = [];
   List<QRCodeScan> _activityLogs = [];
@@ -17,8 +17,13 @@ class OfficerProvider with ChangeNotifier {
   List<QRCodeScan> get activityLogs => _activityLogs;
   bool get isLoading => _isLoading;
   bool get isOnline => _officerStatus?.isOnline ?? false;
+  String? get errorMessage => _errorMessage;
 
-  Future<bool> toggleOnlineStatus(bool goOnline, {double? latitude, double? longitude}) async {
+  Future<bool> toggleOnlineStatus(
+    bool goOnline, {
+    double? latitude,
+    double? longitude,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -45,12 +50,12 @@ class OfficerProvider with ChangeNotifier {
   Future<void> fetchOfficerStatus() async {
     _isLoading = true;
     notifyListeners();
-    
+
     final result = await _officerService.getOfficerStatus();
     if (result['success']) {
       _officerStatus = result['status'];
     }
-    
+
     _isLoading = false;
     notifyListeners();
   }
@@ -58,10 +63,10 @@ class OfficerProvider with ChangeNotifier {
   Future<void> fetchQRScans() async {
     _isLoading = true;
     notifyListeners();
-    
+
     final scans = await _officerService.getQRScans();
     _qrScans = scans;
-    
+
     _isLoading = false;
     notifyListeners();
   }
@@ -69,10 +74,10 @@ class OfficerProvider with ChangeNotifier {
   Future<void> fetchActivityLogs() async {
     _isLoading = true;
     notifyListeners();
-    
+
     final logs = await _officerService.getActivityLogs();
     _activityLogs = logs;
-    
+
     _isLoading = false;
     notifyListeners();
   }

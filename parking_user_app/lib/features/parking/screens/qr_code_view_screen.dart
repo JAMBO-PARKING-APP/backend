@@ -48,7 +48,7 @@ class QRCodeViewScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 20,
                     spreadRadius: 5,
                   ),
@@ -62,7 +62,14 @@ class QRCodeViewScreen extends StatelessWidget {
                     version: QrVersions.auto,
                     size: 280.0,
                     gapless: false,
-                    foregroundColor: AppTheme.primaryColor,
+                    eyeStyle: const QrEyeStyle(
+                      eyeShape: QrEyeShape.square,
+                      color: AppTheme.primaryColor,
+                    ),
+                    dataModuleStyle: const QrDataModuleStyle(
+                      dataModuleShape: QrDataModuleShape.square,
+                      color: AppTheme.primaryColor,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Text(
@@ -90,7 +97,7 @@ class QRCodeViewScreen extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(15),
             ),
             child: Row(

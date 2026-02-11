@@ -3,6 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:parking_user_app/features/parking/providers/reservation_provider.dart';
 import 'package:parking_user_app/features/parking/screens/create_reservation_screen.dart';
+import 'package:parking_user_app/widgets/payment_selection_dialog.dart';
+import 'package:parking_user_app/features/payments/services/payment_service.dart';
+import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ReservationListScreen extends StatefulWidget {
   const ReservationListScreen({super.key});
@@ -103,17 +107,25 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: isActive
+                              color: res.status == 'pending_payment'
+                                  ? Colors.orange.withValues(alpha: 0.1)
+                                  : isActive
                                   ? Colors.green.withValues(alpha: 0.1)
                                   : Colors.grey.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              res.status.toUpperCase(),
+                              res.status == 'pending_payment'
+                                  ? 'PAY NOW'
+                                  : res.status.toUpperCase(),
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                color: isActive ? Colors.green : Colors.grey,
+                                color: res.status == 'pending_payment'
+                                    ? Colors.orange
+                                    : isActive
+                                    ? Colors.green
+                                    : Colors.grey,
                               ),
                             ),
                           ),
@@ -149,10 +161,26 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
                           ),
                         ],
                       ),
-                      if (isActive) ...[
+                      if (isActive || res.status == 'pending_payment') ...[
                         const SizedBox(height: 16),
                         Row(
                           children: [
+                            if (res.status == 'pending_payment')
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      _initiatePayment(context, res);
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.orange,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    child: const Text('PAY NOW'),
+                                  ),
+                                ),
+                              ),
                             Expanded(
                               child: OutlinedButton(
                                 onPressed: () async {
@@ -196,6 +224,72 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
               );
             },
           );
+        },
+      ),
+    );
+  }
+
+  void _initiatePayment(BuildContext context, dynamic reservation) async {
+    // Import necessary packages
+    // We need Reservation model, but dynamic is used in loop.
+    // Assuming reservation has 'cost' and 'id'.
+
+    final authProvider = context.read<AuthProvider>();
+    final walletBalance = authProvider.user?.walletBalance ?? 0.0;
+    final cost = reservation.cost;
+
+    showDialog(
+      context: context,
+      builder: (context) => PaymentSelectionDialog(
+        amount: cost,
+        walletBalance: walletBalance,
+        onWalletSelected: () {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Wallet payment for reservation coming soon'),
+            ),
+          );
+        },
+        onPesapalSelected: () async {
+          Navigator.pop(context); // Close dialog
+
+          // Show loading
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (c) => const Center(child: CircularProgressIndicator()),
+          );
+
+          final paymentService = PaymentService();
+          final result = await paymentService.initiatePesapalPayment(
+            amount: cost,
+            description: "Reservation Payment: ${reservation.id}",
+            isWalletTopup: false,
+            reservationId: reservation.id,
+          );
+
+          if (mounted) Navigator.pop(context); // Hide loading
+
+          if (result['success'] == true && mounted) {
+            final url = result['redirect_url'];
+            if (url != null) {
+              final uri = Uri.parse(url);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Could not launch payment URL')),
+                );
+              }
+            }
+          } else if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(result['message'] ?? 'Payment initiation failed'),
+              ),
+            );
+          }
         },
       ),
     );

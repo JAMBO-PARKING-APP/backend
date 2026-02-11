@@ -17,7 +17,7 @@ class AppTheme {
       primary: primaryColor,
       secondary: accentColor,
       error: errorColor,
-      background: backgroundColor,
+      surface: backgroundColor,
     ),
     scaffoldBackgroundColor: backgroundColor,
     appBarTheme: AppBarTheme(

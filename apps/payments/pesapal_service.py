@@ -19,6 +19,8 @@ class PesapalService:
         else:
             self.base_url = "https://pay.pesapal.com/v3"
 
+
+
     def get_token(self):
         """Get authentication token from PesaPal V3"""
         url = f"{self.base_url}/api/Auth/RequestToken"
@@ -30,7 +32,13 @@ class PesapalService:
         try:
             response = requests.post(url, json=payload)
             response.raise_for_status()
-            token = response.json().get('token')
+            
+            data = response.json()
+            if data.get('error'):
+                logger.error(f"Pesapal Auth Error: {data.get('error')}")
+                return None
+                
+            token = data.get('token')
             return token
         except Exception as e:
             logger.error(f"PesaPal get_token error: {str(e)}")
@@ -39,9 +47,18 @@ class PesapalService:
     def register_ipn(self, token):
         """Register IPN URL with PesaPal if not already done"""
         url = f"{self.base_url}/api/URLSetup/RegisterIPN"
+        
+        # Derive IPN URL - replace 'callback' with 'ipn' or append if not present
+        # Assuming PESAPAL_CALLBACK_URL ends with /callback/
+        # We want .../ipn/
+        ipn_url = self.callback_url.replace('/callback/', '/ipn/')
+        if ipn_url == self.callback_url:
+             # Fallback if pattern doesn't match
+             ipn_url = self.callback_url + 'ipn/'
+
         payload = {
-            "url": self.callback_url,
-            "ipn_notification_type": "GET"
+            "url": ipn_url,
+            "ipn_notification_type": "POST" # Prefer POST for IPN
         }
         headers = {
             "Authorization": f"Bearer {token}",
@@ -60,7 +77,7 @@ class PesapalService:
         """Create a payment request and return redirect URL"""
         token = self.get_token()
         if not token:
-            return None
+            return {'error': 'Failed to authenticate with Pesapal'}
             
         url = f"{self.base_url}/api/Transactions/SubmitOrderRequest"
         
@@ -69,7 +86,7 @@ class PesapalService:
         ipn_id = self.register_ipn(token)
         if not ipn_id:
             logger.error("Failed to register/get IPN ID")
-            return None
+            return {'error': 'Failed to register IPN URL. Check PESAPAL_CALLBACK_URL configuraton.'}
 
         payload = {
             "id": merchant_reference,
@@ -80,7 +97,7 @@ class PesapalService:
             "notification_id": ipn_id,
             "billing_address": {
                 "email_address": user.email or "user@jambopark.com",
-                "phone_number": user.phone or "0000000000",
+                "phone_number": str(user.phone) if user.phone else "0000000000",
                 "country_code": "UG",
                 "first_name": user.first_name or "Guest",
                 "last_name": user.last_name or "User"
@@ -98,7 +115,9 @@ class PesapalService:
             return response.json()
         except Exception as e:
             logger.error(f"PesaPal create_payment error: {str(e)}")
-            return None
+            if hasattr(e, 'response') and e.response is not None:
+                 return {'error': f"Pesapal API Error: {e.response.text}"}
+            return {'error': str(e)}
 
     def get_transaction_status(self, order_tracking_id):
         """Get transaction status from PesaPal"""

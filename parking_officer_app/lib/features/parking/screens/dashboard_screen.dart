@@ -33,122 +33,187 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      final useRail = constraints.maxWidth >= 800;
-      if (useRail) {
-        return Scaffold(
-          body: Row(
-            children: [
-              NavigationRail(
-                selectedIndex: _currentIndex,
-                onDestinationSelected: (index) => setState(() => _currentIndex = index),
-                labelType: NavigationRailLabelType.all,
-                backgroundColor: AppTheme.cardColor,
-                useIndicator: true,
-                indicatorColor: AppTheme.primaryColor.withOpacity(0.12),
-                groupAlignment: -0.8,
-                leading: Padding(
-                  padding: const EdgeInsets.only(top: 16.0),
-                  child: Column(
-                    children: [
-                      Image.asset('assets/images/JAMBO.png', width: 72, height: 72, errorBuilder: (c,e,s)=>const SizedBox()),
-                      const SizedBox(height: 8),
-                      const Text('Jambo Officer', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-                selectedIconTheme: const IconThemeData(size: 28, color: AppTheme.primaryColor),
-                unselectedIconTheme: const IconThemeData(size: 22, color: Colors.grey),
-                selectedLabelTextStyle: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.w600),
-                destinations: const [
-                  NavigationRailDestination(icon: Icon(Icons.dashboard), label: Text('Zones')),
-                  NavigationRailDestination(icon: Icon(Icons.qr_code_scanner), label: Text('Scan')),
-                  NavigationRailDestination(icon: Icon(Icons.search), label: Text('Search')),
-                  NavigationRailDestination(icon: Icon(Icons.chat), label: Text('Chat')),
-                  NavigationRailDestination(icon: Icon(Icons.history), label: Text('History')),
-                ],
-              ),
-              const VerticalDivider(width: 1),
-              Expanded(child: _buildBody()),
-            ],
-          ),
-        );
-      }
-
-      // Mobile/tablet: use drawer
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Jambo Officer'),
-        ),
-        drawer: Drawer(
-          child: SafeArea(
-            child: Column(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useRail = constraints.maxWidth >= 800;
+        if (useRail) {
+          return Scaffold(
+            body: Row(
               children: [
-                DrawerHeader(
-                  decoration: BoxDecoration(color: AppTheme.primaryColor),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Image.asset('assets/images/JAMBO.png', width: 72, height: 72, errorBuilder: (c,e,s)=>const SizedBox()),
-                      const SizedBox(height: 8),
-                      const Text('Jambo Officer', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                    ],
+                NavigationRail(
+                  selectedIndex: _currentIndex,
+                  onDestinationSelected: (index) =>
+                      setState(() => _currentIndex = index),
+                  labelType: NavigationRailLabelType.all,
+                  backgroundColor: AppTheme.cardColor,
+                  useIndicator: true,
+                  indicatorColor: AppTheme.primaryColor.withValues(alpha: 0.12),
+                  groupAlignment: -0.8,
+                  leading: Padding(
+                    padding: const EdgeInsets.only(top: 16.0),
+                    child: Column(
+                      children: [
+                        Image.asset(
+                          'assets/images/JAMBO.png',
+                          width: 72,
+                          height: 72,
+                          errorBuilder: (c, e, s) => const SizedBox(),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Jambo Officer',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
                   ),
+                  selectedIconTheme: const IconThemeData(
+                    size: 28,
+                    color: AppTheme.primaryColor,
+                  ),
+                  unselectedIconTheme: const IconThemeData(
+                    size: 22,
+                    color: Colors.grey,
+                  ),
+                  selectedLabelTextStyle: const TextStyle(
+                    color: AppTheme.primaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  destinations: const [
+                    NavigationRailDestination(
+                      icon: Icon(Icons.dashboard),
+                      label: Text('Zones'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.qr_code_scanner),
+                      label: Text('Scan'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.search),
+                      label: Text('Search'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.chat),
+                      label: Text('Chat'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.history),
+                      label: Text('History'),
+                    ),
+                  ],
                 ),
-                ListTile(
-                  leading: const Icon(Icons.dashboard),
-                  title: const Text('Zones'),
-                  selected: _currentIndex == 0,
-                  onTap: () => setState(() { _currentIndex = 0; Navigator.pop(context); }),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.qr_code_scanner),
-                  title: const Text('Scan'),
-                  selected: _currentIndex == 1,
-                  onTap: () => setState(() { _currentIndex = 1; Navigator.pop(context); }),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.search),
-                  title: const Text('Search'),
-                  selected: _currentIndex == 2,
-                  onTap: () => setState(() { _currentIndex = 2; Navigator.pop(context); }),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.history),
-                  title: const Text('History'),
-                  selected: _currentIndex == 3,
-                  onTap: () => setState(() { _currentIndex = 3; Navigator.pop(context); }),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.chat),
-                  title: const Text('Chat'),
-                  selected: _currentIndex == 4,
-                  onTap: () => setState(() { _currentIndex = 4; Navigator.pop(context); }),
-                ),
-                const Spacer(),
-                ListTile(
-                  leading: const Icon(Icons.person),
-                  title: const Text('Profile'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const OfficerProfileScreen()));
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.logout),
-                  title: const Text('Logout'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    context.read<AuthProvider>().logout();
-                  },
-                ),
+                const VerticalDivider(width: 1),
+                Expanded(child: _buildBody()),
               ],
             ),
+          );
+        }
+
+        // Mobile/tablet: use drawer
+        return Scaffold(
+          appBar: AppBar(title: const Text('Jambo Officer')),
+          drawer: Drawer(
+            child: SafeArea(
+              child: Column(
+                children: [
+                  DrawerHeader(
+                    decoration: BoxDecoration(color: AppTheme.primaryColor),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Image.asset(
+                          'assets/images/JAMBO.png',
+                          width: 72,
+                          height: 72,
+                          errorBuilder: (c, e, s) => const SizedBox(),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Jambo Officer',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.dashboard),
+                    title: const Text('Zones'),
+                    selected: _currentIndex == 0,
+                    onTap: () => setState(() {
+                      _currentIndex = 0;
+                      Navigator.pop(context);
+                    }),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.qr_code_scanner),
+                    title: const Text('Scan'),
+                    selected: _currentIndex == 1,
+                    onTap: () => setState(() {
+                      _currentIndex = 1;
+                      Navigator.pop(context);
+                    }),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.search),
+                    title: const Text('Search'),
+                    selected: _currentIndex == 2,
+                    onTap: () => setState(() {
+                      _currentIndex = 2;
+                      Navigator.pop(context);
+                    }),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.history),
+                    title: const Text('History'),
+                    selected: _currentIndex == 3,
+                    onTap: () => setState(() {
+                      _currentIndex = 3;
+                      Navigator.pop(context);
+                    }),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.chat),
+                    title: const Text('Chat'),
+                    selected: _currentIndex == 4,
+                    onTap: () => setState(() {
+                      _currentIndex = 4;
+                      Navigator.pop(context);
+                    }),
+                  ),
+                  const Spacer(),
+                  ListTile(
+                    leading: const Icon(Icons.person),
+                    title: const Text('Profile'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const OfficerProfileScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.logout),
+                    title: const Text('Logout'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      context.read<AuthProvider>().logout();
+                    },
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-        body: _buildBody(),
-      );
-    });
+          body: _buildBody(),
+        );
+      },
+    );
   }
 
   Widget _buildBody() {
@@ -180,7 +245,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: AppTheme.primaryColor),
                 ),
@@ -192,7 +257,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         CircleAvatar(
                           radius: 6,
-                          backgroundColor: provider.isOnline ? Colors.green : Colors.grey,
+                          backgroundColor: provider.isOnline
+                              ? Colors.green
+                              : Colors.grey,
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -220,7 +287,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const OfficerProfileScreen()),
+                MaterialPageRoute(
+                  builder: (context) => const OfficerProfileScreen(),
+                ),
               );
             },
           ),
@@ -338,16 +407,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 40),
             ),
             const SizedBox(height: 8),
-            Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
       ),

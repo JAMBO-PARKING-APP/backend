@@ -55,7 +55,7 @@ class TransactionListSerializer(serializers.ModelSerializer):
 class PesapalPaymentSerializer(serializers.Serializer):
     amount = serializers.DecimalField(max_digits=12, decimal_places=2)
     description = serializers.CharField(max_length=100)
-    callback_url = serializers.URLField()
     parking_session_id = serializers.UUIDField(required=False, allow_null=True)
+    reservation_id = serializers.UUIDField(required=False, allow_null=True)
     violation_id = serializers.UUIDField(required=False, allow_null=True)
-    is_wallet_topup = serializers.BooleanField(default=False)
+    is_wallet_topup = serializers.BooleanField(required=False, default=False)

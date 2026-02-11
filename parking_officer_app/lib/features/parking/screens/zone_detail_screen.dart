@@ -82,6 +82,11 @@ class _ZoneDetailScreenState extends State<ZoneDetailScreen> {
                             trailing: const Icon(Icons.chevron_right),
                             onTap: () {
                               // TODO: View session details
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Session details coming soon'),
+                                ),
+                              );
                             },
                           );
                         },
@@ -97,7 +102,7 @@ class _ZoneDetailScreenState extends State<ZoneDetailScreen> {
   Widget _buildZoneSummary(Zone zone) {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: AppTheme.primaryColor.withOpacity(0.05),
+      color: AppTheme.primaryColor.withValues(alpha: 0.05),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
@@ -141,7 +146,7 @@ class _ZoneDetailScreenState extends State<ZoneDetailScreen> {
             child: ElevatedButton.icon(
               onPressed: () async {
                 final plate = await _showSearchDialog(context);
-                if (plate != null && mounted) {
+                if (plate != null && context.mounted) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(

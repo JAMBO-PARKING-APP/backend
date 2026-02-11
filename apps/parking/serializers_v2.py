@@ -82,15 +82,57 @@ class EndParkingSerializer(serializers.Serializer):
 class ReservationSerializer(serializers.ModelSerializer):
     zone_name = serializers.CharField(source='zone.name', read_only=True)
     vehicle_plate = serializers.CharField(source='vehicle.license_plate', read_only=True)
+    start_time = serializers.DateTimeField(source='reserved_from', read_only=True)
+    end_time = serializers.DateTimeField(source='reserved_until', read_only=True)
+    status = serializers.SerializerMethodField()
     
     class Meta:
         model = Reservation
         fields = ['id', 'vehicle_plate', 'zone_name', 'start_time', 'end_time', 
-                  'status', 'created_at']
-        read_only_fields = ['id', 'created_at']
+                  'status', 'cost', 'created_at']
+        read_only_fields = ['id', 'created_at', 'status', 'cost']
+
+    def get_status(self, obj):
+        if not obj.is_active:
+             # Check if cancelled
+             if obj.is_active is False: 
+                 return 'cancelled'
+        
+        # Check for payment logic
+        # Assuming Transaction model has a related_name='transactions' to Reservation
+        from apps.common.constants import TransactionStatus
+        has_payment = obj.transactions.filter(status=TransactionStatus.COMPLETED).exists()
+        
+        # Note: If no payment found, it's pending payment
+        if not has_payment:
+            return 'pending_payment'
+
+        # Basic logic: if active -> 'active', if past -> 'completed'
+        from django.utils import timezone
+        now = timezone.now()
+        if now > obj.reserved_until:
+            return 'completed'
+        elif not obj.is_active:
+            return 'cancelled'
+        return 'active'
 
 class CreateReservationSerializer(serializers.Serializer):
     vehicle_id = serializers.UUIDField()
     zone_id = serializers.UUIDField()
-    start_time = serializers.DateTimeField()
-    end_time = serializers.DateTimeField()
+    # Support both old and new field names
+    start_time = serializers.DateTimeField(required=False)
+    end_time = serializers.DateTimeField(required=False)
+    reserved_from = serializers.DateTimeField(required=False)
+    reserved_until = serializers.DateTimeField(required=False)
+
+    def validate(self, data):
+        """Ensure either start_time/end_time OR reserved_from/reserved_until are provided"""
+        start = data.get('start_time') or data.get('reserved_from')
+        end = data.get('end_time') or data.get('reserved_until')
+        
+        if not start:
+             raise serializers.ValidationError("Start time (reserved_from) is required")
+        if not end:
+             raise serializers.ValidationError("End time (reserved_until) is required")
+             
+        return data

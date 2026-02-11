@@ -60,7 +60,8 @@ urlpatterns = [
     # ========== PAYMENTS / TRANSACTIONS ==========
     path('payments/create/', payments_views.CreatePaymentAPIView.as_view(), name='create-payment'),
     path('payments/pesapal/initiate/', payments_views.InitiatePesapalPaymentAPIView.as_view(), name='pesapal-initiate'),
-    path('payments/pesapal/callback/', payments_views.PesapalIPNAPIView.as_view(), name='pesapal-callback'),
+    path('payments/pesapal/callback/', payments_views.PesapalUserCallbackView.as_view(), name='pesapal-callback'),
+    path('payments/pesapal/ipn/', payments_views.PesapalIPNAPIView.as_view(), name='pesapal-ipn'),
     path('transactions/', payments_views.TransactionListAPIView.as_view(), name='transactions'),
     path('transactions/<uuid:pk>/', payments_views.TransactionDetailAPIView.as_view(), name='transaction-detail'),
     path('invoices/', payments_views.InvoiceListAPIView.as_view(), name='invoices'),

@@ -130,7 +130,7 @@ class PaymentSelectionDialog extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Pesapal',
+                            'Mobile Money / Card',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -138,7 +138,7 @@ class PaymentSelectionDialog extends StatelessWidget {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'Pay with Mobile Money or Card',
+                            'Pay securely via Pesapal',
                             style: TextStyle(fontSize: 14, color: Colors.grey),
                           ),
                         ],

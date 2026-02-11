@@ -18,20 +18,20 @@ class ReservationProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> createReservation({
+  Future<Reservation?> createReservation({
     required String vehicleId,
     required String zoneId,
     required DateTime startTime,
     required DateTime endTime,
   }) async {
-    final success = await _reservationService.createReservation(
+    final reservation = await _reservationService.createReservation(
       vehicleId: vehicleId,
       zoneId: zoneId,
       startTime: startTime,
       endTime: endTime,
     );
-    if (success) await fetchReservations();
-    return success;
+    if (reservation != null) await fetchReservations();
+    return reservation;
   }
 
   Future<bool> cancelReservation(String reservationId) async {

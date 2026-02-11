@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
+
 import 'package:parking_officer_app/core/api_client.dart';
 import 'package:parking_officer_app/features/auth/models/user_model.dart';
 import 'package:parking_officer_app/core/storage_manager.dart';
@@ -41,7 +41,10 @@ class AuthService {
       String message = _handleDioError(e);
       return {'success': false, 'message': message};
     } catch (e) {
-      return {'success': false, 'message': 'An unexpected error occurred. Please try again.'};
+      return {
+        'success': false,
+        'message': 'An unexpected error occurred. Please try again.',
+      };
     }
     return {'success': false, 'message': 'Unknown error'};
   }
@@ -62,9 +65,12 @@ class AuthService {
 
     switch (statusCode) {
       case 401:
-        return data?['detail'] ?? data?['error'] ?? 'Invalid phone number or password.';
+        return data?['detail'] ??
+            data?['error'] ??
+            'Invalid phone number or password.';
       case 400:
-        final errors = data?['error'] ?? data?['detail'] ?? 'Invalid input provided.';
+        final errors =
+            data?['error'] ?? data?['detail'] ?? 'Invalid input provided.';
         if (errors is Map) {
           return errors.values.first.toString();
         }
@@ -74,7 +80,9 @@ class AuthService {
       case 500:
         return 'Server error. Please try again later.';
       default:
-        return data?['error'] ?? data?['detail'] ?? 'Login failed. Please try again.';
+        return data?['error'] ??
+            data?['detail'] ??
+            'Login failed. Please try again.';
     }
   }
 

@@ -5,6 +5,10 @@ import 'package:parking_user_app/features/auth/providers/vehicle_provider.dart';
 import 'package:parking_user_app/features/parking/providers/reservation_provider.dart';
 import 'package:parking_user_app/features/parking/providers/parking_provider.dart';
 import 'package:parking_user_app/features/parking/models/zone_model.dart';
+import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
+import 'package:parking_user_app/widgets/payment_selection_dialog.dart';
+import 'package:parking_user_app/features/payments/services/payment_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CreateReservationScreen extends StatefulWidget {
   final Zone? initialZone;
@@ -20,7 +24,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
   String? _selectedZoneId;
   DateTime _startDate = DateTime.now().add(const Duration(hours: 1));
   TimeOfDay _startTime = TimeOfDay.now();
-  int _durationHours = 1;
+  int _durationMinutes = 60;
 
   @override
   void initState() {
@@ -57,19 +61,97 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
       return;
     }
 
-    final endDateTime = startDateTime.add(Duration(hours: _durationHours));
+    final endDateTime = startDateTime.add(Duration(minutes: _durationMinutes));
 
-    final success = await context.read<ReservationProvider>().createReservation(
-      vehicleId: _selectedVehicleId!,
-      zoneId: _selectedZoneId!,
-      startTime: startDateTime,
-      endTime: endDateTime,
-    );
+    final reservation = await context
+        .read<ReservationProvider>()
+        .createReservation(
+          vehicleId: _selectedVehicleId!,
+          zoneId: _selectedZoneId!,
+          startTime: startDateTime,
+          endTime: endDateTime,
+        );
 
-    if (success && mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Reservation created successfully!')),
+    if (reservation != null && mounted) {
+      // Calculate cost
+      final zone = context.read<ParkingProvider>().zones.firstWhere(
+        (z) => z.id == _selectedZoneId,
+      );
+      final cost = zone.hourlyRate * (_durationMinutes / 60.0);
+      final walletBalance =
+          context.read<AuthProvider>().user?.walletBalance ?? 0.0;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => PaymentSelectionDialog(
+          amount: cost,
+          walletBalance: walletBalance,
+          onWalletSelected: () {
+            // TODO: Implement Wallet Payment for Reservation (Backend support needed)
+            Navigator.pop(context); // Close dialog
+            Navigator.pop(context); // Close screen
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Reservation Created! Wallet payment for reservations coming soon.',
+                ),
+              ),
+            );
+          },
+          onPesapalSelected: () async {
+            Navigator.pop(context); // Close dialog
+            // DO NOT pop screen yet, wait for payment initiation
+
+            // Show loading
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (c) => const Center(child: CircularProgressIndicator()),
+            );
+
+            // Initiate Pesapal Payment
+            final paymentService = PaymentService();
+            final result = await paymentService.initiatePesapalPayment(
+              amount: cost,
+              description: "Reservation Payment: ${reservation.id}",
+              isWalletTopup: false,
+              reservationId: reservation.id,
+            );
+
+            // Hide loading
+            if (mounted) {
+              Navigator.pop(context);
+            }
+
+            if (result['success'] == true && mounted) {
+              Navigator.pop(context); // Close CreateReservationScreen
+
+              final url = result['redirect_url'];
+              if (url != null) {
+                final uri = Uri.parse(url);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Could not launch payment URL'),
+                    ),
+                  );
+                }
+              }
+            } else if (mounted) {
+              // Show error
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    result['message'] ?? 'Payment initiation failed',
+                  ),
+                ),
+              );
+            }
+          },
+        ),
       );
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -217,28 +299,30 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
 
             // Duration
             const Text(
-              'Duration (Hours)',
+              'Duration (Minutes)',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Row(
               children: [
                 IconButton(
-                  onPressed: _durationHours > 1
-                      ? () => setState(() => _durationHours--)
+                  onPressed: _durationMinutes > 15
+                      ? () => setState(() => _durationMinutes -= 15)
                       : null,
                   icon: const Icon(Icons.remove_circle_outline),
                 ),
                 Text(
-                  '$_durationHours',
+                  '$_durationMinutes min',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 IconButton(
-                  onPressed: _durationHours < 12
-                      ? () => setState(() => _durationHours++)
+                  onPressed:
+                      _durationMinutes <
+                          720 // Max 12 hours
+                      ? () => setState(() => _durationMinutes += 15)
                       : null,
                   icon: const Icon(Icons.add_circle_outline),
                 ),

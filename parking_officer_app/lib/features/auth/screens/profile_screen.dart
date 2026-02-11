@@ -23,10 +23,7 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Officer Profile'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Officer Profile'), elevation: 0),
       body: Consumer2<AuthProvider, OfficerProvider>(
         builder: (context, authProvider, officerProvider, _) {
           final user = authProvider.user;
@@ -41,7 +38,7 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
                 // Profile Header
                 CircleAvatar(
                   radius: 60,
-                  backgroundColor: AppTheme.primaryColor.withOpacity(0.2),
+                  backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.2),
                   child: Text(
                     user.firstName[0].toUpperCase(),
                     style: const TextStyle(
@@ -55,17 +52,17 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
                 Text(
                   user.fullName,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 Text(
                   user.phone,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Status Card
                 Card(
                   child: Padding(
@@ -89,8 +86,8 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: officerProvider.isOnline
-                                    ? Colors.green.withOpacity(0.2)
-                                    : Colors.grey.withOpacity(0.2),
+                                    ? Colors.green.withValues(alpha: 0.2)
+                                    : Colors.grey.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Row(
@@ -123,14 +120,22 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
                           _buildStatusRow(
                             'Went Online',
                             officerProvider.officerStatus?.wentOnlineAt != null
-                                ? _formatTime(officerProvider.officerStatus!.wentOnlineAt!)
+                                ? _formatTime(
+                                    officerProvider
+                                        .officerStatus!
+                                        .wentOnlineAt!,
+                                  )
                                 : 'N/A',
                           ),
                           const SizedBox(height: 12),
                           _buildStatusRow(
                             'Went Offline',
                             officerProvider.officerStatus?.wentOfflineAt != null
-                                ? _formatTime(officerProvider.officerStatus!.wentOfflineAt!)
+                                ? _formatTime(
+                                    officerProvider
+                                        .officerStatus!
+                                        .wentOfflineAt!,
+                                  )
                                 : 'N/A',
                           ),
                         ],
@@ -187,14 +192,8 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: const TextStyle(color: Colors.grey),
-        ),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        Text(label, style: const TextStyle(color: Colors.grey)),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
       ],
     );
   }
@@ -203,14 +202,8 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: const TextStyle(color: Colors.grey),
-        ),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        Text(label, style: const TextStyle(color: Colors.grey)),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
       ],
     );
   }
@@ -226,7 +219,7 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
     } else if (difference.inHours < 24) {
       return '${difference.inHours}h ago';
     } else {
-      return '${dateTime.toString().split(' ')[0]}';
+      return dateTime.toString().split(' ')[0];
     }
   }
 

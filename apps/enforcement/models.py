@@ -12,7 +12,7 @@ class Violation(BaseModel):
     parking_session = models.ForeignKey('parking.ParkingSession', on_delete=models.SET_NULL, 
                                        null=True, blank=True, related_name='violations', verbose_name=_("Parking Session"))
     
-    violation_type = models.CharField(max_length=20, choices=ViolationType.choices, verbose_name=_("Violation Type"))
+    violation_type = models.CharField(max_length=20, choices=ViolationType.choices, verbose_name=_("Violation Type"), db_index=True)
     description = models.TextField(verbose_name=_("Description"))
     fine_amount = models.DecimalField(max_digits=8, decimal_places=2, verbose_name=_("Fine Amount"))
     
@@ -20,7 +20,7 @@ class Violation(BaseModel):
     latitude = models.DecimalField(max_digits=9, decimal_places=6, verbose_name=_("Latitude"))
     longitude = models.DecimalField(max_digits=9, decimal_places=6, verbose_name=_("Longitude"))
     
-    is_paid = models.BooleanField(default=False, verbose_name=_("Is Paid"))
+    is_paid = models.BooleanField(default=False, verbose_name=_("Is Paid"), db_index=True)
     paid_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Paid At"))
 
     def __str__(self):

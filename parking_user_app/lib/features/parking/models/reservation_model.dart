@@ -5,6 +5,7 @@ class Reservation {
   final DateTime startTime;
   final DateTime endTime;
   final String status;
+  final double cost;
   final DateTime createdAt;
 
   Reservation({
@@ -14,6 +15,7 @@ class Reservation {
     required this.startTime,
     required this.endTime,
     required this.status,
+    required this.cost,
     required this.createdAt,
   });
 
@@ -25,6 +27,7 @@ class Reservation {
       startTime: DateTime.parse(json['start_time']),
       endTime: DateTime.parse(json['end_time']),
       status: json['status'] ?? '',
+      cost: double.tryParse(json['cost']?.toString() ?? '0') ?? 0.0,
       createdAt: DateTime.parse(json['created_at']),
     );
   }

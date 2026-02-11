@@ -12,7 +12,7 @@ class Zone(BaseModel):
     hourly_rate = models.DecimalField(max_digits=12, decimal_places=2)
     max_duration_hours = models.IntegerField(default=24)
     total_slots = models.IntegerField(default=0, help_text=_("Total number of parking slots in this zone"))
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True, db_index=True)
     
     # Geographic boundaries
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
@@ -65,7 +65,7 @@ class Zone(BaseModel):
 class ParkingSlot(BaseModel):
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE, related_name='slots')
     slot_code = models.CharField(max_length=10)  # A1, B2, etc.
-    status = models.CharField(max_length=20, choices=SlotStatus.choices, default=SlotStatus.AVAILABLE)
+    status = models.CharField(max_length=20, choices=SlotStatus.choices, default=SlotStatus.AVAILABLE, db_index=True)
     
     # Position on diagram (coordinates)
     diagram_x = models.IntegerField(default=0, help_text=_("X position on diagram"))
@@ -81,7 +81,7 @@ class ParkingSlot(BaseModel):
         ('electric', _('Electric Vehicle')),
         ('compact', _('Compact')),
         ('motorcycle', _('Motorcycle')),
-    ], default='regular')
+    ], default='regular', db_index=True)
     
     class Meta:
         unique_together = ['zone', 'slot_code']
@@ -139,9 +139,9 @@ class ParkingSession(BaseModel):
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE, related_name='sessions')
     parking_slot = models.ForeignKey(ParkingSlot, on_delete=models.SET_NULL, null=True, blank=True)
     
-    start_time = models.DateTimeField(default=timezone.now)
+    start_time = models.DateTimeField(default=timezone.now, db_index=True)
     planned_end_time = models.DateTimeField()
-    actual_end_time = models.DateTimeField(null=True, blank=True)
+    actual_end_time = models.DateTimeField(null=True, blank=True, db_index=True)
     
     status = models.CharField(max_length=20, choices=ParkingStatus.choices, default=ParkingStatus.ACTIVE)
     estimated_cost = models.DecimalField(max_digits=12, decimal_places=2)

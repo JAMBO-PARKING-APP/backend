@@ -387,25 +387,60 @@ class CreateReservationAPIView(APIView):
             zone = Zone.objects.get(id=serializer.validated_data['zone_id'], is_active=True)
             
             # Validate times
-            start_time = serializer.validated_data['start_time']
-            end_time = serializer.validated_data['end_time']
+            # Support both new and old field names for backward compatibility during migration
+            start_time = serializer.validated_data.get('reserved_from') or serializer.validated_data.get('start_time')
+            end_time = serializer.validated_data.get('reserved_until') or serializer.validated_data.get('end_time')
+            
+            if not start_time or not end_time:
+                 # Should be caught by serializer, but just in case
+                 return Response({'error': 'Start and end times are required'}, status=status.HTTP_400_BAD_REQUEST)
             
             if start_time >= end_time:
                 return Response({
                     'error': 'End time must be after start time'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            if start_time < timezone.now():
+            # Relaxed validation: Allow up to 10 mins in the past to account for slow networks/clocks
+            if start_time < timezone.now() - timedelta(minutes=10):
                 return Response({
                     'error': 'Cannot create reservation in the past'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
+            # Calculate cost
+            duration_seconds = (end_time - start_time).total_seconds()
+            duration_hours = Decimal(str(duration_seconds / 3600))
+            if duration_hours < Decimal('0.25'): # Minimum 15 mins
+                duration_hours = Decimal('0.25')
+            
+            cost = (duration_hours * zone.hourly_rate).quantize(Decimal('0.01'))
+
+            # Check for existing pending reservation
+            # Avoid duplicates if user retries creation without paying
+            from apps.common.constants import TransactionStatus
+            existing_reservation = Reservation.objects.filter(
+                vehicle=vehicle,
+                zone=zone,
+                is_active=True,
+                reserved_from=start_time,
+                reserved_until=end_time
+            ).prefetch_related('transactions').first()
+
+            if existing_reservation:
+                 # Check if paid
+                 has_payment = existing_reservation.transactions.filter(status=TransactionStatus.COMPLETED).exists()
+                 if not has_payment:
+                     return Response({
+                        'message': 'Pending reservation found',
+                        'reservation': ReservationSerializer(existing_reservation).data
+                    }, status=status.HTTP_200_OK)
+
             # Create reservation
             reservation = Reservation.objects.create(
                 vehicle=vehicle,
                 zone=zone,
-                start_time=start_time,
-                end_time=end_time
+                reserved_from=start_time,
+                reserved_until=end_time,
+                cost=cost
             )
             
             return Response({

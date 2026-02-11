@@ -19,7 +19,7 @@ class ReservationService {
     return [];
   }
 
-  Future<bool> createReservation({
+  Future<Reservation?> createReservation({
     required String vehicleId,
     required String zoneId,
     required DateTime startTime,
@@ -35,9 +35,16 @@ class ReservationService {
           'end_time': endTime.toIso8601String(),
         },
       );
-      return response.statusCode == 201;
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final data = response.data['reservation'];
+        if (data != null) {
+          return Reservation.fromJson(data);
+        }
+      }
+      return null;
     } catch (e) {
-      return false;
+      return null;
     }
   }
 

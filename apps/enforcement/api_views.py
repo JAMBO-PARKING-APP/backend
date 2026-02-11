@@ -8,6 +8,7 @@ from .serializers import ZoneSerializer, VehicleDetailSerializer, ViolationSeria
 from .models import Violation
 from apps.parking.models import Zone, ParkingSession
 from apps.accounts.models import Vehicle
+from django.core.cache import cache
 
 class OfficerZoneListView(generics.ListAPIView):
     serializer_class = ZoneSerializer
@@ -36,11 +37,20 @@ def search_vehicle(request):
     plate = request.GET.get('plate', '').strip()
     if not plate:
         return Response({'error': 'License plate required'}, status=status.HTTP_400_BAD_REQUEST)
-    
+    cache_key = f"vehicle_plate_{plate.lower()}"
+    cached = cache.get(cache_key)
+    if cached:
+        return Response(cached)
+
     try:
         vehicle = Vehicle.objects.get(license_plate__iexact=plate)
         serializer = VehicleDetailSerializer(vehicle)
-        return Response(serializer.data)
+        data = serializer.data
+        try:
+            cache.set(cache_key, data, 60)
+        except Exception:
+            pass
+        return Response(data)
     except Vehicle.DoesNotExist:
         return Response({'error': 'Vehicle not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -49,17 +59,22 @@ def search_vehicle(request):
 def zone_live_status(request, zone_id):
     from django.utils import timezone
     zone = get_object_or_404(Zone, id=zone_id)
-    
+
+    cache_key = f"zone_live_{zone_id}"
+    cached = cache.get(cache_key)
+    if cached:
+        return Response(cached)
+
     # Get active sessions
     active_sessions = ParkingSession.objects.filter(
-        zone=zone, 
+        zone=zone,
         status='active'
     ).select_related('vehicle', 'parking_slot')
-    
+
     # Get zone stats
     total_slots = zone.slots.count() or 50
     occupied_slots = active_sessions.count()
-    
+
     sessions_data = []
     now = timezone.now()
     for session in active_sessions:
@@ -67,7 +82,7 @@ def zone_live_status(request, zone_id):
         remaining_seconds = (session.planned_end_time - now).total_seconds()
         remaining_seconds = max(0, remaining_seconds)
         remaining_minutes = int(remaining_seconds / 60)
-        
+
         sessions_data.append({
             'id': str(session.id),
             'vehicle_plate': session.vehicle.license_plate,
@@ -78,8 +93,8 @@ def zone_live_status(request, zone_id):
             'remaining_minutes': remaining_minutes,
             'estimated_cost': float(session.estimated_cost)
         })
-    
-    return Response({
+
+    result = {
         'zone_id': str(zone.id),
         'zone_name': zone.name,
         'total_slots': total_slots,
@@ -87,7 +102,14 @@ def zone_live_status(request, zone_id):
         'available_slots': total_slots - occupied_slots,
         'occupancy_rate': (occupied_slots * 100) // total_slots if total_slots > 0 else 0,
         'active_sessions': sessions_data
-    })
+    }
+
+    try:
+        cache.set(cache_key, result, 10)
+    except Exception:
+        pass
+
+    return Response(result)
 
 class CreateViolationView(generics.CreateAPIView):
     serializer_class = ViolationSerializer

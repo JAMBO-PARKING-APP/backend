@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 
@@ -154,12 +155,11 @@ class SettingsScreen extends StatelessWidget {
                       leading: const Icon(Icons.help_outline),
                       title: const Text('Help Center'),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Help Center coming soon'),
-                          ),
-                        );
+                      onTap: () async {
+                        final uri = Uri.parse('https://jambopark.com/help');
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri);
+                        }
                       },
                     ),
                     const Divider(height: 1),
@@ -167,12 +167,11 @@ class SettingsScreen extends StatelessWidget {
                       leading: const Icon(Icons.privacy_tip_outlined),
                       title: const Text('Privacy Policy'),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Privacy Policy coming soon'),
-                          ),
-                        );
+                      onTap: () async {
+                        final uri = Uri.parse('https://jambopark.com/privacy');
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri);
+                        }
                       },
                     ),
                     const Divider(height: 1),
@@ -180,12 +179,11 @@ class SettingsScreen extends StatelessWidget {
                       leading: const Icon(Icons.description_outlined),
                       title: const Text('Terms of Service'),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Terms of Service coming soon'),
-                          ),
-                        );
+                      onTap: () async {
+                        final uri = Uri.parse('https://jambopark.com/terms');
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri);
+                        }
                       },
                     ),
                   ],

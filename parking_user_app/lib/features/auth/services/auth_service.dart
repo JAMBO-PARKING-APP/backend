@@ -53,7 +53,11 @@ class AuthService {
       String message = _handleDioError(e);
       return {'success': false, 'message': message};
     } catch (e) {
-      return {'success': false, 'message': 'An unexpected error occurred. Please try again.'};
+      return {
+        'success': false,
+        'message': 'An unexpected error occurred. Please try again.',
+      };
+    }
     return {'success': false, 'message': 'Unknown error'};
   }
 
@@ -72,9 +76,9 @@ class AuthService {
           'phone': phone,
           'password': password,
           'password_confirm': confirmPassword ?? password,
-          if (email != null) 'email': email,
-          if (firstName != null) 'first_name': firstName,
-          if (lastName != null) 'last_name': lastName,
+          if (email?.isNotEmpty ?? false) 'email': email,
+          if (firstName?.isNotEmpty ?? false) 'first_name': firstName,
+          if (lastName?.isNotEmpty ?? false) 'last_name': lastName,
         },
       );
       if (response.statusCode == 201) {
@@ -217,9 +221,12 @@ class AuthService {
 
     switch (statusCode) {
       case 401:
-        return data?['detail'] ?? data?['error'] ?? 'Invalid phone number or password.';
+        return data?['detail'] ??
+            data?['error'] ??
+            'Invalid phone number or password.';
       case 400:
-        final errors = data?['error'] ?? data?['detail'] ?? 'Invalid input provided.';
+        final errors =
+            data?['error'] ?? data?['detail'] ?? 'Invalid input provided.';
         if (errors is Map) {
           return errors.values.first.toString();
         }
@@ -229,7 +236,9 @@ class AuthService {
       case 500:
         return 'Server error. Please try again later.';
       default:
-        return data?['error'] ?? data?['detail'] ?? 'Login failed. Please try again.';
+        return data?['error'] ??
+            data?['detail'] ??
+            'Login failed. Please try again.';
     }
   }
 }

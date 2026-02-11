@@ -28,7 +28,7 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
   final _descriptionController = TextEditingController();
   final _fineAmountController = TextEditingController();
   String _selectedType = 'expired';
-  List<File> _evidence = [];
+  final List<File> _evidence = [];
   bool _isLocating = false;
   Position? _currentPosition;
 
@@ -76,21 +76,23 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
     bool success = false;
     try {
       success = await context.read<EnforcementProvider>().issueViolation(
-      vehicleId:
-          widget.vehicleId ?? widget.vehiclePlate, // Fallback if ID missing
-      zoneId: widget.zoneId ?? '0',
-      type: _selectedType,
-      description: _descriptionController.text,
-      fineAmount: double.parse(_fineAmountController.text),
-      lat: _currentPosition!.latitude,
-      lng: _currentPosition!.longitude,
-      evidence: _evidence,
-      sessionId: widget.sessionId,
+        vehicleId:
+            widget.vehicleId ?? widget.vehiclePlate, // Fallback if ID missing
+        zoneId: widget.zoneId ?? '0',
+        type: _selectedType,
+        description: _descriptionController.text,
+        fineAmount: double.parse(_fineAmountController.text),
+        lat: _currentPosition!.latitude,
+        lng: _currentPosition!.longitude,
+        evidence: _evidence,
+        sessionId: widget.sessionId,
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to issue violation: ${e.toString()}')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to issue violation: ${e.toString()}')),
+        );
+      }
     }
 
     if (success && mounted) {
@@ -193,7 +195,7 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.primaryColor.withOpacity(0.1),
+        color: AppTheme.primaryColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(

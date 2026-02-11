@@ -164,20 +164,32 @@ CELERY_TIMEZONE = TIME_ZONE
 # Cache
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': REDIS_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_KWARGS': {'max_connections': 100},
+        },
         'KEY_PREFIX': 'jambo_park',
         'TIMEOUT': 300,  # 5 minutes default
     },
     'zones_cache': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': REDIS_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_KWARGS': {'max_connections': 100},
+        },
         'KEY_PREFIX': 'zones',
         'TIMEOUT': 1800,  # 30 minutes for zones (rarely change)
     },
     'help_cache': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': REDIS_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_KWARGS': {'max_connections': 100},
+        },
         'KEY_PREFIX': 'help',
         'TIMEOUT': 86400,  # 24 hours for help center
     }

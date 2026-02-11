@@ -77,26 +77,111 @@ class _ScannerScreenState extends State<ScannerScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
+                        // Parse vehicle plate from QR payload (server uses 'Vehicle: {plate}')
+                        String plate = '';
+                        try {
+                          final lines = data.split('\n');
+                          final vehicleLine = lines.firstWhere(
+                            (l) => l.toLowerCase().contains('vehicle:'),
+                            orElse: () => '',
+                          );
+                          if (vehicleLine.isNotEmpty) {
+                            plate = vehicleLine.split(':').last.trim();
+                          }
+                        } catch (_) {}
+
+                        if (!mounted) return;
                         Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ViolationFormScreen(
-                              vehiclePlate: data
-                                  .split('\n')
-                                  .firstWhere((l) => l.contains('Plate:'))
-                                  .split(':')
-                                  .last
-                                  .trim(),
+                        if (plate.isNotEmpty) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ViolationFormScreen(vehiclePlate: plate),
                             ),
-                          ),
-                        );
+                          );
+                        } else {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Could not extract vehicle plate from QR',
+                                ),
+                              ),
+                            );
+                          }
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.errorColor,
                       ),
                       child: const Text('ISSUE VIOLATION'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        // Try to extract session ID (server encodes as 'ID: {id}')
+                        String sessionId = '';
+                        try {
+                          final lines = data.split('\n');
+                          final idLine = lines.firstWhere(
+                            (l) => l.toLowerCase().startsWith('id:'),
+                            orElse: () => '',
+                          );
+                          if (idLine.isNotEmpty) {
+                            sessionId = idLine.split(':').last.trim();
+                          }
+                        } catch (_) {}
+
+                        if (sessionId.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Could not extract session ID from QR',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+
+                        // Call scan API via provider
+                        final provider = context.read<dynamic>();
+                        try {
+                          final result = await provider.scanQRCode(
+                            sessionId,
+                            data,
+                          );
+                          if (context.mounted) {
+                            if (result['success'] == true) {
+                              final msg =
+                                  result['message'] ?? 'Scan successful';
+                              ScaffoldMessenger.of(
+                                context,
+                              ).showSnackBar(SnackBar(content: Text(msg)));
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    result['message'] ?? 'Scan failed',
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Scan error: ${e.toString()}'),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      child: const Text('VERIFY SESSION'),
                     ),
                   ),
                 ],

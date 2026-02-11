@@ -36,6 +36,7 @@ class PaymentService {
     bool isWalletTopup = true,
     String? parkingSessionId,
     String? violationId,
+    String? reservationId,
   }) async {
     try {
       final response = await _apiClient.post(
@@ -44,10 +45,11 @@ class PaymentService {
           'amount': amount,
           'description': description,
           'is_wallet_topup': isWalletTopup,
-          if (parkingSessionId != null) 'parking_session_id': parkingSessionId,
-          if (violationId != null) 'violation_id': violationId,
-          'callback_url':
-              'https://1850-154-227-132-66.ngrok-free.app/api/user/payments/pesapal/callback/',
+          if (parkingSessionId?.isNotEmpty ?? false)
+            'parking_session_id': parkingSessionId,
+          if (violationId?.isNotEmpty ?? false) 'violation_id': violationId,
+          if (reservationId?.isNotEmpty ?? false)
+            'reservation_id': reservationId,
         },
       );
       if (response.statusCode == 200) {

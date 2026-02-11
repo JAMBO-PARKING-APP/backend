@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 
 class SidebarNavigation extends StatelessWidget {
@@ -43,16 +44,23 @@ class SidebarNavigation extends StatelessWidget {
                     backgroundColor: Theme.of(
                       context,
                     ).primaryColor.withValues(alpha: 0.3),
-                    child: Text(
-                      (auth.user?.firstName.isNotEmpty ?? false)
-                          ? auth.user!.firstName.substring(0, 1).toUpperCase()
-                          : 'U',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                    backgroundImage: (auth.user?.profilePhoto != null)
+                        ? CachedNetworkImageProvider(auth.user!.profilePhoto!)
+                        : null,
+                    child: (auth.user?.profilePhoto == null)
+                        ? Text(
+                            (auth.user?.firstName.isNotEmpty ?? false)
+                                ? auth.user!.firstName
+                                      .substring(0, 1)
+                                      .toUpperCase()
+                                : 'U',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          )
+                        : null,
                   ),
                   const SizedBox(height: 12),
                   Text(

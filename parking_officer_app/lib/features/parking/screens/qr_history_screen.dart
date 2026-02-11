@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:parking_officer_app/features/enforcement/providers/officer_provider.dart';
-import 'package:parking_officer_app/core/app_theme.dart';
 
 class QRScanHistoryScreen extends StatefulWidget {
   const QRScanHistoryScreen({super.key});
@@ -22,10 +21,7 @@ class _QRScanHistoryScreenState extends State<QRScanHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('QR Scan History'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('QR Scan History'), elevation: 0),
       body: Consumer<OfficerProvider>(
         builder: (context, provider, _) {
           if (provider.isLoading && provider.qrScans.isEmpty) {
@@ -40,16 +36,16 @@ class _QRScanHistoryScreenState extends State<QRScanHistoryScreen> {
                   Icon(
                     Icons.qr_code_2,
                     size: 64,
-                    color: Colors.grey.withOpacity(0.5),
+                    color: Colors.grey.withValues(alpha: 0.5),
                   ),
                   const SizedBox(height: 16),
                   const Text('No QR scans yet'),
                   const SizedBox(height: 8),
                   Text(
                     'Start scanning QR codes to see history',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey,
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
                   ),
                 ],
               ),
@@ -59,7 +55,7 @@ class _QRScanHistoryScreenState extends State<QRScanHistoryScreen> {
           return RefreshIndicator(
             onRefresh: () => provider.fetchQRScans(),
             child: ListView.builder(
-              padding: const EdgeInsets.all( 16),
+              padding: const EdgeInsets.all(16),
               itemCount: provider.qrScans.length,
               itemBuilder: (context, index) {
                 final scan = provider.qrScans[index];
@@ -114,7 +110,7 @@ class _QRScanHistoryScreenState extends State<QRScanHistoryScreen> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.2),
+                    color: statusColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -136,7 +132,7 @@ class _QRScanHistoryScreenState extends State<QRScanHistoryScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            Divider(color: Colors.grey.withOpacity(0.3)),
+            Divider(color: Colors.grey.withValues(alpha: 0.3)),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -146,10 +142,7 @@ class _QRScanHistoryScreenState extends State<QRScanHistoryScreen> {
                   children: [
                     const Text(
                       'Scanned By',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -163,10 +156,7 @@ class _QRScanHistoryScreenState extends State<QRScanHistoryScreen> {
                   children: [
                     const Text(
                       'Time',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -182,7 +172,7 @@ class _QRScanHistoryScreenState extends State<QRScanHistoryScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
+                  color: Colors.green.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(

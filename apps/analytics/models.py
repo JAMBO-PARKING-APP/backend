@@ -3,7 +3,7 @@ from apps.common.models import BaseModel
 
 class RevenueRecord(BaseModel):
     zone = models.ForeignKey('parking.Zone', on_delete=models.CASCADE, related_name='revenue_records')
-    date = models.DateField()
+    date = models.DateField(db_index=True)
     total_revenue = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total_sessions = models.IntegerField(default=0)
     total_violations = models.IntegerField(default=0)

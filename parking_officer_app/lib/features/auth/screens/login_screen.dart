@@ -50,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     final fullPhone = '${_selectedCountry.dialCode}${_phoneController.text}';
-    
+
     final success = await context.read<AuthProvider>().login(
       fullPhone,
       _passwordController.text,
@@ -119,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 48),
-                  
+
                   // Country Code Selector
                   Card(
                     elevation: 1,
@@ -130,27 +130,29 @@ class _LoginScreenState extends State<LoginScreen> {
                         isExpanded: true,
                         underline: const SizedBox(),
                         items: countryCodes
-                            .map((country) => DropdownMenuItem(
-                                  value: country,
-                                  child: Row(
-                                    children: [
-                                      Text(
-                                        country.flag,
-                                        style: const TextStyle(fontSize: 24),
+                            .map(
+                              (country) => DropdownMenuItem(
+                                value: country,
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      country.flag,
+                                      style: const TextStyle(fontSize: 24),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(country.name),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      country.dialCode,
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 12,
                                       ),
-                                      const SizedBox(width: 12),
-                                      Text(country.name),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        country.dialCode,
-                                        style: const TextStyle(
-                                          color: Colors.grey,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ))
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
                             .toList(),
                         onChanged: (CountryCode? value) {
                           if (value != null) {
@@ -161,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Phone Number Input
                   TextField(
                     controller: _phoneController,
@@ -171,9 +173,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: const Icon(Icons.phone),
                       prefixText: '${_selectedCountry.dialCode} ',
                       hintText: '7XX XXX XXX',
-                      errorText: !_phoneFocusNode.hasFocus && 
-                          _phoneController.text.isNotEmpty &&
-                          !RegExp(r'^[0-9]{9}$').hasMatch(_phoneController.text)
+                      errorText:
+                          !_phoneFocusNode.hasFocus &&
+                              _phoneController.text.isNotEmpty &&
+                              !RegExp(
+                                r'^[0-9]{9}$',
+                              ).hasMatch(_phoneController.text)
                           ? 'Enter 9 digits'
                           : null,
                       border: OutlineInputBorder(
@@ -184,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onChanged: (_) => setState(() {}),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Password Input
                   TextField(
                     controller: _passwordController,
@@ -208,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     obscureText: _obscurePassword,
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // Login Button
                   ElevatedButton(
                     onPressed: auth.status == AuthStatus.authenticating
@@ -238,15 +243,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Network Status Info
                   if (auth.status == AuthStatus.authenticating)
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
+                        color: Colors.blue.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.blue),
                       ),

@@ -22,7 +22,7 @@ from .serializers_v2 import (
 )
 from .pesapal_service import PesapalService
 from apps.enforcement.models import Violation
-from apps.parking.models import ParkingSession, ParkingStatus
+from apps.parking.models import ParkingSession, ParkingStatus, Reservation
 
 class PaymentMethodsListAPIView(generics.ListAPIView):
     """List user's payment methods"""
@@ -256,10 +256,18 @@ class InitiatePesapalPaymentAPIView(APIView):
             except Violation.DoesNotExist:
                 return Response({'error': 'Violation not found'}, status=status.HTTP_404_NOT_FOUND)
 
+        reservation = None
+        if serializer.validated_data.get('reservation_id'):
+            try:
+                reservation = Reservation.objects.get(id=serializer.validated_data['reservation_id'])
+            except Reservation.DoesNotExist:
+                return Response({'error': 'Reservation not found'}, status=status.HTTP_404_NOT_FOUND)
+
         trans = Transaction.objects.create(
             user=request.user,
             amount=serializer.validated_data['amount'],
             parking_session=parking_session,
+            reservation=reservation,
             idempotency_key=idempotency_key,
             pesapal_merchant_reference=merchant_reference,
             status='pending',
@@ -276,8 +284,10 @@ class InitiatePesapalPaymentAPIView(APIView):
 
         if not response or 'order_tracking_id' not in response:
             trans.status = 'failed'
+            trans.processor_response = response if isinstance(response, dict) else {'error': str(response)}
             trans.save()
-            return Response({'error': 'Failed to initiate payment with PesaPal'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            error_msg = response.get('error') if response and isinstance(response, dict) else 'Unknown error'
+            return Response({'error': f'Failed to initiate payment: {error_msg}'}, status=status.HTTP_400_BAD_REQUEST)
         
         trans.pesapal_order_tracking_id = response['order_tracking_id']
         trans.save()
@@ -289,13 +299,91 @@ class InitiatePesapalPaymentAPIView(APIView):
             'merchant_reference': merchant_reference
         }, status=status.HTTP_200_OK)
 
-class PesapalIPNAPIView(APIView):
-    """Handle PesaPal IPN callbacks"""
+class PesapalUserCallbackView(APIView):
+    """Handle PesaPal User Redirect Callback"""
     permission_classes = [AllowAny]
     
     def get(self, request):
         order_tracking_id = request.query_params.get('OrderTrackingId')
         order_merchant_reference = request.query_params.get('OrderMerchantReference')
+        
+        if not all([order_tracking_id, order_merchant_reference]):
+            return Response({'error': 'Invalid parameters'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        pesapal = PesapalService()
+        status_response = pesapal.get_transaction_status(order_tracking_id)
+        
+        if not status_response:
+             return Response({'error': 'Verification failed'}, status=status.HTTP_400_BAD_REQUEST)
+             
+        try:
+            trans = Transaction.objects.get(pesapal_merchant_reference=order_merchant_reference)
+            
+            # Update status logic (similar to IPN but for user feedback)
+            p_status = status_response.get('payment_status_description', '').lower()
+            if p_status == 'completed' and trans.status != 'completed':
+                trans.status = 'completed'
+                if trans.parking_session:
+                    trans.parking_session.end_session()
+                
+                # Wallet topup
+                is_wallet_topup = trans.processor_response.get('is_wallet_topup', False) if trans.processor_response else False
+                if is_wallet_topup:
+                    with transaction.atomic():
+                        user = trans.user
+                        user.wallet_balance += trans.amount
+                        # Reload user to ensure balance update persistence if needed or rely on atomic block
+                        user.save()
+                        
+                        from django.utils.translation import gettext as _
+                        WalletTransaction.objects.create(
+                            user=user,
+                            amount=trans.amount,
+                            transaction_type='topup',
+                            description=_('Wallet top-up via PesaPal'),
+                            status='completed',
+                            related_transaction=trans
+                        )
+            elif p_status in ['failed', 'invalid', 'rejected']:
+                trans.status = 'failed'
+                
+            trans.processor_response = {**trans.processor_response, **status_response}
+            trans.save()
+            
+            # Redirect to a simple success/failure HTML page or custom scheme
+            # For now, returning a JSON status that the app can intercept or a simple HTML
+            from django.http import HttpResponse
+            html_content = f"""
+            <html>
+                <head><title>Payment {p_status.title()}</title></head>
+                <body style="text-align: center; padding: 20px; font-family: sans-serif;">
+                    <h1>Payment {p_status.title()}</h1>
+                    <p>Reference: {order_merchant_reference}</p>
+                    <p>You can verify this in the app.</p>
+                </body>
+            </html>
+            """
+            return HttpResponse(html_content)
+
+        except Transaction.DoesNotExist:
+            return Response({'error': 'Transaction not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class PesapalIPNAPIView(APIView):
+    """Handle PesaPal IPN callbacks"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        """Handle POST IPN"""
+        return self.process_ipn(request.data)
+
+    def get(self, request):
+        """Handle GET IPN"""
+        return self.process_ipn(request.query_params)
+    
+    def process_ipn(self, data):
+        order_tracking_id = data.get('OrderTrackingId')
+        order_merchant_reference = data.get('OrderMerchantReference')
+        notification_type = data.get('OrderNotificationType')
         
         if not all([order_tracking_id, order_merchant_reference]):
             return Response({'error': 'Invalid IPN parameters'}, status=status.HTTP_400_BAD_REQUEST)
@@ -316,7 +404,7 @@ class PesapalIPNAPIView(APIView):
                     trans.parking_session.end_session()
                 
                 # If it's a wallet top-up, credit the wallet
-                is_wallet_topup = trans.processor_response.get('is_wallet_topup', False)
+                is_wallet_topup = trans.processor_response.get('is_wallet_topup', False) if trans.processor_response else False
                 if is_wallet_topup:
                     with transaction.atomic():
                         user = trans.user
@@ -339,9 +427,10 @@ class PesapalIPNAPIView(APIView):
             trans.save()
             
             return Response({
-                'order_tracking_id': order_tracking_id,
-                'merchant_reference': order_merchant_reference,
-                'status': trans.status
+                'orderNotificationType': notification_type,
+                'orderTrackingId': order_tracking_id,
+                'orderMerchantReference': order_merchant_reference,
+                'status': 200
             }, status=status.HTTP_200_OK)
             
         except Transaction.DoesNotExist:

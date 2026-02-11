@@ -30,7 +30,7 @@ class NotificationEvent(BaseModel):
     message = models.TextField()
     type = models.CharField(max_length=50, choices=NOTIFICATION_TYPES, default='other')
     category = models.CharField(max_length=20, choices=CATEGORIES, default='system')
-    is_read = models.BooleanField(default=False)
+    is_read = models.BooleanField(default=False, db_index=True)
     metadata = models.JSONField(null=True, blank=True)  # Store additional data like parking_session_id, violation_id
     
     class Meta:
