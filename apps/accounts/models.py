@@ -17,7 +17,24 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     is_active = models.BooleanField(default=True, verbose_name=_("Active"))
     is_staff = models.BooleanField(default=False, verbose_name=_("Staff Status"))
     is_verified = models.BooleanField(default=False, verbose_name=_("Verified"))
-    device_session_id = models.FloatField(default=0, verbose_name=_("Device Session ID"), help_text="Timestamp of last login - used for single device login")
+    
+    # Single device login enforcement
+    current_device_id = models.CharField(max_length=255, blank=True, null=True, verbose_name=_("Current Device ID"), help_text="Unique identifier of the currently logged-in device")
+    current_session_token = models.CharField(max_length=500, blank=True, null=  True, verbose_name=_("Current Session Token"), help_text="JWT token ID (jti) of active session")
+    last_login_device = models.CharField(max_length=255, blank=True, null=True, verbose_name=_("Last Login Device"), help_text="Device info for logging purposes")
+    
+    # FCM Push Notification fields
+    fcm_device_token = models.CharField(max_length=255, blank=True, null=True, verbose_name=_("FCM Device Token"), help_text="Firebase Cloud Messaging device token for push notifications")
+    fcm_token_updated_at = models.DateTimeField(null=True, blank=True, verbose_name=_("FCM Token Updated At"))
+    
+    # Officer zone assignments
+    assigned_zones = models.ManyToManyField(
+        'parking.Zone',
+        related_name='assigned_officers',
+        blank=True,
+        verbose_name=_("Assigned Zones"),
+        help_text="Zones assigned to this officer for monitoring"
+    )
 
     objects = UserManager()
 
@@ -28,7 +45,8 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
         indexes = [
             models.Index(fields=['is_active']),
             models.Index(fields=['phone']),
-            models.Index(fields=['device_session_id']),
+            models.Index(fields=['current_session_token']),
+            models.Index(fields=['fcm_device_token']),
         ]
 
     def __str__(self):

@@ -169,3 +169,42 @@ class SendChatMessageSerializer(serializers.ModelSerializer):
         model = ChatMessage
         fields = ['message_type', 'content', 'attachment']
 
+
+class FCMTokenSerializer(serializers.Serializer):
+    """Serializer for registering/updating FCM device tokens"""
+    token = serializers.CharField(max_length=255, required=True, help_text="FCM device token")
+    
+    def validate_token(self, value):
+        if not value or len(value) < 10:
+            raise serializers.ValidationError("Invalid FCM token")
+        return value
+
+
+class SendCustomNotificationSerializer(serializers.Serializer):
+    """Serializer for sending custom notifications (admin only)"""
+    user_id = serializers.UUIDField(required=False, help_text="Specific user ID (optional)")
+    user_ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        required=False,
+        help_text="List of user IDs (optional)"
+    )
+    role = serializers.ChoiceField(
+        choices=['driver', 'officer', 'admin'],
+        required=False,
+        help_text="Send to all users with this role (optional)"
+    )
+    title = serializers.CharField(max_length=100, required=True)
+    message = serializers.CharField(required=True)
+    category = serializers.ChoiceField(
+        choices=['parking', 'violations', 'payments', 'reservations', 'system', 'promo'],
+        default='system'
+    )
+    data = serializers.JSONField(required=False, help_text="Additional custom data")
+    
+    def validate(self, attrs):
+        # At least one target must be specified
+        if not any([attrs.get('user_id'), attrs.get('user_ids'), attrs.get('role')]):
+            raise serializers.ValidationError(
+                "Must specify at least one of: user_id, user_ids, or role"
+            )
+        return attrs

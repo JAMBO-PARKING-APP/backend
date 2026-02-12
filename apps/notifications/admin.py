@@ -3,19 +3,21 @@ from .models import NotificationEvent, ChatConversation, ChatMessage
 
 @admin.register(NotificationEvent)
 class NotificationAdmin(admin.ModelAdmin):
-    list_display = ('user', 'title', 'type', 'is_read', 'created_at')
-    list_filter = ('type', 'category', 'is_read', 'created_at')
+    list_display = ('user', 'title', 'type', 'priority', 'is_read', 'sent_via_push', 'created_at')
+    list_filter = ('type', 'category', 'priority', 'is_read', 'is_promotional', 'sent_via_push', 'created_at')
     search_fields = ('user__phone', 'user__first_name', 'user__last_name', 'title', 'message')
-    readonly_fields = ('created_at', 'updated_at')
+    readonly_fields = ('created_at', 'updated_at', 'push_sent_at')
     ordering = ('-created_at',)
     
     fieldsets = (
         (None, {'fields': ('user', 'title', 'message')}),
-        ('Details', {'fields': ('type', 'category', 'is_read', 'metadata')}),
+        ('Details', {'fields': ('type', 'category', 'priority', 'is_read', 'metadata')}),
+        ('Admin Options', {'fields': ('show_as_dialog', 'is_promotional')}),
+        ('Push Notification', {'fields': ('sent_via_push', 'push_sent_at', 'push_error')}),
         ('Timestamps', {'fields': ('created_at', 'updated_at')}),
     )
     
-    actions = ['mark_as_read', 'mark_as_unread']
+    actions = ['mark_as_read', 'mark_as_unread', 'send_push_notification']
     
     def mark_as_read(self, request, queryset):
         count = queryset.update(is_read=True)
@@ -26,6 +28,45 @@ class NotificationAdmin(admin.ModelAdmin):
         count = queryset.update(is_read=False)
         self.message_user(request, f'{count} notification(s) marked as unread')
     mark_as_unread.short_description = 'Mark selected as unread'
+    
+    def send_push_notification(self, request, queryset):
+        from apps.notifications.firebase_service import send_notification_to_user
+        
+        sent_count = 0
+        failed_count = 0
+        
+        for notification in queryset:
+            # Prepare notification data
+            data = {
+                'type': notification.type,
+                'title': notification.title,
+                'body': notification.message,
+                'priority': notification.priority,
+            }
+            
+            if notification.show_as_dialog:
+                data['show_dialog'] = 'true'
+            
+            # Add metadata if exists
+            if notification.metadata:
+                data.update(notification.metadata)
+            
+            # Send notification
+            success = send_notification_to_user(
+                user=notification.user,
+                title=notification.title,
+                body=notification.message,
+                data=data,
+                notification_event=notification
+            )
+            
+            if success:
+                sent_count += 1
+            else:
+                failed_count += 1
+        
+        self.message_user(request, f'Sent {sent_count} notification(s). Failed: {failed_count}')
+    send_push_notification.short_description = 'Send push notification to users'
 
 
 @admin.register(ChatConversation)

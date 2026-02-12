@@ -42,7 +42,19 @@ class ApiClient {
             debugPrint(
               '[ApiClient] 401 Unauthorized for ${e.requestOptions.path}',
             );
-            // TODO: Implement Token Refresh Logic
+
+            // Check if session was invalidated (logged in from another device)
+            final sessionInvalidated = e.response?.headers.value(
+              'X-Session-Invalidated',
+            );
+            if (sessionInvalidated == 'true') {
+              debugPrint(
+                '[ApiClient] 🚨 Session invalidated - user logged in from another device',
+              );
+              // Clear local storage and navigate to login
+              await _storageManager.clearAuthData();
+              // The app will handle navigation to login via auth state listener
+            }
           }
           return handler.next(e);
         },

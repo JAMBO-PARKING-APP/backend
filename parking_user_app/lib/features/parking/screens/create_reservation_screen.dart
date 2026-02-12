@@ -100,8 +100,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
             );
           },
           onPesapalSelected: () async {
-            Navigator.pop(context); // Close dialog
-            // DO NOT pop screen yet, wait for payment initiation
+            Navigator.pop(context); // Close payment selection dialog
 
             // Show loading
             showDialog(
@@ -110,45 +109,60 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
               builder: (c) => const Center(child: CircularProgressIndicator()),
             );
 
-            // Initiate Pesapal Payment
-            final paymentService = PaymentService();
-            final result = await paymentService.initiatePesapalPayment(
-              amount: cost,
-              description: "Reservation Payment: ${reservation.id}",
-              isWalletTopup: false,
-              reservationId: reservation.id,
-            );
-
-            // Hide loading
-            if (mounted) {
-              Navigator.pop(context);
-            }
-
-            if (result['success'] == true && mounted) {
-              Navigator.pop(context); // Close CreateReservationScreen
-
-              final url = result['redirect_url'];
-              if (url != null) {
-                final uri = Uri.parse(url);
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Could not launch payment URL'),
-                    ),
-                  );
-                }
-              }
-            } else if (mounted) {
-              // Show error
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    result['message'] ?? 'Payment initiation failed',
-                  ),
-                ),
+            try {
+              // Initiate Pesapal Payment
+              final paymentService = PaymentService();
+              final result = await paymentService.initiatePesapalPayment(
+                amount: cost,
+                description: "Reservation Payment: ${reservation.id}",
+                isWalletTopup: false,
+                reservationId: reservation.id,
               );
+
+              // Hide loading
+              if (mounted) {
+                Navigator.pop(context);
+              }
+
+              if (result['success'] == true && mounted) {
+                Navigator.pop(context); // Close CreateReservationScreen
+
+                final url = result['redirect_url'];
+                if (url != null) {
+                  final uri = Uri.parse(url);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  } else {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Could not launch payment URL'),
+                        ),
+                      );
+                    }
+                  }
+                }
+              } else if (mounted) {
+                // Show error
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      result['message'] ?? 'Payment initiation failed',
+                    ),
+                  ),
+                );
+              }
+            } catch (e) {
+              // Hide loading on error
+              if (mounted) {
+                Navigator.pop(context);
+              }
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error initiating payment: $e')),
+                );
+              }
             }
           },
         ),

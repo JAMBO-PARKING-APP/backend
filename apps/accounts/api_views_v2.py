@@ -95,20 +95,27 @@ class VerifyOTPAPIView(APIView):
             
             # Mark user as verified
             user.is_verified = True
+            
+            # Get device info from request
+            device_id = request.data.get('device_id')
+            device_info = request.data.get('device_info', '')
+            
+            # Generate new JWT token
+            refresh = RefreshToken.for_user(user)
+            access_token = refresh.access_token
+            
+            # Get token ID (jti) for session tracking
+            token_jti = str(access_token.get('jti', ''))
+            
+            # Update user session tracking (invalidates previous session)
+            if device_id:
+                user.current_device_id = device_id
+            user.current_session_token = token_jti
+            user.last_login_device = device_info or request.META.get('HTTP_USER_AGENT', '')[:255]
             user.save()
             
-            # Single Device Login: Invalidate all previous tokens by incrementing device session counter
-            # This ensures only the latest token per user is valid
-            user.device_session_id = timezone.now().timestamp()
-            user.save(update_fields=['device_session_id'])
-            
-            refresh = RefreshToken.for_user(user)
-            # Include device_session_id in token so authentication can enforce single-device
-            refresh['device_session_id'] = str(user.device_session_id)
-            refresh.access_token['device_session_id'] = str(user.device_session_id)
-            
             return Response({
-                'access': str(refresh.access_token),
+                'access': str(access_token),
                 'refresh': str(refresh),
                 'user': UserProfileSerializer(user).data,
                 'message': 'Login successful'
@@ -136,17 +143,27 @@ class LoginAPIView(APIView):
             
             if not user.is_verified:
                 user.is_verified = True
-                user.save(update_fields=['is_verified'])
             
-            # Single Device Login: Invalidate all previous tokens by updating device session ID
-            user.device_session_id = timezone.now().timestamp()
-            user.save(update_fields=['device_session_id'])
+            # Get device info from request
+            device_id = request.data.get('device_id')
+            device_info = request.data.get('device_info', '')
+            
+            # Generate new JWT token
             refresh = RefreshToken.for_user(user)
-            refresh['device_session_id'] = str(user.device_session_id)
-            refresh.access_token['device_session_id'] = str(user.device_session_id)
+            access_token = refresh.access_token
+            
+            # Get token ID (jti) for session tracking
+            token_jti = str(access_token.get('jti', ''))
+            
+            # Update user session tracking (invalidates previous session)
+            if device_id:
+                user.current_device_id = device_id
+            user.current_session_token = token_jti
+            user.last_login_device = device_info or request.META.get('HTTP_USER_AGENT', '')[:255]
+            user.save()
             
             return Response({
-                'access': str(refresh.access_token),
+                'access': str(access_token),
                 'refresh': str(refresh),
                 'user': UserProfileSerializer(user).data,
                 'message': 'Login successful'

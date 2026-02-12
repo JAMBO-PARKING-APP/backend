@@ -136,3 +136,39 @@ class CreateReservationSerializer(serializers.Serializer):
              raise serializers.ValidationError("End time (reserved_until) is required")
              
         return data
+
+
+# Officer App Serializers
+class ZoneSerializer(serializers.ModelSerializer):
+    """Simple zone serializer for officer app"""
+    active_sessions = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Zone
+        fields = ['id', 'name', 'code', 'total_slots', 'occupied_slots', 
+                  'available_slots', 'active_sessions']
+    
+    def get_active_sessions(self, obj):
+        """Get count of active sessions in this zone"""
+        from apps.common.constants import ParkingStatus
+        return obj.sessions.filter(status=ParkingStatus.ACTIVE).count()
+
+
+class ParkingSessionDetailSerializer(serializers.ModelSerializer):
+    """Detailed parking session serializer for officer app"""
+    vehicle_plate = serializers.CharField(source='vehicle.license_plate', read_only=True)
+    driver_name = serializers.SerializerMethodField()
+    driver_phone = serializers.CharField(source='vehicle.user.phone', read_only=True)
+    zone_name = serializers.CharField(source='zone.name', read_only=True)
+    slot_number = serializers.CharField(source='parking_slot.slot_code', read_only=True)
+    
+    class Meta:
+        model = ParkingSession
+        fields = ['id', 'vehicle_plate', 'driver_name', 'driver_phone', 'zone_name',
+                  'slot_number', 'start_time', 'planned_end_time', 'actual_end_time',
+                  'status', 'estimated_cost', 'final_cost', 'created_at']
+    
+    def get_driver_name(self, obj):
+        """Get driver's full name"""
+        user = obj.vehicle.user
+        return f"{user.first_name} {user.last_name}".strip() or user.email

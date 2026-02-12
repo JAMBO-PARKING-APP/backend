@@ -106,6 +106,20 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
             conversation.status = 'in_progress'
             conversation.save()
         
+        # Send notification to assigned officer
+        if conversation.assigned_agent and request.user == conversation.user:
+            from apps.notifications.firebase_service import send_notification_to_user
+            send_notification_to_user(
+                user=conversation.assigned_agent,
+                title=f"New message from {request.user.full_name}",
+                body=message.content[:100],  # First 100 chars
+                data={
+                    'type': 'chat_message',
+                    'conversation_id': str(conversation.id),
+                    'sender_id': str(request.user.id),
+                }
+            )
+        
         # Handle file attachment if provided
         if 'attachment' in request.FILES:
             message.attachment = request.FILES['attachment']

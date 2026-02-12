@@ -10,13 +10,54 @@ class ZoneService {
       // Use the user app endpoint which is available for officers too
       final response = await _apiClient.get('user/zones/');
       if (response.statusCode == 200) {
-        final List data = response.data is Map ? response.data['results'] ?? [] : response.data;
+        final List data = response.data is Map
+            ? response.data['results'] ?? []
+            : response.data;
         return data.map((z) => Zone.fromJson(z)).toList();
       }
     } catch (e) {
       return [];
     }
     return [];
+  }
+
+  /// Get officer's assigned zones with active session counts
+  Future<List<Zone>> getOfficerZones() async {
+    try {
+      final response = await _apiClient.get('/api/officer/zones/');
+      if (response.statusCode == 200) {
+        final data = response.data;
+        final List zones = data['zones'] ?? [];
+        return zones.map((z) => Zone.fromJson(z)).toList();
+      }
+    } catch (e) {
+      print('Error fetching officer zones: $e');
+      return [];
+    }
+    return [];
+  }
+
+  /// Get active sessions in a specific zone
+  Future<Map<String, dynamic>> getZoneSessions(String zoneId) async {
+    try {
+      final response = await _apiClient.get(
+        '/api/officer/zones/$zoneId/sessions/',
+      );
+      if (response.statusCode == 200) {
+        final data = response.data;
+        return {
+          'zone': Zone.fromJson(data['zone']),
+          'sessions': (data['sessions'] as List)
+              .map((s) => ParkingSession.fromJson(s))
+              .toList(),
+          'total': data['total_sessions'] ?? 0,
+        };
+      }
+    } catch (e) {
+      print('Error fetching zone sessions: $e');
+      return {'error': 'Failed to load zone sessions'};
+    }
+    return {'error': 'Failed to load zone sessions'};
   }
 
   Future<Map<String, dynamic>> getZoneLiveStatus(String zoneId) async {

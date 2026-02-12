@@ -1,8 +1,15 @@
+from decouple import config
 from .base import *
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '10.0.2.2', '172.17.160.1', 'b95b-154-227-132-66.ngrok-free.app', '3fa7-154-227-132-66.ngrok-free.app', '70b4-154-227-132-66.ngrok-free.app', '1850-154-227-132-66.ngrok-free.app']
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', 
+                       default='localhost,127.0.0.1,0.0.0.0,10.0.2.2,b95b-154-227-132-66.ngrok-free.app', 
+                       cast=lambda v: [s.strip() for s in v.split(',')])
+
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', 
+                             default='http://localhost:8000,http://127.0.0.1:8000', 
+                             cast=lambda v: [s.strip() for s in v.split(',')])
 
 # Development database
 DATABASES = {

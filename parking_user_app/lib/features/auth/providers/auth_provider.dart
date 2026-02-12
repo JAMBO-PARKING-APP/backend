@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:parking_user_app/features/auth/models/user_model.dart';
 import 'package:parking_user_app/features/auth/services/auth_service.dart';
 import 'package:parking_user_app/core/storage_manager.dart';
+import 'package:parking_user_app/core/fcm_service.dart';
 import 'dart:convert';
 
 enum AuthStatus { authenticated, unauthenticated, authenticating, initial }
@@ -72,6 +73,12 @@ class AuthProvider with ChangeNotifier {
       debugPrint('[AuthProvider] ✓ User authenticated successfully');
       debugPrint('[AuthProvider] User: ${_user?.firstName} ${_user?.lastName}');
       debugPrint('[AuthProvider] Status changed to: $_status');
+
+      // Register FCM token after successful login
+      FCMService().registerToken().then((success) {
+        debugPrint('[AuthProvider] FCM token registration: $success');
+      });
+
       notifyListeners();
       debugPrint('[AuthProvider] Notified listeners - UI should update now');
       return true;
@@ -122,6 +129,12 @@ class AuthProvider with ChangeNotifier {
     if (result['success']) {
       _user = result['user'];
       _status = AuthStatus.authenticated;
+
+      // Register FCM token after successful OTP verification
+      FCMService().registerToken().then((success) {
+        debugPrint('[AuthProvider] FCM token registration: $success');
+      });
+
       notifyListeners();
       return true;
     } else {
@@ -133,6 +146,9 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> logout() async {
+    // Unregister FCM token before logout
+    await FCMService().unregisterToken();
+
     await _authService.logout();
     _user = null;
     _status = AuthStatus.unauthenticated;

@@ -20,7 +20,8 @@ class ZoneProvider with ChangeNotifier {
   Future<void> fetchZones() async {
     _isLoading = true;
     notifyListeners();
-    _zones = await _zoneService.getZones();
+    // Fetch officer's assigned zones from new API
+    _zones = await _zoneService.getOfficerZones();
     _isLoading = false;
     notifyListeners();
   }
@@ -31,7 +32,7 @@ class ZoneProvider with ChangeNotifier {
     _activeSessions = [];
     notifyListeners();
 
-    final result = await _zoneService.getZoneLiveStatus(zoneId);
+    final result = await _zoneService.getZoneSessions(zoneId);
     if (result.containsKey('zone')) {
       _selectedZone = result['zone'];
       _activeSessions = result['sessions'];

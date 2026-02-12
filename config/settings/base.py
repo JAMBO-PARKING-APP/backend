@@ -8,7 +8,9 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-in-production'
 
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,70b4-154-227-132-66.ngrok-free.app', cast=lambda v: [s.strip() for s in v.split(',')])
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
+
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='http://localhost:8000,http://127.0.0.1:8000', cast=lambda v: [s.strip() for s in v.split(',')])
 
 # Application definition
 DJANGO_APPS = [
@@ -48,6 +50,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'apps.accounts.middleware.SingleDeviceLoginMiddleware',  # Single device login enforcement
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -145,9 +148,12 @@ REST_FRAMEWORK = {
 # JWT Settings
 from datetime import timedelta
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': True,
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=365),  # Non-expiring for mobile apps
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=365),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'UPDATE_LAST_LOGIN': True,
+    'JTI_CLAIM': 'jti',  # Token ID for session tracking
 }
 
 # Redis
@@ -207,3 +213,7 @@ PESAPAL_CONSUMER_KEY = config('PESAPAL_CONSUMER_KEY', default='')
 PESAPAL_CONSUMER_SECRET = config('PESAPAL_CONSUMER_SECRET', default='')
 PESAPAL_SANDBOX = config('PESAPAL_SANDBOX', default=True, cast=bool)
 PESAPAL_CALLBACK_URL = config('PESAPAL_CALLBACK_URL', default='https://1850-154-227-132-66.ngrok-free.app/api/user/payments/pesapal/callback/')
+
+# Firebase Cloud Messaging Settings
+FIREBASE_CREDENTIALS_PATH = BASE_DIR / 'jambo-parking-d6e88-firebase-adminsdk-fbsvc-9ba12edacb.json'
+FIREBASE_ENABLED = config('FIREBASE_ENABLED', default=True, cast=bool)

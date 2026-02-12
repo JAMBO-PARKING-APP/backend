@@ -6,6 +6,7 @@ import 'package:parking_officer_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_officer_app/core/app_theme.dart';
 import 'package:parking_officer_app/features/parking/models/zone_model.dart';
 import 'package:parking_officer_app/features/parking/screens/zone_detail_screen.dart';
+import 'package:parking_officer_app/features/parking/screens/zone_sessions_screen.dart';
 import 'package:parking_officer_app/features/parking/screens/scanner_screen.dart';
 import 'package:parking_officer_app/features/parking/screens/qr_history_screen.dart';
 import 'package:parking_officer_app/features/parking/screens/license_plate_search_screen.dart';

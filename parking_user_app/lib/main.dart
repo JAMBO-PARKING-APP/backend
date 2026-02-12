@@ -16,9 +16,19 @@ import 'package:parking_user_app/features/home/screens/home_screen.dart';
 import 'package:parking_user_app/features/notifications/providers/notification_provider.dart';
 import 'package:parking_user_app/features/auth/screens/permissions_screen.dart';
 import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:parking_user_app/core/fcm_service.dart';
+import 'package:parking_user_app/core/notification_dialog_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp();
+
+  // Initialize FCM Service
+  await FCMService().initialize();
+
   runApp(
     MultiProvider(
       providers: [
@@ -43,38 +53,45 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer<SettingsProvider>(
-      builder: (context, settings, _) => MaterialApp(
-        title: 'Jambo Park',
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: settings.themeMode,
-        locale: settings.currentLocale,
-        supportedLocales: settings.supportedLocales,
-        localizationsDelegates: [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        debugShowCheckedModeBanner: false,
-        home: Consumer<AuthProvider>(
-          builder: (context, auth, _) {
-            switch (auth.status) {
-              case AuthStatus.authenticated:
-                return const HomeScreen();
-              case AuthStatus.unauthenticated:
-                if (!auth.hasRequestedPermissions) {
-                  return const PermissionsScreen();
-                }
-                return const LoginScreen();
-              default:
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                );
-            }
-          },
-        ),
-      ),
+      builder: (context, settings, _) {
+        // Set context for notification dialogs
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          NotificationDialogService().setContext(context);
+        });
+
+        return MaterialApp(
+          title: 'Jambo Park',
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: settings.themeMode,
+          locale: settings.currentLocale,
+          supportedLocales: settings.supportedLocales,
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          debugShowCheckedModeBanner: false,
+          home: Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              switch (auth.status) {
+                case AuthStatus.authenticated:
+                  return const HomeScreen();
+                case AuthStatus.unauthenticated:
+                  if (!auth.hasRequestedPermissions) {
+                    return const PermissionsScreen();
+                  }
+                  return const LoginScreen();
+                default:
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+              }
+            },
+          ),
+        );
+      },
     );
   }
 }

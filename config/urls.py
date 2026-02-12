@@ -14,7 +14,8 @@ urlpatterns = [
     path('api/parking/', include('apps.parking.urls')),
     path('api/payments/', include('apps.payments.urls')),
     path('api/enforcement/', include('apps.enforcement.urls')),
-    path('api/officer/', include('apps.enforcement.api_urls')),  # Officer mobile API
+    path('api/officer/', include('apps.enforcement.api_urls')),  # Officer mobile API (violations)
+    path('api/officer/', include('apps.common.api_urls_officer')),  # Officer mobile API (zones, QR)
     
     # Shared endpoints for both apps
     path('api/notifications/', include('apps.notifications.urls')),  # Chat and notifications (for officer app)

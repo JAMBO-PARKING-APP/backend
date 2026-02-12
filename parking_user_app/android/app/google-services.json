@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "759485410687",
+    "project_id": "jambo-parking-d6e88",
+    "storage_bucket": "jambo-parking-d6e88.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:759485410687:android:ac3b0d48b7d98bfe207e4a",
+        "android_client_info": {
+          "package_name": "com.example.parking_user_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAX1xofLlbDkpdsuEFYAftEmVFNbH7wo6k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

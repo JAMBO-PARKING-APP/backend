@@ -42,6 +42,8 @@ class VerifyOTPView(APIView):
     def post(self, request):
         phone_number = request.data.get('phone_number')
         otp = request.data.get('otp')
+        device_id = request.data.get('device_id')  # Unique device identifier from app
+        device_info = request.data.get('device_info', '')  # Device model/info for logging
         
         if not phone_number or not otp:
             return Response({
@@ -61,14 +63,29 @@ class VerifyOTPView(APIView):
             otp_obj.save()
             
             user.is_verified = True
+            
+            # Generate new JWT token
+            refresh = RefreshToken.for_user(user)
+            access_token = refresh.access_token
+            
+            # Get token ID (jti) for session tracking
+            token_jti = str(access_token.get('jti', ''))
+            
+            # Update user session tracking (invalidates previous session)
+            if device_id:
+                user.current_device_id = device_id
+            user.current_session_token = token_jti
+            user.last_login_device = device_info or request.META.get('HTTP_USER_AGENT', '')[:255]
             user.save()
             
-            refresh = RefreshToken.for_user(user)
-            
             return Response({
-                'access': str(refresh.access_token),
+                'access': str(access_token),
                 'refresh': str(refresh),
-                'user': UserSerializer(user).data
+                'user': UserSerializer(user).data,
+                'session_info': {
+                    'device_id': user.current_device_id,
+                    'login_time': timezone.now().isoformat()
+                }
             })
             
         except (User.DoesNotExist, OTPCode.DoesNotExist):

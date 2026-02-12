@@ -27,3 +27,15 @@ venv.bak/
 # OS
 .DS_Store
 Thumbs.db
+
+# Secrets and Keys
+*.json
+!google-services.json
+# Actually, the user app might need google-services.json to build, 
+# but for the backend repo, they definitely shouldn't be there.
+# Let's be safe and ignore all JSON files in the root or specifically the identified ones.
+jambo-parking-d6e88-firebase-adminsdk-fbsvc-9ba12edacb.json
+google-services.json
+google-services(1).json
+*.key
+*.pem

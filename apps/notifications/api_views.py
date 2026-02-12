@@ -242,3 +242,108 @@ class VerifyOTPAPIView(APIView):
             return Response({'error': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response({'status': getattr(result, 'status', None)})
+
+
+class RegisterFCMTokenAPIView(APIView):
+    """Register or update FCM device token for push notifications"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request):
+        from apps.notifications.serializers import FCMTokenSerializer
+        from django.utils import timezone
+        
+        serializer = FCMTokenSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        token = serializer.validated_data['token']
+        user = request.user
+        
+        # Update user's FCM token
+        user.fcm_device_token = token
+        user.fcm_token_updated_at = timezone.now()
+        user.save(update_fields=['fcm_device_token', 'fcm_token_updated_at'])
+        
+        return Response({
+            'success': True,
+            'message': 'FCM token registered successfully'
+        }, status=status.HTTP_200_OK)
+
+
+class UnregisterFCMTokenAPIView(APIView):
+    """Unregister FCM device token (on logout)"""
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request):
+        user = request.user
+        
+        # Clear user's FCM token
+        user.fcm_device_token = None
+        user.fcm_token_updated_at = None
+        user.save(update_fields=['fcm_device_token', 'fcm_token_updated_at'])
+        
+        return Response({
+            'success': True,
+            'message': 'FCM token unregistered successfully'
+        }, status=status.HTTP_200_OK)
+
+
+class SendCustomNotificationAPIView(APIView):
+    """Send custom push notifications (admin only)"""
+    permission_classes = [permissions.IsAdminUser]
+    
+    def post(self, request):
+        from apps.notifications.serializers import SendCustomNotificationSerializer
+        from apps.notifications.notification_triggers import notify_custom
+        from apps.notifications.firebase_service import send_notification_to_multiple_users
+        from apps.accounts.models import User
+        
+        serializer = SendCustomNotificationSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        data = serializer.validated_data
+        title = data['title']
+        message = data['message']
+        category = data.get('category', 'system')
+        custom_data = data.get('data', {})
+        
+        # Determine target users
+        target_users = []
+        
+        if data.get('user_id'):
+            # Single user
+            try:
+                user = User.objects.get(id=data['user_id'])
+                target_users = [user]
+            except User.DoesNotExist:
+                return Response(
+                    {'error': 'User not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        
+        elif data.get('user_ids'):
+            # Multiple specific users
+            target_users = User.objects.filter(id__in=data['user_ids'])
+        
+        elif data.get('role'):
+            # All users with specific role
+            target_users = User.objects.filter(role=data['role'], is_active=True)
+        
+        if not target_users:
+            return Response(
+                {'error': 'No target users found'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Send notifications
+        sent_count = 0
+        for user in target_users:
+            notify_custom(user, title, message, category, custom_data)
+            sent_count += 1
+        
+        return Response({
+            'success': True,
+            'sent_count': sent_count,
+            'message': f'Sent {sent_count} notifications'
+        }, status=status.HTTP_200_OK)

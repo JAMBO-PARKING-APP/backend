@@ -216,20 +216,44 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
       );
 
       if (context.mounted && success) {
-        final paymentService = PaymentService();
-        final result = await paymentService.initiatePesapalPayment(
-          amount: zone.hourlyRate * durationHours,
-          description: 'Parking - ${zone.name}',
-          isWalletTopup: true,
+        // Show loading
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (c) => const Center(child: CircularProgressIndicator()),
         );
 
-        if (result['success'] == true && mounted) {
-          final url = result['redirect_url'];
-          if (url != null) {
-            final uri = Uri.parse(url);
-            if (await canLaunchUrl(uri)) {
-              await launchUrl(uri, mode: LaunchMode.externalApplication);
+        try {
+          final paymentService = PaymentService();
+          final result = await paymentService.initiatePesapalPayment(
+            amount: zone.hourlyRate * durationHours,
+            description: 'Parking - ${zone.name}',
+            isWalletTopup: true,
+          );
+
+          if (mounted) Navigator.pop(context); // Hide loading
+
+          if (result['success'] == true && mounted) {
+            final url = result['redirect_url'];
+            if (url != null) {
+              final uri = Uri.parse(url);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
             }
+          } else if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(result['message'] ?? 'Payment initiation failed'),
+              ),
+            );
+          }
+        } catch (e) {
+          if (mounted) Navigator.pop(context); // Hide loading on error
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error initiating payment: $e')),
+            );
           }
         }
       }

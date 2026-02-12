@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:parking_officer_app/core/app_theme.dart';
+import 'package:parking_officer_app/core/fcm_service.dart';
 import 'package:parking_officer_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_officer_app/features/auth/screens/login_screen.dart';
 import 'package:parking_officer_app/features/parking/providers/zone_provider.dart';
@@ -10,21 +11,46 @@ import 'package:parking_officer_app/features/enforcement/providers/officer_provi
 import 'package:parking_officer_app/features/violations/providers/enforcement_provider.dart';
 import 'package:parking_officer_app/features/chat/providers/chat_provider.dart';
 
-void main() {
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => ZoneProvider()),
-        ChangeNotifierProvider(create: (_) => OfficerProvider()),
-        ChangeNotifierProvider(create: (_) => VehicleSearchProvider()),
-        ChangeNotifierProvider(create: (_) => EnforcementProvider()),
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
-      ],
-      child: const JamboOfficerApp(),
-    ),
-  );
+void main() async {
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    debugPrint('[Main] WidgetsFlutterBinding initialized');
+
+    // Initialize FCM for push notifications without blocking runApp
+    // This prevents the black screen issue if Firebase hangs
+    unawaited(
+      FCMService().initialize().catchError((e) {
+        debugPrint('[Main] Error initializing FCM: $e');
+      }),
+    );
+
+    runApp(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProvider(create: (_) => ZoneProvider()),
+          ChangeNotifierProvider(create: (_) => OfficerProvider()),
+          ChangeNotifierProvider(create: (_) => VehicleSearchProvider()),
+          ChangeNotifierProvider(create: (_) => EnforcementProvider()),
+          ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ],
+        child: const JamboOfficerApp(),
+      ),
+    );
+  } catch (e, stack) {
+    debugPrint('[Main] FATAL ERROR: $e');
+    debugPrint(stack.toString());
+    // Fallback if something fails before runApp
+    runApp(
+      MaterialApp(
+        home: Scaffold(body: Center(child: Text('Error starting app: $e'))),
+      ),
+    );
+  }
 }
+
+// Helper to make unawaited calls explicit
+void unawaited(Future<void> future) {}
 
 class JamboOfficerApp extends StatelessWidget {
   const JamboOfficerApp({super.key});

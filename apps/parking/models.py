@@ -188,8 +188,40 @@ class ParkingSession(BaseModel):
         return cost
 
     def end_session(self):
+        from decimal import Decimal
+        from apps.payments.models import WalletTransaction
+        from apps.notifications.notification_triggers import notify_wallet_refund
+        
         self.actual_end_time = timezone.now()
         self.final_cost = self.calculate_cost()
+        
+        # Calculate refund for unused time
+        refund_amount = Decimal('0')
+        if self.estimated_cost > self.final_cost:
+            refund_amount = self.estimated_cost - self.final_cost
+            
+            # Credit wallet
+            user = self.vehicle.user
+            user.wallet_balance += refund_amount
+            user.save(update_fields=['wallet_balance'])
+            
+            # Create wallet transaction record
+            wallet_tx = WalletTransaction.objects.create(
+                user=user,
+                amount=refund_amount,
+                transaction_type='refund',
+                description=f'Refund for early session end at {self.zone.name}',
+                status='completed',
+                metadata={
+                    'session_id': str(self.id),
+                    'estimated_cost': str(self.estimated_cost),
+                    'final_cost': str(self.final_cost),
+                }
+            )
+            
+            # Send refund notification
+            notify_wallet_refund(wallet_tx, self)
+        
         self.status = ParkingStatus.COMPLETED
         
         if self.parking_slot:

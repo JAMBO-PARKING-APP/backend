@@ -13,6 +13,7 @@ class NotificationEvent(BaseModel):
         ('maintenance_alert', 'Maintenance Alert'),
         ('system_alert', 'System Alert'),
         ('promotional_offer', 'Promotional Offer'),
+        ('custom_admin', 'Custom Admin'),
         ('other', 'Other'),
     ]
     
@@ -25,6 +26,12 @@ class NotificationEvent(BaseModel):
         ('promo', 'Promotions'),
     ]
     
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+    ]
+    
     user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='notifications')
     title = models.CharField(max_length=100)
     message = models.TextField()
@@ -32,6 +39,16 @@ class NotificationEvent(BaseModel):
     category = models.CharField(max_length=20, choices=CATEGORIES, default='system')
     is_read = models.BooleanField(default=False, db_index=True)
     metadata = models.JSONField(null=True, blank=True)  # Store additional data like parking_session_id, violation_id
+    
+    # Admin notification fields
+    show_as_dialog = models.BooleanField(default=False, help_text="Show as in-app dialog when user opens app")
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium', help_text="Priority level for custom notifications")
+    is_promotional = models.BooleanField(default=False, help_text="Mark as promotional content")
+    
+    # Push notification tracking
+    sent_via_push = models.BooleanField(default=False, help_text="Whether push notification was sent via FCM")
+    push_sent_at = models.DateTimeField(null=True, blank=True, help_text="When push notification was sent")
+    push_error = models.TextField(blank=True, null=True, help_text="Error message if push notification failed")
     
     class Meta:
         ordering = ['-created_at']

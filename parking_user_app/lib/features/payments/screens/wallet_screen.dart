@@ -35,35 +35,52 @@ class _WalletScreenState extends State<WalletScreen> {
       return;
     }
 
-    final result = await context.read<PaymentProvider>().initiatePesapalPayment(
-      amount: amount,
-      description: 'Wallet Top-up',
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => const Center(child: CircularProgressIndicator()),
     );
 
-    if (result['success'] && mounted) {
-      final success = await Navigator.push<bool>(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PesapalWebViewScreen(
-            url: result['redirect_url'],
-            orderTrackingId: result['order_tracking_id'],
-          ),
-        ),
-      );
+    try {
+      final result = await context
+          .read<PaymentProvider>()
+          .initiatePesapalPayment(amount: amount, description: 'Wallet Top-up');
 
-      if (success == true && mounted) {
-        context.read<PaymentProvider>().fetchWalletData();
+      if (mounted) Navigator.pop(context); // Hide loading
+
+      if (result['success'] && mounted) {
+        final success = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PesapalWebViewScreen(
+              url: result['redirect_url'],
+              orderTrackingId: result['order_tracking_id'],
+            ),
+          ),
+        );
+
+        if (success == true && mounted) {
+          context.read<PaymentProvider>().fetchWalletData();
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Top-up successful!')));
+          _amountController.clear();
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Failed to initiate payment'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) Navigator.pop(context); // Hide loading on error
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Top-up successful!')));
-        _amountController.clear();
+        ).showSnackBar(SnackBar(content: Text('Error initiating top-up: $e')));
       }
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message'] ?? 'Failed to initiate payment'),
-        ),
-      );
     }
   }
 

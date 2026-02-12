@@ -33,7 +33,9 @@ class ApiClient {
           return handler.next(options);
         },
         onResponse: (response, handler) {
-          debugPrint('[ApiClient] Response ${response.statusCode}: ${response.requestOptions.path}');
+          debugPrint(
+            '[ApiClient] Response ${response.statusCode}: ${response.requestOptions.path}',
+          );
           return handler.next(response);
         },
         onError: (DioException e, handler) async {
@@ -41,7 +43,19 @@ class ApiClient {
           debugPrint('[ApiClient] Status: ${e.response?.statusCode}');
           if (e.response?.statusCode == 401) {
             debugPrint('[ApiClient] 401 Unauthorized - Token may be invalid');
-            // Could implement token refresh here
+
+            // Check if session was invalidated (logged in from another device)
+            final sessionInvalidated = e.response?.headers.value(
+              'X-Session-Invalidated',
+            );
+            if (sessionInvalidated == 'true') {
+              debugPrint(
+                '[ApiClient] 🚨 Session invalidated - user logged in from another device',
+              );
+              // Clear local storage and navigate to login
+              await _storageManager.clearAuthData();
+              // The app will handle navigation to login via auth state listener
+            }
           }
           return handler.next(e);
         },

@@ -344,6 +344,16 @@ class PesapalUserCallbackView(APIView):
                             status='completed',
                             related_transaction=trans
                         )
+                        
+                        # Send wallet top-up notification
+                        from apps.notifications.notification_triggers import notify_payment_success
+                        wallet_tx = WalletTransaction.objects.filter(related_transaction=trans).first()
+                        if wallet_tx:
+                            notify_payment_success(wallet_tx)
+                else:
+                    # Send payment success notification for non-wallet payments
+                    from apps.notifications.notification_triggers import notify_payment_success
+                    notify_payment_success(trans)
             elif p_status in ['failed', 'invalid', 'rejected']:
                 trans.status = 'failed'
                 
@@ -420,6 +430,16 @@ class PesapalIPNAPIView(APIView):
                             status='completed',
                             related_transaction=trans
                         )
+                        
+                        # Send wallet top-up notification
+                        from apps.notifications.notification_triggers import notify_payment_success
+                        wallet_tx = WalletTransaction.objects.filter(related_transaction=trans).first()
+                        if wallet_tx:
+                            notify_payment_success(wallet_tx)
+                else:
+                    # Send payment success notification for non-wallet payments
+                    from apps.notifications.notification_triggers import notify_payment_success
+                    notify_payment_success(trans)
             elif p_status in ['failed', 'invalid', 'rejected']:
                 trans.status = 'failed'
             

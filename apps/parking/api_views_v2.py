@@ -171,13 +171,17 @@ class StartParkingAPIView(APIView):
                 request.user.save()
                 
                 # Create wallet transaction
-                WalletTransaction.objects.create(
+                wallet_tx = WalletTransaction.objects.create(
                     user=request.user,
                     amount=estimated_cost,
                     transaction_type='payment',
                     status='completed',
                     description=f'Parking payment for zone {zone.name}'
                 )
+                
+                # Send payment success notification
+                from apps.notifications.notification_triggers import notify_payment_success
+                notify_payment_success(wallet_tx)
 
             session = ParkingSession.objects.create(
                 vehicle=vehicle,
@@ -186,6 +190,10 @@ class StartParkingAPIView(APIView):
                 planned_end_time=planned_end,
                 estimated_cost=estimated_cost
             )
+            
+            # Send parking session started notification
+            from apps.notifications.notification_triggers import notify_parking_started
+            notify_parking_started(session)
             
             return Response({
                 'message': 'Parking session started successfully',
@@ -218,21 +226,12 @@ class EndParkingAPIView(APIView):
                 status=ParkingStatus.ACTIVE
             )
             
-            # Calculate final cost
-            actual_end = timezone.now()
-            duration_seconds = (actual_end - session.start_time).total_seconds()
-            duration_hours = Decimal(str(duration_seconds / 3600))  # Convert to Decimal
-            session.final_cost = session.zone.hourly_rate * duration_hours
+            # End session using the model method (includes refund logic)
+            session.end_session()
             
-            # Update session
-            session.actual_end_time = actual_end
-            session.status = ParkingStatus.COMPLETED
-            session.save()
-            
-            # Free up the slot
-            if session.parking_slot:
-                session.parking_slot.status = SlotStatus.AVAILABLE
-                session.parking_slot.save()
+            # Send push notification about session end
+            from apps.notifications.notification_triggers import notify_parking_ended
+            notify_parking_ended(session)
             
             return Response({
                 'message': 'Parking session ended successfully',
@@ -473,12 +472,12 @@ class CancelReservationAPIView(APIView):
                 vehicle__user=request.user
             )
             
-            if reservation.status != 'active':
+            if not reservation.is_active:
                 return Response({
-                    'error': 'Only active reservations can be cancelled'
+                    'error': 'Reservation is already inactive or cancelled'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            reservation.status = 'cancelled'
+            reservation.is_active = False
             reservation.save()
             
             return Response({

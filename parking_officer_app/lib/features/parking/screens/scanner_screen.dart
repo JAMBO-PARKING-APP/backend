@@ -3,6 +3,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import 'package:parking_officer_app/features/violations/providers/enforcement_provider.dart';
 import 'package:parking_officer_app/features/violations/screens/violation_form_screen.dart';
+import 'package:parking_officer_app/features/parking/services/qr_verification_service.dart';
 import 'package:parking_officer_app/core/app_theme.dart';
 
 class ScannerScreen extends StatefulWidget {
@@ -123,7 +124,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () async {
-                        // Try to extract session ID (server encodes as 'ID: {id}')
+                        // Try to extract session ID
                         String sessionId = '';
                         try {
                           final lines = data.split('\n');
@@ -137,49 +138,21 @@ class _ScannerScreenState extends State<ScannerScreen> {
                         } catch (_) {}
 
                         if (sessionId.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Could not extract session ID from QR',
-                              ),
-                            ),
-                          );
-                          return;
-                        }
-
-                        // Call scan API via provider
-                        final provider = context.read<dynamic>();
-                        try {
-                          final result = await provider.scanQRCode(
-                            sessionId,
-                            data,
-                          );
-                          if (context.mounted) {
-                            if (result['success'] == true) {
-                              final msg =
-                                  result['message'] ?? 'Scan successful';
-                              ScaffoldMessenger.of(
-                                context,
-                              ).showSnackBar(SnackBar(content: Text(msg)));
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    result['message'] ?? 'Scan failed',
-                                  ),
-                                ),
-                              );
-                            }
-                          }
-                        } catch (e) {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Scan error: ${e.toString()}'),
+                              const SnackBar(
+                                content: Text(
+                                  'Could not extract session ID from QR',
+                                ),
                               ),
                             );
                           }
+                          return;
                         }
+
+                        // Call verification API
+                        Navigator.pop(context);
+                        _showVerificationDialog(sessionId);
                       },
                       child: const Text('VERIFY SESSION'),
                     ),
@@ -191,6 +164,101 @@ class _ScannerScreenState extends State<ScannerScreen> {
         );
       },
     ).then((_) => setState(() => _isScanned = false));
+  }
+
+  void _showVerificationDialog(String sessionId) async {
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    // Call verification API
+    final qrService = QRVerificationService();
+    final result = await qrService.verifyQRCode(sessionId);
+
+    if (!mounted) return;
+    Navigator.pop(context); // Close loading
+
+    final isValid = result['valid'] == true;
+    final message = result['message']?.toString() ?? 'Unknown status';
+    final session = result['session'] as Map<String, dynamic>?;
+
+    // Show result dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              isValid ? Icons.check_circle : Icons.error,
+              color: isValid ? Colors.green : Colors.red,
+              size: 32,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                isValid ? 'Valid Session' : 'Invalid Session',
+                style: TextStyle(color: isValid ? Colors.green : Colors.red),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message),
+            if (session != null) ...[
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
+              _buildSessionDetail(
+                'Vehicle',
+                session['vehicle_plate']?.toString() ?? 'N/A',
+              ),
+              _buildSessionDetail(
+                'Driver',
+                session['driver_name']?.toString() ?? 'N/A',
+              ),
+              _buildSessionDetail(
+                'Zone',
+                session['zone_name']?.toString() ?? 'N/A',
+              ),
+              _buildSessionDetail(
+                'Status',
+                session['status']?.toString() ?? 'N/A',
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CLOSE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSessionDetail(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
   }
 
   @override

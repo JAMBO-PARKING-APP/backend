@@ -261,34 +261,47 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
             builder: (c) => const Center(child: CircularProgressIndicator()),
           );
 
-          final paymentService = PaymentService();
-          final result = await paymentService.initiatePesapalPayment(
-            amount: cost,
-            description: "Reservation Payment: ${reservation.id}",
-            isWalletTopup: false,
-            reservationId: reservation.id,
-          );
-
-          if (mounted) Navigator.pop(context); // Hide loading
-
-          if (result['success'] == true && mounted) {
-            final url = result['redirect_url'];
-            if (url != null) {
-              final uri = Uri.parse(url);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Could not launch payment URL')),
-                );
-              }
-            }
-          } else if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(result['message'] ?? 'Payment initiation failed'),
-              ),
+          try {
+            final paymentService = PaymentService();
+            final result = await paymentService.initiatePesapalPayment(
+              amount: cost,
+              description: "Reservation Payment: ${reservation.id}",
+              isWalletTopup: false,
+              reservationId: reservation.id,
             );
+
+            if (mounted) Navigator.pop(context); // Hide loading
+
+            if (result['success'] == true && mounted) {
+              final url = result['redirect_url'];
+              if (url != null) {
+                final uri = Uri.parse(url);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Could not launch payment URL'),
+                    ),
+                  );
+                }
+              }
+            } else if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    result['message'] ?? 'Payment initiation failed',
+                  ),
+                ),
+              );
+            }
+          } catch (e) {
+            if (mounted) Navigator.pop(context); // Hide loading on error
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Error initiating payment: $e')),
+              );
+            }
           }
         },
       ),

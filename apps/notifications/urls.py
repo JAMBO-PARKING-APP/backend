@@ -29,4 +29,9 @@ urlpatterns = [
     # Admin endpoints
     path('create/<int:user_id>/', api_views.CreateNotificationAPIView.as_view(), name='create-notification'),
     path('bulk-create/', api_views.BulkCreateNotificationsAPIView.as_view(), name='bulk-create-notifications'),
+    
+    # FCM Push Notification endpoints
+    path('fcm/register-token/', api_views.RegisterFCMTokenAPIView.as_view(), name='fcm-register-token'),
+    path('fcm/unregister-token/', api_views.UnregisterFCMTokenAPIView.as_view(), name='fcm-unregister-token'),
+    path('fcm/send-custom/', api_views.SendCustomNotificationAPIView.as_view(), name='fcm-send-custom'),
 ]

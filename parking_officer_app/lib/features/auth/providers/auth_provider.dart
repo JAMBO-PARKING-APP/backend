@@ -17,40 +17,54 @@ class AuthProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   Future<void> checkAuth() async {
-    _status = AuthStatus.authenticating;
-    notifyListeners();
+    try {
+      _status = AuthStatus.authenticating;
+      notifyListeners();
 
-    final storage = StorageManager();
-    final userJson = await storage.getUserJson();
+      final storage = StorageManager();
+      final userJson = await storage.getUserJson();
 
-    if (userJson != null) {
-      try {
-        _user = User.fromJson(json.decode(userJson));
-        _status = AuthStatus.authenticated;
-      } catch (_) {
+      if (userJson != null) {
+        try {
+          _user = User.fromJson(json.decode(userJson));
+          _status = AuthStatus.authenticated;
+        } catch (e) {
+          debugPrint('[AuthProvider] Error parsing user JSON: $e');
+          _status = AuthStatus.unauthenticated;
+        }
+      } else {
         _status = AuthStatus.unauthenticated;
       }
-    } else {
+    } catch (e) {
+      debugPrint('[AuthProvider] Error in checkAuth: $e');
       _status = AuthStatus.unauthenticated;
     }
     notifyListeners();
   }
 
   Future<bool> login(String phoneNumber, String password) async {
-    _status = AuthStatus.authenticating;
-    _errorMessage = null;
-    notifyListeners();
-
-    final result = await _authService.login(phoneNumber, password);
-
-    if (result['success']) {
-      _user = result['user'];
-      _status = AuthStatus.authenticated;
+    try {
+      _status = AuthStatus.authenticating;
+      _errorMessage = null;
       notifyListeners();
-      return true;
-    } else {
+
+      final result = await _authService.login(phoneNumber, password);
+
+      if (result['success']) {
+        _user = result['user'];
+        _status = AuthStatus.authenticated;
+        notifyListeners();
+        return true;
+      } else {
+        _status = AuthStatus.unauthenticated;
+        _errorMessage = result['message'];
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      debugPrint('[AuthProvider] Error in login: $e');
       _status = AuthStatus.unauthenticated;
-      _errorMessage = result['message'];
+      _errorMessage = 'An error occurred during login. Please try again.';
       notifyListeners();
       return false;
     }
