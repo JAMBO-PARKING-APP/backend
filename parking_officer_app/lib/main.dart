@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:parking_officer_app/core/app_theme.dart';
 import 'package:parking_officer_app/core/fcm_service.dart';
 import 'package:parking_officer_app/features/auth/providers/auth_provider.dart';
@@ -16,8 +17,16 @@ void main() async {
     WidgetsFlutterBinding.ensureInitialized();
     debugPrint('[Main] WidgetsFlutterBinding initialized');
 
-    // Initialize FCM for push notifications without blocking runApp
-    // This prevents the black screen issue if Firebase hangs
+    // Initialize Firebase first (mandatory for Firebase services)
+    await Firebase.initializeApp().timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        debugPrint('[Main] Firebase initialization timed out');
+        throw Exception('Firebase initialization timed out');
+      },
+    );
+
+    // Initialize FCM without blocking UI if registration is slow
     unawaited(
       FCMService().initialize().catchError((e) {
         debugPrint('[Main] Error initializing FCM: $e');

@@ -17,7 +17,7 @@ class FCMService {
   factory FCMService() => _instance;
   FCMService._internal();
 
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  FirebaseMessaging get _firebaseMessaging => FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
@@ -200,7 +200,7 @@ class FCMService {
     try {
       final apiClient = ApiClient();
       await apiClient.post(
-        '/api/notifications/fcm/register-token/',
+        'notifications/fcm/register-token/',
         data: {'fcm_token': token},
       );
       print('Officer FCM token registered with backend');
@@ -213,7 +213,7 @@ class FCMService {
   Future<void> unregisterToken() async {
     try {
       final apiClient = ApiClient();
-      await apiClient.post('/api/notifications/fcm/unregister-token/');
+      await apiClient.post('notifications/fcm/unregister-token/');
       print('Officer FCM token unregistered');
     } catch (e) {
       print('Error unregistering FCM token: $e');

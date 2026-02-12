@@ -24,7 +24,7 @@ class ZoneService {
   /// Get officer's assigned zones with active session counts
   Future<List<Zone>> getOfficerZones() async {
     try {
-      final response = await _apiClient.get('/api/officer/zones/');
+      final response = await _apiClient.get('officer/zones/');
       if (response.statusCode == 200) {
         final data = response.data;
         final List zones = data['zones'] ?? [];
@@ -40,9 +40,7 @@ class ZoneService {
   /// Get active sessions in a specific zone
   Future<Map<String, dynamic>> getZoneSessions(String zoneId) async {
     try {
-      final response = await _apiClient.get(
-        '/api/officer/zones/$zoneId/sessions/',
-      );
+      final response = await _apiClient.get('officer/zones/$zoneId/sessions/');
       if (response.statusCode == 200) {
         final data = response.data;
         return {

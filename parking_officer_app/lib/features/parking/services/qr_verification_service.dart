@@ -7,7 +7,7 @@ class QRVerificationService {
   Future<Map<String, dynamic>> verifyQRCode(String sessionId) async {
     try {
       final response = await _apiClient.post(
-        '/api/officer/verify-qr/',
+        'officer/verify-qr/',
         data: {'session_id': sessionId},
       );
 
