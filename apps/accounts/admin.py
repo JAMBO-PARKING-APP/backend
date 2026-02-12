@@ -15,7 +15,10 @@ class UserAdmin(BaseUserAdmin):
         ('Personal info', {'fields': ('first_name', 'last_name', 'email', 'profile_photo')}),
         ('Wallet', {'fields': ('wallet_balance',)}),
         ('Permissions', {'fields': ('role', 'is_active', 'is_staff', 'is_superuser', 'is_verified')}),
+        ('Officer Assignments', {'fields': ('assigned_zones',)}),
     )
+    
+    filter_horizontal = ('assigned_zones', 'groups', 'user_permissions')
     
     add_fieldsets = (
         (None, {

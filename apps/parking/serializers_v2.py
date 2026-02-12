@@ -146,7 +146,7 @@ class ZoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = Zone
         fields = ['id', 'name', 'code', 'total_slots', 'occupied_slots', 
-                  'available_slots', 'active_sessions']
+                  'available_slots', 'active_sessions', 'latitude', 'longitude']
     
     def get_active_sessions(self, obj):
         """Get count of active sessions in this zone"""

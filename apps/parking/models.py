@@ -12,6 +12,7 @@ class Zone(BaseModel):
     hourly_rate = models.DecimalField(max_digits=12, decimal_places=2)
     max_duration_hours = models.IntegerField(default=24)
     total_slots = models.IntegerField(default=0, help_text=_("Total number of parking slots in this zone"))
+    code = models.CharField(max_length=20, unique=True, null=True, blank=True, help_text=_("Short unique code for the zone (e.g. JB01)"))
     is_active = models.BooleanField(default=True, db_index=True)
     
     # Geographic boundaries
@@ -39,6 +40,16 @@ class Zone(BaseModel):
     @property
     def occupied_slots_count(self):
         return self.slots.filter(status=SlotStatus.OCCUPIED).count()
+
+    @property
+    def available_slots(self):
+        """Alias for available_slots_count (used by officer app)"""
+        return self.available_slots_count
+
+    @property
+    def occupied_slots(self):
+        """Alias for occupied_slots_count (used by officer app)"""
+        return self.occupied_slots_count
 
     @property
     def total_slots_count(self):
