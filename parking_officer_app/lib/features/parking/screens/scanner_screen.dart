@@ -81,8 +81,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
                       onPressed: () async {
                         // Parse vehicle plate from QR payload (server uses 'Vehicle: {plate}')
                         String plate = '';
+                        String sessionId = '';
                         try {
-                          final lines = data.split('\n');
+                          final lines = data.split(RegExp(r'\r?\n'));
                           final vehicleLine = lines.firstWhere(
                             (l) => l.toLowerCase().contains('vehicle:'),
                             orElse: () => '',
@@ -90,16 +91,30 @@ class _ScannerScreenState extends State<ScannerScreen> {
                           if (vehicleLine.isNotEmpty) {
                             plate = vehicleLine.split(':').last.trim();
                           }
+                          final idLine = lines.firstWhere(
+                            (l) => l.toLowerCase().startsWith('id:'),
+                            orElse: () => '',
+                          );
+                          if (idLine.isNotEmpty) {
+                            sessionId = idLine.split(':').last.trim();
+                          }
                         } catch (_) {}
 
                         if (!mounted) return;
                         Navigator.pop(context);
-                        if (plate.isNotEmpty) {
+                        // Use extracted plate/IDs or session details
+                        if (mounted) {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  ViolationFormScreen(vehiclePlate: plate),
+                              builder: (context) => ViolationFormScreen(
+                                vehiclePlate: plate,
+                                // If we have a sessionId we can pass it,
+                                // but without verification we might not have zoneId
+                                sessionId: sessionId.isNotEmpty
+                                    ? sessionId
+                                    : null,
+                              ),
                             ),
                           );
                         } else {
@@ -127,7 +142,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                         // Try to extract session ID
                         String sessionId = '';
                         try {
-                          final lines = data.split('\n');
+                          final lines = data.split(RegExp(r'\r?\n'));
                           final idLine = lines.firstWhere(
                             (l) => l.toLowerCase().startsWith('id:'),
                             orElse: () => '',
@@ -234,6 +249,28 @@ class _ScannerScreenState extends State<ScannerScreen> {
           ],
         ),
         actions: [
+          if (!isValid && session != null)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ViolationFormScreen(
+                      vehiclePlate: session['vehicle_plate']?.toString() ?? '',
+                      vehicleId: session['vehicle_id']
+                          ?.toString(), // Ensure backend provides this
+                      zoneId: session['zone_id']?.toString(),
+                      sessionId: sessionId,
+                    ),
+                  ),
+                );
+              },
+              child: const Text(
+                'ISSUE VIOLATION',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('CLOSE'),

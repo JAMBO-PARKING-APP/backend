@@ -36,6 +36,12 @@ class ZoneListAPIView(generics.ListAPIView):
     def get_queryset(self):
         queryset = Zone.objects.filter(is_active=True)
         
+        # Filter by user's country
+        if hasattr(self.request.user, 'country') and self.request.user.country:
+             # Superusers see everything, others are restricted to their country
+             if not self.request.user.is_superuser:
+                 queryset = queryset.filter(country=self.request.user.country)
+        
         # Search by name
         search = self.request.query_params.get('search')
         if search:
@@ -105,6 +111,8 @@ class StartParkingAPIView(APIView):
     def post(self, request):
         serializer = StartParkingSerializer(data=request.data)
         if not serializer.is_valid():
+            logger = logging.getLogger(__name__)
+            logger.error(f"StartParkingAPIView: Serializer validation failed: {serializer.errors}. Data: {request.data}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         try:
@@ -118,6 +126,12 @@ class StartParkingAPIView(APIView):
                 vehicle=vehicle,
                 status=ParkingStatus.ACTIVE
             ).first()
+            
+            # SELF-HEALING: If active session is overdue, end it automatically
+            if active_session and active_session.planned_end_time and timezone.now() > active_session.planned_end_time:
+                logger.info(f"Self-healing: Ending overdue session {active_session.id} for vehicle {vehicle.license_plate}")
+                active_session.end_session()
+                active_session = None # Clear it so we don't return error
             
             if active_session:
                 return Response({

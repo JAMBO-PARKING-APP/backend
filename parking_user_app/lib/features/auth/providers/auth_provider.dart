@@ -19,6 +19,7 @@ class AuthProvider with ChangeNotifier {
 
   bool _hasRequestedPermissions = false;
   bool get hasRequestedPermissions => _hasRequestedPermissions;
+  String get currencySymbol => user?.countryDetails?.currencySymbol ?? 'UGX';
 
   Future<void> checkAuth() async {
     _status = AuthStatus.authenticating;

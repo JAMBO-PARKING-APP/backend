@@ -22,10 +22,10 @@ class ZoneDetailSerializer(serializers.ModelSerializer):
                   'diagram_width', 'diagram_height', 'slots', 'created_at']
     
     def get_available_slots(self, obj):
-        return obj.available_slots_count
+        return obj.available_slots
     
     def get_occupied_slots(self, obj):
-        return obj.occupied_slots_count
+        return obj.occupied_slots
     
     def get_capacity(self, obj):
         return obj.capacity
@@ -46,10 +46,10 @@ class ZoneListSerializer(serializers.ModelSerializer):
                   'longitude', 'radius_meters', 'zone_image', 'created_at']
     
     def get_available_slots(self, obj):
-        return obj.available_slots_count
+        return obj.available_slots
     
     def get_occupied_slots(self, obj):
-        return obj.occupied_slots_count
+        return obj.occupied_slots
     
     def get_capacity(self, obj):
         return obj.capacity

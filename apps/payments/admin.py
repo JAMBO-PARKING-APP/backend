@@ -1,5 +1,12 @@
 from django.contrib import admin
-from .models import PaymentMethod, Transaction, Refund, Invoice
+from .models import Transaction, PaymentMethod, Refund, Invoice, WalletTransaction, PaymentGatewayConfig
+
+@admin.register(PaymentGatewayConfig)
+class PaymentGatewayConfigAdmin(admin.ModelAdmin):
+    list_display = ('gateway', 'name', 'country', 'is_active', 'is_sandbox', 'priority')
+    list_filter = ('gateway', 'country', 'is_active', 'is_sandbox')
+    search_fields = ('name', 'gateway')
+    ordering = ('-priority', 'name')
 
 @admin.register(PaymentMethod)
 class PaymentMethodAdmin(admin.ModelAdmin):

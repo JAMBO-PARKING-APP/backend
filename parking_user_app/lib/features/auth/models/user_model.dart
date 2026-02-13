@@ -1,3 +1,4 @@
+import 'package:parking_user_app/features/common/models/country_model.dart';
 import 'vehicle_model.dart';
 
 class User {
@@ -10,6 +11,7 @@ class User {
   final String? profilePhoto;
   final double walletBalance;
   final List<Vehicle> vehicles;
+  final Country? countryDetails;
 
   User({
     required this.id,
@@ -21,6 +23,7 @@ class User {
     this.profilePhoto,
     this.walletBalance = 0.0,
     this.vehicles = const [],
+    this.countryDetails,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -37,6 +40,9 @@ class User {
       vehicles: (json['vehicles'] as List? ?? [])
           .map((v) => Vehicle.fromJson(v))
           .toList(),
+      countryDetails: json['country_details'] != null
+          ? Country.fromJson(json['country_details'])
+          : null,
     );
   }
 

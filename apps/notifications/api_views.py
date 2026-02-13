@@ -57,12 +57,22 @@ class NotificationDetailAPIView(UpdateAPIView):
         
         serializer = MarkNotificationAsReadSerializer(data=request.data)
         if serializer.is_valid():
-            notification.is_read = serializer.validated_data.get('is_read', True)
-            notification.save()
-            return Response(
-                NotificationSerializer(notification).data,
-                status=status.HTTP_200_OK
-            )
+            is_read = serializer.validated_data.get('is_read', True)
+            if is_read:
+                # User wants to mark as read, so we delete it
+                notification.delete()
+                return Response(
+                    {'message': 'Notification deleted successfully'},
+                    status=status.HTTP_204_NO_CONTENT
+                )
+            else:
+                # If they want to mark as unread (unlikely in this context but supported by serializer)
+                notification.is_read = False
+                notification.save()
+                return Response(
+                    NotificationSerializer(notification).data,
+                    status=status.HTTP_200_OK
+                )
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -85,11 +95,11 @@ class MarkAllNotificationsAsReadAPIView(APIView):
         count = NotificationEvent.objects.filter(
             user=user,
             is_read=False
-        ).update(is_read=True)
+        ).delete()
         
         return Response({
             'success': True,
-            'message': f'{count} notifications marked as read'
+            'message': f'{count[0] if isinstance(count, tuple) else count} notifications deleted'
         })
 
 

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:parking_user_app/features/payments/providers/payment_provider.dart';
+import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_user_app/features/payments/screens/pesapal_webview_screen.dart';
 import 'package:parking_user_app/features/payments/screens/transaction_history_screen.dart';
+import 'package:parking_user_app/core/dialog_service.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -62,9 +64,11 @@ class _WalletScreenState extends State<WalletScreen> {
 
         if (success == true && mounted) {
           context.read<PaymentProvider>().fetchWalletData();
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Top-up successful!')));
+          context.read<PaymentProvider>().fetchWalletData();
+          DialogService.showSuccessDialog(
+            title: 'Top-up Successful!',
+            message: 'Your wallet has been credited.',
+          );
           _amountController.clear();
         }
       } else if (mounted) {
@@ -112,7 +116,7 @@ class _WalletScreenState extends State<WalletScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'UGX ${provider.balance.toInt()}',
+                          '${context.read<AuthProvider>().currencySymbol} ${provider.balance.toInt()}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 36,
@@ -135,7 +139,8 @@ class _WalletScreenState extends State<WalletScreen> {
                   controller: _amountController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    labelText: 'Amount (UGX)',
+                    labelText:
+                        'Amount (${context.read<AuthProvider>().currencySymbol})',
                     prefixIcon: const Icon(Icons.account_balance_wallet),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -152,7 +157,9 @@ class _WalletScreenState extends State<WalletScreen> {
                   children: [1000, 5000, 10000, 20000]
                       .map(
                         (amt) => ActionChip(
-                          label: Text('UGX $amt'),
+                          label: Text(
+                            '${context.read<AuthProvider>().currencySymbol} $amt',
+                          ),
                           onPressed: () =>
                               _amountController.text = amt.toString(),
                         ),

@@ -3,10 +3,10 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from decimal import Decimal
-from apps.common.models import BaseModel
+from apps.common.models import BaseModel, RegionalModel
 from apps.common.constants import ParkingStatus, SlotStatus
 
-class Zone(BaseModel):
+class Zone(RegionalModel, BaseModel):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     hourly_rate = models.DecimalField(max_digits=12, decimal_places=2)
@@ -38,18 +38,19 @@ class Zone(BaseModel):
         return self.slots.filter(status=SlotStatus.AVAILABLE).count()
 
     @property
-    def occupied_slots_count(self):
-        return self.slots.filter(status=SlotStatus.OCCUPIED).count()
+    def active_sessions_count(self):
+        """Get number of active parking sessions in this zone"""
+        return self.sessions.filter(status=ParkingStatus.ACTIVE).count()
 
     @property
     def available_slots(self):
-        """Alias for available_slots_count (used by officer app)"""
-        return self.available_slots_count
+        """Calculate available slots based on active sessions and capacity"""
+        return max(0, self.capacity - self.active_sessions_count)
 
     @property
     def occupied_slots(self):
-        """Alias for occupied_slots_count (used by officer app)"""
-        return self.occupied_slots_count
+        """Calculate occupied slots based on active sessions"""
+        return self.active_sessions_count
 
     @property
     def total_slots_count(self):
@@ -67,7 +68,7 @@ class Zone(BaseModel):
         capacity = self.capacity
         if capacity == 0:
             return 0
-        occupied = self.occupied_slots_count
+        occupied = self.occupied_slots
         return (occupied / capacity) * 100
 
     class Meta:
@@ -223,6 +224,7 @@ class ParkingSession(BaseModel):
                 transaction_type='refund',
                 description=f'Refund for early session end at {self.zone.name}',
                 status='completed',
+                parking_session=self,
                 metadata={
                     'session_id': str(self.id),
                     'estimated_cost': str(self.estimated_cost),
@@ -274,12 +276,12 @@ class ParkingSession(BaseModel):
     @property
     def qr_code_data(self):
         """Generate a detailed verification string for QR code"""
-        driver = self.vehicle.owner
+        driver = self.vehicle.user
         start = self.start_time.strftime("%Y-%m-%d %H:%M")
         expiry = self.planned_end_time.strftime("%Y-%m-%d %H:%M")
         
         data = [
-            f"JAMBO PARK VERIFIED PASS",
+            "JAMBO PARK VERIFIED PASS",
             f"ID: {self.id}",
             f"Driver: {driver.full_name}",
             f"Phone: {driver.phone}",
@@ -289,7 +291,7 @@ class ParkingSession(BaseModel):
             f"Expires: {expiry}",
             f"Status: {self.status.upper()}",
         ]
-        return "\n".join(data)
+        return "\r\n".join(data)
 
 class Reservation(BaseModel):
     vehicle = models.ForeignKey('accounts.Vehicle', on_delete=models.CASCADE, related_name='reservations')

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:parking_user_app/features/payments/providers/payment_provider.dart';
+import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
   const TransactionHistoryScreen({super.key});
@@ -57,7 +58,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                   DateFormat('MMM dd, yyyy HH:mm').format(tx.timestamp),
                 ),
                 trailing: Text(
-                  '${isCredit ? "+" : "-"} UGX ${tx.amount.toInt()}',
+                  '${isCredit ? "+" : "-"} ${context.read<AuthProvider>().currencySymbol} ${tx.amount.toInt()}',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: isCredit ? Colors.green : Colors.red,

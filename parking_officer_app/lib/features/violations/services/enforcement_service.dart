@@ -6,7 +6,8 @@ class EnforcementService {
   final ApiClient _apiClient = ApiClient();
 
   Future<bool> issueViolation({
-    required String vehicleId,
+    String? vehicleId,
+    String? vehiclePlate,
     required String zoneId,
     required String type,
     required String description,
@@ -18,7 +19,8 @@ class EnforcementService {
   }) async {
     try {
       final formData = FormData.fromMap({
-        'vehicle': vehicleId,
+        if (vehicleId != null) 'vehicle': vehicleId,
+        if (vehiclePlate != null) 'vehicle_plate': vehiclePlate,
         'zone': zoneId,
         'violation_type': type,
         'description': description,

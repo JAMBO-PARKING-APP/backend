@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Transaction, PaymentMethod, Refund, Invoice, WalletTransaction
+from .models import Transaction, PaymentMethod, Refund, Invoice, WalletTransaction, PaymentGatewayConfig
 
 class PaymentMethodSerializer(serializers.ModelSerializer):
     class Meta:
@@ -59,3 +59,8 @@ class PesapalPaymentSerializer(serializers.Serializer):
     reservation_id = serializers.UUIDField(required=False, allow_null=True)
     violation_id = serializers.UUIDField(required=False, allow_null=True)
     is_wallet_topup = serializers.BooleanField(required=False, default=False)
+
+class PaymentGatewayConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PaymentGatewayConfig
+        fields = ['id', 'gateway', 'name', 'is_sandbox', 'priority']

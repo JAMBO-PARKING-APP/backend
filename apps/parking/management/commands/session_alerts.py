@@ -109,20 +109,9 @@ class Command(BaseCommand):
         
         session.save()
         
-        # Send notification that session has ended
-        NotificationEvent.objects.create(
-            user=user,
-            title="Parking Session Ended",
-            message=f"Your parking session in {session.zone.name} has ended. Total cost: UGX {actual_cost}",
-            type='parking_ended',
-            category='parking',
-            metadata={
-                'parking_session_id': str(session.id),
-                'actual_cost': float(actual_cost),
-                'overdue_charge': float(overdue_charge),
-                'status': 'expired'
-            }
-        )
+        # Send notification that session has ended (includes push)
+        from apps.notifications.notification_triggers import notify_parking_ended
+        notify_parking_ended(session)
         
         # Handle charges if there was overdue time
         if overdue_charge > 0:

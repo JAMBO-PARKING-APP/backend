@@ -25,8 +25,9 @@ class ParkingProvider with ChangeNotifier {
 
   void _startTimer() {
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 30), (timer) async {
       if (activeSessions.isNotEmpty) {
+        await fetchSessions();
         notifyListeners();
       }
     });

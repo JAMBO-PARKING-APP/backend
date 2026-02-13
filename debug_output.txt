@@ -1,0 +1,24 @@
+Scenario: Empty Body
+Status: 400, Length: 80
+Body: {"vehicle_id":["This field is required."],"zone_id":["This field is required."]}
+
+Scenario: Missing Vehicle
+Status: 400, Length: 42
+Body: {"vehicle_id":["This field is required."]}
+
+Scenario: Missing Zone
+Status: 400, Length: 39
+Body: {"zone_id":["This field is required."]}
+
+Scenario: Invalid Vehicle UUID
+Status: 400, Length: 40
+Body: {"vehicle_id":["Must be a valid UUID."]}
+
+Scenario: Vehicle not found
+Status: 400, Length: 50
+Body: {"error":"Vehicle matching query does not exist."}
+
+Scenario: Zone not found
+Status: 400, Length: 47
+Body: {"error":"Zone matching query does not exist."}
+

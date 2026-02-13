@@ -113,10 +113,10 @@ def officer_zone_sessions(request, zone_id):
     try:
         zone = Zone.objects.get(id=zone_id, is_active=True)
         
-        # Get active sessions
+        # Get active and expired sessions
         sessions = ParkingSession.objects.filter(
             zone=zone,
-            status=ParkingStatus.ACTIVE
+            status__in=[ParkingStatus.ACTIVE, ParkingStatus.EXPIRED]
         ).select_related('vehicle__user', 'parking_slot').order_by('-start_time')
         
         return Response({

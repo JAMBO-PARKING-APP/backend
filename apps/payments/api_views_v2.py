@@ -15,11 +15,12 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Transaction, PaymentMethod, Invoice, WalletTransaction
 from .serializers_v2 import (
     TransactionSerializer, PaymentMethodSerializer, InvoiceSerializer,
-    TransactionListSerializer, PesapalPaymentSerializer, WalletTransactionSerializer
+    TransactionListSerializer, PesapalPaymentSerializer, WalletTransactionSerializer,
+    PaymentGatewayConfigSerializer
 )
+from .models import Transaction, PaymentMethod, Invoice, WalletTransaction, PaymentGatewayConfig, PaymentGateway
 from .pesapal_service import PesapalService
 from apps.enforcement.models import Violation
 from apps.parking.models import ParkingSession, ParkingStatus, Reservation
@@ -214,9 +215,10 @@ class WalletBalanceAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
+        country = getattr(request.user, 'country', None)
         return Response({
             'balance': float(request.user.wallet_balance),
-            'currency': 'UGX'
+            'currency': country.currency if country else 'UGX'
         }, status=status.HTTP_200_OK)
 
 class WalletTransactionsListAPIView(generics.ListAPIView):
@@ -236,7 +238,15 @@ class InitiatePesapalPaymentAPIView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-        pesapal = PesapalService()
+        # Get config for user's country
+        country = getattr(request.user, 'country', None)
+        config_obj = PesapalService.get_config_for_country(country)
+        
+        if config_obj:
+            pesapal = PesapalService(config_obj=config_obj)
+        else:
+            # Fallback for now if no config found, uses settings
+            pesapal = PesapalService()
         
         # Create transaction
         merchant_reference = str(uuid.uuid4())
@@ -279,7 +289,7 @@ class InitiatePesapalPaymentAPIView(APIView):
             merchant_reference=merchant_reference,
             description=serializer.validated_data['description'],
             user=request.user,
-            currency="UGX"
+            currency=country.currency if country else "UGX"
         )
 
         if not response or 'order_tracking_id' not in response:
@@ -310,14 +320,19 @@ class PesapalUserCallbackView(APIView):
         if not all([order_tracking_id, order_merchant_reference]):
             return Response({'error': 'Invalid parameters'}, status=status.HTTP_400_BAD_REQUEST)
             
-        pesapal = PesapalService()
-        status_response = pesapal.get_transaction_status(order_tracking_id)
-        
-        if not status_response:
-             return Response({'error': 'Verification failed'}, status=status.HTTP_400_BAD_REQUEST)
-             
         try:
             trans = Transaction.objects.get(pesapal_merchant_reference=order_merchant_reference)
+            
+            # Resolve config for the transaction's user
+            country = getattr(trans.user, 'country', None)
+            config_obj = PesapalService.get_config_for_country(country)
+            
+            if config_obj:
+                pesapal = PesapalService(config_obj=config_obj)
+            else:
+                pesapal = PesapalService()
+            
+            status_response = pesapal.get_transaction_status(order_tracking_id)
             
             # Update status logic (similar to IPN but for user feedback)
             p_status = status_response.get('payment_status_description', '').lower()
@@ -398,13 +413,19 @@ class PesapalIPNAPIView(APIView):
         if not all([order_tracking_id, order_merchant_reference]):
             return Response({'error': 'Invalid IPN parameters'}, status=status.HTTP_400_BAD_REQUEST)
         
-        pesapal = PesapalService()
-        status_response = pesapal.get_transaction_status(order_tracking_id)
-        if not status_response:
-            return Response({'error': 'Failed to fetch status from PesaPal'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
         try:
             trans = Transaction.objects.get(pesapal_merchant_reference=order_merchant_reference)
+            
+            # Resolve config for the transaction's user
+            country = getattr(trans.user, 'country', None)
+            config_obj = PesapalService.get_config_for_country(country)
+            
+            if config_obj:
+                pesapal = PesapalService(config_obj=config_obj)
+            else:
+                pesapal = PesapalService()
+            
+            status_response = pesapal.get_transaction_status(order_tracking_id)
             
             p_status = status_response.get('payment_status_description', '').lower()
             if p_status == 'completed' and trans.status != 'completed':
@@ -455,3 +476,15 @@ class PesapalIPNAPIView(APIView):
             
         except Transaction.DoesNotExist:
             return Response({'error': 'Transaction not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class AvailablePaymentGatewaysAPIView(generics.ListAPIView):
+    """List available payment gateways for user's country"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = PaymentGatewayConfigSerializer
+    
+    def get_queryset(self):
+        country = getattr(self.request.user, 'country', None)
+        return PaymentGatewayConfig.objects.filter(
+            country=country,
+            is_active=True
+        ).order_by('-priority', 'name')

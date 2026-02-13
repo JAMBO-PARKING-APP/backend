@@ -1,7 +1,30 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from apps.common.models import BaseModel
+from apps.common.models import BaseModel, RegionalModel
 from apps.common.constants import TransactionStatus
+
+class PaymentGateway(models.TextChoices):
+    PESAPAL = 'pesapal', _('Pesapal')
+    STRIPE = 'stripe', _('Stripe')
+    CASH = 'cash', _('Cash')
+    WALLET = 'wallet', _('Wallet')
+
+class PaymentGatewayConfig(RegionalModel, BaseModel):
+    """Configuration for payment gateways per country"""
+    gateway = models.CharField(max_length=20, choices=PaymentGateway.choices)
+    name = models.CharField(max_length=100, help_text="Display name for the app")
+    credentials = models.JSONField(help_text="API keys, secrets, etc.")
+    is_sandbox = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)
+    priority = models.PositiveIntegerField(default=0, help_text="Higher priority shows first")
+
+    class Meta:
+        unique_together = ('country', 'gateway')
+        ordering = ['-priority', 'name']
+
+    def __str__(self):
+        country_name = self.country.name if self.country else "Global"
+        return f"{self.gateway.title()} - {country_name}"
 
 class PaymentMethod(BaseModel):
     user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='payment_methods')
@@ -78,6 +101,7 @@ class WalletTransaction(BaseModel):
     # Optional references
     related_transaction = models.ForeignKey(Transaction, on_delete=models.SET_NULL, null=True, blank=True)
     parking_session = models.ForeignKey('parking.ParkingSession', on_delete=models.SET_NULL, null=True, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
 
     class Meta:
         indexes = [

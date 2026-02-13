@@ -76,8 +76,8 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
     bool success = false;
     try {
       success = await context.read<EnforcementProvider>().issueViolation(
-        vehicleId:
-            widget.vehicleId ?? widget.vehiclePlate, // Fallback if ID missing
+        vehicleId: widget.vehicleId,
+        vehiclePlate: widget.vehiclePlate,
         zoneId: widget.zoneId ?? '0',
         type: _selectedType,
         description: _descriptionController.text,

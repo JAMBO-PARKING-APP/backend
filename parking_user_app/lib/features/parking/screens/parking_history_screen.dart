@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:parking_user_app/features/parking/providers/parking_provider.dart';
+import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 
 class ParkingHistoryScreen extends StatefulWidget {
   const ParkingHistoryScreen({super.key});
@@ -44,7 +45,7 @@ class _ParkingHistoryScreenState extends State<ParkingHistoryScreen> {
                   title: Text(session.zoneName),
                   subtitle: Text('${session.vehiclePlate} • $dateStr'),
                   trailing: Text(
-                    'UGX ${session.totalCost.toInt()}',
+                    '${context.read<AuthProvider>().currencySymbol} ${session.totalCost.toInt()}',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),

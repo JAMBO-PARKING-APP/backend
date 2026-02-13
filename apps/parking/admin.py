@@ -1,10 +1,11 @@
 from django.contrib import admin
+from apps.common.admin_mixins import RegionalAdminMixin
 from .models import Zone, ParkingSlot, ParkingSession, Reservation
 
 @admin.register(Zone)
-class ZoneAdmin(admin.ModelAdmin):
-    list_display = ('name', 'hourly_rate', 'available_slots_count', 'is_active')
-    list_filter = ('is_active',)
+class ZoneAdmin(RegionalAdminMixin, admin.ModelAdmin):
+    list_display = ('name', 'hourly_rate', 'available_slots_count', 'is_active', 'country')
+    list_filter = ('country', 'is_active')
     search_fields = ('name',)
 
 @admin.register(ParkingSlot)

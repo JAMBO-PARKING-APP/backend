@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:parking_user_app/features/parking/providers/violation_provider.dart';
+import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 
 class ViolationsScreen extends StatefulWidget {
   const ViolationsScreen({super.key});
@@ -48,7 +49,7 @@ class _ViolationsScreenState extends State<ViolationsScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'You have ${provider.unpaidCount} unpaid violations totaling UGX ${provider.totalUnpaidAmount.toInt()}',
+                          'You have ${provider.unpaidCount} unpaid violations totaling ${context.read<AuthProvider>().currencySymbol} ${provider.totalUnpaidAmount.toInt()}',
                           style: const TextStyle(
                             color: Colors.red,
                             fontWeight: FontWeight.bold,
@@ -83,7 +84,7 @@ class _ViolationsScreenState extends State<ViolationsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              'UGX ${v.fineAmount.toInt()}',
+                              '${context.read<AuthProvider>().currencySymbol} ${v.fineAmount.toInt()}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),

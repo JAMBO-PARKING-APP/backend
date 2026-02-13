@@ -8,16 +8,34 @@ from decouple import config
 logger = logging.getLogger(__name__)
 
 class PesapalService:
-    def __init__(self):
-        self.consumer_key = settings.PESAPAL_CONSUMER_KEY
-        self.consumer_secret = settings.PESAPAL_CONSUMER_SECRET
-        self.sandbox = settings.PESAPAL_SANDBOX
-        self.callback_url = settings.PESAPAL_CALLBACK_URL
+    def __init__(self, config_obj=None):
+        if config_obj:
+            self.consumer_key = config_obj.credentials.get('consumer_key')
+            self.consumer_secret = config_obj.credentials.get('consumer_secret')
+            self.sandbox = config_obj.is_sandbox
+            # Allow per-config callback or use global default
+            self.callback_url = config_obj.credentials.get('callback_url', settings.PESAPAL_CALLBACK_URL)
+        else:
+            self.consumer_key = settings.PESAPAL_CONSUMER_KEY
+            self.consumer_secret = settings.PESAPAL_CONSUMER_SECRET
+            self.sandbox = settings.PESAPAL_SANDBOX
+            self.callback_url = settings.PESAPAL_CALLBACK_URL
         
         if self.sandbox:
             self.base_url = "https://cybqa.pesapal.com/pesapalv3"
         else:
             self.base_url = "https://pay.pesapal.com/v3"
+
+    @staticmethod
+    def get_config_for_country(country):
+        """Helper to get Pesapal config for a country"""
+        from .models import PaymentGatewayConfig, PaymentGateway
+        return PaymentGatewayConfig.objects.filter(
+            country=country,
+            gateway=PaymentGateway.PESAPAL,
+            is_active=True
+        ).first()
+
 
 
 

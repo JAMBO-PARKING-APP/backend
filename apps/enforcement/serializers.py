@@ -86,11 +86,37 @@ class VehicleDetailSerializer(serializers.ModelSerializer):
         return Transaction.objects.filter(parking_session__vehicle=obj, status='completed').count()
 
 class ViolationSerializer(serializers.ModelSerializer):
+    vehicle_plate = serializers.CharField(write_only=True, required=False)
+    
     class Meta:
         model = Violation
-        fields = ('id', 'vehicle', 'officer', 'zone', 'parking_session', 'violation_type', 
+        fields = ('id', 'vehicle', 'vehicle_plate', 'officer', 'zone', 'parking_session', 'violation_type', 
                  'description', 'fine_amount', 'latitude', 'longitude', 'is_paid', 'created_at')
-        read_only_fields = ('id', 'officer', 'created_at')
+        read_only_fields = ('id', 'officer', 'created_at', 'vehicle')
+
+    def validate(self, attrs):
+        vehicle_plate = attrs.get('vehicle_plate')
+        vehicle = attrs.get('vehicle')
+        
+        if not vehicle and vehicle_plate:
+            try:
+                attrs['vehicle'] = Vehicle.objects.get(license_plate__iexact=vehicle_plate)
+            except Vehicle.DoesNotExist:
+                raise serializers.ValidationError({"vehicle_plate": "Vehicle with this plate not found."})
+        
+        if not attrs.get('vehicle'):
+            raise serializers.ValidationError({"vehicle": "Vehicle is required."})
+
+        # Infer zone from parking session if available
+        session = attrs.get('parking_session')
+        if not attrs.get('zone') and session:
+            attrs['zone'] = session.zone
+            
+        # Remove write-only field to prevent model error
+        if 'vehicle_plate' in attrs:
+            del attrs['vehicle_plate']
+            
+        return attrs
 
 class OfficerLogSerializer(serializers.ModelSerializer):
     class Meta:

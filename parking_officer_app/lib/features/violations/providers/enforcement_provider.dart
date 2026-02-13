@@ -9,7 +9,8 @@ class EnforcementProvider with ChangeNotifier {
   bool get isProcessing => _isProcessing;
 
   Future<bool> issueViolation({
-    required String vehicleId,
+    String? vehicleId,
+    String? vehiclePlate,
     required String zoneId,
     required String type,
     required String description,
@@ -24,6 +25,7 @@ class EnforcementProvider with ChangeNotifier {
 
     final success = await _enforcementService.issueViolation(
       vehicleId: vehicleId,
+      vehiclePlate: vehiclePlate,
       zoneId: zoneId,
       type: type,
       description: description,

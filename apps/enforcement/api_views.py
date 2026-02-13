@@ -1,3 +1,5 @@
+from django.db import transaction
+from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -115,8 +117,61 @@ class CreateViolationView(generics.CreateAPIView):
     serializer_class = ViolationSerializer
     permission_classes = [IsAuthenticated]
     
+    @transaction.atomic
     def perform_create(self, serializer):
-        serializer.save(officer=self.request.user)
+        from apps.payments.models import WalletTransaction
+        
+        # Infer zone from officer status if not provided and not in session
+        zone = serializer.validated_data.get('zone')
+        officer = self.request.user
+        
+        if not zone:
+            try:
+                from .models import OfficerStatus
+                status_obj = OfficerStatus.objects.get(officer=officer)
+                if status_obj.current_zone:
+                    zone = status_obj.current_zone
+            except Exception:
+                pass
+                
+        # Save violation
+        violation = serializer.save(officer=officer, zone=zone)
+        
+        # Auto-deduct fine from wallet (allowing negative balance)
+        user = violation.vehicle.user
+        fine_amount = violation.fine_amount
+        
+        # Deduct amount
+        user.wallet_balance -= fine_amount
+        user.save(update_fields=['wallet_balance'])
+        
+        # Log transaction
+        WalletTransaction.objects.create(
+            user=user,
+            amount=-fine_amount,
+            transaction_type='fine_payment',
+            status='completed',
+            description=f"Fine for violation: {violation.get_violation_type_display()}",
+            metadata={
+                'violation_id': str(violation.id),
+                'vehicle_plate': violation.vehicle.license_plate
+            }
+        )
+        
+        # Mark violation as paid
+        violation.is_paid = True
+        violation.paid_at = timezone.now()
+        violation.save(update_fields=['is_paid', 'paid_at'])
+        
+        # Handle evidence images
+        evidence_files = self.request.FILES.getlist('evidence')
+        if evidence_files:
+            from .models import ViolationEvidence
+            for image_file in evidence_files:
+                ViolationEvidence.objects.create(
+                    violation=violation,
+                    image=image_file
+                )
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

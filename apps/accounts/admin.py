@@ -1,18 +1,19 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from apps.common.admin_mixins import RegionalAdminMixin
 from .models import User, Vehicle, OTPCode
 
 @admin.register(User)
-class UserAdmin(BaseUserAdmin):
-    list_display = ('phone', 'first_name', 'last_name', 'role', 'wallet_balance', 'is_active')
-    list_filter = ('role', 'is_active', 'is_verified')
+class UserAdmin(RegionalAdminMixin, BaseUserAdmin):
+    list_display = ('phone', 'first_name', 'last_name', 'role', 'country', 'wallet_balance', 'is_active')
+    list_filter = ('country', 'role', 'is_active', 'is_verified')
     search_fields = ('phone', 'first_name', 'last_name', 'email')
     ordering = ('-created_at',)
     actions = ['top_up_wallet']
     
     fieldsets = (
         (None, {'fields': ('phone', 'password')}),
-        ('Personal info', {'fields': ('first_name', 'last_name', 'email', 'profile_photo')}),
+        ('Personal info', {'fields': ('first_name', 'last_name', 'email', 'country', 'profile_photo')}),
         ('Wallet', {'fields': ('wallet_balance',)}),
         ('Permissions', {'fields': ('role', 'is_active', 'is_staff', 'is_superuser', 'is_verified')}),
         ('Officer Assignments', {'fields': ('assigned_zones',)}),

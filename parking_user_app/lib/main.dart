@@ -19,6 +19,7 @@ import 'package:parking_user_app/features/settings/providers/settings_provider.d
 import 'package:firebase_core/firebase_core.dart';
 import 'package:parking_user_app/core/fcm_service.dart';
 import 'package:parking_user_app/core/notification_dialog_service.dart';
+import 'package:parking_user_app/core/dialog_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -60,6 +61,7 @@ class MyApp extends StatelessWidget {
         });
 
         return MaterialApp(
+          navigatorKey: DialogService.navigatorKey,
           title: 'Jambo Park',
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,

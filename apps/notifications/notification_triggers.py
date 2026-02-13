@@ -114,8 +114,18 @@ def notify_parking_ended(session):
     """
     user = session.vehicle.user
     
-    title = "Parking Session Ended"
-    message = f"Your parking session at {session.zone.name} has ended. Total cost: UGX {session.final_cost}"
+    # Check if session ended after planned time or is marked as expired
+    is_expired = session.status == 'expired' or (session.planned_end_time and timezone.now() > session.planned_end_time)
+    
+    # Get currency symbol for user
+    symbol = getattr(user.country, 'currency_symbol', 'UGX') if hasattr(user, 'country') else 'UGX'
+    
+    if is_expired:
+        title = "Parking Session Expired"
+        message = f"Your parking session in {session.zone.name} has ended and the time has run out. Please leave the parking zone immediately to avoid further charges or violations. Total cost: {symbol} {session.final_cost}"
+    else:
+        title = "Parking Session Ended"
+        message = f"Your parking session at {session.zone.name} has ended. Total cost: {symbol} {session.final_cost}"
     
     notification = NotificationEvent.objects.create(
         user=user,
@@ -170,8 +180,11 @@ def notify_payment_success(payment):
         payment_method = getattr(payment, 'payment_method', 'wallet')
         payment_id = payment.id
     
+    # Get currency symbol for user
+    symbol = getattr(user.country, 'currency_symbol', 'UGX') if hasattr(user, 'country') else 'UGX'
+    
     title = "Payment Successful"
-    message = f"Your payment of UGX {amount} was successful."
+    message = f"Your payment of {symbol} {amount} was successful."
     
     notification = NotificationEvent.objects.create(
         user=user,
@@ -212,8 +225,11 @@ def notify_payment_failed(payment, reason: str = ""):
     """
     user = payment.user
     
+    # Get currency symbol for user
+    symbol = getattr(user.country, 'currency_symbol', 'UGX') if hasattr(user, 'country') else 'UGX'
+    
     title = "Payment Failed"
-    message = f"Your payment of UGX {payment.amount} failed."
+    message = f"Your payment of {symbol} {payment.amount} failed."
     if reason:
         message += f" Reason: {reason}"
     
@@ -254,8 +270,11 @@ def notify_violation_issued(violation):
     """
     user = violation.vehicle.user
     
+    # Get currency symbol for user
+    symbol = getattr(user.country, 'currency_symbol', 'UGX') if hasattr(user, 'country') else 'UGX'
+    
     title = "Parking Violation Issued"
-    message = f"A parking violation has been issued for {violation.vehicle.license_plate}. Fine: UGX {violation.fine_amount}"
+    message = f"A parking violation has been issued for {violation.vehicle.license_plate}. Fine: {symbol} {violation.fine_amount}"
     
     notification = NotificationEvent.objects.create(
         user=user,
@@ -368,8 +387,11 @@ def notify_wallet_refund(wallet_transaction, parking_session):
     """
     user = wallet_transaction.user
     
+    # Get currency symbol for user
+    symbol = getattr(user.country, 'currency_symbol', 'UGX') if hasattr(user, 'country') else 'UGX'
+    
     title = "Wallet Refund"
-    message = f"You've been refunded UGX {wallet_transaction.amount} for ending your parking session early at {parking_session.zone.name}."
+    message = f"You've been refunded {symbol} {wallet_transaction.amount} for ending your parking session early at {parking_session.zone.name}."
     
     notification = NotificationEvent.objects.create(
         user=user,

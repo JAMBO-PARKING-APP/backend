@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 
 class PaymentSelectionDialog extends StatelessWidget {
   final double amount;
@@ -34,7 +36,7 @@ class PaymentSelectionDialog extends StatelessWidget {
 
             // Amount
             Text(
-              'Amount: UGX ${amount.toStringAsFixed(0)}',
+              'Amount: ${context.read<AuthProvider>().currencySymbol} ${amount.toStringAsFixed(0)}',
               style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
             ),
             const SizedBox(height: 24),
@@ -83,7 +85,7 @@ class PaymentSelectionDialog extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Balance: UGX ${walletBalance.toStringAsFixed(0)}',
+                            'Balance: ${context.read<AuthProvider>().currencySymbol} ${walletBalance.toStringAsFixed(0)}',
                             style: TextStyle(
                               fontSize: 14,
                               color: hasSufficientBalance

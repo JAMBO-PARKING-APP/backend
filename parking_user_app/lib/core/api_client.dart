@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:parking_user_app/core/constants.dart';
+import 'package:parking_user_app/core/dialog_service.dart';
 import 'package:parking_user_app/core/storage_manager.dart';
 
 class ApiClient {
@@ -38,6 +39,17 @@ class ApiClient {
           return handler.next(options);
         },
         onError: (DioException e, handler) async {
+          // Check for internet connection errors
+          if (e.type == DioExceptionType.connectionTimeout ||
+              e.type == DioExceptionType.receiveTimeout ||
+              e.type == DioExceptionType.sendTimeout ||
+              e.type == DioExceptionType.connectionError ||
+              (e.type == DioExceptionType.unknown &&
+                  e.message?.contains('SocketException') == true)) {
+            // Show No Internet Dialog
+            DialogService.showNoInternetDialog();
+          }
+
           if (e.response?.statusCode == 401) {
             debugPrint(
               '[ApiClient] 401 Unauthorized for ${e.requestOptions.path}',

@@ -8,6 +8,7 @@ from .managers import UserManager
 
 class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     phone = PhoneNumberField(unique=True, verbose_name=_("Phone Number"))
+    country = models.ForeignKey('common.Country', on_delete=models.SET_NULL, null=True, blank=True, related_name='users', verbose_name=_("Country"))
     email = models.EmailField(blank=True, null=True, verbose_name=_("Email Address"))
     first_name = models.CharField(max_length=30, verbose_name=_("First Name"))
     last_name = models.CharField(max_length=30, verbose_name=_("Last Name"))
@@ -55,6 +56,37 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
+
+    def save(self, *args, **kwargs):
+        # Automatically assign country based on phone code if not set
+        if not self.country and self.phone:
+            try:
+                import phonenumbers
+                from phonenumbers import geocoder
+                from apps.common.models import Country
+                
+                # Parse the phone number (PhoneNumber objects can be converted to string)
+                parsed = phonenumbers.parse(str(self.phone), None)
+                
+                # Get ISO region code (e.g., 'UG', 'KE', 'US')
+                region_code = phonenumbers.region_code_for_number(parsed)
+                
+                if region_code:
+                    country = Country.objects.filter(iso_code=region_code, is_active=True).first()
+                    if country:
+                        self.country = country
+                    else:
+                        # Fallback to dialing code matching if ISO lookup fails (though unlikely)
+                        dial_code = f"+{parsed.country_code}"
+                        country = Country.objects.filter(phone_code=dial_code, is_active=True).first()
+                        if country:
+                            self.country = country
+
+            except Exception:
+                # Silently fail to ensure user can still sign up if parsing fails
+                pass
+                
+        super().save(*args, **kwargs)
 
 class Vehicle(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='vehicles')

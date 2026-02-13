@@ -9,6 +9,8 @@ import 'package:parking_user_app/features/auth/models/vehicle_model.dart';
 import 'package:parking_user_app/widgets/payment_selection_dialog.dart';
 import 'package:parking_user_app/features/parking/screens/parking_map_screen.dart';
 import 'package:parking_user_app/features/payments/services/payment_service.dart';
+import 'package:parking_user_app/core/dialog_service.dart';
+import 'package:parking_user_app/features/payments/screens/pesapal_webview_screen.dart';
 
 class ZoneListScreen extends StatefulWidget {
   const ZoneListScreen({super.key});
@@ -70,7 +72,9 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Rate: UGX ${zone.hourlyRate.toInt()}/hr'),
+                Text(
+                  'Rate: ${context.read<AuthProvider>().currencySymbol} ${zone.hourlyRate.toInt()}/hr',
+                ),
                 const SizedBox(height: 16),
                 const Text('Select Vehicle:'),
                 vehicles.isEmpty
@@ -133,7 +137,7 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                   style: TextStyle(color: Colors.grey.shade600),
                 ),
                 Text(
-                  'Est. Cost: UGX ${estimatedCost.toStringAsFixed(0)}',
+                  'Est. Cost: ${context.read<AuthProvider>().currencySymbol} ${estimatedCost.toStringAsFixed(0)}',
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ],
@@ -236,9 +240,18 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
           if (result['success'] == true && mounted) {
             final url = result['redirect_url'];
             if (url != null) {
-              final uri = Uri.parse(url);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              final success = await Navigator.push<bool>(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PesapalWebViewScreen(
+                    url: url,
+                    orderTrackingId: result['order_tracking_id'],
+                  ),
+                ),
+              );
+
+              if (success == true && mounted) {
+                _showSuccessDialog(context, zone);
               }
             }
           } else if (mounted) {
@@ -261,34 +274,20 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
   }
 
   void _showSuccessDialog(BuildContext context, Zone zone) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Icon(Icons.check_circle, color: Colors.green, size: 60),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Payment Complete!',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Your session in ${zone.name} is now active.',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Close payment selection if open
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
+    DialogService.showSuccessDialog(
+      title: 'Payment Complete!',
+      message: 'Your session in ${zone.name} is now active.',
+      onDismiss: () {
+        // Navigator.pop(context); // Close payment selection if open
+        // Actually, onDismiss is called AFTER the dialog pops.
+        // We might need to close the payment selection dialog too if it's still open.
+        // But the dialog service handles the pop of the success dialog.
+        // The previous code popped twice: once for dialog, once for payment selection.
+        // Let's rely on the user or check if we need extra pops.
+        // The previous code: Navigator.pop(context); Navigator.pop(context);
+        // We can pass a callback to do the extra pop.
+        Navigator.of(context).pop(); // Close payment selection dialog
+      },
     );
   }
 
@@ -329,7 +328,7 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'Rate: UGX ${zone.hourlyRate.toInt()}/hr',
+                                    'Rate: ${context.read<AuthProvider>().currencySymbol} ${zone.hourlyRate.toInt()}/hr',
                                   ),
                                   const SizedBox(height: 4),
                                   Text(

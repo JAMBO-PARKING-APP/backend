@@ -8,6 +8,7 @@ import 'package:parking_user_app/features/parking/providers/parking_provider.dar
 import 'package:parking_user_app/features/parking/screens/parking_map_screen.dart';
 import 'package:parking_user_app/features/payments/providers/payment_provider.dart';
 import 'package:parking_user_app/features/parking/providers/violation_provider.dart';
+import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_user_app/features/auth/providers/vehicle_provider.dart';
 import 'package:parking_user_app/features/notifications/providers/notification_provider.dart';
 import 'package:parking_user_app/features/parking/screens/active_session_screen.dart';
@@ -234,7 +235,7 @@ class HomeDashboard extends StatelessWidget {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      'UGX ${NumberFormat('#,###').format(payment.balance)}',
+                                      '${context.read<AuthProvider>().currencySymbol} ${NumberFormat('#,###').format(payment.balance)}',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 32,
@@ -395,7 +396,7 @@ class HomeDashboard extends StatelessWidget {
                       else
                         ...parking.sessions
                             .take(3)
-                            .map((s) => _buildActivityItem(s)),
+                            .map((s) => _buildActivityItem(context, s)),
 
                       const SizedBox(height: 24),
                     ],
@@ -471,7 +472,7 @@ class HomeDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildActivityItem(dynamic session) {
+  Widget _buildActivityItem(BuildContext context, dynamic session) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
@@ -494,7 +495,7 @@ class HomeDashboard extends StatelessWidget {
         ),
         subtitle: Text(DateFormat('MMM dd, HH:mm').format(session.startTime)),
         trailing: Text(
-          'UGX ${NumberFormat('#,###').format(session.totalCost)}',
+          '${context.read<AuthProvider>().currencySymbol} ${NumberFormat('#,###').format(session.totalCost)}',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
