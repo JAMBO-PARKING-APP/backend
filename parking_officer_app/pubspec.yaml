@@ -40,6 +40,7 @@ dependencies:
   google_fonts: ^6.1.0
   geolocator: ^11.0.0
   camera: ^0.10.5+9
+  google_mlkit_text_recognition: ^0.13.0
   mobile_scanner: ^5.0.0
   flutter_svg: ^2.0.17
   intl: ^0.19.0
@@ -53,6 +54,8 @@ dependencies:
   # Device tracking for single device login
   device_info_plus: ^10.1.2
   uuid: ^4.5.1
+  web_socket_channel: ^3.0.1
+  country_code_picker: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -78,15 +81,15 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # App assets (add your logo to assets/images/JAMBO.png if available)
+  # App assets
   assets:
-    - assets/images/JAMBO.png
+    - assets/images/logo.png
 
 # Launcher icon and app name configuration
 flutter_icons:
   android: true
   ios: true
-  image_path: assets/images/JAMBO.png
+  image_path: assets/images/logo.png
 
 # To change the native app display name, edit the platform files manually:
 # - Android: android/app/src/main/AndroidManifest.xml -> android:label

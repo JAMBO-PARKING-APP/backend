@@ -12,9 +12,9 @@ import 'package:parking_officer_app/main.dart';
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const JamboOfficerApp());
+    await tester.pumpWidget(const SpaceOfficerApp());
 
     // Verify that our app starts.
-    expect(find.byType(JamboOfficerApp), findsOneWidget);
+    expect(find.byType(SpaceOfficerApp), findsOneWidget);
   });
 }

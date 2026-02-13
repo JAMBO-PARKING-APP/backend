@@ -101,4 +101,16 @@ class AuthService {
     }
     return null;
   }
+
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async {
+    try {
+      final response = await _apiClient.patch('user/profile/', data: data);
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': response.data};
+      }
+      return {'success': false, 'message': 'Failed to update profile'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
 }

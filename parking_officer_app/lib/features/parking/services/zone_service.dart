@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:parking_officer_app/core/api_client.dart';
 import 'package:parking_officer_app/features/parking/models/zone_model.dart';
 import 'package:parking_officer_app/features/parking/models/parking_session_model.dart';
@@ -31,7 +32,7 @@ class ZoneService {
         return zones.map((z) => Zone.fromJson(z)).toList();
       }
     } catch (e) {
-      print('Error fetching officer zones: $e');
+      debugPrint('Error fetching officer zones: $e');
       return [];
     }
     return [];
@@ -52,7 +53,7 @@ class ZoneService {
         };
       }
     } catch (e) {
-      print('Error fetching zone sessions: $e');
+      debugPrint('Error fetching zone sessions: $e');
       return {'error': 'Failed to load zone sessions'};
     }
     return {'error': 'Failed to load zone sessions'};

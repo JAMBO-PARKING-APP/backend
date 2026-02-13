@@ -17,9 +17,14 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
     - Update conversation status
     - Close/resolve conversation
     """
-    serializer_class = ChatConversationSerializer
-    permission_classes = [permissions.IsAuthenticated]
     pagination_class = PageNumberPagination
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_serializer_class(self):
+        if self.action == 'create':
+            from .serializers import CreateChatConversationSerializer
+            return CreateChatConversationSerializer
+        return ChatConversationSerializer
     
     def get_queryset(self):
         user = self.request.user
@@ -125,6 +130,19 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
             message.attachment = request.FILES['attachment']
             message.message_type = 'file'
             message.save()
+        
+        # Broadcast to group
+        from asgiref.sync import async_to_sync
+        from channels.layers import get_channel_layer
+        
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'chat_{conversation.id}',
+            {
+                'type': 'chat_message',
+                'message': ChatMessageSerializer(message).data
+            }
+        )
         
         return Response(
             ChatMessageSerializer(message).data,

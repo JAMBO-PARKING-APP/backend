@@ -422,3 +422,78 @@ def notify_wallet_refund(wallet_transaction, parking_session):
     )
     
     logger.info(f"Sent wallet refund notification to user {user.id} for {wallet_transaction.amount}")
+
+
+def notify_reservation_confirmed(reservation):
+    """
+    Notify user of confirmed reservation
+    Args: reservation: Reservation instance
+    """
+    user = reservation.vehicle.user
+    start_time = reservation.reserved_from.strftime('%b %d, %I:%M %p')
+    
+    title = "Reservation Confirmed"
+    message = f"Your parking reservation at {reservation.zone.name} is confirmed for {start_time}."
+    
+    notification = NotificationEvent.objects.create(
+        user=user,
+        title=title,
+        message=message,
+        type='reservation_confirmed',
+        category='reservations',
+        metadata={
+            'reservation_id': str(reservation.id),
+            'zone_name': reservation.zone.name,
+            'start_time': reservation.reserved_from.isoformat(),
+        }
+    )
+    
+    send_notification_to_user(
+        user=user,
+        title=title,
+        body=message,
+        data={
+            'type': 'reservation_confirmed',
+            'reservation_id': str(reservation.id),
+            'zone_name': reservation.zone.name,
+            'show_dialog': 'true',
+        },
+        notification_event=notification
+    )
+    logger.info(f"Sent reservation confirmed notification to user {user.id}")
+
+
+def notify_reservation_cancelled(reservation):
+    """
+    Notify user of cancelled reservation
+    Args: reservation: Reservation instance
+    """
+    user = reservation.vehicle.user
+    
+    title = "Reservation Cancelled"
+    message = f"Your parking reservation at {reservation.zone.name} has been cancelled."
+    
+    notification = NotificationEvent.objects.create(
+        user=user,
+        title=title,
+        message=message,
+        type='reservation_cancelled',
+        category='reservations',
+        metadata={
+            'reservation_id': str(reservation.id),
+            'zone_name': reservation.zone.name,
+        }
+    )
+    
+    send_notification_to_user(
+        user=user,
+        title=title,
+        body=message,
+        data={
+            'type': 'reservation_cancelled',
+            'reservation_id': str(reservation.id),
+            'show_dialog': 'true',
+        },
+        notification_event=notification
+    )
+    logger.info(f"Sent reservation cancelled notification to user {user.id}")

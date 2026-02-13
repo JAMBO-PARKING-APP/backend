@@ -28,6 +28,9 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     fcm_device_token = models.CharField(max_length=255, blank=True, null=True, verbose_name=_("FCM Device Token"), help_text="Firebase Cloud Messaging device token for push notifications")
     fcm_token_updated_at = models.DateTimeField(null=True, blank=True, verbose_name=_("FCM Token Updated At"))
     
+    # Chat availability for officers/support
+    can_receive_chats = models.BooleanField(default=False, verbose_name=_("Can Receive Chats"), help_text="Whether this officer/agent is available to receive chat assignments")
+    
     # Officer zone assignments
     assigned_zones = models.ManyToManyField(
         'parking.Zone',

@@ -103,9 +103,9 @@ class _EnglishLocalizations extends AppLocalizations {
   _EnglishLocalizations();
 
   @override
-  String get appTitle => 'Jambo Park';
+  String get appTitle => 'Space';
   @override
-  String get welcome => 'Welcome to Jambo Park';
+  String get welcome => 'Welcome to Space';
   @override
   String get login => 'Login';
   @override
@@ -222,9 +222,9 @@ class _SwahiliLocalizations extends AppLocalizations {
   _SwahiliLocalizations();
 
   @override
-  String get appTitle => 'Jambo Park';
+  String get appTitle => 'Space';
   @override
-  String get welcome => 'Karibu kwenye Jambo Park';
+  String get welcome => 'Karibu kwenye Space';
   @override
   String get login => 'Ingia';
   @override
@@ -341,9 +341,9 @@ class _FrenchLocalizations extends AppLocalizations {
   _FrenchLocalizations();
 
   @override
-  String get appTitle => 'Jambo Park';
+  String get appTitle => 'Space';
   @override
-  String get welcome => 'Bienvenue à Jambo Park';
+  String get welcome => 'Bienvenue à Space';
   @override
   String get login => 'Connexion';
   @override
@@ -460,9 +460,9 @@ class _SpanishLocalizations extends AppLocalizations {
   _SpanishLocalizations();
 
   @override
-  String get appTitle => 'Jambo Park';
+  String get appTitle => 'Space';
   @override
-  String get welcome => 'Bienvenido a Jambo Park';
+  String get welcome => 'Bienvenido a Space';
   @override
   String get login => 'Iniciar Sesión';
   @override

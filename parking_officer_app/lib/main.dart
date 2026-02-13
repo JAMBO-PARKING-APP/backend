@@ -43,7 +43,7 @@ void main() async {
           ChangeNotifierProvider(create: (_) => EnforcementProvider()),
           ChangeNotifierProvider(create: (_) => ChatProvider()),
         ],
-        child: const JamboOfficerApp(),
+        child: const SpaceOfficerApp(),
       ),
     );
   } catch (e, stack) {
@@ -61,13 +61,13 @@ void main() async {
 // Helper to make unawaited calls explicit
 void unawaited(Future<void> future) {}
 
-class JamboOfficerApp extends StatelessWidget {
-  const JamboOfficerApp({super.key});
+class SpaceOfficerApp extends StatelessWidget {
+  const SpaceOfficerApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Jambo Officer',
+      title: 'Space Officer',
       theme: AppTheme.officerTheme,
       debugShowCheckedModeBanner: false,
       home: const AuthWrapper(),

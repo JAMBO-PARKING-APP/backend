@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:parking_officer_app/core/api_client.dart';
 
 class QRVerificationService {
@@ -26,7 +27,7 @@ class QRVerificationService {
         };
       }
     } catch (e) {
-      print('Error verifying QR code: $e');
+      debugPrint('Error verifying QR code: $e');
       return {
         'success': false,
         'valid': false,

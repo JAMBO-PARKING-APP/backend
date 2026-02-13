@@ -6,9 +6,8 @@ import 'package:parking_officer_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_officer_app/core/app_theme.dart';
 import 'package:parking_officer_app/features/parking/models/zone_model.dart';
 import 'package:parking_officer_app/features/parking/screens/zone_detail_screen.dart';
-import 'package:parking_officer_app/features/parking/screens/zone_sessions_screen.dart';
 import 'package:parking_officer_app/features/parking/screens/scanner_screen.dart';
-import 'package:parking_officer_app/features/parking/screens/qr_history_screen.dart';
+import 'package:parking_officer_app/features/enforcement/screens/activity_history_screen.dart';
 import 'package:parking_officer_app/features/parking/screens/license_plate_search_screen.dart';
 import 'package:parking_officer_app/features/auth/screens/profile_screen.dart';
 import 'package:parking_officer_app/features/chat/screens/chat_list_screen.dart';
@@ -55,14 +54,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Column(
                       children: [
                         Image.asset(
-                          'assets/images/JAMBO.png',
+                          'assets/images/logo.png',
                           width: 72,
                           height: 72,
                           errorBuilder: (c, e, s) => const SizedBox(),
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Jambo Officer',
+                          'Space Officer',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ],
@@ -112,7 +111,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         // Mobile/tablet: use drawer
         return Scaffold(
-          appBar: AppBar(title: const Text('Jambo Officer')),
+          appBar: AppBar(title: const Text('Space Officer')),
           drawer: Drawer(
             child: SafeArea(
               child: Column(
@@ -123,14 +122,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Image.asset(
-                          'assets/images/JAMBO.png',
+                          'assets/images/logo.png',
                           width: 72,
                           height: 72,
                           errorBuilder: (c, e, s) => const SizedBox(),
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Jambo Officer',
+                          'Space Officer',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 18,
@@ -226,7 +225,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 2:
         return const LicensePlateSearchScreen();
       case 3:
-        return const QRScanHistoryScreen();
+        return const ActivityHistoryScreen();
       case 4:
         return const ChatListScreen();
       default:

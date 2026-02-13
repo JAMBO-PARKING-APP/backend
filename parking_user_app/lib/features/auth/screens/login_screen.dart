@@ -94,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 48),
               Text(
-                'Welcome Back',
+                'Welcome to Space',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).primaryColor,
@@ -103,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Login to your Jambo Park account',
+                'Login to your Space account',
                 textAlign: TextAlign.center,
                 style: Theme.of(
                   context,

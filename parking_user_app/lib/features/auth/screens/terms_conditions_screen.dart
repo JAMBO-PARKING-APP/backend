@@ -18,7 +18,7 @@ class TermsConditionsScreen extends StatelessWidget {
             ),
             SizedBox(height: 16),
             Text(
-              'Welcome to Jambo Park. By using our application, you agree to comply with and be bound by the following terms and conditions.',
+              'Welcome to Space. By using our application, you agree to comply with and be bound by the following terms and conditions.',
             ),
             SizedBox(height: 16),
             Text(
@@ -42,10 +42,10 @@ class TermsConditionsScreen extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             Text(
-              'Jambo Park is not liable for any damages to vehicles or loss of property in parking zones.',
+              'Space is not liable for any damages to vehicles or loss of property in parking zones.',
             ),
             SizedBox(height: 24),
-            Text('Thank you for choosing Jambo Park.'),
+            Text('Thank you for choosing Space.'),
           ],
         ),
       ),

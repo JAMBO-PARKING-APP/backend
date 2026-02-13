@@ -18,7 +18,9 @@ urlpatterns = [
     path('api/officer/', include('apps.common.api_urls_officer')),  # Officer mobile API (zones, QR)
     
     # Shared endpoints for both apps
-    path('api/notifications/', include('apps.notifications.urls')),  # Chat and notifications (for officer app)
+    path('api/notifications/', include('apps.notifications.urls')),
+    path('api/rewards/', include('apps.rewards.urls')),
+  # Chat and notifications (for officer app)
     
     path('i18n/', include('django.conf.urls.i18n')),
 ]

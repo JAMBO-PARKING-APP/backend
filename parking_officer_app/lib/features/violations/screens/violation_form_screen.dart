@@ -123,7 +123,7 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             DropdownButtonFormField<String>(
-              value: _selectedType,
+              initialValue: _selectedType,
               items: _violationTypes.map((type) {
                 return DropdownMenuItem<String>(
                   value: type['value'],

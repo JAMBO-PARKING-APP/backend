@@ -237,6 +237,20 @@ class ParkingSession(BaseModel):
         
         self.status = ParkingStatus.COMPLETED
         
+        # Award Loyalty Points
+        try:
+            from apps.rewards.services import LoyaltyService
+            points = LoyaltyService.award_points(
+                user=self.vehicle.user,
+                amount_spent=self.final_cost,
+                description=f"Parking at {self.zone.name}",
+                reference_id=str(self.id)
+            )
+            # Maybe log or notify?
+        except Exception as e:
+            # Don't fail session end if loyalty fails
+            print(f"Error awarding points: {e}")
+
         if self.parking_slot:
             self.parking_slot.status = SlotStatus.AVAILABLE
             self.parking_slot.save()
@@ -294,14 +308,33 @@ class ParkingSession(BaseModel):
         return "\r\n".join(data)
 
 class Reservation(BaseModel):
+    STATUS_CHOICES = [
+        ('pending_payment', _('Pending Payment')),
+        ('confirmed', _('Confirmed')),
+        ('cancelled', _('Cancelled')),
+        ('completed', _('Completed')),
+        ('expired', _('Expired')),
+    ]
+
     vehicle = models.ForeignKey('accounts.Vehicle', on_delete=models.CASCADE, related_name='reservations')
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE, related_name='reservations')
     parking_slot = models.ForeignKey(ParkingSlot, on_delete=models.SET_NULL, null=True, blank=True)
     
-    reserved_from = models.DateTimeField()
-    reserved_until = models.DateTimeField()
+    reserved_from = models.DateTimeField(db_index=True)
+    reserved_until = models.DateTimeField(db_index=True)
     cost = models.DecimalField(max_digits=12, decimal_places=2)
+    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_payment', db_index=True)
+    payment_reference = models.CharField(max_length=100, blank=True, null=True, help_text=_("Payment transaction reference"))
+    
+    # Deprecated: use status instead
     is_active = models.BooleanField(default=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['zone', 'status', 'reserved_from', 'reserved_until']),
+            models.Index(fields=['vehicle', 'status']),
+        ]
+
     def __str__(self):
-        return f"{self.vehicle.license_plate} - {self.zone.name} ({self.reserved_from})"
+        return f"{self.vehicle.license_plate} - {self.zone.name} ({self.status})"

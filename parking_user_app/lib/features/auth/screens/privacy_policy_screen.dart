@@ -12,7 +12,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildTitle('Privacy Policy for Jambo Park'),
+            _buildTitle('Privacy Policy for Space'),
             const SizedBox(height: 8),
             _buildSubtext('Effective Date: February 9, 2026'),
             _buildSubtext('Last Updated: February 9, 2026'),
@@ -85,13 +85,13 @@ class PrivacyPolicyScreen extends StatelessWidget {
             _buildSection(
               '8. Contact Us',
               'For questions regarding this Privacy Policy:\n\n'
-                  'Email: support@jambopark.com\n'
+                  'Email: support@spacepark.com\n'
                   'Phone: +256 XXX XXX XXX',
             ),
 
             const SizedBox(height: 24),
             const Text(
-              'By using Jambo Park, you consent to this Privacy Policy.',
+              'By using Space, you consent to this Privacy Policy.',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),

@@ -108,7 +108,7 @@ class FCMService {
       const androidChannel = AndroidNotificationChannel(
         'default', // id
         'Default Notifications', // name
-        description: 'Default notification channel for Jambo Park',
+        description: 'Default notification channel for Space',
         importance: Importance.high,
         playSound: true,
       );
@@ -179,7 +179,7 @@ class FCMService {
     const androidDetails = AndroidNotificationDetails(
       'default',
       'Default Notifications',
-      channelDescription: 'Default notification channel for Jambo Park',
+      channelDescription: 'Default notification channel for Space',
       importance: Importance.high,
       priority: Priority.high,
       playSound: true,

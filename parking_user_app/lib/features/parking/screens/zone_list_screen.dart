@@ -164,22 +164,38 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                             amount: estimatedCost,
                             walletBalance: walletBalance,
                             onWalletSelected: () async {
-                              await _processPayment(
+                              final confirmed = await _showConfirmSessionDialog(
                                 context,
                                 zone,
                                 selectedVehicle!,
                                 durationHours,
-                                isWallet: true,
+                                estimatedCost,
                               );
+                              if (confirmed) {
+                                await _processPayment(
+                                  zone,
+                                  selectedVehicle!,
+                                  durationHours,
+                                  isWallet: true,
+                                );
+                              }
                             },
                             onPesapalSelected: () async {
-                              await _processPayment(
+                              final confirmed = await _showConfirmSessionDialog(
                                 context,
                                 zone,
                                 selectedVehicle!,
                                 durationHours,
-                                isWallet: false,
+                                estimatedCost,
                               );
+                              if (confirmed) {
+                                await _processPayment(
+                                  zone,
+                                  selectedVehicle!,
+                                  durationHours,
+                                  isWallet: false,
+                                );
+                              }
                             },
                           ),
                         );
@@ -193,8 +209,77 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
     );
   }
 
-  Future<void> _processPayment(
+  Future<bool> _showConfirmSessionDialog(
     BuildContext context,
+    Zone zone,
+    Vehicle vehicle,
+    double durationHours,
+    double cost,
+  ) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Confirm Session'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Are you sure you want to start this parking session?',
+                ),
+                const SizedBox(height: 16),
+                _buildConfirmRow('Zone', zone.name),
+                _buildConfirmRow('Vehicle', vehicle.displayName),
+                _buildConfirmRow(
+                  'Duration',
+                  '${durationHours.toStringAsFixed(1)} hrs',
+                ),
+                _buildConfirmRow(
+                  'Cost',
+                  '${context.read<AuthProvider>().currencySymbol} ${cost.toStringAsFixed(0)}',
+                  isBold: true,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Confirm & Start'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  Widget _buildConfirmRow(String label, String value, {bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.grey)),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              fontSize: isBold ? 16 : 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _processPayment(
     Zone zone,
     Vehicle vehicle,
     double durationHours, {
@@ -207,7 +292,7 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
         vehicleId: vehicle.id,
         durationHours: durationHours,
       );
-      if (context.mounted && success) {
+      if (mounted && success) {
         _showSuccessDialog(context, zone);
       }
     } else {
@@ -219,7 +304,7 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
         durationHours: durationHours,
       );
 
-      if (context.mounted && success) {
+      if (mounted && success) {
         // Show loading
         showDialog(
           context: context,
@@ -275,7 +360,7 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
 
   void _showSuccessDialog(BuildContext context, Zone zone) {
     DialogService.showSuccessDialog(
-      title: 'Payment Complete!',
+      title: 'Parking Started!',
       message: 'Your session in ${zone.name} is now active.',
       onDismiss: () {
         // Navigator.pop(context); // Close payment selection if open

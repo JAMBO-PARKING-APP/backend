@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 from django.contrib.postgres.fields import JSONField
 from apps.common.models import BaseModel
 
@@ -134,7 +135,8 @@ class ChatConversation(BaseModel):
     subject = models.CharField(max_length=200)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
     assigned_agent = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, 
-                                       related_name='assigned_conversations', limit_choices_to={'role': 'support_agent'})
+                                       related_name='assigned_conversations', 
+                                       limit_choices_to=Q(role='support_agent') | Q(role='officer', can_receive_chats=True))
     priority = models.CharField(max_length=10, choices=[
         ('low', 'Low'),
         ('medium', 'Medium'),

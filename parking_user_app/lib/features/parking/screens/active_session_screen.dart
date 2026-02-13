@@ -6,6 +6,7 @@ import 'package:parking_user_app/features/parking/models/parking_session_model.d
 import 'package:parking_user_app/features/parking/providers/parking_provider.dart';
 import 'package:parking_user_app/features/parking/screens/qr_code_view_screen.dart';
 import 'package:parking_user_app/core/app_theme.dart';
+import 'package:parking_user_app/core/dialog_service.dart';
 
 class ActiveSessionScreen extends StatefulWidget {
   final ParkingSession session;
@@ -96,9 +97,10 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
       if (success && mounted) {
         if (!mounted) return;
         Navigator.pop(context);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Parking session ended')));
+        DialogService.showSuccessDialog(
+          title: 'Session Ended',
+          message: 'Your parking session has been stopped successfully.',
+        );
       }
     }
   }
@@ -155,15 +157,19 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                       .extendParking(widget.session.id, additionalHours);
                   if (context.mounted) {
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          success
-                              ? 'Session extended!'
-                              : 'Failed to extend session',
+                    if (success) {
+                      DialogService.showSuccessDialog(
+                        title: 'Session Extended!',
+                        message:
+                            'You have added $additionalHours hour(s) to your session.',
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Failed to extend session'),
                         ),
-                      ),
-                    );
+                      );
+                    }
                   }
                 },
                 child: const Text('CONFIRM EXTENSION'),

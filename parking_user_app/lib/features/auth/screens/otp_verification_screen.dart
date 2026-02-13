@@ -89,7 +89,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             const SizedBox(height: 24),
             TextButton(
               onPressed: () {
-                // TODO: Implement Resend OTP
               },
               child: const Text('Resend Code'),
             ),

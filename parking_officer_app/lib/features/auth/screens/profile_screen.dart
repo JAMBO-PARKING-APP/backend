@@ -145,7 +145,47 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Information Card
+                // Preferences Card
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Preferences',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SwitchListTile(
+                          title: const Text('Available for Chat'),
+                          subtitle: const Text(
+                            'Receive customer support requests',
+                          ),
+                          value: user.canReceiveChats,
+                          activeThumbColor: AppTheme.primaryColor,
+                          onChanged: (bool value) async {
+                            final success = await authProvider
+                                .updateChatAvailability(value);
+                            if (mounted && !success) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Failed to update availability',
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),

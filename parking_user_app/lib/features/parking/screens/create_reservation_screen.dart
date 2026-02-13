@@ -84,25 +84,28 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => PaymentSelectionDialog(
+        builder: (dialogContext) => PaymentSelectionDialog(
           amount: cost,
           walletBalance: walletBalance,
           onWalletSelected: () {
-            // TODO: Implement Wallet Payment for Reservation (Backend support needed)
-            Navigator.pop(context); // Close dialog
-            Navigator.pop(context); // Close screen
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Reservation Created! Wallet payment for reservations coming soon.',
+         
+            Navigator.pop(dialogContext);
+            if (mounted) {
+              Navigator.pop(context); 
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Reservation Created! Wallet payment for reservations coming soon.',
+                  ),
                 ),
-              ),
-            );
+              );
+            }
           },
           onPesapalSelected: () async {
-            Navigator.pop(context); // Close payment selection dialog
+            Navigator.pop(dialogContext); // Close payment selection dialog
 
             // Show loading
+            if (!mounted) return;
             showDialog(
               context: context,
               barrierDismissible: false,

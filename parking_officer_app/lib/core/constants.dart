@@ -11,7 +11,15 @@ class AppConstants {
     return 'http://$host:8000/api/';
   }
 
-  static const String appName = 'Jambo Officer';
+  static String get wsUrl {
+    final base = baseUrl;
+    final wsScheme = base.startsWith('https') ? 'wss' : 'ws';
+    return base
+        .replaceFirst(RegExp(r'https?'), wsScheme)
+        .replaceFirst('/api/', '/ws/');
+  }
+
+  static const String appName = 'Space Officer';
 }
 
 class CountryCode {

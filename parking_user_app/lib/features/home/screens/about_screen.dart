@@ -6,7 +6,7 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('About Jambo Park')),
+      appBar: AppBar(title: const Text('About Space')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -18,7 +18,7 @@ class AboutScreen extends StatelessWidget {
                   const Icon(Icons.local_parking, size: 80, color: Colors.blue),
                   const SizedBox(height: 16),
                   const Text(
-                    'Jambo Park',
+                    'Space',
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                   ),
                   Text(
@@ -35,7 +35,7 @@ class AboutScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             const Text(
-              'Jambo Park is designed to make urban parking seamless, efficient, and stress-free. We connect drivers with available parking spaces in real-time, reducing congestion and saving you valuable time.',
+              'Space is designed to make urban parking seamless, efficient, and stress-free. We connect drivers with available parking spaces in real-time, reducing congestion and saving you valuable time.',
               style: TextStyle(fontSize: 16, height: 1.5),
             ),
             const SizedBox(height: 32),
@@ -62,12 +62,12 @@ class AboutScreen extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text('Email: support@jampopark.com'),
+            const Text('Email: support@spacepark.com'),
             const Text('Phone: +256 700 000 000'),
             const SizedBox(height: 40),
             const Center(
               child: Text(
-                '© 2026 Jambo Park Systems. All rights reserved.',
+                '© 2026 Space Systems. All rights reserved.',
                 style: TextStyle(color: Colors.grey, fontSize: 12),
               ),
             ),

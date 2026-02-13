@@ -68,6 +68,7 @@ class CreatePaymentAPIView(APIView):
         payment_method_id = request.data.get('payment_method_id')
         parking_session_id = request.data.get('parking_session_id')
         violation_id = request.data.get('violation_id')
+        reservation_id = request.data.get('reservation_id')
         
         if not amount or not payment_method_id:
             return Response({
@@ -102,6 +103,17 @@ class CreatePaymentAPIView(APIView):
                         'error': 'Violation already paid'
                     }, status=status.HTTP_400_BAD_REQUEST)
             
+            reservation = None
+            if reservation_id:
+                reservation = Reservation.objects.get(
+                    id=reservation_id,
+                    vehicle__user=request.user
+                )
+                if reservation.status != 'pending_payment':
+                    return Response({
+                        'error': f'Reservation is in status {reservation.status}, not pending payment'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            
             # Create transaction
             idempotency_key = str(uuid.uuid4())
             
@@ -110,9 +122,15 @@ class CreatePaymentAPIView(APIView):
                 amount=amount,
                 payment_method=payment_method,
                 parking_session=parking_session,
+                reservation=reservation,
                 idempotency_key=idempotency_key,
                 status='completed'  # In production, integrate with Stripe/payment gateway
             )
+            
+            # Confirm reservation if applicable
+            if reservation:
+                from apps.parking.services.reservation_service import ReservationService
+                ReservationService.confirm_reservation(reservation, payment_method='wallet' if payment_method.card_brand == 'wallet' else 'card')
             
             # Mark violation as paid if applicable
             if violation:
@@ -144,6 +162,10 @@ class CreatePaymentAPIView(APIView):
         except Violation.DoesNotExist:
             return Response({
                 'error': 'Violation not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Reservation.DoesNotExist:
+            return Response({
+                'error': 'Reservation not found'
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({
@@ -341,6 +363,10 @@ class PesapalUserCallbackView(APIView):
                 if trans.parking_session:
                     trans.parking_session.end_session()
                 
+                if trans.reservation:
+                    from apps.parking.services.reservation_service import ReservationService
+                    ReservationService.confirm_reservation(trans.reservation, payment_method='pesapal')
+                
                 # Wallet topup
                 is_wallet_topup = trans.processor_response.get('is_wallet_topup', False) if trans.processor_response else False
                 if is_wallet_topup:
@@ -433,6 +459,10 @@ class PesapalIPNAPIView(APIView):
                 # Finalize parking session if exists
                 if trans.parking_session:
                     trans.parking_session.end_session()
+                
+                if trans.reservation:
+                    from apps.parking.services.reservation_service import ReservationService
+                    ReservationService.confirm_reservation(trans.reservation, payment_method='pesapal')
                 
                 # If it's a wallet top-up, credit the wallet
                 is_wallet_topup = trans.processor_response.get('is_wallet_topup', False) if trans.processor_response else False

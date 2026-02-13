@@ -96,4 +96,15 @@ class ApiClient {
   Future<Response> delete(String path, {dynamic data}) async {
     return await dio.delete(path, data: data);
   }
+
+  // --- Rewards & Loyalty ---
+  Future<Map<String, dynamic>> getLoyaltyBalance() async {
+    final response = await dio.get('rewards/balance/');
+    return response.data;
+  }
+
+  Future<List<dynamic>> getLoyaltyHistory() async {
+    final response = await dio.get('rewards/history/');
+    return response.data;
+  }
 }

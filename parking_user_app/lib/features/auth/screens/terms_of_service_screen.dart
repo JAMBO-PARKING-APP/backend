@@ -12,7 +12,7 @@ class TermsOfServiceScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildTitle('Terms of Service for Jambo Park'),
+            _buildTitle('Terms of Service for Space'),
             const SizedBox(height: 8),
             _buildSubtext('Effective Date: February 9, 2026'),
             _buildSubtext('Last Updated: February 9, 2026'),
@@ -20,7 +20,7 @@ class TermsOfServiceScreen extends StatelessWidget {
 
             _buildSection(
               '1. Acceptance of Terms',
-              'By creating an account or using Jambo Park, you agree to be bound by these Terms of Service. If you do not agree, you may not use our Service.',
+              'By creating an account or using Space, you agree to be bound by these Terms of Service. If you do not agree, you may not use our Service.',
             ),
 
             _buildSection(
@@ -40,7 +40,7 @@ class TermsOfServiceScreen extends StatelessWidget {
 
             _buildSection(
               '4. Parking Services',
-              'Jambo Park provides:\n\n'
+              'Space provides:\n\n'
                   '• Real-time parking zone availability\n'
                   '• Mobile parking session management\n'
                   '• Digital payment processing\n'
@@ -107,7 +107,7 @@ class TermsOfServiceScreen extends StatelessWidget {
             _buildSection(
               '12. Contact Information',
               'For questions about these Terms:\n\n'
-                  'Email: support@jambopark.com\n'
+                  'Email: support@spacepark.com\n'
                   'Phone: +256 XXX XXX XXX',
             ),
 
@@ -119,7 +119,7 @@ class TermsOfServiceScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Text(
-                'BY USING JAMBO PARK, YOU ACKNOWLEDGE THAT YOU HAVE READ, UNDERSTOOD, AND AGREE TO BE BOUND BY THESE TERMS OF SERVICE.',
+                'BY USING SPACE, YOU ACKNOWLEDGE THAT YOU HAVE READ, UNDERSTOOD, AND AGREE TO BE BOUND BY THESE TERMS OF SERVICE.',
                 style: TextStyle(fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),

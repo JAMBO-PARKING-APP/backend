@@ -83,7 +83,37 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
             separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final res = provider.reservations[index];
-              final isActive = res.status == 'active';
+              final status = res.status.toLowerCase();
+
+              Color statusColor;
+              String statusText;
+
+              switch (status) {
+                case 'active':
+                case 'confirmed':
+                  statusColor = Colors.green;
+                  statusText = 'CONFIRMED';
+                  break;
+                case 'pending_payment':
+                  statusColor = Colors.orange;
+                  statusText = 'PAY NOW';
+                  break;
+                case 'expired':
+                  statusColor = Colors.red;
+                  statusText = 'EXPIRED';
+                  break;
+                case 'cancelled':
+                  statusColor = Colors.grey;
+                  statusText = 'CANCELLED';
+                  break;
+                case 'completed':
+                  statusColor = Colors.blue;
+                  statusText = 'COMPLETED';
+                  break;
+                default:
+                  statusColor = Colors.grey;
+                  statusText = status.toUpperCase();
+              }
 
               return Card(
                 child: Padding(
@@ -107,25 +137,15 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: res.status == 'pending_payment'
-                                  ? Colors.orange.withValues(alpha: 0.1)
-                                  : isActive
-                                  ? Colors.green.withValues(alpha: 0.1)
-                                  : Colors.grey.withValues(alpha: 0.1),
+                              color: statusColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              res.status == 'pending_payment'
-                                  ? 'PAY NOW'
-                                  : res.status.toUpperCase(),
+                              statusText,
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                color: res.status == 'pending_payment'
-                                    ? Colors.orange
-                                    : isActive
-                                    ? Colors.green
-                                    : Colors.grey,
+                                color: statusColor,
                               ),
                             ),
                           ),
@@ -161,11 +181,13 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
                           ),
                         ],
                       ),
-                      if (isActive || res.status == 'pending_payment') ...[
+                      if (status == 'confirmed' ||
+                          status == 'active' ||
+                          status == 'pending_payment') ...[
                         const SizedBox(height: 16),
                         Row(
                           children: [
-                            if (res.status == 'pending_payment')
+                            if (status == 'pending_payment')
                               Expanded(
                                 child: Padding(
                                   padding: const EdgeInsets.only(right: 8.0),
@@ -240,11 +262,11 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => PaymentSelectionDialog(
+      builder: (dialogContext) => PaymentSelectionDialog(
         amount: cost,
         walletBalance: walletBalance,
         onWalletSelected: () {
-          Navigator.pop(context);
+          Navigator.pop(dialogContext);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Wallet payment for reservation coming soon'),
@@ -252,9 +274,10 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
           );
         },
         onPesapalSelected: () async {
-          Navigator.pop(context); // Close dialog
+          Navigator.pop(dialogContext); // Close dialog
 
           // Show loading
+          if (!mounted) return;
           showDialog(
             context: context,
             barrierDismissible: false,
@@ -270,7 +293,7 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
               reservationId: reservation.id,
             );
 
-            if (mounted) Navigator.pop(context); // Hide loading
+            if (mounted) Navigator.pop(context);
 
             if (result['success'] == true && mounted) {
               final url = result['redirect_url'];
@@ -279,11 +302,13 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
                 if (await canLaunchUrl(uri)) {
                   await launchUrl(uri, mode: LaunchMode.externalApplication);
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Could not launch payment URL'),
-                    ),
-                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Could not launch payment URL'),
+                      ),
+                    );
+                  }
                 }
               }
             } else if (mounted) {

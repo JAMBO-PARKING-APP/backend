@@ -10,6 +10,7 @@ import 'package:parking_user_app/features/parking/screens/reservation_list_scree
 import 'package:parking_user_app/features/notifications/screens/notification_screen.dart';
 import 'package:parking_user_app/features/home/screens/about_screen.dart';
 import 'package:parking_user_app/features/auth/screens/help_center_screen.dart';
+import 'package:parking_user_app/features/rewards/screens/rewards_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -191,9 +192,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   IconButton(
-                    onPressed: () {
-                      // TODO: Edit Profile
-                    },
+                    onPressed: () {},
                     icon: const Icon(Icons.edit_outlined),
                   ),
                 ],
@@ -212,6 +211,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => const VehicleListScreen(),
+                    ),
+                  ),
+                ),
+                _ProfileOption(
+                  icon: Icons.card_giftcard,
+                  title: 'My Rewards',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RewardsScreen(),
                     ),
                   ),
                 ),
@@ -268,7 +277,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 _ProfileOption(
                   icon: Icons.info_outline,
-                  title: 'About Jambo Park',
+                  title: 'About Space',
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(

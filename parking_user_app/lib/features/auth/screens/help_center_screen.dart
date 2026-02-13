@@ -38,7 +38,7 @@ class HelpCenterScreen extends StatelessWidget {
           ),
           _buildFaqItem(
             'How do I contact support?',
-            'You can reach our support team at support@jambopark.com or call our helpline.',
+            'You can reach our support team at support@spacepark.com or call our helpline.',
           ),
           _buildFaqItem(
             'How do I delete my account?',

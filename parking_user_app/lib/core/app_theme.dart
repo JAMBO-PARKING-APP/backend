@@ -3,9 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Logo Palette
-  static const Color primaryColor = Color(0xFF217150); // Jambo Green
-  static const Color accentColor = Color(0xFFF7941E); // Jambo Orange
-  static const Color errorColor = Color(0xFFC1272D); // Jambo Red
+  static const Color primaryColor = Color(0xFF217150); // Space Green
+  static const Color accentColor = Color(0xFFF7941E); // Space Orange
+  static const Color errorColor = Color(0xFFC1272D); // Space Red
 
   static const Color backgroundColor = Color(0xFFF8F9FA);
   static const Color darkBackgroundColor = Color(0xFF1A1C1E);

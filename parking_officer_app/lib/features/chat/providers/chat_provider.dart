@@ -31,9 +31,16 @@ class ChatProvider with ChangeNotifier {
 
   Future<bool> sendMessage(String conversationId, String content) async {
     final success = await _chatService.sendMessage(conversationId, content);
-    if (success) {
-      await fetchMessages(conversationId);
-    }
+    // Note: We don't fetchMessages here anymore if WS is active,
+    // but the backend will broadcast our own message back to us anyway.
     return success;
+  }
+
+  void addRealtimeMessage(ChatMessage message) {
+    // Avoid duplicates
+    if (!_messages.any((m) => m.id == message.id)) {
+      _messages.add(message);
+      notifyListeners();
+    }
   }
 }

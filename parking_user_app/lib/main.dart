@@ -20,6 +20,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:parking_user_app/core/fcm_service.dart';
 import 'package:parking_user_app/core/notification_dialog_service.dart';
 import 'package:parking_user_app/core/dialog_service.dart';
+import 'package:parking_user_app/features/rewards/providers/rewards_provider.dart';
+import 'package:parking_user_app/core/api_client.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,6 +44,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ReservationProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => RewardsProvider(ApiClient())),
       ],
       child: const MyApp(),
     ),
@@ -62,7 +65,7 @@ class MyApp extends StatelessWidget {
 
         return MaterialApp(
           navigatorKey: DialogService.navigatorKey,
-          title: 'Jambo Park',
+          title: 'Space',
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: settings.themeMode,

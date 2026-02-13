@@ -5,6 +5,9 @@ import 'package:parking_officer_app/features/chat/models/chat_model.dart';
 import 'package:parking_officer_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_officer_app/core/app_theme.dart';
 import 'package:intl/intl.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
+import 'dart:convert';
+import 'package:parking_officer_app/core/constants.dart';
 
 class ChatDetailScreen extends StatefulWidget {
   final ChatConversation conversation;
@@ -16,13 +19,41 @@ class ChatDetailScreen extends StatefulWidget {
 
 class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final _messageController = TextEditingController();
+  WebSocketChannel? _channel;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ChatProvider>().fetchMessages(widget.conversation.id);
+      _initWebSocket();
     });
+  }
+
+  void _initWebSocket() {
+    final baseUrl = AppConstants.wsUrl;
+    final convId = widget.conversation.id;
+
+    try {
+      _channel = WebSocketChannel.connect(Uri.parse('$baseUrl/chat/$convId/'));
+
+      _channel!.stream.listen((data) {
+        final messageData = jsonDecode(data);
+        final message = ChatMessage.fromJson(messageData);
+        if (mounted) {
+          context.read<ChatProvider>().addRealtimeMessage(message);
+        }
+      });
+    } catch (e) {
+      debugPrint('[ChatDetailScreen] WS Error: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _channel?.sink.close();
+    _messageController.dispose();
+    super.dispose();
   }
 
   void _send() async {
@@ -39,7 +70,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final myId = context.watch<AuthProvider>().user?.id;
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.conversation.userName)),
+      appBar: AppBar(title: Text(widget.conversation.userName), elevation: 0),
       body: Column(
         children: [
           Expanded(

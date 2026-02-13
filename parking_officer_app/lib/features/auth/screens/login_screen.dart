@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:country_code_picker/country_code_picker.dart';
 import 'package:parking_officer_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_officer_app/core/app_theme.dart';
-import 'package:parking_officer_app/core/constants.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,12 +16,12 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   final _phoneFocusNode = FocusNode();
   bool _obscurePassword = true;
-  late CountryCode _selectedCountry;
+  String _countryCode = '+254';
 
   @override
   void initState() {
     super.initState();
-    _selectedCountry = countryCodes[0]; // Default to Kenya
+    _countryCode = '+254'; // Default to Kenya
   }
 
   @override
@@ -49,7 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final fullPhone = '${_selectedCountry.dialCode}${_phoneController.text}';
+    final fullPhone = '$_countryCode${_phoneController.text}';
 
     final success = await context.read<AuthProvider>().login(
       fullPhone,
@@ -92,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   // App logo
                   Center(
                     child: Image.asset(
-                      'assets/images/JAMBO.png',
+                      'assets/images/logo.png',
                       width: 120,
                       height: 120,
                       fit: BoxFit.contain,
@@ -105,7 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Jambo Officer',
+                    'Space Officer',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppTheme.primaryColor,
@@ -123,43 +123,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Country Code Selector
                   Card(
                     elevation: 1,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: DropdownButton<CountryCode>(
-                        value: _selectedCountry,
-                        isExpanded: true,
-                        underline: const SizedBox(),
-                        items: countryCodes
-                            .map(
-                              (country) => DropdownMenuItem(
-                                value: country,
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      country.flag,
-                                      style: const TextStyle(fontSize: 24),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(country.name),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      country.dialCode,
-                                      style: const TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (CountryCode? value) {
-                          if (value != null) {
-                            setState(() => _selectedCountry = value);
-                          }
-                        },
-                      ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: CountryCodePicker(
+                      onChanged: (code) =>
+                          setState(() => _countryCode = code.dialCode!),
+                      initialSelection: 'KE',
+                      favorite: const ['KE', 'UG', 'TZ', 'NG'],
+                      showCountryOnly: false,
+                      showOnlyCountryWhenClosed: false,
+                      alignLeft: true,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -171,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     decoration: InputDecoration(
                       labelText: 'Phone Number',
                       prefixIcon: const Icon(Icons.phone),
-                      prefixText: '${_selectedCountry.dialCode} ',
+                      prefixText: '$_countryCode ',
                       hintText: '7XX XXX XXX',
                       errorText:
                           !_phoneFocusNode.hasFocus &&

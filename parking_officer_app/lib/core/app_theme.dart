@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Officer Palette
-  static const Color primaryColor = Color(0xFF0E4D34); // Darker Jambo Green
+  static const Color primaryColor = Color(0xFF0E4D34); // Darker Space Green
   static const Color accentColor = Color(0xFFFBC02D); // Warning Yellow
   static const Color errorColor = Color(0xFFD32F2F); // Alert Red
 

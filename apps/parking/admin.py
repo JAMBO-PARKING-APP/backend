@@ -23,6 +23,7 @@ class ParkingSessionAdmin(admin.ModelAdmin):
 
 @admin.register(Reservation)
 class ReservationAdmin(admin.ModelAdmin):
-    list_display = ('vehicle', 'zone', 'reserved_from', 'reserved_until', 'is_active')
-    list_filter = ('is_active', 'zone')
-    search_fields = ('vehicle__license_plate',)
+    list_display = ('vehicle', 'zone', 'reserved_from', 'reserved_until', 'status', 'payment_reference')
+    list_filter = ('status', 'zone', 'reserved_from')
+    search_fields = ('vehicle__license_plate', 'payment_reference')
+    readonly_fields = ('created_at',)

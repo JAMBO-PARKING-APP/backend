@@ -81,7 +81,6 @@ class _ZoneDetailScreenState extends State<ZoneDetailScreen> {
                             ),
                             trailing: const Icon(Icons.chevron_right),
                             onTap: () {
-                              // TODO: View session details
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text('Session details coming soon'),

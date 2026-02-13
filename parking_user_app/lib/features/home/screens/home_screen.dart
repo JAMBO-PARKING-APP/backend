@@ -12,7 +12,6 @@ import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_user_app/features/auth/providers/vehicle_provider.dart';
 import 'package:parking_user_app/features/notifications/providers/notification_provider.dart';
 import 'package:parking_user_app/features/parking/screens/active_session_screen.dart';
-import 'package:parking_user_app/features/parking/screens/violations_screen.dart';
 import 'package:parking_user_app/features/payments/screens/wallet_screen.dart';
 import 'package:parking_user_app/features/auth/screens/vehicle_list_screen.dart';
 import 'package:parking_user_app/features/parking/screens/create_reservation_screen.dart';
@@ -61,7 +60,7 @@ class HomeScreenState extends State<HomeScreen> {
         elevation: 0,
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
-        title: const Text('Jambo Park'),
+        title: const Text('Space'),
         centerTitle: false,
       ),
       drawer: SidebarNavigation(
@@ -84,198 +83,228 @@ class HomeDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.read<AuthProvider>();
+    final user = auth.user;
+
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        title: const Text(
-          'Jambo Park',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: false,
-        actions: [
-          // Featured Chat Button - Large Button
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ChatConversationListScreen(),
-                  ),
-                ),
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.chat_bubble, size: 20),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
+      body: Consumer4<ParkingProvider, PaymentProvider, ViolationProvider, VehicleProvider>(
+        builder: (context, parking, payment, violations, vehicleProvider, _) {
+          return SafeArea(
+            child: CustomScrollView(
+              slivers: [
+                // Modern Header
+                SliverAppBar(
+                  expandedHeight: 120.0,
+                  floating: false,
+                  pinned: true,
+                  elevation: 0,
+                  backgroundColor: Theme.of(context).primaryColor,
+                  flexibleSpace: FlexibleSpaceBar(
+                    titlePadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    title: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        const Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Space',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Text(
-                          'CHAT',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                        GestureDetector(
+                          onTap: () =>
+                              _viewProfilePhoto(context, user?.profilePhoto),
+                          child: Hero(
+                            tag: 'profile-photo',
+                            child: CircleAvatar(
+                              radius: 20,
+                              backgroundColor: Colors.white24,
+                              backgroundImage: user?.profilePhoto != null
+                                  ? NetworkImage(user!.profilePhoto!)
+                                  : null,
+                              child: user?.profilePhoto == null
+                                  ? const Icon(
+                                      Icons.person,
+                                      color: Colors.white,
+                                    )
+                                  : null,
+                            ),
                           ),
+                        ),
+                      ],
+                    ),
+                    background: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Theme.of(context).primaryColor,
+                            Theme.of(
+                              context,
+                            ).primaryColor.withValues(alpha: 0.8),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ),
-          ),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_none),
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const NotificationScreen(),
-                  ),
-                ),
-              ),
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Consumer<NotificationProvider>(
-                  builder: (context, n, _) => n.unreadCount > 0
-                      ? Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
-                          ),
-                          child: Text(
-                            '${n.unreadCount}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
+
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Balance Card with Gradient
+                        GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const WalletScreen(),
                             ),
-                            textAlign: TextAlign.center,
                           ),
-                        )
-                      : const SizedBox(),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      body:
-          Consumer4<
-            ParkingProvider,
-            PaymentProvider,
-            ViolationProvider,
-            VehicleProvider
-          >(
-            builder: (context, parking, payment, violations, vehicleProvider, _) {
-              return SafeArea(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Top Card - Balance
-                      GestureDetector(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const WalletScreen(),
-                          ),
-                        ),
-                        child: Card(
-                          color: Theme.of(context).primaryColor,
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(24.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Available Balance',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      '${context.read<AuthProvider>().currencySymbol} ${NumberFormat('#,###').format(payment.balance)}',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 32,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const Icon(
-                                      Icons.add_circle,
-                                      color: Colors.white,
-                                      size: 32,
-                                    ),
-                                  ],
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Theme.of(context)
+                                      .colorScheme
+                                      .secondary, // Replaced AppTheme.accentColor
+                                  const Color(0xFFFFB347), // Lighter orange
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Theme.of(context).colorScheme.secondary
+                                      .withValues(
+                                        alpha: 0.3,
+                                      ), // Replaced AppTheme.accentColor
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
                                 ),
                               ],
                             ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(24.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text(
+                                        'Available Balance',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white24,
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                        ),
+                                        child: const Row(
+                                          children: [
+                                            Icon(
+                                              Icons.account_balance_wallet,
+                                              color: Colors.white,
+                                              size: 14,
+                                            ),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              'WALLET',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        '${auth.currencySymbol} ${NumberFormat('#,###').format(payment.balance)}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const Icon(
+                                        Icons.add_circle,
+                                        color: Colors.white,
+                                        size: 36,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
+                        const SizedBox(height: 32),
 
-                      // Quick Stats Grid
-                      SizedBox(
-                        height: 200,
-                        child: GridView.count(
+                        // Section Title: Quick Actions
+                        const Text(
+                          'Quick Actions',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Quick Stats Grid
+                        GridView.count(
                           crossAxisCount: 2,
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          childAspectRatio:
-                              2.0, // Increased from 1.6 to widen cards
+                          mainAxisSpacing: 16,
+                          crossAxisSpacing: 16,
+                          childAspectRatio: 1.5,
                           children: [
-                            _buildStatCard(
+                            _buildModernActionCard(
                               context,
-                              'Active Sessions',
-                              '${parking.activeSessions.length}',
-                              Icons.timer,
-                              Colors.orange,
+                              'Active Session',
+                              '${parking.activeSessions.length} Active',
+                              Icons.timer_outlined,
+                              parking.activeSessions.isNotEmpty
+                                  ? Theme.of(context).primaryColor
+                                  : Colors
+                                        .grey, // Replaced AppTheme.primaryColor
                               () {
-                                if (parking.activeSessions.isNotEmpty) {
+                                if (parking.activeSessions.length == 1) {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
@@ -284,15 +313,24 @@ class HomeDashboard extends StatelessWidget {
                                       ),
                                     ),
                                   );
+                                } else {
+                                  // If multiple active sessions or none, go to history
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const ParkingHistoryScreen(),
+                                    ),
+                                  );
                                 }
                               },
                             ),
-                            _buildStatCard(
+                            _buildModernActionCard(
                               context,
                               'My Vehicles',
-                              '${vehicleProvider.vehicles.length}',
-                              Icons.directions_car,
-                              Colors.green,
+                              '${vehicleProvider.vehicles.length} Registered',
+                              Icons.directions_car_filled_outlined,
+                              Colors.blue,
                               () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -301,27 +339,11 @@ class HomeDashboard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            _buildStatCard(
+                            _buildModernActionCard(
                               context,
-                              'Unpaid Fines',
-                              '${violations.unpaidCount}',
-                              Icons.gavel,
-                              violations.unpaidCount > 0
-                                  ? Colors.red
-                                  : Colors.blue,
-                              () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const ViolationsScreen(),
-                                ),
-                              ),
-                            ),
-                            _buildStatCard(
-                              context,
-                              'Reserve Spot',
-                              'Book Now',
-                              Icons.calendar_today,
+                              'Reservations',
+                              'Book Spot',
+                              Icons.calendar_month_outlined,
                               Colors.purple,
                               () => Navigator.push(
                                 context,
@@ -331,139 +353,252 @@ class HomeDashboard extends StatelessWidget {
                                 ),
                               ),
                             ),
+                            _buildModernActionCard(
+                              context,
+                              'Live Chat',
+                              'Support',
+                              Icons.chat_bubble_outline_rounded,
+                              Colors.green,
+                              () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const ChatConversationListScreen(),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 32),
+                        const SizedBox(height: 32),
 
-                      // Find Parking Near Me Button
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
+                        // Map CTA Card
+                        Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: InkWell(
+                            onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => const ParkingMapScreen(),
                               ),
-                            );
-                          },
-                          icon: const Icon(Icons.map),
-                          label: const Text(
-                            'FIND PARKING NEAR ME',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
                             ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(20),
+                            child: Padding(
+                              padding: const EdgeInsets.all(20.0),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(
+                                      Icons.map_outlined,
+                                      color: Colors.blue,
+                                      size: 28,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  const Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Find Parking Near You',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Explore zones on a live map',
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.chevron_right,
+                                    color: Colors.grey,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(
-                        height: 24,
-                      ), // Keep original spacing before Recent Activity
-                      // Recent Activity
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Recent Parking',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              final homeState = context
-                                  .findAncestorStateOfType<HomeScreenState>();
-                              if (homeState != null) homeState.setTab(2);
-                            },
-                            child: const Text('View All'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      if (parking.sessions.isEmpty)
-                        _buildEmptyState('\nNo recent parking sessions')
-                      else
-                        ...parking.sessions
-                            .take(3)
-                            .map((s) => _buildActivityItem(context, s)),
+                        const SizedBox(height: 32),
 
-                      const SizedBox(height: 24),
-                    ],
+                        // Recent Activity
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Recent activity',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                final homeState = context
+                                    .findAncestorStateOfType<HomeScreenState>();
+                                if (homeState != null) homeState.setTab(2);
+                              },
+                              child: const Text('View All'),
+                            ),
+                          ],
+                        ),
+                        if (parking.sessions.isEmpty)
+                          _buildModernEmptyState('No recent parking sessions')
+                        else
+                          ...parking.sessions
+                              .take(3)
+                              .map((s) => _buildModernActivityItem(context, s)),
+
+                        const SizedBox(height: 24),
+                      ],
+                    ),
                   ),
                 ),
-              );
-            },
-          ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildStatCard(
+  void _viewProfilePhoto(BuildContext context, String? photoUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              alignment: Alignment.topRight,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Hero(
+                    tag: 'profile-photo-fullscreen',
+                    child: photoUrl != null
+                        ? Image.network(
+                            photoUrl,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                height: 300,
+                                color: Colors.black26,
+                                child: const Center(
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : Container(
+                            height: 300,
+                            width: double.infinity,
+                            color: Colors.grey[800],
+                            child: const Icon(
+                              Icons.person,
+                              size: 100,
+                              color: Colors.white54,
+                            ),
+                          ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: CircleAvatar(
+                    backgroundColor: Colors.black54,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernActionCard(
     BuildContext context,
     String title,
-    String value,
+    String subtitle,
     IconData icon,
     Color color,
     VoidCallback onTap,
   ) {
-    return InkWell(
-      onTap: onTap,
-      child: Card(
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Colors.grey.shade200),
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: Colors.grey.shade100),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: color, size: 24),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      value,
-                      style: const TextStyle(
-                        fontSize: 16, // Slightly reduced for better fit
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 11,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ],
           ),
@@ -472,47 +607,69 @@ class HomeDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildActivityItem(BuildContext context, dynamic session) {
-    return Card(
+  Widget _buildModernActivityItem(BuildContext context, dynamic session) {
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade100),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade100),
       ),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(8),
+            shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.local_parking, color: Colors.blue),
+          child: const Icon(
+            Icons.local_parking_rounded,
+            color: Colors.blue,
+            size: 20,
+          ),
         ),
         title: Text(
           session.zoneName,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
         ),
-        subtitle: Text(DateFormat('MMM dd, HH:mm').format(session.startTime)),
-        trailing: Text(
-          '${context.read<AuthProvider>().currencySymbol} ${NumberFormat('#,###').format(session.totalCost)}',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+        subtitle: Text(
+          DateFormat('MMM dd, HH:mm').format(session.startTime),
+          style: const TextStyle(fontSize: 12),
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              '${context.read<AuthProvider>().currencySymbol} ${NumberFormat('#,###').format(session.totalCost)}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const Text(
+              'Completed',
+              style: TextStyle(color: Colors.green, fontSize: 10),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildEmptyState(String message) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
+  Widget _buildModernEmptyState(String message) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Center(
         child: Column(
           children: [
-            Icon(Icons.history, size: 48, color: Colors.grey.shade300),
+            Icon(Icons.history_rounded, size: 48, color: Colors.grey.shade300),
             const SizedBox(height: 16),
             Text(
               message,
-              style: TextStyle(color: Colors.grey.shade500),
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
               textAlign: TextAlign.center,
             ),
           ],
