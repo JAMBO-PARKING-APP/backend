@@ -13,6 +13,12 @@ class LoyaltyAccount(BaseModel):
         ('Platinum', 'Platinum')
     ])
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['user'], name='rwd_loy_usr_idx'),
+            models.Index(fields=['tier'], name='rwd_loy_tier_idx'),
+        ]
+
     def __str__(self):
         return f"{self.user.email} - {self.balance} pts ({self.tier})"
 
@@ -29,6 +35,14 @@ class PointTransaction(BaseModel):
     transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
     description = models.CharField(max_length=255)
     reference_id = models.CharField(max_length=100, blank=True, null=True, help_text=_("Related ID (e.g. Session ID)"))
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['account'], name='rwd_ptx_acc_idx'),
+            models.Index(fields=['transaction_type'], name='rwd_ptx_type_idx'),
+            models.Index(fields=['created_at'], name='rwd_ptx_cr_idx'),
+            models.Index(fields=['account', 'created_at'], name='rwd_ptx_acc_cr_idx'),
+        ]
     
     def __str__(self):
         return f"{self.account.user.email} - {self.transaction_type} {self.amount}"

@@ -51,6 +51,12 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
             models.Index(fields=['phone']),
             models.Index(fields=['current_session_token']),
             models.Index(fields=['fcm_device_token']),
+            models.Index(fields=['role'], name='acc_usr_role_idx'),
+            models.Index(fields=['country'], name='acc_usr_cntry_idx'),
+            models.Index(fields=['is_verified'], name='acc_usr_verif_idx'),
+            models.Index(fields=['created_at'], name='acc_usr_created_idx'),
+            models.Index(fields=['role', 'is_active'], name='acc_usr_role_act_idx'),
+            models.Index(fields=['email'], name='acc_usr_email_idx'),
         ]
 
     def __str__(self):
@@ -98,6 +104,14 @@ class Vehicle(BaseModel):
     model = models.CharField(max_length=50)
     color = models.CharField(max_length=30)
     is_active = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['user'], name='acc_veh_usr_idx'),
+            models.Index(fields=['license_plate'], name='acc_veh_plate_idx'),
+            models.Index(fields=['created_at'], name='acc_veh_created_idx'),
+            models.Index(fields=['user', 'is_active'], name='acc_veh_usr_act_idx'),
+        ]
 
     def __str__(self):
         return self.license_plate

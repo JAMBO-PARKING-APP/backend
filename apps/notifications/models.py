@@ -55,6 +55,14 @@ class NotificationEvent(BaseModel):
         ordering = ['-created_at']
         verbose_name = 'Notification Event'
         verbose_name_plural = 'Notification Events'
+        indexes = [
+            models.Index(fields=['user'], name='ntf_evt_usr_idx'),
+            models.Index(fields=['type'], name='ntf_evt_type_idx'),
+            models.Index(fields=['category'], name='ntf_evt_cat_idx'),
+            models.Index(fields=['created_at'], name='ntf_evt_cr_idx'),
+            models.Index(fields=['user', 'is_read'], name='ntf_evt_usr_rd_idx'),
+            models.Index(fields=['user', 'created_at'], name='ntf_evt_usr_cr_idx'),
+        ]
     
     def __str__(self):
         return f"{self.user.phone} - {self.title}"
@@ -117,6 +125,9 @@ class UserPreferences(BaseModel):
     class Meta:
         verbose_name = 'User Preference'
         verbose_name_plural = 'User Preferences'
+        indexes = [
+            models.Index(fields=['user'], name='ntf_pref_usr_idx'),
+        ]
     
     def __str__(self):
         return f"Preferences for {self.user.phone}"

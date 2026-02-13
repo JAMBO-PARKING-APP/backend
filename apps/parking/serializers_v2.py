@@ -73,7 +73,7 @@ class StartParkingSerializer(serializers.Serializer):
     vehicle_id = serializers.UUIDField()
     zone_id = serializers.UUIDField()
     slot_id = serializers.UUIDField(required=False)
-    duration_hours = serializers.DecimalField(max_digits=5, decimal_places=2, default=1, min_value=0.25, max_value=24)
+    duration_hours = serializers.DecimalField(max_digits=10, decimal_places=5, default=1, min_value=0.25, max_value=24)
     payment_method = serializers.ChoiceField(choices=['wallet', 'pesapal'], default='wallet')
 
 class EndParkingSerializer(serializers.Serializer):
@@ -95,10 +95,11 @@ class CreateReservationSerializer(serializers.Serializer):
     vehicle_id = serializers.UUIDField()
     zone_id = serializers.UUIDField()
     # Support both old and new field names
-    start_time = serializers.DateTimeField()
-    end_time = serializers.DateTimeField()
-    created_at = serializers.DateTimeField(read_only=True)
+    start_time = serializers.DateTimeField(required=False)
+    end_time = serializers.DateTimeField(required=False)
+    reserved_from = serializers.DateTimeField(required=False)
     reserved_until = serializers.DateTimeField(required=False)
+    created_at = serializers.DateTimeField(read_only=True)
 
     def validate(self, data):
         """Ensure either start_time/end_time OR reserved_from/reserved_until are provided"""

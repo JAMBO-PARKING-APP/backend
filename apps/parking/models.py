@@ -73,6 +73,12 @@ class Zone(RegionalModel, BaseModel):
 
     class Meta:
         ordering = ['name']
+        indexes = [
+            models.Index(fields=['country'], name='prk_zone_cntry_idx'),
+            models.Index(fields=['created_at'], name='prk_zone_created_idx'),
+            models.Index(fields=['code'], name='prk_zone_code_idx'),
+            models.Index(fields=['is_active', 'country'], name='prk_zone_act_cnt_idx'),
+        ]
 
 class ParkingSlot(BaseModel):
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE, related_name='slots')
@@ -97,6 +103,12 @@ class ParkingSlot(BaseModel):
     
     class Meta:
         unique_together = ['zone', 'slot_code']
+        indexes = [
+            models.Index(fields=['zone'], name='prk_slot_zone_idx'),
+            models.Index(fields=['zone', 'status'], name='prk_slot_z_stat_idx'),
+            models.Index(fields=['slot_type'], name='prk_slot_type_idx'),
+            models.Index(fields=['zone', 'slot_type', 'status'], name='prk_slot_z_t_s_idx'),
+        ]
 
     def __str__(self):
         return f"{self.zone.name} - {self.slot_code}"
@@ -171,6 +183,10 @@ class ParkingSession(BaseModel):
             models.Index(fields=['vehicle_id', 'status']),
             models.Index(fields=['status', 'start_time']),
             models.Index(fields=['zone_id', 'status']),
+            models.Index(fields=['vehicle'], name='prk_sess_veh_idx'),
+            models.Index(fields=['actual_end_time'], name='prk_sess_end_idx'),
+            models.Index(fields=['created_at'], name='prk_sess_created_idx'),
+            models.Index(fields=['start_time', 'status'], name='prk_sess_start_stat_idx'),
         ]
 
     def __str__(self):
@@ -334,6 +350,9 @@ class Reservation(BaseModel):
         indexes = [
             models.Index(fields=['zone', 'status', 'reserved_from', 'reserved_until']),
             models.Index(fields=['vehicle', 'status']),
+            models.Index(fields=['reserved_from'], name='prk_res_from_idx'),
+            models.Index(fields=['reserved_until'], name='prk_res_until_idx'),
+            models.Index(fields=['created_at'], name='prk_res_created_idx'),
         ]
 
     def __str__(self):

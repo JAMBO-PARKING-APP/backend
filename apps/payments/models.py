@@ -34,6 +34,12 @@ class PaymentMethod(BaseModel):
     is_active = models.BooleanField(default=True)
     stripe_payment_method_id = models.CharField(max_length=100, unique=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['user'], name='pay_meth_usr_idx'),
+            models.Index(fields=['is_active'], name='pay_meth_act_idx'),
+        ]
+
     def __str__(self):
         return f"{self.card_brand} ****{self.card_last_four}"
 
@@ -73,6 +79,13 @@ class Refund(BaseModel):
     status = models.CharField(max_length=20, choices=TransactionStatus.choices, default=TransactionStatus.PENDING)
     stripe_refund_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['original_transaction'], name='pay_ref_tx_idx'),
+            models.Index(fields=['status'], name='pay_ref_stat_idx'),
+            models.Index(fields=['created_at'], name='pay_ref_created_idx'),
+        ]
+
     def __str__(self):
         return f"Refund ${self.amount} for {self.original_transaction}"
 
@@ -80,6 +93,12 @@ class Invoice(BaseModel):
     transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name='invoice')
     invoice_number = models.CharField(max_length=20, unique=True)
     pdf_file = models.FileField(upload_to='invoices/', null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['invoice_number'], name='pay_inv_num_idx'),
+            models.Index(fields=['transaction'], name='pay_inv_tx_idx'),
+        ]
 
     def __str__(self):
         return self.invoice_number
@@ -107,6 +126,11 @@ class WalletTransaction(BaseModel):
         indexes = [
             models.Index(fields=['user_id', 'transaction_type', 'created_at']),
             models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['user'], name='pay_wtx_u_idx'),
+            models.Index(fields=['transaction_type'], name='pay_wtx_tp_idx'),
+            models.Index(fields=['status'], name='pay_wtx_st_idx'),
+            models.Index(fields=['created_at'], name='pay_wtx_cr_idx'),
+            models.Index(fields=['user', 'created_at'], name='pay_wtx_u_cr_idx'),
         ]
     
     def __str__(self):

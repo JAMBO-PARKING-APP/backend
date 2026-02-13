@@ -23,6 +23,17 @@ class Violation(BaseModel):
     is_paid = models.BooleanField(default=False, verbose_name=_("Is Paid"), db_index=True)
     paid_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Paid At"))
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['vehicle'], name='enf_violation_vehicle_idx'),
+            models.Index(fields=['officer'], name='enf_violation_officer_idx'),
+            models.Index(fields=['zone'], name='enf_violation_zone_idx'),
+            models.Index(fields=['created_at'], name='enf_violation_created_at_idx'),
+            models.Index(fields=['officer', 'created_at'], name='enf_viol_off_cr_idx'),
+            models.Index(fields=['is_paid', 'created_at'], name='enf_viol_paid_cr_idx'),
+            models.Index(fields=['violation_type'], name='enf_violation_type_idx'),
+        ]
+
     def __str__(self):
         return f"{self.vehicle.license_plate} - {self.violation_type} (${self.fine_amount})"
 
@@ -48,6 +59,7 @@ class OfficerLog(BaseModel):
         indexes = [
             models.Index(fields=['officer', '-created_at']),
             models.Index(fields=['action', '-created_at']),
+            models.Index(fields=['created_at'], name='enf_log_cr_idx'),
         ]
 
     def __str__(self):
@@ -68,6 +80,10 @@ class OfficerStatus(BaseModel):
     class Meta:
         verbose_name = 'Officer Status'
         verbose_name_plural = 'Officer Statuses'
+        indexes = [
+            models.Index(fields=['is_online'], name='enf_stat_online_idx'),
+            models.Index(fields=['current_zone'], name='enf_stat_zone_idx'),
+        ]
 
     def __str__(self):
         status_text = 'Online' if self.is_online else 'Offline'
@@ -104,6 +120,9 @@ class QRCodeScan(BaseModel):
         indexes = [
             models.Index(fields=['officer', '-created_at']),
             models.Index(fields=['parking_session', '-created_at']),
+            models.Index(fields=['officer'], name='enf_qrcodescan_officer_idx'),
+            models.Index(fields=['parking_session'], name='enf_qrcodescan_session_idx'),
+            models.Index(fields=['created_at'], name='enf_qrcodescan_created_at_idx'),
         ]
 
     def __str__(self):
