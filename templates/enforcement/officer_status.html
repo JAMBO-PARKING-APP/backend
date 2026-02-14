@@ -1,0 +1,57 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Officer Status" %} | {% trans "Smart Parking" %}{% endblock %}
+{% block page_title %}{% trans "Enforcement Personnel" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% for status in statuses %}
+        <div class="col-md-4 col-xl-3 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="avatar-circle me-3" style="width: 48px; height: 48px; font-size: 1.2rem;">
+                            {{ status.officer.first_name|first }}
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold">{{ status.officer.full_name }}</h6>
+                            <span
+                                class="badge {% if status.is_online %}bg-success-soft{% else %}bg-secondary-soft{% endif %}">
+                                <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>
+                                {% if status.is_online %}{% trans "Online" %}{% else %}{% trans "Offline" %}{% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="small">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">{% trans "Current Zone" %}:</span>
+                            <span class="fw-medium">{{ status.current_zone.name|default:"-" }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">{% trans "Last Active" %}:</span>
+                            <span>{{ status.updated_at|date:"H:i" }}</span>
+                        </div>
+                        {% if status.is_online and status.latitude %}
+                        <div class="mt-3">
+                            <a href="https://www.google.com/maps?q={{ status.latitude }},{{ status.longitude }}"
+                                target="_blank" class="btn btn-sm btn-light w-100">
+                                <i class="bi bi-geo me-1"></i>{% trans "View Location" %}
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <p class="text-muted">{% trans "No enforcement officers found in the system." %}</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

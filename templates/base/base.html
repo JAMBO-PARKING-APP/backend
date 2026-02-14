@@ -153,6 +153,7 @@
             margin: 16px 0 4px 0;
             text-align: center;
         }
+
         body.sidebar-collapsed .nav-section-title::after {
             content: '...';
             display: block;
@@ -578,28 +579,109 @@
                 </a>
             </div>
 
+            <!-- Operations Section -->
             <div class="nav-section-title">{% trans "Operations" %}</div>
             <div class="nav-item">
                 <a href="{% url 'session-list' %}"
                     class="nav-link {% if 'session' in request.resolver_match.url_name %}active{% endif %}">
                     <i class="bi bi-clock-history"></i>
-                    <span>{% trans "Sessions" %}</span>
+                    <span>{% trans "Active Sessions" %}</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{% url 'reservation-list' %}"
+                    class="nav-link {% if 'reservation' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-calendar-check"></i>
+                    <span>{% trans "Reservations" %}</span>
                 </a>
             </div>
 
+            <!-- Revenue Section -->
+            <div class="nav-section-title">{% trans "Revenue" %}</div>
             <div class="nav-item">
                 <a href="{% url 'payment-list' %}"
-                    class="nav-link {% if 'payment' in request.resolver_match.url_name %}active{% endif %}">
+                    class="nav-link {% if request.resolver_match.url_name == 'payment-list' %}active{% endif %}">
                     <i class="bi bi-credit-card"></i>
-                    <span>{% trans "Payments" %}</span>
+                    <span>{% trans "Transactions" %}</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{% url 'refund-list' %}"
+                    class="nav-link {% if 'refund' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                    <span>{% trans "Refunds" %}</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{% url 'invoice-list' %}"
+                    class="nav-link {% if 'invoice' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <span>{% trans "Invoices" %}</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{% url 'wallet-transactions' %}"
+                    class="nav-link {% if 'wallet' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-wallet2"></i>
+                    <span>{% trans "Wallets" %}</span>
                 </a>
             </div>
 
+            <!-- Enforcement Section -->
+            <div class="nav-section-title">{% trans "Enforcement" %}</div>
             <div class="nav-item">
                 <a href="{% url 'violation-list' %}"
                     class="nav-link {% if 'violation' in request.resolver_match.url_name %}active{% endif %}">
                     <i class="bi bi-exclamation-triangle"></i>
                     <span>{% trans "Violations" %}</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{% url 'officer-status' %}"
+                    class="nav-link {% if 'officer-status' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-shield-check"></i>
+                    <span>{% trans "Officer Status" %}</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{% url 'officer-logs' %}"
+                    class="nav-link {% if 'officer-logs' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-journal-text"></i>
+                    <span>{% trans "Activity Logs" %}</span>
+                </a>
+            </div>
+
+            <!-- Customer Success Section -->
+            <div class="nav-section-title">{% trans "Customer Success" %}</div>
+            <div class="nav-item">
+                <a href="{% url 'loyalty-list' %}"
+                    class="nav-link {% if 'loyalty' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-award"></i>
+                    <span>{% trans "Loyalty Programs" %}</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{% url 'notification-list' %}"
+                    class="nav-link {% if 'notification' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-bell"></i>
+                    <span>{% trans "System Alerts" %}</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{% url 'chat-list' %}"
+                    class="nav-link {% if 'chat' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="bi bi-chat-dots"></i>
+                    <span>{% trans "Support Chats" %}</span>
+                </a>
+            </div>
+
+            <!-- System Section -->
+            <div class="nav-section-title">{% trans "System" %}</div>
+            <div class="nav-item">
+                <a href="{% url 'system-settings' %}"
+                    class="nav-link {% if request.resolver_match.url_name == 'system-settings' %}active{% endif %}">
+                    <i class="bi bi-gear-fill"></i>
+                    <span>{% trans "Configuration" %}</span>
                 </a>
             </div>
 

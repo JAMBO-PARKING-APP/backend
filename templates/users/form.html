@@ -41,7 +41,7 @@ Parking Admin" %}{% endblock %}
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label for="id_phone" class="form-label">{% trans "Phone Number *" %}</label>
                             <input type="tel" class="form-control" name="phone" id="id_phone"
                                 value="{{ form.phone.value|default:'' }}" required>
@@ -51,7 +51,17 @@ Parking Admin" %}{% endblock %}
                             {% endif %}
                         </div>
 
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
+                            <label for="id_country" class="form-label">{% trans "Country" %}</label>
+                            <select class="form-select" name="country" id="id_country">
+                                <option value="UG" {% if form.country.value == 'UG' %}selected{% endif %}>{% trans "Uganda" %}</option>
+                                <option value="KE" {% if form.country.value == 'KE' %}selected{% endif %}>{% trans "Kenya" %}</option>
+                                <option value="TZ" {% if form.country.value == 'TZ' %}selected{% endif %}>{% trans "Tanzania" %}</option>
+                                <option value="RW" {% if form.country.value == 'RW' %}selected{% endif %}>{% trans "Rwanda" %}</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
                             <label for="id_email" class="form-label">{% trans "Email" %}</label>
                             <input type="email" class="form-control" name="email" id="id_email"
                                 value="{{ form.email.value|default:'' }}">
@@ -62,7 +72,7 @@ Parking Admin" %}{% endblock %}
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label for="id_role" class="form-label">{% trans "User Role *" %}</label>
                             <select class="form-select" name="role" id="id_role" required>
                                 <option value="">{% trans "Select Role" %}</option>
@@ -80,7 +90,17 @@ Parking Admin" %}{% endblock %}
                             {% endif %}
                         </div>
 
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
+                            <label for="id_profile_photo" class="form-label">{% trans "Profile Photo" %}</label>
+                            <input type="file" class="form-control" name="profile_photo" id="id_profile_photo" accept="image/*">
+                            {% if object.profile_photo %}
+                            <div class="mt-2">
+                                <img src="{{ object.profile_photo.url }}" alt="Profile Photo" class="img-thumbnail" style="max-height: 50px;">
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">{% trans "Status" %}</label>
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" name="is_active" id="id_is_active" {% if

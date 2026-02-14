@@ -10,12 +10,14 @@ from django.db.models import Q, Count, Sum
 from django.utils import timezone
 from datetime import datetime, timedelta
 import json
-from apps.common.constants import UserRole, CURRENCY_SYMBOLS, DEFAULT_CURRENCY, ParkingStatus
+from apps.common.constants import UserRole, CURRENCY_SYMBOLS, DEFAULT_CURRENCY, ParkingStatus, TransactionStatus
 from apps.common.models import SystemConfiguration
 from apps.accounts.models import User, Vehicle
-from apps.parking.models import Zone, ParkingSlot, ParkingSession
-from apps.payments.models import Transaction, PaymentMethod
-from apps.enforcement.models import Violation, OfficerLog
+from apps.parking.models import Zone, ParkingSlot, ParkingSession, Reservation
+from apps.payments.models import Transaction, PaymentMethod, Refund, Invoice, WalletTransaction, PaymentGatewayConfig
+from apps.enforcement.models import Violation, OfficerLog, OfficerStatus, QRCodeScan
+from apps.rewards.models import LoyaltyAccount, PointTransaction
+from apps.notifications.models import NotificationEvent, ChatConversation, ChatMessage
 
 class AdminRequiredMixin(UserPassesTestMixin):
     def test_func(self):
@@ -238,11 +240,9 @@ class ZoneListView(AdminRequiredMixin, ListView):
         
         # Batch calculate stats for all zones
         for zone in zones:
-            # Use count() instead of fetching all objects
-            active_sessions = ParkingSession.objects.filter(zone=zone, status=ParkingStatus.ACTIVE).count()
-            zone.active_sessions_count = active_sessions
+            # Use the property to get active sessions count
             zone.total_capacity = zone.total_slots if zone.total_slots > 0 else 50
-            zone.calculated_occupancy_rate = (active_sessions * 100) // zone.total_capacity if zone.total_capacity > 0 else 0
+            zone.calculated_occupancy_rate = (zone.active_sessions_count * 100) // zone.total_capacity if zone.total_capacity > 0 else 0
         
         return context
 
@@ -784,6 +784,141 @@ class SlotCreateAjaxView(AdminRequiredMixin, View):
             })
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
+
+# Additional Enterprise Views
+
+# Reservation Views
+class ReservationListView(AdminRequiredMixin, ListView):
+    model = Reservation
+    template_name = 'reservations/list.html'
+    context_object_name = 'reservations'
+    paginate_by = 20
+
+    def get_queryset(self):
+        queryset = Reservation.objects.select_related('user', 'zone', 'parking_slot').all()
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(vehicle__license_plate__icontains=search) |
+                Q(payment_reference__icontains=search)
+            )
+        status = self.request.GET.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+        return queryset.order_by('-created_at')
+
+# Payment Expansion Views
+class RefundListView(AdminRequiredMixin, ListView):
+    model = Refund
+    template_name = 'payments/refund_list.html'
+    context_object_name = 'refunds'
+    paginate_by = 20
+
+    def get_queryset(self):
+        return Refund.objects.select_related('original_transaction__user').order_by('-created_at')
+
+class InvoiceListView(AdminRequiredMixin, ListView):
+    model = Invoice
+    template_name = 'payments/invoice_list.html'
+    context_object_name = 'invoices'
+    paginate_by = 20
+
+    def get_queryset(self):
+        return Invoice.objects.select_related('transaction__user').order_by('-created_at')
+
+class WalletTransactionListView(AdminRequiredMixin, ListView):
+    model = WalletTransaction
+    template_name = 'payments/wallet_list.html'
+    context_object_name = 'transactions'
+    paginate_by = 20
+
+    def get_queryset(self):
+        queryset = WalletTransaction.objects.select_related('user').all()
+        user_id = self.request.GET.get('user_id')
+        if user_id:
+            queryset = queryset.filter(user_id=user_id)
+        return queryset.order_by('-created_at')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        config = SystemConfiguration.get_config()
+        context['currency_symbol'] = CURRENCY_SYMBOLS.get(config.currency, '$')
+        return context
+
+# Enforcement Expansion Views
+class OfficerLogListView(AdminRequiredMixin, ListView):
+    model = OfficerLog
+    template_name = 'enforcement/log_list.html'
+    context_object_name = 'logs'
+    paginate_by = 30
+
+    def get_queryset(self):
+        return OfficerLog.objects.select_related('officer').order_by('-created_at')
+
+class OfficerStatusListView(AdminRequiredMixin, ListView):
+    model = OfficerStatus
+    template_name = 'enforcement/officer_status.html'
+    context_object_name = 'statuses'
+
+    def get_queryset(self):
+        return OfficerStatus.objects.select_related('officer', 'current_zone').all()
+
+class QRCodeScanListView(AdminRequiredMixin, ListView):
+    model = QRCodeScan
+    template_name = 'enforcement/scan_list.html'
+    context_object_name = 'scans'
+    paginate_by = 20
+
+    def get_queryset(self):
+        return QRCodeScan.objects.select_related('officer', 'parking_session__vehicle').order_by('-created_at')
+
+# Rewards & Loyalty Views
+class LoyaltyAccountListView(AdminRequiredMixin, ListView):
+    model = LoyaltyAccount
+    template_name = 'rewards/loyalty_list.html'
+    context_object_name = 'accounts'
+    paginate_by = 20
+
+    def get_queryset(self):
+        return LoyaltyAccount.objects.select_related('user').order_by('-balance')
+
+class PointTransactionListView(AdminRequiredMixin, ListView):
+    model = PointTransaction
+    template_name = 'rewards/point_transactions.html'
+    context_object_name = 'transactions'
+    paginate_by = 30
+
+    def get_queryset(self):
+        return PointTransaction.objects.select_related('account__user').order_by('-created_at')
+
+# Notification & Chat Views
+class NotificationEventListView(AdminRequiredMixin, ListView):
+    model = NotificationEvent
+    template_name = 'notifications/event_list.html'
+    context_object_name = 'events'
+    paginate_by = 30
+
+    def get_queryset(self):
+        return NotificationEvent.objects.select_related('user').order_by('-created_at')
+
+class ChatConversationListView(AdminRequiredMixin, ListView):
+    model = ChatConversation
+    template_name = 'notifications/chat_list.html'
+    context_object_name = 'conversations'
+    paginate_by = 20
+
+    def get_queryset(self):
+        return ChatConversation.objects.select_related('user', 'assigned_agent').order_by('-created_at')
+
+# System Settings View
+class SystemSettingsView(AdminRequiredMixin, TemplateView):
+    template_name = 'settings/config.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['config'] = SystemConfiguration.get_config()
+        context['gateways'] = PaymentGatewayConfig.objects.all()
+        return context
 
 class SlotUpdateAjaxView(AdminRequiredMixin, View):
     def post(self, request):

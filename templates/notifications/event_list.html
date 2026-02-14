@@ -1,0 +1,53 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "System Alerts" %} | {% trans "Smart Parking" %}{% endblock %}
+{% block page_title %}{% trans "Notification Events" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">{% trans "Communication Logs" %}</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-modern mb-0">
+                    <thead>
+                        <tr>
+                            <th>{% trans "User" %}</th>
+                            <th>{% trans "Category" %}</th>
+                            <th>{% trans "Title" %}</th>
+                            <th>{% trans "Read" %}</th>
+                            <th>{% trans "Sent At" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for event in events %}
+                        <tr>
+                            <td>{{ event.user.phone }}</td>
+                            <td>
+                                <span class="badge bg-light text-dark border">{{ event.get_category_display }}</span>
+                            </td>
+                            <td>
+                                <div class="fw-bold">{{ event.title }}</div>
+                                <small class="text-muted">{{ event.message|truncatechars:60 }}</small>
+                            </td>
+                            <td>
+                                {% if event.is_read %}
+                                <i class="bi bi-check-all text-primary"></i>
+                                {% else %}
+                                <i class="bi bi-clock text-muted"></i>
+                                {% endif %}
+                            </td>
+                            <td>{{ event.created_at|date:"M d, H:i" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

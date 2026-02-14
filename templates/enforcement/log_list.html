@@ -1,0 +1,55 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}{% trans "Activity Logs" %} | {% trans "Smart Parking" %}{% endblock %}
+{% block page_title %}{% trans "Enforcement Activity" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">{% trans "Real-time Action Logs" %}</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-modern mb-0">
+                    <thead>
+                        <tr>
+                            <th>{% trans "Time" %}</th>
+                            <th>{% trans "Officer" %}</th>
+                            <th>{% trans "Action" %}</th>
+                            <th>{% trans "Details" %}</th>
+                            <th>{% trans "Location" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>{{ log.created_at|date:"H:i:s" }} <br><small class="text-muted">{{
+                                    log.created_at|date:"M d" }}</small></td>
+                            <td><strong>{{ log.officer.full_name }}</strong></td>
+                            <td>
+                                <span class="badge bg-primary-soft text-uppercase">
+                                    {{ log.action|underscore_to_space }}
+                                </span>
+                            </td>
+                            <td><small class="text-muted">{{ log.details|truncatechars:50 }}</small></td>
+                            <td>
+                                {% if log.latitude %}
+                                <a href="https://maps.google.com/?q={{ log.latitude }},{{ log.longitude }}"
+                                    target="_blank" class="btn btn-sm btn-light">
+                                    <i class="bi bi-geo"></i>
+                                </a>
+                                {% else %}-{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

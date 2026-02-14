@@ -26,14 +26,36 @@ urlpatterns = [
     path('zones/<uuid:pk>/edit/', views.ZoneUpdateView.as_view(), name='zone-edit'),
     path('zones/<uuid:pk>/diagram/', views.ZoneDiagramView.as_view(), name='zone-diagram'),
     
+    # Reservation Management
+    path('reservations/', views.ReservationListView.as_view(), name='reservation-list'),
+    
     # Session Management
     path('sessions/', views.SessionListView.as_view(), name='session-list'),
     
     # Payment Management
     path('payments/', views.PaymentListView.as_view(), name='payment-list'),
+    path('payments/refunds/', views.RefundListView.as_view(), name='refund-list'),
+    path('payments/invoices/', views.InvoiceListView.as_view(), name='invoice-list'),
+    path('payments/wallets/', views.WalletTransactionListView.as_view(), name='wallet-transactions'),
     
     # Violation Management
     path('violations/', views.ViolationListView.as_view(), name='violation-list'),
+    
+    # Enforcement Expansion
+    path('enforcement/officer-status/', views.OfficerStatusListView.as_view(), name='officer-status'),
+    path('enforcement/logs/', views.OfficerLogListView.as_view(), name='officer-logs'),
+    path('enforcement/scans/', views.QRCodeScanListView.as_view(), name='scan-list'),
+    
+    # Rewards
+    path('rewards/loyalty/', views.LoyaltyAccountListView.as_view(), name='loyalty-list'),
+    path('rewards/transactions/', views.PointTransactionListView.as_view(), name='point-transactions'),
+    
+    # Notifications & Support
+    path('notifications/events/', views.NotificationEventListView.as_view(), name='notification-list'),
+    path('support/chats/', views.ChatConversationListView.as_view(), name='chat-list'),
+    
+    # Settings
+    path('settings/', views.SystemSettingsView.as_view(), name='system-settings'),
     
     # AJAX Endpoints
     path('ajax/check-plate/', views.CheckPlateAjaxView.as_view(), name='check-plate-ajax'),

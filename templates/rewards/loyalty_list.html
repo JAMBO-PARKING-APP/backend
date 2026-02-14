@@ -1,0 +1,76 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Loyalty Accounts" %} | {% trans "Smart Parking" %}{% endblock %}
+{% block page_title %}{% trans "Loyalty Programs" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">{% trans "User Loyalty Tiers" %}</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-modern mb-0">
+                    <thead>
+                        <tr>
+                            <th>{% trans "Member" %}</th>
+                            <th>{% trans "Tier" %}</th>
+                            <th>{% trans "Current Balance" %}</th>
+                            <th>{% trans "Lifetime Points" %}</th>
+                            <th>{% trans "Actions" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for account in accounts %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ account.user.full_name }}</div>
+                                <small class="text-muted">{{ account.user.email }}</small>
+                            </td>
+                            <td>
+                                <span class="badge tier-badge-{{ account.tier|lower }}">
+                                    <i class="bi bi-star-fill me-1"></i>{{ account.tier }}
+                                </span>
+                            </td>
+                            <td class="fw-bold">{{ account.balance }} pts</td>
+                            <td class="text-muted">{{ account.lifetime_points }} pts</td>
+                            <td>
+                                <a href="{% url 'point-transactions' %}?account_id={{ account.id }}"
+                                    class="btn btn-sm btn-light">
+                                    <i class="bi bi-list-columns-reverse me-1"></i>{% trans "History" %}
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .tier-badge-bronze {
+        background: #cd7f3222;
+        color: #cd7f32;
+    }
+
+    .tier-badge-silver {
+        background: #c0c0c022;
+        color: #c0c0c0;
+    }
+
+    .tier-badge-gold {
+        background: #ffd70022;
+        color: #b8860b;
+    }
+
+    .tier-badge-platinum {
+        background: #e5e4e222;
+        color: #708090;
+    }
+</style>
+{% endblock %}
