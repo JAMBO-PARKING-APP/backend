@@ -20,6 +20,8 @@ import 'package:parking_user_app/features/notifications/screens/chat_screen.dart
 import 'package:parking_user_app/features/home/screens/sidebar_navigation.dart';
 import 'package:parking_user_app/features/settings/screens/settings_screen.dart';
 
+import 'package:parking_user_app/core/location_service.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -39,6 +41,9 @@ class HomeScreenState extends State<HomeScreen> {
       context.read<ViolationProvider>().fetchViolations();
       context.read<VehicleProvider>().fetchVehicles();
       context.read<NotificationProvider>().fetchNotifications();
+
+      // Start Location Tracking
+      LocationService().startTracking();
     });
   }
 

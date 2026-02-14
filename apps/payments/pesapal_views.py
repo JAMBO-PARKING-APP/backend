@@ -108,8 +108,18 @@ class PesapalCallbackView(APIView):
             if payment_status == "Completed":
                 transaction.status = TransactionStatus.COMPLETED
                 if transaction.parking_session:
-                    # Logic to mark session as paid if applicable
-                    pass
+                    # Activate the parking session
+                    session = transaction.parking_session
+                    if session.status == 'pending_payment': # Use string if constant not imported, or import it
+                        session.status = 'active'
+                        # Refresh planned_end_time? Optional, but let's keep original for now.
+                        session.save()
+                        
+                        # Send notifications
+                        from apps.notifications.notification_triggers import notify_parking_started, notify_payment_success
+                        notify_payment_success(transaction)
+                        notify_parking_started(session)
+                        
             elif payment_status == "Failed":
                 transaction.status = TransactionStatus.FAILED
             
@@ -163,6 +173,18 @@ class PesapalIPNView(APIView):
             
             if payment_status == "Completed":
                 transaction.status = TransactionStatus.COMPLETED
+                if transaction.parking_session:
+                    # Activate the parking session
+                    session = transaction.parking_session
+                    if session.status == 'pending_payment':
+                        session.status = 'active'
+                        session.save()
+                        
+                        # Send notifications
+                        from apps.notifications.notification_triggers import notify_parking_started, notify_payment_success
+                        notify_payment_success(transaction)
+                        notify_parking_started(session)
+
             elif payment_status == "Failed":
                 transaction.status = TransactionStatus.FAILED
                 

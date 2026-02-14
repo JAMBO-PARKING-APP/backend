@@ -35,10 +35,11 @@ class ParkingService {
     return [];
   }
 
-  Future<bool> startParking({
+  Future<ParkingSession?> startParking({
     required String zoneId,
     required String vehicleId,
     double durationHours = 1.0,
+    String paymentMethod = 'wallet',
   }) async {
     try {
       final response = await _apiClient.post(
@@ -47,12 +48,15 @@ class ParkingService {
           'zone_id': zoneId,
           'vehicle_id': vehicleId,
           'duration_hours': durationHours,
-          'payment_method': 'wallet', // Default to wallet for now
+          'payment_method': paymentMethod,
         },
       );
-      return response.statusCode == 201;
+      if (response.statusCode == 201 && response.data['session'] != null) {
+        return ParkingSession.fromJson(response.data['session']);
+      }
+      return null;
     } catch (e) {
-      return false;
+      return null;
     }
   }
 

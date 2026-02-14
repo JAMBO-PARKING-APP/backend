@@ -95,3 +95,33 @@ class PaymentMethodSerializer(serializers.ModelSerializer):
         model = PaymentMethod
         fields = ['id', 'card_brand', 'card_last_four', 'is_default', 'is_active']
         read_only_fields = ['id']
+
+class UserLocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        from .models import UserLocation
+        model = UserLocation
+        fields = ['latitude', 'longitude', 'is_driver_app', 'timestamp']
+        read_only_fields = ['timestamp']
+    
+    def to_internal_value(self, data):
+        # Round coordinates to 6 decimal places to match model constraints
+        if 'latitude' in data:
+            try:
+                data['latitude'] = round(float(data['latitude']), 6)
+            except (ValueError, TypeError):
+                pass
+        if 'longitude' in data:
+            try:
+                data['longitude'] = round(float(data['longitude']), 6)
+            except (ValueError, TypeError):
+                pass
+        return super().to_internal_value(data)
+    
+    def create(self, validated_data):
+        from .models import UserLocation
+        # Ensure we have the user from context if not passed
+        user = validated_data.pop('user', None)
+        if not user and 'view' in self.context:
+            user = self.context['view'].request.user
+        
+        return UserLocation.objects.create(user=user, **validated_data)

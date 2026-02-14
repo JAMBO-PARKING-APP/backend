@@ -12,6 +12,8 @@ import 'package:parking_officer_app/features/parking/screens/license_plate_searc
 import 'package:parking_officer_app/features/auth/screens/profile_screen.dart';
 import 'package:parking_officer_app/features/chat/screens/chat_list_screen.dart';
 
+import 'package:parking_officer_app/core/location_service.dart';
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -28,6 +30,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ZoneProvider>().fetchZones();
       context.read<OfficerProvider>().fetchOfficerStatus();
+
+      // Start Location Tracking
+      LocationService().startTracking();
     });
   }
 

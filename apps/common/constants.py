@@ -11,6 +11,7 @@ class ParkingStatus(models.TextChoices):
     COMPLETED = 'completed', _('Completed')
     EXPIRED = 'expired', _('Expired')
     CANCELLED = 'cancelled', _('Cancelled')
+    PENDING_PAYMENT = 'pending_payment', _('Pending Payment')
 
 class SlotStatus(models.TextChoices):
     AVAILABLE = 'available', _('Available')

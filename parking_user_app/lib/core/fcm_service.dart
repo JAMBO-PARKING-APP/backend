@@ -234,6 +234,10 @@ class FCMService {
       case 'violation_issued':
         // Navigate to violations screen
         break;
+      case 'geofence_warning':
+        // Navigate to active session to show map/warning
+        debugPrint('Geofence warning received');
+        break;
       default:
         // Navigate to notifications screen
         break;

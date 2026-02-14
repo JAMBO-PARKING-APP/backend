@@ -358,3 +358,14 @@ class DeleteAccountAPIView(APIView):
         return Response({
             'message': 'Account deleted successfully'
         }, status=status.HTTP_204_NO_CONTENT)
+
+class UserLocationAPIView(generics.CreateAPIView):
+    """Update user location"""
+    permission_classes = [IsAuthenticated]
+    
+    def get_serializer_class(self):
+        from .serializers_v2 import UserLocationSerializer
+        return UserLocationSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

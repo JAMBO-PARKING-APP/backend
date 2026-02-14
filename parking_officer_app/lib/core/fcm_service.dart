@@ -177,6 +177,9 @@ class FCMService {
       case 'violation_reported':
         debugPrint('Navigate to violations');
         break;
+      case 'officer_dispatch':
+        debugPrint('Navigate to zone: ${data['zone_id']} for hotspot dispatch');
+        break;
       default:
         debugPrint('Unknown notification type: $type');
     }

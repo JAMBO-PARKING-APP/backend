@@ -11,4 +11,5 @@ urlpatterns = [
     path('profile/', api_views.ProfileAPIView.as_view(), name='profile'),
     path('vehicles/', api_views.VehicleListCreateAPIView.as_view(), name='vehicles'),
     path('delete-account/', api_views.DeleteAccountAPIView.as_view(), name='delete-account'),
+    path('location/', api_views.UserLocationAPIView.as_view(), name='user-location'),
 ]

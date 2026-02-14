@@ -129,3 +129,21 @@ class OTPCode(BaseModel):
 
     def __str__(self):
         return f"{self.user.phone} - {self.code}"
+
+class UserLocation(BaseModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='location_history')
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+    is_driver_app = models.BooleanField(default=True, help_text=_("True if sent from driver app, False if officer app"))
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['user', '-timestamp']),
+            models.Index(fields=['latitude', 'longitude']),
+            models.Index(fields=['timestamp']),
+        ]
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.user.phone} at {self.timestamp}"

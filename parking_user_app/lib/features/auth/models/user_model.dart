@@ -47,4 +47,19 @@ class User {
   }
 
   String get fullName => '$firstName $lastName';
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'phone': phone,
+      'first_name': firstName,
+      'last_name': lastName,
+      'email': email,
+      'role': role,
+      'profile_photo': profilePhoto,
+      'wallet_balance': walletBalance,
+      'vehicles': vehicles.map((v) => v.toJson()).toList(),
+      'country_details': countryDetails?.toJson(),
+    };
+  }
 }

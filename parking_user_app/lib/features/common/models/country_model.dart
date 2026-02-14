@@ -31,4 +31,16 @@ class Country {
       flagEmoji: json['flag_emoji'],
     );
   }
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'iso_code': isoCode,
+      'currency': currency,
+      'currency_symbol': currencySymbol,
+      'timezone': timezone,
+      'phone_code': phoneCode,
+      'flag_emoji': flagEmoji,
+    };
+  }
 }

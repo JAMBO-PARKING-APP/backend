@@ -46,7 +46,7 @@ class PaymentService {
           'description': description,
           'is_wallet_topup': isWalletTopup,
           if (parkingSessionId?.isNotEmpty ?? false)
-            'parking_session_id': parkingSessionId,
+            'session_id': parkingSessionId,
           if (violationId?.isNotEmpty ?? false) 'violation_id': violationId,
           if (reservationId?.isNotEmpty ?? false)
             'reservation_id': reservationId,

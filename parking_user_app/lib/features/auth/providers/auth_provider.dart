@@ -29,31 +29,63 @@ class AuthProvider with ChangeNotifier {
     _hasRequestedPermissions = await storage.hasRequestedPermissions();
 
     if (!_hasRequestedPermissions) {
-      _status = AuthStatus.unauthenticated; // logic in specific screen
+      _status = AuthStatus.unauthenticated;
       notifyListeners();
       return;
     }
 
-    final user = await _authService.getProfile();
-    if (user != null) {
-      _user = user;
-      _status = AuthStatus.authenticated;
-    } else {
-      // Fallback: if tokens exist locally, consider user authenticated offline
-      final token = await storage.getAccessToken();
-      final userJson = await storage.getUserJson();
-      if (token != null && userJson != null) {
-        try {
-          _user = User.fromJson(json.decode(userJson));
-          _status = AuthStatus.authenticated;
-        } catch (_) {
-          _status = AuthStatus.unauthenticated;
-        }
-      } else {
-        _status = AuthStatus.unauthenticated;
+    // 1. Try to load from storage first (Offline-first strategy)
+    final token = await storage.getAccessToken();
+    final userJson = await storage.getUserJson();
+
+    if (token != null && userJson != null) {
+      try {
+        _user = User.fromJson(json.decode(userJson));
+        _status = AuthStatus.authenticated;
+        notifyListeners(); // Validate immediately with cached data
+        debugPrint(
+          '[AuthProvider] Loaded profile from storage: ${_user?.firstName}',
+        );
+      } catch (e) {
+        debugPrint('[AuthProvider] Error parsing cached user: $e');
       }
     }
-    notifyListeners();
+
+    // 2. Refresh from network (Background update)
+    if (token != null) {
+      try {
+        final user = await _authService.getProfile();
+        if (user != null) {
+          _user = user;
+          _status = AuthStatus.authenticated;
+
+          // Persist updated profile
+          await storage.saveUserJson(json.encode(user.toJson()));
+          debugPrint(
+            '[AuthProvider] Updated profile from network and saved to storage',
+          );
+          notifyListeners();
+        } else if (_user == null) {
+          // Only set to unauthenticated if we defined no user from storage AND network failed
+          // But if network failed with 401, AuthService.getProfile returns null
+          // We might want to check validity of token?
+          // For now, if we have cached user, we stay authenticated even if network fails (offline mode)
+          // If we had no cached user and network fails, we are unauthenticated
+          _status = AuthStatus.unauthenticated;
+          notifyListeners();
+        }
+      } catch (e) {
+        debugPrint('[AuthProvider] Network profile fetch failed: $e');
+        // If we have _user from storage, we stay authenticated (Offline mode)
+        if (_user == null) {
+          _status = AuthStatus.unauthenticated;
+          notifyListeners();
+        }
+      }
+    } else {
+      _status = AuthStatus.unauthenticated;
+      notifyListeners();
+    }
   }
 
   Future<bool> login(String phoneNumber, String password) async {

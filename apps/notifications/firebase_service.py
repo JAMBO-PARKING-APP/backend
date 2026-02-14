@@ -38,7 +38,9 @@ def initialize_firebase():
         raise
 
 
-def send_notification_to_user(
+from . import tasks
+
+def send_notification_to_user_sync(
     user,
     title: str,
     body: str,
@@ -127,6 +129,31 @@ def send_notification_to_user(
             notification_event.save(update_fields=['push_error'])
         
         return False
+
+
+def send_notification_to_user(
+    user,
+    title: str,
+    body: str,
+    data: Optional[Dict[str, str]] = None,
+    notification_event=None
+) -> bool:
+    """
+    Async wrapper for sending push notification to a user.
+    """
+    # Extract ID from notification_event if provided
+    notification_event_id = str(notification_event.id) if notification_event else None
+    
+    # Call the Celery task
+    tasks.send_firebase_notification_task.delay(
+        user.id,
+        title,
+        body,
+        data,
+        notification_event_id
+    )
+    # Return True to indicate the request was accepted (enqueued)
+    return True
 
 
 def send_notification_to_multiple_users(

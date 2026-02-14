@@ -105,6 +105,11 @@ class ApiClient {
 
   Future<List<dynamic>> getLoyaltyHistory() async {
     final response = await dio.get('rewards/history/');
-    return response.data;
+    if (response.data is Map && response.data.containsKey('results')) {
+      return response.data['results'];
+    } else if (response.data is List) {
+      return response.data;
+    }
+    return [];
   }
 }

@@ -1,4 +1,5 @@
 import os
+from . import tasks
 from twilio.rest import Client
 
 def get_twilio_client():
@@ -8,7 +9,7 @@ def get_twilio_client():
         raise RuntimeError('Twilio credentials not configured in environment')
     return Client(account_sid, auth_token)
 
-def send_verification(to_phone: str, channel: str = 'sms', service_sid: str = None):
+def send_verification_sync(to_phone: str, channel: str = 'sms', service_sid: str = None):
     client = get_twilio_client()
     service_sid = service_sid or os.environ.get('TWILIO_VERIFY_SERVICE_SID')
     if not service_sid:
@@ -19,6 +20,17 @@ def send_verification(to_phone: str, channel: str = 'sms', service_sid: str = No
         channel=channel
     )
     return verification
+
+class MockVerification:
+    def __init__(self, sid, status):
+        self.sid = sid
+        self.status = status
+
+def send_verification(to_phone: str, channel: str = 'sms', service_sid: str = None):
+    # Call the Celery task
+    tasks.send_twilio_verification_task.delay(to_phone, channel)
+    # Return a mock verification object so API views don't crash
+    return MockVerification(sid='async_queued', status='pending')
 
 def check_verification(to_phone: str, code: str, service_sid: str = None):
     client = get_twilio_client()

@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from decouple import config
+from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -227,8 +228,32 @@ PHONENUMBER_DEFAULT_REGION = 'GH'
 PESAPAL_CONSUMER_KEY = config('PESAPAL_CONSUMER_KEY', default='')
 PESAPAL_CONSUMER_SECRET = config('PESAPAL_CONSUMER_SECRET', default='')
 PESAPAL_SANDBOX = config('PESAPAL_SANDBOX', default=True, cast=bool)
-PESAPAL_CALLBACK_URL = config('PESAPAL_CALLBACK_URL', default='https://1850-154-227-132-66.ngrok-free.app/api/user/payments/pesapal/callback/')
+PESAPAL_CALLBACK_URL = config('PESAPAL_CALLBACK_URL', default='https://curtis-unmobilized-clarence.ngrok-free.dev/api/user/payments/pesapal/callback/')
 
 # Firebase Cloud Messaging Settings
 FIREBASE_CREDENTIALS_PATH = BASE_DIR / 'jambo-parking-d6e88-firebase-adminsdk-fbsvc-9ba12edacb.json'
 FIREBASE_ENABLED = config('FIREBASE_ENABLED', default=True, cast=bool)
+
+# Celery Beat Schedule
+CELERY_BEAT_SCHEDULE = {
+    'check-expired-sessions': {
+        'task': 'apps.parking.tasks.check_expired_sessions',
+        'schedule': crontab(minute='*/1'),  # Every minute
+    },
+    'cancel-overdue-reservations': {
+        'task': 'apps.parking.tasks.cancel_overdue_reservations',
+        'schedule': crontab(minute='*/5'),  # Every 5 minutes
+    },
+    'validate-active-session-location': {
+        'task': 'apps.parking.tasks.validate_active_session_location',
+        'schedule': crontab(minute='*/10'),  # Every 10 minutes
+    },
+    'identify-violation-hotspots': {
+        'task': 'apps.enforcement.tasks.identify_violation_hotspots',
+        'schedule': crontab(minute='*/15'),  # Every 15 minutes
+    },
+    'generate-daily-revenue': {
+        'task': 'apps.analytics.tasks.generate_daily_revenue',
+        'schedule': crontab(minute=5, hour=0),  # Daily at 00:05
+    },
+}

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:parking_user_app/features/parking/models/zone_model.dart';
+import 'package:parking_user_app/features/parking/models/parking_session_model.dart';
 import 'package:parking_user_app/features/parking/providers/zone_provider.dart';
 import 'package:parking_user_app/features/parking/providers/parking_provider.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
@@ -286,25 +287,27 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
     required bool isWallet,
   }) async {
     if (isWallet) {
-      final success = await context.read<ParkingProvider>().startParking(
+      final session = await context.read<ParkingProvider>().startParking(
         context: context,
         zoneId: zone.id,
         vehicleId: vehicle.id,
         durationHours: durationHours,
+        paymentMethod: 'wallet',
       );
-      if (mounted && success) {
+      if (mounted && session != null) {
         _showSuccessDialog(context, zone);
       }
     } else {
       // Pesapal Flow
-      final success = await context.read<ParkingProvider>().startParking(
+      final session = await context.read<ParkingProvider>().startParking(
         context: context,
         zoneId: zone.id,
         vehicleId: vehicle.id,
         durationHours: durationHours,
+        paymentMethod: 'pesapal',
       );
 
-      if (mounted && success) {
+      if (mounted && session != null) {
         // Show loading
         showDialog(
           context: context,
@@ -317,7 +320,8 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
           final result = await paymentService.initiatePesapalPayment(
             amount: zone.hourlyRate * durationHours,
             description: 'Parking - ${zone.name}',
-            isWalletTopup: true,
+            isWalletTopup: false,
+            parkingSessionId: session.id,
           );
 
           if (mounted) Navigator.pop(context); // Hide loading

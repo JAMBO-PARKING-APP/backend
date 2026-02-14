@@ -4,12 +4,17 @@ from .base import *
 DEBUG = True
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', 
-                       default='localhost,127.0.0.1,0.0.0.0,10.0.2.2,b95b-154-227-132-66.ngrok-free.app', 
+                       default='localhost,127.0.0.1,0.0.0.0,10.0.2.2,curtis-unmobilized-clarence.ngrok-free.dev', 
                        cast=lambda v: [s.strip() for s in v.split(',')])
 
-CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', 
-                             default='http://localhost:8000,http://127.0.0.1:8000', 
-                             cast=lambda v: [s.strip() for s in v.split(',')])
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'https://curtis-unmobilized-clarence.ngrok-free.dev',
+]
+
+# Support for Ngrok/Proxy
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Development database
 DATABASES = {

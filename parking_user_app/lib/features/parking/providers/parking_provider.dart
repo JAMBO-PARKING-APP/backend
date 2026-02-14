@@ -55,25 +55,27 @@ class ParkingProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> startParking({
+  Future<ParkingSession?> startParking({
     required BuildContext context,
     required String vehicleId,
     required String zoneId,
     double durationHours = 1.0,
+    String paymentMethod = 'wallet',
   }) async {
-    final success = await _parkingService.startParking(
+    final session = await _parkingService.startParking(
       vehicleId: vehicleId,
       zoneId: zoneId,
       durationHours: durationHours,
+      paymentMethod: paymentMethod,
     );
-    if (success) {
+    if (session != null) {
       await fetchSessions();
       // Refresh wallet balance in AuthProvider
       if (context.mounted) {
         await Provider.of<AuthProvider>(context, listen: false).checkAuth();
       }
     }
-    return success;
+    return session;
   }
 
   Future<bool> extendParking(String sessionId, int additionalHours) async {

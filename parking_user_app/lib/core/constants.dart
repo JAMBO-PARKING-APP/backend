@@ -4,7 +4,7 @@ class AppConstants {
   // Use localhost by default. Set useNgrok = true to test with external ngrok URL.
   static bool useNgrok = true;
   static const String ngrokBase =
-      'https://b95b-154-227-132-66.ngrok-free.app/api/user/';
+      'https://curtis-unmobilized-clarence.ngrok-free.dev/api/user/';
 
   static String get baseUrl {
     if (useNgrok) return ngrokBase;

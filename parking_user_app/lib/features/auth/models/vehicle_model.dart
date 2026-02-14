@@ -27,4 +27,15 @@ class Vehicle {
   }
 
   String get displayName => '$licensePlate ($make $model)';
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'license_plate': licensePlate,
+      'make': make,
+      'model': model,
+      'color': color,
+      'is_active': isActive,
+    };
+  }
 }

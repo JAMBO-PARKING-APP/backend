@@ -62,4 +62,5 @@ urlpatterns = [
     path('preferences/', notifications_views.UserPreferencesAPIView.as_view(), name='user-preferences'),
     path('help/', api_views_help.HelpCenterListAPIView.as_view(), name='help-list'),
     path('help/<int:item_id>/', api_views_help.HelpCenterDetailAPIView.as_view(), name='help-detail'),
+    path('location/', accounts_views.UserLocationAPIView.as_view(), name='user-location'),
 ]

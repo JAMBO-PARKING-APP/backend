@@ -173,6 +173,7 @@ class StartParkingAPIView(APIView):
                          request.user.id, vehicle.id, zone.id, duration_hours, planned_end.isoformat(), str(estimated_cost))
             
             payment_method = serializer.validated_data.get('payment_method', 'wallet')
+            initial_status = ParkingStatus.ACTIVE
             
             if payment_method == 'wallet':
                 if request.user.wallet_balance < estimated_cost:
@@ -196,21 +197,26 @@ class StartParkingAPIView(APIView):
                 # Send payment success notification
                 from apps.notifications.notification_triggers import notify_payment_success
                 notify_payment_success(wallet_tx)
+            else:
+                # For external payments (Pesapal), set status to pending first
+                initial_status = ParkingStatus.PENDING_PAYMENT
 
             session = ParkingSession.objects.create(
                 vehicle=vehicle,
                 zone=zone,
                 parking_slot=parking_slot,
                 planned_end_time=planned_end,
-                estimated_cost=estimated_cost
+                estimated_cost=estimated_cost,
+                status=initial_status
             )
             
-            # Send parking session started notification
-            from apps.notifications.notification_triggers import notify_parking_started
-            notify_parking_started(session)
+            # Send parking session started notification ONLY if active
+            if initial_status == ParkingStatus.ACTIVE:
+                from apps.notifications.notification_triggers import notify_parking_started
+                notify_parking_started(session)
             
             return Response({
-                'message': 'Parking session started successfully',
+                'message': 'Parking session created' if initial_status == ParkingStatus.PENDING_PAYMENT else 'Parking session started successfully',
                 'session': ParkingSessionSerializer(session).data
             }, status=status.HTTP_201_CREATED)
             
@@ -370,12 +376,12 @@ class UserParkingSessionsAPIView(generics.ListAPIView):
     serializer_class = ParkingSessionSerializer
     
     def get_queryset(self):
-        user_vehicles = self.request.user.vehicles.filter(is_active=True)
+        # Return sessions for all user vehicles (even inactive ones)
+        queryset = ParkingSession.objects.filter(vehicle__user=self.request.user)
         
         # Get filter parameter
         session_type = self.request.query_params.get('type', 'all')
         
-        queryset = ParkingSession.objects.filter(vehicle__in=user_vehicles)
         
         if session_type == 'active':
             queryset = queryset.filter(status=ParkingStatus.ACTIVE)
