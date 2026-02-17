@@ -65,9 +65,29 @@ The system is designed with a "security-first" mindset, adhering to industry sta
 
 ---
 
-## 🛠️ Deployment Guide
+## 🛠️ Deployment & Development
 
-### Backend (Production - Render/Cloud)
+### ⚡ One-Click Cloud Deployment (Render)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=YOUR_REPO_URL)
+1. Ensure your repository has a `render.yaml` (already included).
+2. Click the button above to provision the DB, Redis, and all services instantly.
+
+### 🐳 Docker Quick Start
+Spin up the entire ecosystem (API, DB, Redis, Workers) with a single command:
+```bash
+docker-compose up --build
+```
+
+### ⌨️ Makefile Shortcuts
+| Command | Result |
+|---------|--------|
+| `make install` | Install all dependencies |
+| `make run` | Start local Django server |
+| `make migrate` | Synchronize database schema |
+| `make worker` / `make beat` | Start background task engines |
+| `make build-apk` | Compile User App for distribution |
+
+### Manual Execution (Production - Render/Cloud)
 1. **Environment Configuration**: Configure `.env` with `DJANGO_SETTINGS_MODULE=config.settings.production`.
 2. **Infrastructure**:
    - **DB**: PostgreSQL (Managed).
@@ -137,9 +157,10 @@ The system maintains itself through a series of scheduled autonomous tasks:
 
 ## 📊 References & Further Reading
 
-- [System Design Document](./docs/architecture.md)
-- [Database Schema](./docs/database_schema.md)
-- [Mobile App Style Guide](./docs/design_system.md)
+- [System Architecture Document](./docs/architecture.md)
+- [Database Schema & Spec](./docs/database_schema.md)
+- [Mobile Design System](./docs/design_system.md)
+- [Docker & Secrets Management Guide](./docs/deployment_and_secrets.md)
 
 ---
 *© 2026 JAMBO PARK Solutions. Confidential and Proprietary.*

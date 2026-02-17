@@ -1,0 +1,67 @@
+services:
+  # Database
+  - type: database
+    name: jambo-park-db
+    databaseName: smart_parking
+    user: jambo_admin
+
+  # Redis
+  - type: redis
+    name: jambo-park-redis
+    ipAllowList: [] # Only allow internal traffic
+
+  # Django Web Service
+  - type: web
+    name: jambo-park-backend
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn config.wsgi:application"
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: jambo-park-db
+          property: connectionString
+      - key: REDIS_URL
+        fromRedis:
+          name: jambo-park-redis
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+
+  # Celery Worker
+  - type: worker
+    name: jambo-park-worker
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "celery -A config worker -l info"
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: jambo-park-db
+          property: connectionString
+      - key: REDIS_URL
+        fromRedis:
+          name: jambo-park-redis
+          property: connectionString
+
+  # Celery Beat
+  - type: worker
+    name: jambo-park-beat
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "celery -A config beat -l info"
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: jambo-park-db
+          property: connectionString
+      - key: REDIS_URL
+        fromRedis:
+          name: jambo-park-redis
+          property: connectionString
