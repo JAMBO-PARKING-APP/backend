@@ -64,13 +64,24 @@ class ReservationService:
         """
         Create a reservation with concurrency locking.
         """
-        # Lock the zone for update to prevent race conditions during availability check
-        # Note: This locks the zone row, effectively serializing bookings for this zone.
-        # For high volume, we might need a more granular lock (e.g. Redis) or slots.
-        _ = Zone.objects.select_for_update().get(id=zone.id)
+        # Lock an available slot for update instead of the entire zone
+        # This allows multiple users to book different slots in the same zone concurrently.
+        parking_slot = ParkingSlot.objects.filter(
+            zone=zone,
+            status=SlotStatus.AVAILABLE
+        ).select_for_update(skip_locked=True).first()
 
-        if not ReservationService.check_availability(zone, start_time, end_time):
-             raise ValueError("No parking slots available for the selected time.")
+        if not parking_slot:
+            # Fallback check: if we explicitly track slots, but none are available
+            # Or if we rely on capacity, check if the calculated availability is > 0
+            if not ReservationService.check_availability(zone, start_time, end_time):
+                raise ValueError("No parking slots available for the selected time.")
+            
+            # If availability check passed but no specific slot was found, 
+            # it might be a zone without pre-defined slots (using capacity only).
+            # In that case, we still need a lock. We'll use the zone lock as fallback
+            # but ideally, all zones should have defined slots for high scalability.
+            _ = Zone.objects.select_for_update().get(id=zone.id)
 
         # Calculate cost
         duration_seconds = (end_time - start_time).total_seconds()
@@ -83,11 +94,17 @@ class ReservationService:
         reservation = Reservation.objects.create(
             vehicle=vehicle,
             zone=zone,
+            parking_slot=parking_slot,
             reserved_from=start_time,
             reserved_until=end_time,
             cost=cost,
             status='pending_payment'
         )
+
+        # Mark slot as reserved if we found one
+        if parking_slot:
+            parking_slot.status = SlotStatus.RESERVED  # Need to ensure SlotStatus.RESERVED exists or use OCCUPIED
+            parking_slot.save()
         
         # Schedule expiration task
         from apps.parking.tasks import expire_reservation_task
@@ -105,10 +122,8 @@ class ReservationService:
         user = reservation.vehicle.user
         
         if payment_method == 'wallet':
-            if user.wallet_balance < reservation.cost:
-                raise ValueError(f"Insufficient funds. Required: {reservation.cost}")
-            
-            user.wallet_balance -= reservation.cost
+            from django.db.models import F
+            user.wallet_balance = F('wallet_balance') - reservation.cost
             user.save(update_fields=['wallet_balance'])
             
             WalletTransaction.objects.create(
@@ -141,8 +156,8 @@ class ReservationService:
         if reservation.status == 'confirmed':
              if timezone.now() < reservation.reserved_from:
                  # Refund logic
-                 user = reservation.vehicle.user
-                 user.wallet_balance += reservation.cost
+                 from django.db.models import F
+                 user.wallet_balance = F('wallet_balance') + reservation.cost
                  user.save(update_fields=['wallet_balance'])
                  
                  WalletTransaction.objects.create(

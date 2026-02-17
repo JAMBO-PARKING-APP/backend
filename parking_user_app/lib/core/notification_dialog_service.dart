@@ -48,10 +48,31 @@ class NotificationDialogService {
       case 'custom_admin':
         _showCustomAdminDialog(data);
         break;
+      case 'campaign':
+        _showCampaignDialog(data);
+        break;
       default:
         _showGenericDialog(data);
         break;
     }
+  }
+
+  void _showCampaignDialog(Map<String, dynamic> data) {
+    final title = data['title'] ?? 'Special Offer';
+    final body = data['body'] ?? '';
+    final imageUrl = data['image_url'];
+
+    _showCustomDialog(
+      title: title,
+      message: body,
+      icon: Icons.local_offer,
+      iconColor: Colors.deepPurple,
+      primaryButtonText: 'Claim Now',
+      onPrimaryPressed: () => Navigator.of(_context!).pop(),
+      secondaryButtonText: 'Dismiss',
+      onSecondaryPressed: () => Navigator.of(_context!).pop(),
+      imageUrl: imageUrl,
+    );
   }
 
   void _showParkingStartedDialog(Map<String, dynamic> data) {
@@ -220,6 +241,7 @@ class NotificationDialogService {
     required VoidCallback onPrimaryPressed,
     String? secondaryButtonText,
     VoidCallback? onSecondaryPressed,
+    String? imageUrl,
   }) {
     if (_context == null) return;
 
@@ -234,15 +256,33 @@ class NotificationDialogService {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Icon
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+              // Image if provided
+              if (imageUrl != null && imageUrl.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      imageUrl,
+                      height: 150,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const SizedBox.shrink(),
+                    ),
+                  ),
                 ),
-                child: Icon(icon, size: 48, color: iconColor),
-              ),
+
+              // Icon
+              if (imageUrl == null || imageUrl.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 48, color: iconColor),
+                ),
               const SizedBox(height: 16),
 
               // Title

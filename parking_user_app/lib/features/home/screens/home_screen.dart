@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:shimmer/shimmer.dart';
+import 'dart:ui' as ui;
 import 'package:geolocator/geolocator.dart';
 import 'package:parking_user_app/features/parking/screens/zone_list_screen.dart';
 import 'package:parking_user_app/features/parking/screens/parking_history_screen.dart';
@@ -73,18 +75,6 @@ class HomeScreenState extends State<HomeScreen> {
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
-        title: const Text('Space'),
-        centerTitle: false,
-        titleTextStyle: const TextStyle(
-          color: Colors.white,
-          fontSize: 22,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
       drawer: SidebarNavigation(
         currentIndex: _currentIndex,
         onTabChanged: (index) => setState(() => _currentIndex = index),
@@ -181,206 +171,255 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 ) {
                   final zoneProvider = context.watch<ZoneProvider>();
                   return SafeArea(
-                    child: CustomScrollView(
-                      slivers: [
-                        // Extended App Bar with Profile
-                        SliverAppBar(
-                          expandedHeight: 80.0,
-                          floating: false,
-                          pinned: true,
-                          elevation: 0,
-                          backgroundColor: AppTheme.primaryColor,
-                          flexibleSpace: FlexibleSpaceBar(
-                            titlePadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
+                    child: RefreshIndicator(
+                      onRefresh: () async {
+                        await Future.wait([
+                          context.read<PaymentProvider>().fetchWalletData(),
+                          context.read<ParkingProvider>().fetchSessions(),
+                          context.read<ParkingProvider>().fetchZones(),
+                          context.read<ViolationProvider>().fetchViolations(),
+                          context.read<VehicleProvider>().fetchVehicles(),
+                          context
+                              .read<NotificationProvider>()
+                              .fetchNotifications(),
+                          context
+                              .read<ReservationProvider>()
+                              .fetchReservations(),
+                        ]);
+                      },
+                      child: CustomScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        slivers: [
+                          // Extended App Bar with Profile & Glassmorphism Header
+                          SliverAppBar(
+                            expandedHeight: 120.0,
+                            floating: false,
+                            pinned: true,
+                            elevation: 0,
+                            backgroundColor: AppTheme.primaryColor,
+                            leading: IconButton(
+                              icon: const Icon(Icons.menu, color: Colors.white),
+                              onPressed: () =>
+                                  Scaffold.of(context).openDrawer(),
                             ),
-                            title: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                            flexibleSpace: FlexibleSpaceBar(
+                              titlePadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              title: Text(
+                                AppLocalizations.of(context).appTitle,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              background: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      AppTheme.primaryColor,
+                                      AppTheme.primaryColor.withValues(
+                                        alpha: 0.8,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                child: Stack(
                                   children: [
-                                    Text(
-                                      AppLocalizations.of(context).appTitle,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
+                                    Positioned(
+                                      right: -20,
+                                      top: -20,
+                                      child: CircleAvatar(
+                                        radius: 60,
+                                        backgroundColor: Colors.white
+                                            .withValues(alpha: 0.1),
                                       ),
                                     ),
                                   ],
                                 ),
-                              ],
+                              ),
                             ),
-                            background: Container(color: AppTheme.primaryColor),
                           ),
-                        ),
 
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                // 1. Smart Status Card (Hero)
-                                _buildSmartStatusCard(
-                                  context,
-                                  parking,
-                                  reservations,
-                                ),
-                                const SizedBox(height: 24),
-
-                                // 2. Data-Rich Alerts Section
-                                _buildAlertsSection(
-                                  context,
-                                  violations,
-                                  notifications,
-                                  payment,
-                                ),
-
-                                // Phase 7: Recent & Favorite Zones Carousel
-                                if (zoneProvider.recentZones.isNotEmpty) ...[
-                                  _buildRecentZonesSection(
-                                    context,
-                                    zoneProvider,
-                                  ),
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  // 1. Smart Status Card (Hero)
+                                  if (parking.isLoading &&
+                                      parking.activeSessions.isEmpty)
+                                    _buildSkeletonLoader(context)
+                                  else
+                                    _buildSmartStatusCard(
+                                      context,
+                                      parking,
+                                      reservations,
+                                    ),
                                   const SizedBox(height: 24),
-                                ],
 
-                                // 3. Nearby Zones Carousel
-                                _buildNearbyZonesSection(context, parking),
+                                  // 2. Data-Rich Alerts Section
+                                  if (parking.isLoading &&
+                                      violations.violations.isEmpty)
+                                    _buildSkeletonLoader(context, height: 80)
+                                  else
+                                    _buildAlertsSection(
+                                      context,
+                                      violations,
+                                      notifications,
+                                      payment,
+                                    ),
 
-                                // 4. Quick Actions Grid
-                                Text(
-                                  AppLocalizations.of(context).quickActions,
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                GridView.count(
-                                  crossAxisCount: 4,
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  mainAxisSpacing: 16,
-                                  crossAxisSpacing: 8,
-                                  childAspectRatio: 0.85,
-                                  children: [
-                                    _buildQuickActionItem(
+                                  // Phase 7: Recent & Favorite Zones Carousel
+                                  if (zoneProvider.recentZones.isNotEmpty) ...[
+                                    _buildRecentZonesSection(
                                       context,
-                                      AppLocalizations.of(context).myVehicles,
-                                      Icons.directions_car_filled_outlined,
-                                      AppTheme.primaryColor,
-                                      () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const VehicleListScreen(),
-                                        ),
-                                      ),
+                                      zoneProvider,
                                     ),
-                                    _buildQuickActionItem(
-                                      context,
-                                      AppLocalizations.of(context).reservations,
-                                      Icons.calendar_month_outlined,
-                                      AppTheme.primaryColor,
-                                      () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const CreateReservationScreen(),
-                                        ),
-                                      ),
-                                    ),
-                                    _buildQuickActionItem(
-                                      context,
-                                      AppLocalizations.of(context).wallet,
-                                      Icons.account_balance_wallet_outlined,
-                                      AppTheme.primaryColor,
-                                      () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const WalletScreen(),
-                                        ),
-                                      ),
-                                    ),
-                                    _buildQuickActionItem(
-                                      context,
-                                      AppLocalizations.of(context).aiHelp,
-                                      Icons.chat_bubble_outline_rounded,
-                                      AppTheme.accentColor,
-                                      () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const AIChatScreen(),
-                                        ),
-                                      ),
-                                    ),
+                                    const SizedBox(height: 24),
                                   ],
-                                ),
-                                const SizedBox(height: 32),
 
-                                // 5. Recent Activity
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
+                                  // 3. Nearby Zones Carousel
+                                  if (parking.isLoading &&
+                                      parking.zones.isEmpty)
+                                    _buildSkeletonLoader(context, height: 140)
+                                  else
+                                    _buildNearbyZonesSection(context, parking),
+
+                                  // 4. Quick Actions Grid
+                                  Text(
+                                    AppLocalizations.of(context).quickActions,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppTheme.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  GridView.count(
+                                    crossAxisCount: 4,
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    mainAxisSpacing: 16,
+                                    crossAxisSpacing: 8,
+                                    childAspectRatio: 0.85,
+                                    children: [
+                                      _buildQuickActionItem(
+                                        context,
+                                        AppLocalizations.of(context).myVehicles,
+                                        Icons.directions_car_filled_outlined,
+                                        AppTheme.primaryColor,
+                                        () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const VehicleListScreen(),
+                                          ),
+                                        ),
+                                      ),
+                                      _buildQuickActionItem(
+                                        context,
+                                        AppLocalizations.of(
+                                          context,
+                                        ).reservations,
+                                        Icons.calendar_month_outlined,
+                                        AppTheme.primaryColor,
+                                        () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const CreateReservationScreen(),
+                                          ),
+                                        ),
+                                      ),
+                                      _buildQuickActionItem(
+                                        context,
+                                        AppLocalizations.of(context).wallet,
+                                        Icons.account_balance_wallet_outlined,
+                                        AppTheme.primaryColor,
+                                        () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const WalletScreen(),
+                                          ),
+                                        ),
+                                      ),
+                                      _buildQuickActionItem(
+                                        context,
+                                        AppLocalizations.of(context).aiHelp,
+                                        Icons.chat_bubble_outline_rounded,
+                                        AppTheme.accentColor,
+                                        () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const AIChatScreen(),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 32),
+
+                                  // 5. Recent Activity
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        AppLocalizations.of(
+                                          context,
+                                        ).recentActivity,
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppTheme.textPrimary,
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          final homeState = context
+                                              .findAncestorStateOfType<
+                                                HomeScreenState
+                                              >();
+                                          if (homeState != null) {
+                                            homeState.setTab(2);
+                                          }
+                                        },
+                                        child: Text(
+                                          AppLocalizations.of(context).viewAll,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (parking.isLoading &&
+                                      parking.sessions.isEmpty)
+                                    _buildSkeletonLoader(context, height: 100)
+                                  else if (parking.sessions.isEmpty)
+                                    _buildModernEmptyState(
                                       AppLocalizations.of(
                                         context,
-                                      ).recentActivity,
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppTheme.textPrimary,
-                                      ),
-                                    ),
-                                    TextButton(
-                                      onPressed: () {
-                                        final homeState = context
-                                            .findAncestorStateOfType<
-                                              HomeScreenState
-                                            >();
-                                        if (homeState != null) {
-                                          homeState.setTab(2);
-                                        }
-                                      },
-                                      child: Text(
-                                        AppLocalizations.of(context).viewAll,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                if (parking.sessions.isEmpty)
-                                  _buildModernEmptyState(
-                                    AppLocalizations.of(
-                                      context,
-                                    ).noRecentSessions,
-                                  )
-                                else
-                                  ...parking.sessions
-                                      .take(3)
-                                      .map(
-                                        (s) => _buildModernActivityItem(
-                                          context,
-                                          s,
-                                        ),
-                                      ),
-                                const SizedBox(height: 24),
-                              ],
+                                      ).noRecentSessions,
+                                    )
+                                  else
+                                    for (var s in parking.sessions.take(3))
+                                      _buildModernActivityItem(context, s),
+                                  const SizedBox(height: 24),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  );
+                        ],
+                      ), // CustomScrollView
+                    ), // RefreshIndicator
+                  ); // SafeArea
                 },
           ),
     );
@@ -403,168 +442,187 @@ class _HomeDashboardState extends State<HomeDashboard> {
             builder: (context) => ActiveSessionScreen(session: session),
           ),
         ),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppTheme.primaryColor, AppTheme.primaryDark],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryColor.withValues(alpha: 0.3),
-                blurRadius: 15,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.timer, color: Colors.white, size: 14),
-                        const SizedBox(width: 4),
-                        Text(
-                          AppLocalizations.of(context).activeParking,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(
-                    Icons.arrow_forward_ios,
-                    color: Colors.white,
-                    size: 16,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primaryColor.withValues(alpha: 0.7),
+                    AppTheme.primaryDark.withValues(alpha: 0.7),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.2),
+                    blurRadius: 15,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Text(
-                session.zoneName,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                session.vehiclePlate,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.white.withValues(alpha: 0.8),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        AppLocalizations.of(context).timeLeft,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 11,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.timer,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              AppLocalizations.of(context).activeParking,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Builder(
-                        builder: (context) {
-                          final remaining =
-                              session.endTime?.difference(DateTime.now()) ??
-                              Duration.zero;
-                          return Text(
-                            _formatDuration(
-                              remaining.isNegative ? Duration.zero : remaining,
+                      const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    session.zoneName,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    session.vehiclePlate,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withValues(alpha: 0.8),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context).timeLeft,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontSize: 11,
                             ),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                          ),
+                          const SizedBox(height: 2),
+                          Builder(
+                            builder: (context) {
+                              final remaining =
+                                  session.endTime?.difference(DateTime.now()) ??
+                                  Duration.zero;
+                              return Text(
+                                _formatDuration(
+                                  remaining.isNegative
+                                      ? Duration.zero
+                                      : remaining,
+                                ),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+
+                      Container(
+                        width: 1,
+                        height: 30,
+                        color: Colors.white.withValues(alpha: 0.2),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context).currentCost,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Consumer<SettingsProvider>(
+                            builder: (context, settings, _) => Text(
+                              CurrencyFormatter.formatCurrency(
+                                session.totalCost,
+                                settings.countryConfig,
+                              ),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ActiveSessionScreen(session: session),
                             ),
                           );
                         },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: AppTheme.primaryColor,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text('View'),
                       ),
                     ],
-                  ),
-
-                  Container(
-                    width: 1,
-                    height: 30,
-                    color: Colors.white.withValues(alpha: 0.2),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        AppLocalizations.of(context).currentCost,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 11,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Consumer<SettingsProvider>(
-                        builder: (context, settings, _) => Text(
-                          CurrencyFormatter.formatCurrency(
-                            session.totalCost,
-                            settings.countryConfig,
-                          ),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              ActiveSessionScreen(session: session),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppTheme.primaryColor,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: const Text('View'),
                   ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       );
@@ -572,7 +630,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
     // B. Upcoming Reservation Logic
     // Sort and find next upcoming reservation
-    final upcoming =
+    final upcomingList =
         reservations.reservations
             .where(
               (r) =>
@@ -582,8 +640,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
             .toList()
           ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
-    if (upcoming.isNotEmpty) {
-      final reservation = upcoming.first;
+    if (upcomingList.isNotEmpty) {
+      final reservation = upcomingList.first;
       final timeUntil = reservation.startTime.difference(DateTime.now());
       String timeDisplay;
       if (timeUntil.inHours > 0) {
@@ -1282,6 +1340,21 @@ class _HomeDashboardState extends State<HomeDashboard> {
               style: TextStyle(color: AppTheme.successColor, fontSize: 11),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonLoader(BuildContext context, {double height = 160}) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        height: height,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
         ),
       ),
     );

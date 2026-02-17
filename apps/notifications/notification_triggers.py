@@ -6,11 +6,33 @@ in the parking system (parking sessions, payments, violations, etc.)
 """
 
 import logging
+import json
 from django.utils import timezone
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from .models import NotificationEvent
 from .firebase_service import send_notification_to_user
 
 logger = logging.getLogger(__name__)
+
+def broadcast_parking_update(user, data):
+    """
+    Broadcast a parking update to the user via WebSocket
+    """
+    channel_layer = get_channel_layer()
+    user_group_name = f"user_{user.id}".replace("-", "_")
+    
+    try:
+        async_to_sync(channel_layer.group_send)(
+            user_group_name,
+            {
+                'type': 'parking_update',
+                'data': data
+            }
+        )
+        logger.info(f"Broadcasted WebSocket update to user {user.id}")
+    except Exception as e:
+        logger.error(f"Failed to broadcast WebSocket update: {str(e)}")
 
 
 def notify_parking_started(session):
@@ -55,7 +77,15 @@ def notify_parking_started(session):
         notification_event=notification
     )
     
+    # ... existing logic ...
     logger.info(f"Sent parking started notification to user {user.id} for session {session.id}")
+    
+    # WebSocket broadcast
+    broadcast_parking_update(user, {
+        'event': 'parking_started',
+        'session_id': str(session.id),
+        'status': session.status
+    })
 
 
 def notify_parking_expiring_soon(session, minutes_remaining: int):
@@ -156,7 +186,16 @@ def notify_parking_ended(session):
         notification_event=notification
     )
     
+    # ... existing logic ...
     logger.info(f"Sent parking ended notification to user {user.id} for session {session.id}")
+
+    # WebSocket broadcast
+    broadcast_parking_update(user, {
+        'event': 'parking_ended',
+        'session_id': str(session.id),
+        'status': session.status,
+        'final_cost': str(session.final_cost)
+    })
 
 
 def notify_payment_success(payment):
@@ -309,35 +348,86 @@ def notify_violation_issued(violation):
 def notify_custom(user, title: str, message: str, category: str = 'system', data: dict = None):
     """
     Send a custom notification to a user
-    
-    Args:
-        user: User instance
-        title: Notification title
-        message: Notification message
-        category: Notification category
-        data: Optional custom data dictionary
     """
     notification = NotificationEvent.objects.create(
         user=user,
         title=title,
         message=message,
-        type='other',
+        type='custom_admin',
         category=category,
+        show_as_dialog=True,  # Set to True for admin messages
         metadata=data or {}
     )
     
+    # Combined data for push and websocket
+    notification_data = {
+        'type': 'custom_admin',
+        'show_dialog': 'true',
+        'priority': (data or {}).get('priority', 'medium'),
+        **(data or {})
+    }
+
     send_notification_to_user(
         user=user,
         title=title,
         body=message,
-        data={
-            'type': 'custom',
-            **(data or {})
-        },
+        data=notification_data,
         notification_event=notification
     )
     
+    # Also broadcast via WebSocket
+    broadcast_parking_update(user, {
+        'event': 'custom_notification',
+        'title': title,
+        'message': message,
+        **notification_data
+    })
+    
     logger.info(f"Sent custom notification to user {user.id}")
+
+
+def notify_campaign(user, title: str, message: str, image_url: str = None, data: dict = None):
+    """
+    Send a promotional campaign notification to a user
+    """
+    notification = NotificationEvent.objects.create(
+        user=user,
+        title=title,
+        message=message,
+        type='promotional_offer',
+        category='promo',
+        is_promotional=True,
+        show_as_dialog=True,
+        metadata={
+            **(data or {}),
+            'image_url': image_url
+        }
+    )
+    
+    notification_data = {
+        'type': 'campaign',
+        'show_dialog': 'true',
+        'image_url': image_url or '',
+        **(data or {})
+    }
+
+    send_notification_to_user(
+        user=user,
+        title=title,
+        body=message,
+        data=notification_data,
+        notification_event=notification
+    )
+    
+    # Broadcast via WebSocket for real-time pop-up if user is online
+    broadcast_parking_update(user, {
+        'event': 'campaign',
+        'title': title,
+        'message': message,
+        **notification_data
+    })
+    
+    logger.info(f"Sent campaign notification to user {user.id}")
 
 
 def notify_officer_zone_assignment(officer, zone):

@@ -8,6 +8,7 @@ import 'package:parking_user_app/features/parking/models/zone_model.dart';
 import 'package:parking_user_app/features/parking/services/parking_service.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_user_app/features/parking/providers/zone_provider.dart';
+import 'package:parking_user_app/core/websocket_service.dart';
 import 'package:provider/provider.dart';
 // Removed: flutter_overlay_window
 
@@ -29,6 +30,18 @@ class ParkingProvider with ChangeNotifier {
     _startTimer();
     // Initialize notifications
     initNotifications();
+
+    // Listen to WebSocket updates
+    WebSocketService().updates.listen((update) {
+      if (update['type'] == 'parking_update') {
+        debugPrint(
+          '[ParkingProvider] Received WebSocket update: ${update['data']}',
+        );
+        fetchSessions();
+        // Also refresh zones if occupancy changed significantly
+        fetchZones();
+      }
+    });
   }
 
   void _startTimer() {
@@ -36,16 +49,15 @@ class ParkingProvider with ChangeNotifier {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
       if (activeSessions.isNotEmpty) {
         final session = activeSessions.first;
-        // Every 60 seconds, refresh from API
+        // Every 60 seconds, refresh from API as fallback (Scalability Optimization)
         if (timer.tick % 60 == 0) {
           await fetchSessions();
         }
         // Every second, update the local notifications
         await updateNotifications(session);
 
-        if (timer.tick % 10 == 0) {
-          notifyListeners();
-        }
+        // Notify UI every second for the timer countdown to look smooth
+        notifyListeners();
       }
     });
   }

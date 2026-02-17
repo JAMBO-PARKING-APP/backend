@@ -22,16 +22,20 @@ class ZoneDetailSerializer(serializers.ModelSerializer):
                   'diagram_width', 'diagram_height', 'slots', 'created_at']
     
     def get_available_slots(self, obj):
-        return obj.available_slots
+        return getattr(obj, 'annotated_available_slots', obj.available_slots)
     
     def get_occupied_slots(self, obj):
-        return obj.occupied_slots
+        return getattr(obj, 'annotated_active_sessions', obj.occupied_slots)
     
     def get_capacity(self, obj):
-        return obj.capacity
+        return getattr(obj, 'annotated_capacity', obj.capacity)
     
     def get_occupancy_rate(self, obj):
-        return round(obj.occupancy_rate, 2)
+        capacity = getattr(obj, 'annotated_capacity', obj.capacity)
+        occupied = getattr(obj, 'annotated_active_sessions', obj.occupied_slots)
+        if capacity == 0:
+            return 0
+        return round((occupied / capacity) * 100, 2)
 
 class ZoneListSerializer(serializers.ModelSerializer):
     available_slots = serializers.SerializerMethodField()
@@ -46,16 +50,20 @@ class ZoneListSerializer(serializers.ModelSerializer):
                   'longitude', 'radius_meters', 'zone_image', 'created_at']
     
     def get_available_slots(self, obj):
-        return obj.available_slots
+        return getattr(obj, 'annotated_available_slots', obj.available_slots)
     
     def get_occupied_slots(self, obj):
-        return obj.occupied_slots
+        return getattr(obj, 'annotated_active_sessions', obj.occupied_slots)
     
     def get_capacity(self, obj):
-        return obj.capacity
+        return getattr(obj, 'annotated_capacity', obj.capacity)
     
     def get_occupancy_rate(self, obj):
-        return round(obj.occupancy_rate, 2)
+        capacity = getattr(obj, 'annotated_capacity', obj.capacity)
+        occupied = getattr(obj, 'annotated_active_sessions', obj.occupied_slots)
+        if capacity == 0:
+            return 0
+        return round((occupied / capacity) * 100, 2)
 
 class ParkingSessionSerializer(serializers.ModelSerializer):
     zone_name = serializers.CharField(source='zone.name', read_only=True)

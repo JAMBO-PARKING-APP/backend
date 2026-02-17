@@ -20,8 +20,21 @@ class ApiClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          // Don't add token for auth endpoints
-          if (!options.path.contains('auth/')) {
+          // Don't add token for public auth endpoints only
+          final publicAuthPaths = [
+            'auth/login/',
+            'auth/register/',
+            'auth/verify-otp/',
+            'auth/resend-otp/',
+            'auth/forgot-password/',
+            'auth/reset-password/',
+          ];
+
+          bool isPublicAuth = publicAuthPaths.any(
+            (path) => options.path.contains(path),
+          );
+
+          if (!isPublicAuth) {
             final token = await _storageManager.getAccessToken();
             if (token != null) {
               options.headers['Authorization'] = 'Bearer $token';
@@ -33,7 +46,7 @@ class ApiClient {
             }
           } else {
             debugPrint(
-              '[ApiClient] Skipping token for auth endpoint: ${options.path}',
+              '[ApiClient] Skipping token for public auth endpoint: ${options.path}',
             );
           }
           return handler.next(options);

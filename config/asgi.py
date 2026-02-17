@@ -11,9 +11,11 @@ django_asgi_app = get_asgi_application()
 # Import routing here to avoid AppRegistryNotReady error
 from apps.notifications.routing import websocket_urlpatterns
 
+from apps.common.channels_middleware import JWTAuthMiddlewareStack
+
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
-    "websocket": AuthMiddlewareStack(
+    "websocket": JWTAuthMiddlewareStack(
         URLRouter(
             websocket_urlpatterns
         )

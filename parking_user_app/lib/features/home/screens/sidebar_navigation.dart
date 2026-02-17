@@ -24,92 +24,139 @@ class SidebarNavigation extends StatelessWidget {
         color: Theme.of(context).scaffoldBackgroundColor,
         child: Column(
           children: [
-            // Header with user profile - Modern Design
+            // Header with user profile - Modern Glassmorphism Design
             Container(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 20),
+              width: double.infinity,
               decoration: BoxDecoration(
                 color: AppTheme.primaryColor,
                 borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.15),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+                    color: AppTheme.primaryColor.withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
                   ),
                 ],
               ),
-              child: SafeArea(
-                bottom: false,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
+                ),
+                child: Stack(
                   children: [
-                    // User Avatar with Badge
-                    Stack(
-                      alignment: Alignment.bottomRight,
-                      children: [
-                        CircleAvatar(
-                          radius: 40,
-                          backgroundColor: Colors.white.withValues(alpha: 0.2),
-                          backgroundImage: (auth.user?.profilePhoto != null)
-                              ? CachedNetworkImageProvider(
-                                  auth.user!.profilePhoto!,
-                                )
-                              : null,
-                          child: (auth.user?.profilePhoto == null)
-                              ? Text(
-                                  (auth.user?.firstName.isNotEmpty ?? false)
-                                      ? auth.user!.firstName
-                                            .substring(0, 1)
-                                            .toUpperCase()
-                                      : 'U',
-                                  style: const TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
+                    // Decorative Abstract Shapes for Glassmorphism Background
+                    Positioned(
+                      top: -50,
+                      right: -50,
+                      child: Container(
+                        width: 150,
+                        height: 150,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.1),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: -30,
+                      left: -20,
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.05),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 60, 20, 32),
+                      child: SafeArea(
+                        bottom: false,
+                        top: false,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // User Avatar with Badge
+                            Stack(
+                              alignment: Alignment.bottomRight,
+                              children: [
+                                CircleAvatar(
+                                  radius: 40,
+                                  backgroundColor: Colors.white.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                  backgroundImage:
+                                      (auth.user?.profilePhoto != null)
+                                      ? CachedNetworkImageProvider(
+                                          auth.user!.profilePhoto!,
+                                        )
+                                      : null,
+                                  child: (auth.user?.profilePhoto == null)
+                                      ? Text(
+                                          (auth.user?.firstName.isNotEmpty ??
+                                                  false)
+                                              ? auth.user!.firstName
+                                                    .substring(0, 1)
+                                                    .toUpperCase()
+                                              : 'U',
+                                          style: const TextStyle(
+                                            fontSize: 28,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : null,
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.successColor,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.check,
+                                    size: 12,
                                     color: Colors.white,
                                   ),
-                                )
-                              : null,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            // User Name
+                            Text(
+                              '${auth.user?.firstName ?? 'User'} ${auth.user?.lastName ?? ''}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            // User Phone
+                            Text(
+                              auth.user?.phone ?? 'No Phone',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.white.withValues(alpha: 0.8),
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: AppTheme.successColor,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                          child: const Icon(
-                            Icons.check,
-                            size: 12,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // User Name
-                    Text(
-                      '${auth.user?.firstName ?? 'User'} ${auth.user?.lastName ?? ''}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    // User Phone
-                    Text(
-                      auth.user?.phone ?? 'No Phone',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.8),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -119,7 +166,7 @@ class SidebarNavigation extends StatelessWidget {
             // Navigation items - Modern Spacing
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 children: [
                   _SidebarItem(
                     icon: Icons.home_filled,
@@ -165,15 +212,15 @@ class SidebarNavigation extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8.0,
-                      vertical: 6.0,
+                      vertical: 8.0,
                     ),
                     child: Container(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                         gradient: LinearGradient(
                           colors: [
-                            AppTheme.accentColor.withValues(alpha: 0.1),
-                            AppTheme.primaryColor.withValues(alpha: 0.05),
+                            AppTheme.accentColor.withValues(alpha: 0.12),
+                            AppTheme.primaryColor.withValues(alpha: 0.08),
                           ],
                         ),
                         border: Border.all(
@@ -188,35 +235,32 @@ class SidebarNavigation extends StatelessWidget {
                             onTabChanged(3);
                             Navigator.pop(context);
                           },
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
+                            padding: const EdgeInsets.all(16.0),
                             child: Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.all(8),
+                                  padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
                                     color: AppTheme.accentColor.withValues(
                                       alpha: 0.2,
                                     ),
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: const Icon(
                                     Icons.chat_bubble_outline_rounded,
-                                    size: 20,
+                                    size: 22,
                                     color: AppTheme.accentColor,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                Expanded(
+                                const Expanded(
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      const Text(
+                                      Text(
                                         'AI Assistant',
                                         style: TextStyle(
                                           fontSize: 14,
@@ -227,7 +271,7 @@ class SidebarNavigation extends StatelessWidget {
                                       Text(
                                         'Get help anytime',
                                         style: TextStyle(
-                                          fontSize: 11,
+                                          fontSize: 12,
                                           color: AppTheme.textSecondary,
                                         ),
                                       ),
@@ -237,7 +281,7 @@ class SidebarNavigation extends StatelessWidget {
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 8,
-                                    vertical: 3,
+                                    vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
                                     color: AppTheme.accentColor,
@@ -246,7 +290,7 @@ class SidebarNavigation extends StatelessWidget {
                                   child: const Text(
                                     'AI',
                                     style: TextStyle(
-                                      fontSize: 9,
+                                      fontSize: 10,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
                                     ),
@@ -299,7 +343,7 @@ class SidebarNavigation extends StatelessWidget {
 
             // Footer with logout - Modern Design
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(20.0),
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -307,13 +351,16 @@ class SidebarNavigation extends StatelessWidget {
                     Navigator.pop(context);
                     _showLogoutDialog(context, auth);
                   },
-                  icon: const Icon(Icons.logout_outlined, size: 18),
+                  icon: const Icon(Icons.logout_outlined, size: 20),
                   label: const Text('Logout'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.errorColor,
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                 ),
               ),
@@ -374,7 +421,7 @@ class _SidebarItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -396,7 +443,7 @@ class _SidebarItem extends StatelessWidget {
               children: [
                 Icon(
                   icon,
-                  size: 22,
+                  size: 24,
                   color: isSelected
                       ? AppTheme.primaryColor
                       : AppTheme.textSecondary,
@@ -406,7 +453,7 @@ class _SidebarItem extends StatelessWidget {
                   child: Text(
                     label,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 15,
                       fontWeight: isSelected
                           ? FontWeight.w600
                           : FontWeight.w500,

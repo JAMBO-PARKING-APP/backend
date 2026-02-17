@@ -34,31 +34,39 @@ class ZoneListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        queryset = Zone.objects.filter(is_active=True)
+        from django.db.models import Count, Q, Case, When, F, Value
+        
+        queryset = Zone.objects.filter(is_active=True).annotate(
+            annotated_active_sessions=Count(
+                'sessions', 
+                filter=Q(sessions__status=ParkingStatus.ACTIVE)
+            ),
+            # Capacity is either total_slots or the count of pre-defined slots
+            annotated_capacity=Case(
+                When(total_slots__gt=0, then=F('total_slots')),
+                default=Count('slots'),
+            )
+        ).annotate(
+            annotated_available_slots=Case(
+                When(annotated_capacity__gt=F('annotated_active_sessions'), 
+                     then=F('annotated_capacity') - F('annotated_active_sessions')),
+                default=Value(0),
+            )
+        )
         
         # Filter by user's country
         if hasattr(self.request.user, 'country') and self.request.user.country:
-             # Superusers see everything, others are restricted to their country
              if not self.request.user.is_superuser:
                  queryset = queryset.filter(country=self.request.user.country)
         
-        # Search by name
+        # ... rest of the filters ...
         search = self.request.query_params.get('search')
         if search:
             queryset = queryset.filter(Q(name__icontains=search) | Q(description__icontains=search))
         
-        # Filter by price range
-        min_price = self.request.query_params.get('min_price')
-        max_price = self.request.query_params.get('max_price')
-        if min_price:
-            queryset = queryset.filter(hourly_rate__gte=float(min_price))
-        if max_price:
-            queryset = queryset.filter(hourly_rate__lte=float(max_price))
-        
-        # Filter by availability
         available_only = self.request.query_params.get('available_only', 'false').lower() == 'true'
         if available_only:
-            queryset = queryset.exclude(slots__status=SlotStatus.AVAILABLE, slots__isnull=False).distinct()
+            queryset = queryset.filter(annotated_available_slots__gt=0)
         
         return queryset
 

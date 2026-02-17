@@ -235,9 +235,10 @@ class ParkingSession(BaseModel):
         if self.estimated_cost > self.final_cost:
             refund_amount = self.estimated_cost - self.final_cost
             
-            # Credit wallet
+            # Credit wallet atomically
+            from django.db.models import F
             user = self.vehicle.user
-            user.wallet_balance += refund_amount
+            user.wallet_balance = F('wallet_balance') + refund_amount
             user.save(update_fields=['wallet_balance'])
             
             # Create wallet transaction record

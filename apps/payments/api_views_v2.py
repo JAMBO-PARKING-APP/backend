@@ -371,10 +371,10 @@ class PesapalUserCallbackView(APIView):
                 is_wallet_topup = trans.processor_response.get('is_wallet_topup', False) if trans.processor_response else False
                 if is_wallet_topup:
                     with transaction.atomic():
+                        from django.db.models import F
                         user = trans.user
-                        user.wallet_balance += trans.amount
-                        # Reload user to ensure balance update persistence if needed or rely on atomic block
-                        user.save()
+                        user.wallet_balance = F('wallet_balance') + trans.amount
+                        user.save(update_fields=['wallet_balance'])
                         
                         from django.utils.translation import gettext as _
                         WalletTransaction.objects.create(
@@ -468,9 +468,10 @@ class PesapalIPNAPIView(APIView):
                 is_wallet_topup = trans.processor_response.get('is_wallet_topup', False) if trans.processor_response else False
                 if is_wallet_topup:
                     with transaction.atomic():
+                        from django.db.models import F
                         user = trans.user
-                        user.wallet_balance += trans.amount
-                        user.save()
+                        user.wallet_balance = F('wallet_balance') + trans.amount
+                        user.save(update_fields=['wallet_balance'])
                         
                         from django.utils.translation import gettext as _
                         WalletTransaction.objects.create(

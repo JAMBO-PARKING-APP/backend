@@ -51,14 +51,24 @@ class NotificationAdmin(admin.ModelAdmin):
             if notification.metadata:
                 data.update(notification.metadata)
             
+            from apps.notifications.notification_triggers import broadcast_parking_update
+            
             # Send notification
             success = send_notification_to_user(
                 user=notification.user,
                 title=notification.title,
-                body=notification.message,
+                body=notification.body if hasattr(notification, 'body') else notification.message,
                 data=data,
                 notification_event=notification
             )
+            
+            # Also broadcast via WebSocket
+            broadcast_parking_update(notification.user, {
+                'event': 'admin_notification',
+                'title': notification.title,
+                'message': notification.message,
+                **data
+            })
             
             if success:
                 sent_count += 1

@@ -3,6 +3,7 @@ import 'package:parking_user_app/features/auth/models/user_model.dart';
 import 'package:parking_user_app/features/auth/services/auth_service.dart';
 import 'package:parking_user_app/core/storage_manager.dart';
 import 'package:parking_user_app/core/fcm_service.dart';
+import 'package:parking_user_app/core/websocket_service.dart';
 import 'dart:convert';
 
 enum AuthStatus { authenticated, unauthenticated, authenticating, initial }
@@ -46,6 +47,8 @@ class AuthProvider with ChangeNotifier {
         debugPrint(
           '[AuthProvider] Loaded profile from storage: ${_user?.firstName}',
         );
+        // Connect WebSocket after loading from storage
+        WebSocketService().connect();
       } catch (e) {
         debugPrint('[AuthProvider] Error parsing cached user: $e');
       }
@@ -122,6 +125,8 @@ class AuthProvider with ChangeNotifier {
       });
 
       notifyListeners();
+      // Connect WebSocket after login
+      WebSocketService().connect();
       debugPrint('[AuthProvider] Notified listeners - UI should update now');
       return true;
     } else {
@@ -178,6 +183,8 @@ class AuthProvider with ChangeNotifier {
       });
 
       notifyListeners();
+      // Connect WebSocket after OTP verification
+      WebSocketService().connect();
       return true;
     } else {
       _status = AuthStatus.unauthenticated;
@@ -194,6 +201,10 @@ class AuthProvider with ChangeNotifier {
     await _authService.logout();
     _user = null;
     _status = AuthStatus.unauthenticated;
+
+    // Disconnect WebSocket on logout
+    WebSocketService().disconnect();
+
     notifyListeners();
   }
 
