@@ -11,6 +11,9 @@ import 'package:parking_officer_app/features/parking/screens/dashboard_screen.da
 import 'package:parking_officer_app/features/enforcement/providers/officer_provider.dart';
 import 'package:parking_officer_app/features/violations/providers/enforcement_provider.dart';
 import 'package:parking_officer_app/features/chat/providers/chat_provider.dart';
+import 'package:parking_officer_app/core/settings_provider.dart';
+import 'package:parking_officer_app/core/localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
   try {
@@ -42,6 +45,7 @@ void main() async {
           ChangeNotifierProvider(create: (_) => VehicleSearchProvider()),
           ChangeNotifierProvider(create: (_) => EnforcementProvider()),
           ChangeNotifierProvider(create: (_) => ChatProvider()),
+          ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ],
         child: const SpaceOfficerApp(),
       ),
@@ -69,12 +73,24 @@ class SpaceOfficerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: navigatorKey,
-      title: 'Space Officer',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.officerTheme,
-      home: const AuthWrapper(),
+    return Consumer<SettingsProvider>(
+      builder: (context, settings, _) {
+        return MaterialApp(
+          navigatorKey: navigatorKey,
+          title: 'Space Officer',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.officerTheme,
+          locale: settings.currentLocale,
+          supportedLocales: settings.supportedLocales,
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: const AuthWrapper(),
+        );
+      },
     );
   }
 }

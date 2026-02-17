@@ -13,6 +13,7 @@ import 'package:parking_officer_app/features/auth/screens/profile_screen.dart';
 import 'package:parking_officer_app/features/chat/screens/chat_list_screen.dart';
 
 import 'package:parking_officer_app/core/location_service.dart';
+import 'package:parking_officer_app/core/localizations.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -65,9 +66,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           errorBuilder: (c, e, s) => const SizedBox(),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          'Space Officer',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                        Text(
+                          AppLocalizations.of(context).appTitle,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -84,26 +85,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: AppTheme.primaryColor,
                     fontWeight: FontWeight.w600,
                   ),
-                  destinations: const [
+                  destinations: [
                     NavigationRailDestination(
-                      icon: Icon(Icons.dashboard),
-                      label: Text('Zones'),
+                      icon: const Icon(Icons.dashboard),
+                      label: Text(AppLocalizations.of(context).zones),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.qr_code_scanner),
-                      label: Text('Scan'),
+                      icon: const Icon(Icons.qr_code_scanner),
+                      label: Text(AppLocalizations.of(context).scan),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.search),
-                      label: Text('Search'),
+                      icon: const Icon(Icons.search),
+                      label: Text(AppLocalizations.of(context).search),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.chat),
-                      label: Text('Chat'),
+                      icon: const Icon(Icons.chat),
+                      label: Text(AppLocalizations.of(context).chat),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.history),
-                      label: Text('History'),
+                      icon: const Icon(Icons.history),
+                      label: Text(AppLocalizations.of(context).history),
                     ),
                   ],
                 ),
@@ -116,7 +117,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         // Mobile/tablet: use drawer
         return Scaffold(
-          appBar: AppBar(title: const Text('Space Officer')),
+          appBar: AppBar(title: Text(AppLocalizations.of(context).appTitle)),
           drawer: Drawer(
             child: SafeArea(
               child: Column(
@@ -146,7 +147,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   ListTile(
                     leading: const Icon(Icons.dashboard),
-                    title: const Text('Zones'),
+                    title: Text(AppLocalizations.of(context).zones),
                     selected: _currentIndex == 0,
                     onTap: () => setState(() {
                       _currentIndex = 0;
@@ -155,7 +156,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   ListTile(
                     leading: const Icon(Icons.qr_code_scanner),
-                    title: const Text('Scan'),
+                    title: Text(AppLocalizations.of(context).scan),
                     selected: _currentIndex == 1,
                     onTap: () => setState(() {
                       _currentIndex = 1;
@@ -164,7 +165,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   ListTile(
                     leading: const Icon(Icons.search),
-                    title: const Text('Search'),
+                    title: Text(AppLocalizations.of(context).search),
                     selected: _currentIndex == 2,
                     onTap: () => setState(() {
                       _currentIndex = 2;
@@ -173,7 +174,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   ListTile(
                     leading: const Icon(Icons.history),
-                    title: const Text('History'),
+                    title: Text(AppLocalizations.of(context).history),
                     selected: _currentIndex == 3,
                     onTap: () => setState(() {
                       _currentIndex = 3;
@@ -182,7 +183,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   ListTile(
                     leading: const Icon(Icons.chat),
-                    title: const Text('Chat'),
+                    title: Text(AppLocalizations.of(context).chat),
                     selected: _currentIndex == 4,
                     onTap: () => setState(() {
                       _currentIndex = 4;
@@ -192,7 +193,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const Spacer(),
                   ListTile(
                     leading: const Icon(Icons.person),
-                    title: const Text('Profile'),
+                    title: Text(AppLocalizations.of(context).profile),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -205,7 +206,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   ListTile(
                     leading: const Icon(Icons.logout),
-                    title: const Text('Logout'),
+                    title: Text(AppLocalizations.of(context).logout),
                     onTap: () {
                       Navigator.pop(context);
                       context.read<AuthProvider>().logout();
@@ -247,9 +248,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             floating: false,
             pinned: true,
             flexibleSpace: FlexibleSpaceBar(
-              title: const Text(
-                'Zone Monitor',
-                style: TextStyle(
+              title: Text(
+                AppLocalizations.of(context).zoneMonitor,
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -268,12 +269,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildStatItem(
-                        'Daily Scans',
+                        AppLocalizations.of(context).dailyScans,
                         context.watch<OfficerProvider>().dailyScans,
                         Icons.qr_code_scanner,
                       ),
                       _buildStatItem(
-                        'Violations',
+                        AppLocalizations.of(context).dailyViolations,
                         context.watch<OfficerProvider>().dailyViolations,
                         Icons.gavel_rounded,
                       ),
@@ -294,7 +295,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           : Colors.white24,
                     ),
                     label: Text(
-                      provider.isOnline ? 'ONLINE' : 'OFFLINE',
+                      provider.isOnline
+                          ? AppLocalizations.of(context).online
+                          : AppLocalizations.of(context).offline,
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -315,13 +318,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Active Zones',
+                    AppLocalizations.of(context).activeZones,
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
                   TextButton.icon(
                     onPressed: () => context.read<ZoneProvider>().fetchZones(),
                     icon: const Icon(Icons.refresh, size: 18),
-                    label: const Text('Refresh'),
+                    label: Text(AppLocalizations.of(context).refresh),
                   ),
                 ],
               ),
@@ -347,7 +350,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           color: Colors.grey[300],
                         ),
                         const SizedBox(height: 16),
-                        const Text('No active zones found.'),
+                        Text(AppLocalizations.of(context).noActiveZones),
                       ],
                     ),
                   ),
@@ -533,7 +536,7 @@ class _ZoneCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          'Zone Code: ${zone.code}',
+                          '${AppLocalizations.of(context).zoneCode}: ${zone.code}',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey[600],
@@ -553,7 +556,7 @@ class _ZoneCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '${(occupancy * 100).toInt()}% Full',
+                      '${(occupancy * 100).toInt()}% ${AppLocalizations.of(context).full}',
                       style: TextStyle(
                         color: color,
                         fontSize: 12,
@@ -567,14 +570,18 @@ class _ZoneCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildMiniStat('Occupied', '${zone.occupiedSlots}', color),
                   _buildMiniStat(
-                    'Available',
+                    AppLocalizations.of(context).occupied,
+                    '${zone.occupiedSlots}',
+                    color,
+                  ),
+                  _buildMiniStat(
+                    AppLocalizations.of(context).available,
                     '${zone.availableSlots}',
                     Colors.green[600]!,
                   ),
                   _buildMiniStat(
-                    'Total',
+                    AppLocalizations.of(context).total,
                     '${zone.totalSlots}',
                     Colors.grey[600]!,
                   ),

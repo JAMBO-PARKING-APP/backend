@@ -9,6 +9,7 @@ import 'package:parking_user_app/features/auth/screens/profile_screen.dart';
 import 'package:parking_user_app/features/parking/providers/parking_provider.dart';
 import 'package:parking_user_app/features/parking/screens/parking_map_screen.dart';
 import 'package:parking_user_app/features/payments/providers/payment_provider.dart';
+import 'package:parking_user_app/core/localizations.dart';
 import 'package:parking_user_app/features/parking/providers/violation_provider.dart';
 import 'package:parking_user_app/features/auth/providers/vehicle_provider.dart';
 import 'package:parking_user_app/features/notifications/providers/notification_provider.dart';
@@ -198,13 +199,13 @@ class _HomeDashboardState extends State<HomeDashboard> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                const Column(
+                                Column(
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Space',
-                                      style: TextStyle(
+                                      AppLocalizations.of(context).appTitle,
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 24,
                                         fontWeight: FontWeight.bold,
@@ -253,9 +254,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
                                 _buildNearbyZonesSection(context, parking),
 
                                 // 4. Quick Actions Grid
-                                const Text(
-                                  'Quick Actions',
-                                  style: TextStyle(
+                                Text(
+                                  AppLocalizations.of(context).quickActions,
+                                  style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                     color: AppTheme.textPrimary,
@@ -272,7 +273,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                                   children: [
                                     _buildQuickActionItem(
                                       context,
-                                      'My Vehicles',
+                                      AppLocalizations.of(context).myVehicles,
                                       Icons.directions_car_filled_outlined,
                                       AppTheme.primaryColor,
                                       () => Navigator.push(
@@ -285,7 +286,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                                     ),
                                     _buildQuickActionItem(
                                       context,
-                                      'Reservations',
+                                      AppLocalizations.of(context).reservations,
                                       Icons.calendar_month_outlined,
                                       AppTheme.primaryColor,
                                       () => Navigator.push(
@@ -298,7 +299,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                                     ),
                                     _buildQuickActionItem(
                                       context,
-                                      'Wallet',
+                                      AppLocalizations.of(context).wallet,
                                       Icons.account_balance_wallet_outlined,
                                       AppTheme.primaryColor,
                                       () => Navigator.push(
@@ -311,7 +312,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                                     ),
                                     _buildQuickActionItem(
                                       context,
-                                      'AI Help',
+                                      AppLocalizations.of(context).aiHelp,
                                       Icons.chat_bubble_outline_rounded,
                                       AppTheme.accentColor,
                                       () => Navigator.push(
@@ -331,9 +332,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    const Text(
-                                      'Recent Activity',
-                                      style: TextStyle(
+                                    Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      ).recentActivity,
+                                      style: const TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
                                         color: AppTheme.textPrimary,
@@ -349,13 +352,17 @@ class _HomeDashboardState extends State<HomeDashboard> {
                                           homeState.setTab(2);
                                         }
                                       },
-                                      child: const Text('View All'),
+                                      child: Text(
+                                        AppLocalizations.of(context).viewAll,
+                                      ),
                                     ),
                                   ],
                                 ),
                                 if (parking.sessions.isEmpty)
                                   _buildModernEmptyState(
-                                    'No recent parking sessions',
+                                    AppLocalizations.of(
+                                      context,
+                                    ).noRecentSessions,
                                   )
                                 else
                                   ...parking.sessions
@@ -428,13 +435,13 @@ class _HomeDashboardState extends State<HomeDashboard> {
                       color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.timer, color: Colors.white, size: 14),
-                        SizedBox(width: 4),
+                        const Icon(Icons.timer, color: Colors.white, size: 14),
+                        const SizedBox(width: 4),
                         Text(
-                          'ACTIVE PARKING',
-                          style: TextStyle(
+                          AppLocalizations.of(context).activeParking,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -475,7 +482,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Time Left',
+                        AppLocalizations.of(context).timeLeft,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.7),
                           fontSize: 11,
@@ -511,7 +518,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Current Cost',
+                        AppLocalizations.of(context).currentCost,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.7),
                           fontSize: 11,
@@ -606,7 +613,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 const Icon(Icons.calendar_today, color: Colors.white, size: 16),
                 const SizedBox(width: 8),
                 Text(
-                  'UPCOMING RESERVATION',
+                  AppLocalizations.of(context).upcomingReservation,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.9),
                     fontSize: 11,
@@ -661,7 +668,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                   );
                 },
                 icon: const Icon(Icons.navigation, size: 16),
-                label: const Text('Navigate to Zone'),
+                label: Text(AppLocalizations.of(context).navigateToZone),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white.withValues(alpha: 0.2),
                   foregroundColor: Colors.white,
@@ -699,9 +706,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'Looking for parking?',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context).lookingForParking,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -709,7 +716,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Find the best spots near you',
+              AppLocalizations.of(context).findSpotsNearYou,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.9),
                 fontSize: 14,
@@ -726,9 +733,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 children: [
                   const Icon(Icons.search, color: AppTheme.textSecondary),
                   const SizedBox(width: 12),
-                  const Text(
-                    'Search destination...',
-                    style: TextStyle(
+                  Text(
+                    AppLocalizations.of(context).searchDestination,
+                    style: const TextStyle(
                       color: AppTheme.textSecondary,
                       fontSize: 14,
                     ),
@@ -772,14 +779,15 @@ class _HomeDashboardState extends State<HomeDashboard> {
           context: context,
           icon: Icons.warning_amber_rounded,
           color: AppTheme.errorColor,
-          title: '${violations.unpaidCount} Unpaid Violations',
+          title:
+              '${violations.unpaidCount} ${AppLocalizations.of(context).unpaidViolations}',
           subtitle: Consumer<SettingsProvider>(
             builder: (context, settings, _) => Text(
               'Total: ${CurrencyFormatter.formatCurrency(violations.totalUnpaidAmount, settings.countryConfig)}',
               style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
             ),
           ),
-          actionLabel: 'Pay Now',
+          actionLabel: AppLocalizations.of(context).payNow,
           onTap: () {
             // Navigate to violations screen (Need to implement or link)
             // For now, toggle main tab to history perhaps?

@@ -128,5 +128,7 @@ class SettingsProvider extends ChangeNotifier {
     Locale('sw'),
     Locale('fr'),
     Locale('es'),
+    Locale('de'),
+    Locale('ar'),
   ];
 }
