@@ -161,6 +161,7 @@ The system maintains itself through a series of scheduled autonomous tasks:
 - [Database Schema & Spec](./docs/database_schema.md)
 - [Mobile Design System](./docs/design_system.md)
 - [Docker & Secrets Management Guide](./docs/deployment_and_secrets.md)
+- [i18n Guide](./docs/i18n_guide.md)
 
 ---
 *© 2026 JAMBO PARK Solutions. Confidential and Proprietary.*
