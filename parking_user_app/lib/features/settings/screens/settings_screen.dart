@@ -38,6 +38,7 @@ class SettingsScreen extends StatelessWidget {
                       const SizedBox(height: 16),
                       SegmentedButton<String>(
                         segments: const [
+                          ButtonSegment(value: 'system', label: Text('System')),
                           ButtonSegment(value: 'en', label: Text('English')),
                           ButtonSegment(value: 'sw', label: Text('Swahili')),
                           ButtonSegment(value: 'fr', label: Text('French')),
@@ -198,6 +199,8 @@ class SettingsScreen extends StatelessWidget {
 
   String _getLanguageName(String code) {
     switch (code) {
+      case 'system':
+        return 'System Default';
       case 'sw':
         return 'Swahili (Kiswahili)';
       case 'fr':

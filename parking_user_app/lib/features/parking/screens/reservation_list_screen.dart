@@ -260,6 +260,8 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
     final walletBalance = authProvider.user?.walletBalance ?? 0.0;
     final cost = reservation.cost;
 
+    if (!context.mounted) return;
+
     showDialog(
       context: context,
       builder: (dialogContext) => PaymentSelectionDialog(
@@ -267,11 +269,13 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
         walletBalance: walletBalance,
         onWalletSelected: () {
           Navigator.pop(dialogContext);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Wallet payment for reservation coming soon'),
-            ),
-          );
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Wallet payment for reservation coming soon'),
+              ),
+            );
+          }
         },
         onPesapalSelected: () async {
           Navigator.pop(dialogContext); // Close dialog
@@ -293,16 +297,16 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
               reservationId: reservation.id,
             );
 
-            if (mounted) Navigator.pop(context);
+            if (context.mounted) Navigator.pop(context);
 
-            if (result['success'] == true && mounted) {
+            if (result['success'] == true && context.mounted) {
               final url = result['redirect_url'];
               if (url != null) {
                 final uri = Uri.parse(url);
                 if (await canLaunchUrl(uri)) {
                   await launchUrl(uri, mode: LaunchMode.externalApplication);
                 } else {
-                  if (mounted) {
+                  if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Could not launch payment URL'),
@@ -311,7 +315,7 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
                   }
                 }
               }
-            } else if (mounted) {
+            } else if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
@@ -321,8 +325,10 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
               );
             }
           } catch (e) {
-            if (mounted) Navigator.pop(context); // Hide loading on error
-            if (mounted) {
+            if (context.mounted) {
+              Navigator.pop(context); // Hide loading on error
+            }
+            if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Error initiating payment: $e')),
               );

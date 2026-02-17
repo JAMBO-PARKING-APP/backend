@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:parking_user_app/features/parking/providers/parking_provider.dart';
-import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
+import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
+import 'package:parking_user_app/core/utils/currency_formatter.dart';
 
 class ParkingHistoryScreen extends StatefulWidget {
   const ParkingHistoryScreen({super.key});
@@ -44,9 +45,14 @@ class _ParkingHistoryScreenState extends State<ParkingHistoryScreen> {
                 child: ListTile(
                   title: Text(session.zoneName),
                   subtitle: Text('${session.vehiclePlate} • $dateStr'),
-                  trailing: Text(
-                    '${context.read<AuthProvider>().currencySymbol} ${session.totalCost.toInt()}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  trailing: Consumer<SettingsProvider>(
+                    builder: (context, settings, _) => Text(
+                      CurrencyFormatter.formatCurrency(
+                        session.totalCost,
+                        settings.countryConfig,
+                      ),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               );

@@ -1,17 +1,12 @@
-import 'dart:io';
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import 'package:parking_officer_app/features/violations/providers/enforcement_provider.dart';
 import 'package:parking_officer_app/features/violations/screens/violation_form_screen.dart';
 import 'package:parking_officer_app/features/parking/services/qr_verification_service.dart';
-import 'package:parking_officer_app/features/anpr/services/anpr_service.dart';
 import 'package:parking_officer_app/core/app_theme.dart';
 
-enum ScanMode { qr, anpr }
+enum ScanMode { qr, manual }
 
 class ScannerScreen extends StatefulWidget {
   const ScannerScreen({super.key});
@@ -23,178 +18,62 @@ class ScannerScreen extends StatefulWidget {
 class _ScannerScreenState extends State<ScannerScreen>
     with WidgetsBindingObserver {
   ScanMode _scanMode = ScanMode.qr;
-  bool _isScanned = false; // Prevents duplicate processing
+  bool _isProcessing = false;
 
-  // ANPR Controllers
-  CameraController? _cameraController;
-  final AnprService _anprService = AnprService();
-  bool _isProcessingAnpr = false;
-
-  // QR Controller
-  final MobileScannerController _qrController = MobileScannerController();
+  final MobileScannerController _scannerController = MobileScannerController();
+  final TextEditingController _manualPlateController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _scannerController.start();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _qrController.dispose();
-    _cameraController?.dispose();
-    _anprService.dispose();
+    _scannerController.dispose();
+    _manualPlateController.dispose();
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Reinitialize cameras on resume if needed
-    if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      return;
-    }
-    if (state == AppLifecycleState.inactive) {
-      _cameraController?.dispose();
-    } else if (state == AppLifecycleState.resumed) {
-      if (_scanMode == ScanMode.anpr) {
-        _initializeAnprCamera();
-      }
-    }
-  }
-
-  Future<void> _initializeAnprCamera() async {
-    final cameras = await availableCameras();
-    if (cameras.isEmpty) return;
-
-    // Use back camera
-    final camera = cameras.firstWhere(
-      (c) => c.lensDirection == CameraLensDirection.back,
-      orElse: () => cameras.first,
-    );
-
-    _cameraController = CameraController(
-      camera,
-      ResolutionPreset.high,
-      enableAudio: false,
-      imageFormatGroup: Platform.isAndroid
-          ? ImageFormatGroup.nv21
-          : ImageFormatGroup.bgra8888,
-    );
-
-    try {
-      await _cameraController!.initialize();
-      await _cameraController!.startImageStream(_processAnprImage);
-      if (mounted) setState(() {});
-    } catch (e) {
-      debugPrint('Error initializing ANPR camera: $e');
-    }
-  }
-
-  Future<void> _stopAnprCamera() async {
-    if (_cameraController != null &&
-        _cameraController!.value.isStreamingImages) {
-      await _cameraController!.stopImageStream();
-    }
-    await _cameraController?.dispose();
-    _cameraController = null;
   }
 
   void _toggleMode(ScanMode mode) async {
     if (_scanMode == mode) return;
 
-    if (mode == ScanMode.anpr) {
-      await _qrController.stop();
-      await _initializeAnprCamera();
+    if (mode == ScanMode.qr) {
+      await _scannerController.start();
     } else {
-      await _stopAnprCamera();
-      await _qrController.start();
+      await _scannerController.stop();
     }
 
     setState(() {
       _scanMode = mode;
-      _isScanned = false;
+      _isProcessing = false;
+      _manualPlateController.clear();
     });
   }
 
-  // --- QR Logic ---
-  void _onQrDetect(BarcodeCapture capture) {
-    if (_isScanned) return;
+  void _onScan(BarcodeCapture capture) {
+    if (_isProcessing) return;
 
     final List<Barcode> barcodes = capture.barcodes;
     if (barcodes.isNotEmpty) {
       final String? code = barcodes.first.rawValue;
       if (code != null) {
-        _isScanned = true;
-        _showResult(code, isAnpr: false);
+        _processQRData(code);
       }
     }
   }
 
-  // --- ANPR Logic ---
-  void _processAnprImage(CameraImage image) async {
-    if (_isScanned || _isProcessingAnpr) return;
-    _isProcessingAnpr = true;
-
-    try {
-      final inputImage = _inputImageFromCameraImage(image);
-      if (inputImage == null) return;
-
-      final p = await _anprService.processImage(inputImage);
-      if (p != null && mounted) {
-        _isScanned = true;
-        _showResult(p, isAnpr: true);
-      }
-    } catch (e) {
-      debugPrint('ANPR Processing error: $e');
-    } finally {
-      _isProcessingAnpr = false;
-    }
+  Future<void> _processQRData(String data) async {
+    setState(() => _isProcessing = true);
+    _showResult(data);
   }
 
-  InputImage? _inputImageFromCameraImage(CameraImage image) {
-    if (_cameraController == null) return null;
-
-    final camera = _cameraController!.description;
-    final sensorOrientation = camera.sensorOrientation;
-
-    // Adjust logic based on platform/rotation if needed
-    // Simplified for now based on common params
-    // Simplified rotation logic
-    final rotation =
-        InputImageRotationValue.fromRawValue(sensorOrientation) ??
-        InputImageRotation.rotation0deg;
-
-    final format =
-        InputImageFormatValue.fromRawValue(image.format.raw) ??
-        InputImageFormat.nv21;
-
-    // Concat planes
-    return InputImage.fromBytes(
-      bytes: _concatenatePlanes(image.planes),
-      metadata: InputImageMetadata(
-        size: Size(image.width.toDouble(), image.height.toDouble()),
-        rotation: rotation,
-        format: format,
-        bytesPerRow: image.planes.first.bytesPerRow, // Approximate for NV21
-      ),
-    );
-  }
-
-  Uint8List _concatenatePlanes(List<Plane> planes) {
-    final WriteBuffer allBytes = WriteBuffer();
-    for (Plane plane in planes) {
-      allBytes.putUint8List(plane.bytes);
-    }
-    return allBytes.done().buffer.asUint8List();
-  }
-
-  // --- UI & Result Handlers ---
-
-  void _showResult(String data, {required bool isAnpr}) {
-    // Log the scan action
+  void _showResult(String data) {
     context.read<EnforcementProvider>().logAction(
-      isAnpr ? 'scan_anpr' : 'scan_qr',
+      'scan_qr',
       details: {'raw_data': data},
     );
 
@@ -203,7 +82,7 @@ class _ScannerScreenState extends State<ScannerScreen>
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         return Container(
@@ -212,43 +91,53 @@ class _ScannerScreenState extends State<ScannerScreen>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                isAnpr ? 'License Plate Detected' : 'QR Scan Result',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 24),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
                 ),
+              ),
+              const Text(
+                'Scan Result',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: isAnpr
-                      ? AppTheme.accentColor.withValues(alpha: 0.1)
-                      : Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
-                  border: isAnpr
-                      ? Border.all(color: AppTheme.accentColor)
-                      : null,
+                  color: AppTheme.primaryColor.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                  ),
                 ),
                 child: Text(
                   data,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontFamily: 'monospace',
-                    fontSize: 24,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: isAnpr ? AppTheme.primaryColor : Colors.black87,
+                    color: AppTheme.primaryColor,
                   ),
                   textAlign: TextAlign.center,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                       child: const Text('RESCAN'),
                     ),
                   ),
@@ -257,41 +146,42 @@ class _ScannerScreenState extends State<ScannerScreen>
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.pop(context);
-                        if (isAnpr) {
-                          _navigateToViolationForm(plate: data);
-                        } else {
-                          _processQrData(data);
-                        }
+                        _processQrDataForVerification(data);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primaryColor,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      child: Text(isAnpr ? 'CHECK STATUS' : 'PROCESS QR'),
+                      child: const Text('VERIFY'),
                     ),
                   ),
                 ],
               ),
-              if (!isAnpr) ...[
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _processQrDataForViolation(data);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.errorColor,
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _processQrDataForViolation(data);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.errorColor,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text('ISSUE VIOLATION'),
                 ),
-              ],
+                child: const Text('ISSUE VIOLATION'),
+              ),
             ],
           ),
         );
       },
     ).then((_) {
       if (mounted) {
-        setState(() => _isScanned = false);
-        // Resume camera?
+        setState(() => _isProcessing = false);
       }
     });
   }
@@ -306,8 +196,7 @@ class _ScannerScreenState extends State<ScannerScreen>
     );
   }
 
-  void _processQrData(String data) async {
-    // Try to extract session ID
+  void _processQrDataForVerification(String data) async {
     String sessionId = '';
     try {
       final lines = data.split(RegExp(r'\r?\n'));
@@ -359,8 +248,6 @@ class _ScannerScreenState extends State<ScannerScreen>
   }
 
   void _showVerificationDialog(String sessionId) async {
-    // ... Existing verification logic (simplified reuse) ...
-    // Reuse existing functionality but wrapped:
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -380,12 +267,13 @@ class _ScannerScreenState extends State<ScannerScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
             Icon(
               isValid ? Icons.check_circle : Icons.error,
               color: isValid ? Colors.green : Colors.red,
-              size: 32,
+              size: 28,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -400,18 +288,12 @@ class _ScannerScreenState extends State<ScannerScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(message),
+            Text(message, style: const TextStyle(fontSize: 16)),
             if (session != null) ...[
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 8),
+              const SizedBox(height: 20),
               _buildSessionDetail(
                 'Vehicle',
                 session['vehicle_plate']?.toString() ?? 'N/A',
-              ),
-              _buildSessionDetail(
-                'Driver',
-                session['driver_name']?.toString() ?? 'N/A',
               ),
               _buildSessionDetail(
                 'Zone',
@@ -439,26 +321,80 @@ class _ScannerScreenState extends State<ScannerScreen>
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              '$label:',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+          Text(
+            '$label: ',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
             ),
           ),
-          Expanded(child: Text(value)),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // --- Build ---
+  Widget _buildManualEntry() {
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          TextField(
+            controller: _manualPlateController,
+            decoration: InputDecoration(
+              labelText: 'Enter License Plate',
+              hintText: 'e.g. UBK 123X',
+              prefixIcon: const Icon(Icons.directions_car),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+            textCapitalization: TextCapitalization.characters,
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton(
+            onPressed: _submitManualPlate,
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 56),
+              backgroundColor: AppTheme.primaryColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: const Text(
+              'CHECK STATUS',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _submitManualPlate() {
+    final plate = _manualPlateController.text.trim();
+    if (plate.isNotEmpty) {
+      _navigateToViolationForm(plate: plate);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a license plate')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scan Vehicle'),
+        title: const Text('Enforcement Scanner'),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(
@@ -466,77 +402,113 @@ class _ScannerScreenState extends State<ScannerScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildModeButton(ScanMode.qr, 'Scan QR'),
-                const SizedBox(width: 16),
-                _buildModeButton(ScanMode.anpr, 'Scan Plate (ANPR)'),
+                _buildModeTab('QR Scan', ScanMode.qr, Icons.qr_code_scanner),
+                const SizedBox(width: 12),
+                _buildModeTab('Manual', ScanMode.manual, Icons.edit),
               ],
             ),
           ),
         ),
       ),
-      body: Stack(
-        children: [
-          if (_scanMode == ScanMode.qr)
-            MobileScanner(onDetect: _onQrDetect, controller: _qrController),
+      body: _scanMode == ScanMode.qr
+          ? Stack(
+              children: [
+                MobileScanner(
+                  controller: _scannerController,
+                  onDetect: _onScan,
+                ),
+                Center(
+                  child: Container(
+                    width: 260,
+                    height: 260,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.white, width: 2),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Stack(
+                      children: [
+                        _buildCorner(0, 0, 24, 0),
+                        _buildCorner(null, 0, 0, 24),
+                        _buildCorner(0, null, 24, 0),
+                        _buildCorner(null, null, 0, 24),
+                      ],
+                    ),
+                  ),
+                ),
+                const Positioned(
+                  bottom: 40,
+                  left: 0,
+                  right: 0,
+                  child: Text(
+                    'Position QR code within the frame',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                      shadows: [Shadow(blurRadius: 10)],
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : _buildManualEntry(),
+    );
+  }
 
-          if (_scanMode == ScanMode.anpr)
-            if (_cameraController != null &&
-                _cameraController!.value.isInitialized)
-              CameraPreview(_cameraController!)
-            else
-              const Center(
-                child: CircularProgressIndicator(color: Colors.white),
-              ),
-
-          Center(
-            child: Container(
-              width: 300,
-              height: 300, // widened to square
-              decoration: BoxDecoration(
-                border: Border.all(color: AppTheme.accentColor, width: 4),
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
+  Widget _buildCorner(double? top, double? left, double tr, double br) {
+    return Positioned(
+      top: top,
+      left: left,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          border: Border(
+            top: top != null
+                ? const BorderSide(color: AppTheme.primaryColor, width: 4)
+                : BorderSide.none,
+            left: left != null
+                ? const BorderSide(color: AppTheme.primaryColor, width: 4)
+                : BorderSide.none,
+            right: left == null
+                ? const BorderSide(color: AppTheme.primaryColor, width: 4)
+                : BorderSide.none,
+            bottom: top == null
+                ? const BorderSide(color: AppTheme.primaryColor, width: 4)
+                : BorderSide.none,
           ),
-
-          Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: Text(
-              _scanMode == ScanMode.qr
-                  ? 'Align QR Code in frame'
-                  : 'Align Number Plate in frame',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                backgroundColor: Colors.black45,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildModeButton(ScanMode mode, String label) {
+  Widget _buildModeTab(String label, ScanMode mode, IconData icon) {
     final isActive = _scanMode == mode;
     return GestureDetector(
       onTap: () => _toggleMode(mode),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white),
+          color: isActive ? AppTheme.primaryColor : Colors.grey[200],
+          borderRadius: BorderRadius.circular(30),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isActive ? AppTheme.primaryColor : Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isActive ? Colors.white : Colors.grey[600],
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: isActive ? Colors.white : Colors.grey[600],
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
       ),
     );

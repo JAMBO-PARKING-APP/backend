@@ -240,112 +240,165 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildZoneMonitor() {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Zone Monitor'),
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppTheme.primaryColor),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 180.0,
+            floating: false,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              title: const Text(
+                'Zone Monitor',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
                 ),
-                child: Consumer<OfficerProvider>(
-                  builder: (context, provider, _) => GestureDetector(
-                    onTap: () => _showStatusDialog(context, provider),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircleAvatar(
-                          radius: 6,
-                          backgroundColor: provider.isOnline
-                              ? Colors.green
-                              : Colors.grey,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          provider.isOnline ? 'Online' : 'Offline',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          Icons.arrow_drop_down,
-                          size: 16,
-                          color: AppTheme.primaryColor,
-                        ),
-                      ],
-                    ),
+              ),
+              background: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppTheme.primaryColor, AppTheme.accentColor],
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 80, left: 20, right: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildStatItem(
+                        'Daily Scans',
+                        context.watch<OfficerProvider>().dailyScans,
+                        Icons.qr_code_scanner,
+                      ),
+                      _buildStatItem(
+                        'Violations',
+                        context.watch<OfficerProvider>().dailyViolations,
+                        Icons.gavel_rounded,
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
+            actions: [
+              Consumer<OfficerProvider>(
+                builder: (context, provider, _) => Padding(
+                  padding: const EdgeInsets.only(right: 16.0),
+                  child: ActionChip(
+                    avatar: CircleAvatar(
+                      radius: 6,
+                      backgroundColor: provider.isOnline
+                          ? Colors.greenAccent
+                          : Colors.white24,
+                    ),
+                    label: Text(
+                      provider.isOnline ? 'ONLINE' : 'OFFLINE',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                      ),
+                    ),
+                    backgroundColor: Colors.white24,
+                    onPressed: () => _showStatusDialog(context, provider),
+                  ),
+                ),
+              ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const OfficerProfileScreen(),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Active Zones',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                  TextButton.icon(
+                    onPressed: () => context.read<ZoneProvider>().fetchZones(),
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text('Refresh'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Consumer<ZoneProvider>(
+            builder: (context, zoneProvider, _) {
+              if (zoneProvider.isLoading) {
+                return const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              if (zoneProvider.zones.isEmpty) {
+                return SliverFillRemaining(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.location_off,
+                          size: 64,
+                          color: Colors.grey[300],
+                        ),
+                        const SizedBox(height: 16),
+                        const Text('No active zones found.'),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              return SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final zone = zoneProvider.zones[index];
+                    return _ZoneCard(
+                      zone: zone,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ZoneDetailScreen(zone: zone),
+                          ),
+                        );
+                      },
+                    );
+                  }, childCount: zoneProvider.zones.length),
                 ),
               );
             },
           ),
         ],
       ),
-      body: Consumer<ZoneProvider>(
-        builder: (context, zoneProvider, _) {
-          if (zoneProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    );
+  }
 
-          if (zoneProvider.zones.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.location_off, size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  const Text('No active zones found.'),
-                  TextButton(
-                    onPressed: () => zoneProvider.fetchZones(),
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: zoneProvider.fetchZones,
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: zoneProvider.zones.length,
-              itemBuilder: (context, index) {
-                final zone = zoneProvider.zones[index];
-                return _ZoneCard(
-                  zone: zone,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ZoneDetailScreen(zone: zone),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          );
-        },
-      ),
+  Widget _buildStatItem(String label, int value, IconData icon) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: Colors.white70, size: 24),
+        const SizedBox(height: 8),
+        Text(
+          value.toString(),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white70, fontSize: 12),
+        ),
+      ],
     );
   }
 
@@ -436,47 +489,135 @@ class _ZoneCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    final occupancy = zone.totalSlots > 0
+        ? zone.occupiedSlots / zone.totalSlots
+        : 0.0;
+    final color = occupancy > 0.9
+        ? AppTheme.errorColor
+        : (occupancy > 0.7 ? AppTheme.warningColor : AppTheme.primaryColor);
+
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        title: Text(
-          zone.name,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.numbers, size: 16, color: Colors.grey),
-                const SizedBox(width: 4),
-                Text('Code: ${zone.code}'),
-              ],
-            ),
-            const SizedBox(height: 4),
-            LinearProgressIndicator(
-              value: zone.totalSlots > 0
-                  ? zone.occupiedSlots / zone.totalSlots
-                  : 0,
-              backgroundColor: Colors.grey[200],
-              valueColor: AlwaysStoppedAnimation<Color>(
-                zone.occupiedSlots / zone.totalSlots > 0.9
-                    ? Colors.red
-                    : AppTheme.primaryColor,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${zone.occupiedSlots} / ${zone.totalSlots} slots occupied',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap, // Used the onTap callback
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          zone.name,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF262626),
+                          ),
+                        ),
+                        Text(
+                          'Zone Code: ${zone.code}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${(occupancy * 100).toInt()}% Full',
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildMiniStat('Occupied', '${zone.occupiedSlots}', color),
+                  _buildMiniStat(
+                    'Available',
+                    '${zone.availableSlots}',
+                    Colors.green[600]!,
+                  ),
+                  _buildMiniStat(
+                    'Total',
+                    '${zone.totalSlots}',
+                    Colors.grey[600]!,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: occupancy,
+                  minHeight: 8,
+                  backgroundColor: Colors.grey[100],
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMiniStat(String label, String value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.grey[500],
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }

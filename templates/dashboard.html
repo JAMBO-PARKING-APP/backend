@@ -1,104 +1,283 @@
 {% extends 'base/base.html' %}
-{% load i18n %}
+{% load i18n humanize %}
 
 {% block title %}{% trans "Dashboard - Smart Parking System" %}{% endblock %}
 {% block page_title %}{% trans "Dashboard" %}{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
+<!-- Page Header with Welcome Message -->
+<div class="row mb-5">
     <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex justify-content-between align-items-start">
             <div>
-                <h5 class="fw-bold mb-1">{% trans "Welcome Back" %}, {{ user.first_name }}!</h5>
-                <p class="text-muted mb-0" style="font-size: 0.9rem;">{% trans "Here's what's happening in your parking
-                    lots today." %}</p>
+                <h2 class="fw-bold mb-2" style="color: var(--mantis-text-primary);">{% trans "Welcome Back" %}, {{ user.first_name|default:"User" }}!</h2>
+                <p class="text-muted mb-0 fs-6">{% trans "Here's a complete overview of your parking system performance." %}</p>
             </div>
-            <div>
-                <span class="badge bg-primary-soft text-primary fs-6 px-3 py-2">
+            <div class="text-end">
+                <div class="badge bg-primary-soft text-primary fs-6 px-4 py-2 fw-semibold">
                     <i class="bi bi-calendar-event me-2"></i> {% now "F j, Y" %}
-                </span>
+                </div>
+                <small class="d-block text-muted mt-2">{% trans "System Status: Online" %} <span class="badge bg-success rounded-pill ms-2">Live</span></small>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <!-- Quick Action: Check Vehicle -->
-    <div class="col-md-6 col-lg-4 mb-4">
-        <div class="card h-100 border-0 shadow-sm hover-lift">
+<!-- Key Performance Indicators (KPI Cards) -->
+<div class="row mb-5">
+    <!-- Total Parking Zones -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 border-0 shadow-sm hover-lift" style="transition: all 0.3s ease;">
             <div class="card-body p-4">
-                <div class="d-flex align-items-center mb-3">
-                    <div class="d-flex align-items-center justify-content-center bg-primary-soft rounded-3"
-                        style="width: 48px; height: 48px;">
-                        <i class="bi bi-search text-primary fs-4"></i>
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <p class="text-muted small fw-bold text-uppercase mb-1">{% trans "Active Zones" %}</p>
+                        <h3 class="fw-bold mb-0" style="color: var(--mantis-primary); font-size: 2rem;">{{ active_zones|default:"0" }}</h3>
+                    </div>
+                    <div class="bg-primary-soft rounded-3 p-3">
+                        <i class="bi bi-map text-primary fs-4"></i>
                     </div>
                 </div>
-                <h5 class="card-title fw-bold mb-2">{% trans "Check Vehicle" %}</h5>
-                <p class="card-text text-muted mb-4" style="font-size: 0.9rem;">{% trans "Verify vehicle parking status,
-                    history, and outstanding violations instantly." %}</p>
-                <button onclick="showCheckPlateModal()" class="btn btn-primary w-100">
-                    {% trans "Check Plate" %}
+                <small class="text-muted">{{ zone_count|default:"0" }} zones configured</small>
+                <div class="progress mt-3" style="height: 4px;">
+                    <div class="progress-bar bg-primary" style="width: 85%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Vehicles Parked -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 border-0 shadow-sm hover-lift" style="transition: all 0.3s ease;">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <p class="text-muted small fw-bold text-uppercase mb-1">{% trans "Active Sessions" %}</p>
+                        <h3 class="fw-bold mb-0" style="color: var(--mantis-secondary); font-size: 2rem;">{{ active_sessions|default:"0" }}</h3>
+                    </div>
+                    <div class="bg-success-soft rounded-3 p-3">
+                        <i class="bi bi-car-front text-success fs-4"></i>
+                    </div>
+                </div>
+                <small class="text-muted">Currently parked</small>
+                <div class="progress mt-3" style="height: 4px;">
+                    <div class="progress-bar bg-success" style="width: 72%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Revenue -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 border-0 shadow-sm hover-lift" style="transition: all 0.3s ease;">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <p class="text-muted small fw-bold text-uppercase mb-1">{% trans "Today's Revenue" %}</p>
+                        <h3 class="fw-bold mb-0" style="color: #17a2b8; font-size: 2rem;">${{ today_revenue|default:"0"|intcomma }}</h3>
+                    </div>
+                    <div class="rounded-3 p-3" style="background: rgba(23, 162, 184, 0.1);">
+                        <i class="bi bi-cash-coin text-info fs-4"></i>
+                    </div>
+                </div>
+                {% if revenue_change %}<small class="text-success fw-bold"><i class="bi bi-arrow-up"></i> {{ revenue_change }}%</small>{% else %}<small class="text-muted">No data</small>{% endif %}
+                <div class="progress mt-3" style="height: 4px;">
+                    <div class="progress-bar bg-info" style="width: {{ occupancy_today|default:"50" }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Violations Issued -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 border-0 shadow-sm hover-lift" style="transition: all 0.3s ease;">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <p class="text-muted small fw-bold text-uppercase mb-1">{% trans "Violations Today" %}</p>
+                        <h3 class="fw-bold mb-0" style="color: var(--mantis-error); font-size: 2rem;">{{ violations_today|default:"0" }}</h3>
+                    </div>
+                    <div class="bg-danger-soft rounded-3 p-3">
+                        <i class="bi bi-exclamation-triangle text-danger fs-4"></i>
+                    </div>
+                </div>
+                {% if violations_pending %}<small class="text-muted">{{ violations_pending }} pending resolution</small>{% else %}<small class="text-success">All resolved</small>{% endif %}
+                <div class="progress mt-3" style="height: 4px;">
+                    <div class="progress-bar bg-danger" style="width: {{ violation_resolution_rate|default:"100" }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions & Primary Functions -->
+<div class="row mb-5">
+    <div class="col-12 mb-3">
+        <h5 class="fw-bold">{% trans "Quick Actions" %}</h5>
+    </div>
+
+    <!-- Check Vehicle -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100 border-0 shadow-sm hover-lift" style="transition: all 0.3s ease; border-left: 4px solid var(--mantis-primary);">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary-soft rounded-3 p-3 me-3">
+                        <i class="bi bi-search text-primary fs-5"></i>
+                    </div>
+                    <h6 class="fw-bold mb-0">{% trans "Check Vehicle" %}</h6>
+                </div>
+                <p class="card-text text-muted small mb-4">{% trans "Instantly verify parking status, history, and violations." %}</p>
+                <button onclick="showCheckPlateModal()" class="btn btn-primary btn-sm w-100 fw-semibold">
+                    <i class="bi bi-search me-2"></i>{% trans "Search Plate" %}
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Quick Action: Issue Violation -->
+    <!-- Issue Violation -->
     <div class="col-md-6 col-lg-4 mb-4">
-        <div class="card h-100 border-0 shadow-sm hover-lift">
+        <div class="card h-100 border-0 shadow-sm hover-lift" style="transition: all 0.3s ease; border-left: 4px solid var(--mantis-warning);">
             <div class="card-body p-4">
                 <div class="d-flex align-items-center mb-3">
-                    <div class="d-flex align-items-center justify-content-center bg-warning-soft rounded-3"
-                        style="width: 48px; height: 48px;">
-                        <i class="bi bi-exclamation-triangle text-warning fs-4"></i>
+                    <div class="rounded-3 p-3 me-3" style="background: rgba(250, 173, 20, 0.2);">
+                        <i class="bi bi-exclamation-triangle text-warning fs-5"></i>
                     </div>
+                    <h6 class="fw-bold mb-0">{% trans "Issue Violation" %}</h6>
                 </div>
-                <h5 class="card-title fw-bold mb-2">{% trans "Issue Violation" %}</h5>
-                <p class="card-text text-muted mb-4" style="font-size: 0.9rem;">{% trans "Report unauthorized parking or
-                    policy violations directly from the dashboard." %}</p>
-                <button onclick="showViolationModal()" class="btn btn-outline-warning w-100 fw-semibold">
-                    {% trans "Issue Ticket" %}
+                <p class="card-text text-muted small mb-4">{% trans "Report and document parking violations with photos and details." %}</p>
+                <button onclick="showViolationModal()" class="btn btn-outline-warning btn-sm w-100 fw-semibold">
+                    <i class="bi bi-pencil me-2"></i>{% trans "Issue Ticket" %}
                 </button>
             </div>
         </div>
     </div>
 
-    {% if user.role == 'admin' %}
-    <!-- Quick Action: Analytics -->
+    {% if user.role == 'admin' or user.role == 'supervisor' %}
+    <!-- View Analytics -->
     <div class="col-md-6 col-lg-4 mb-4">
-        <div class="card h-100 border-0 shadow-sm hover-lift">
+        <div class="card h-100 border-0 shadow-sm hover-lift" style="transition: all 0.3s ease; border-left: 4px solid var(--mantis-success);">
             <div class="card-body p-4">
                 <div class="d-flex align-items-center mb-3">
-                    <div class="d-flex align-items-center justify-content-center bg-success-soft rounded-3"
-                        style="width: 48px; height: 48px;">
-                        <i class="bi bi-graph-up text-success fs-4"></i>
+                    <div class="bg-success-soft rounded-3 p-3 me-3">
+                        <i class="bi bi-graph-up text-success fs-5"></i>
                     </div>
+                    <h6 class="fw-bold mb-0">{% trans "Analytics & Reports" %}</h6>
                 </div>
-                <h5 class="card-title fw-bold mb-2">{% trans "Analytics" %}</h5>
-                <p class="card-text text-muted mb-4" style="font-size: 0.9rem;">{% trans "View detailed parking
-                    occupancy reports, revenue analysis, and trends." %}</p>
-                <a href="#" class="btn btn-outline-success w-100 fw-semibold">{% trans "View Reports" %}</a>
+                <p class="card-text text-muted small mb-4">{% trans "detailed revenue, occupancy, and performance data." %}</p>
+                <a href="/en/reports/revenue/" class="btn btn-outline-success btn-sm w-100 fw-semibold">
+                    <i class="bi bi-bar-chart me-2"></i>{% trans "View Reports" %}
+                </a>
             </div>
         </div>
     </div>
     {% endif %}
 </div>
+
+<!-- System Status & Recent Activity -->
+<div class="row mb-4">
+    <div class="col-lg-8 mb-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header py-4 bg-white border-bottom">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0">{% trans "System Performance" %}</h6>
+                    <small class="text-muted">{% trans "Last 24 hours" %}</small>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <div class="mb-2">
+                            <div class="text-success fw-bold" style="font-size: 1.8rem;">{{ uptime|default:"99.9" }}%</div>
+                            <small class="text-muted">Uptime</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="mb-2">
+                            <div class="text-info fw-bold" style="font-size: 1.8rem;">{{ avg_response|default:"145" }}ms</div>
+                            <small class="text-muted">Avg Response</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="mb-2">
+                            <div class="text-primary fw-bold" style="font-size: 1.8rem;">{{ active_staff|default:"12" }}</div>
+                            <small class="text-muted">Staff Online</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="mb-2">
+                            <div class="text-warning fw-bold" style="font-size: 1.8rem;">{{ db_size|default:"2.3" }}GB</div>
+                            <small class="text-muted">Database Size</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="col-lg-4 mb-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header py-4 bg-white border-bottom">
+                <h6 class="fw-bold mb-0">{% trans "This Month" %}</h6>
+            </div>
+            <div class="card-body p-4">
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <small class="fw-semibold">Total Revenue</small>
+                        {% if month_revenue_change %}<small class="text-success fw-bold">+{{ month_revenue_change }}%</small>{% endif %}
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-success" style="width: {{ month_revenue_percent|default:"0" }}%"></div>
+                    </div>
+                    <small class="text-muted d-block mt-1">${{ month_revenue|default:"0"|intcomma }}</small>
+                </div>
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <small class="fw-semibold">Active Reservations</small>
+                        {% if reservations_change %}<small class="text-info fw-bold">+{{ reservations_change }}%</small>{% endif %}
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-info" style="width: {{ reservations_percent|default:"0" }}%"></div>
+                    </div>
+                    <small class="text-muted d-block mt-1">{{ month_reservations|default:"0"|intcomma }} bookings</small>
+                </div>
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <small class="fw-semibold">Violations Resolved</small>
+                        <small class="text-primary fw-bold">{{ violation_resolution_pct|default:"0" }}%</small>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-primary" style="width: {{ violation_resolution_pct|default:"0" }}%"></div>
+                    </div>
+                    <small class="text-muted d-block mt-1">Resolution performance</small>
+                </div>
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between mb-2">
+                        <small class="fw-semibold">System Quality</small>
+                        <small class="text-warning fw-bold">{{ service_quality_rating|default:"N/A" }}</small>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-warning" style="width: {{ service_quality_percent|default:"0" }}%"></div>
+                    </div>
+                    <small class="text-muted d-block mt-1">Uptime &amp; reliability</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
     function showViolationModal() {
-        // Using the global confirmation modal for now as a placeholder or distinct modal
-        // In a real app, this would open a specific form modal
         window.showConfirmation(
             "{% trans 'Issue Violation' %}",
             "{% trans 'The violation ticketing system is currently being updated. Please try again later.' %}",
-            null, // No callback
+            null,
             "{% trans 'Understood' %}",
             "warning"
         );
     }
-
-    // Check Plate functionality is now handled globally in base.html
 </script>
 {% endblock %}

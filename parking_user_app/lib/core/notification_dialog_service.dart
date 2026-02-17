@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
+import 'package:parking_user_app/core/utils/currency_formatter.dart';
 
 /// Service to show in-app notification dialogs
 class NotificationDialogService {
@@ -67,9 +70,15 @@ class NotificationDialogService {
   void _showPaymentSuccessDialog(Map<String, dynamic> data) {
     final amount = data['amount'] ?? '0';
 
+    final settings = Provider.of<SettingsProvider>(_context!, listen: false);
+    final formattedAmount = CurrencyFormatter.formatCurrency(
+      double.tryParse(amount.toString()) ?? 0.0,
+      settings.countryConfig,
+    );
+
     _showCustomDialog(
       title: '✅ Payment Successful',
-      message: 'Your payment of UGX $amount was successful.',
+      message: 'Your payment of $formattedAmount was successful.',
       icon: Icons.check_circle,
       iconColor: Colors.green,
       primaryButtonText: 'OK',
@@ -80,10 +89,16 @@ class NotificationDialogService {
   void _showWalletRefundDialog(Map<String, dynamic> data) {
     final amount = data['amount'] ?? '0';
 
+    final settings = Provider.of<SettingsProvider>(_context!, listen: false);
+    final formattedAmount = CurrencyFormatter.formatCurrency(
+      double.tryParse(amount.toString()) ?? 0.0,
+      settings.countryConfig,
+    );
+
     _showCustomDialog(
       title: '💰 Wallet Refund',
       message:
-          'You\'ve been refunded UGX $amount for ending your parking session early.',
+          'You\'ve been refunded $formattedAmount for ending your parking session early.',
       icon: Icons.account_balance_wallet,
       iconColor: Colors.green,
       primaryButtonText: 'OK',
@@ -141,9 +156,15 @@ class NotificationDialogService {
   void _showParkingEndedDialog(Map<String, dynamic> data) {
     final finalCost = data['final_cost'] ?? '0';
 
+    final settings = Provider.of<SettingsProvider>(_context!, listen: false);
+    final formattedCost = CurrencyFormatter.formatCurrency(
+      double.tryParse(finalCost.toString()) ?? 0.0,
+      settings.countryConfig,
+    );
+
     _showCustomDialog(
       title: '🅿️ Parking Session Ended',
-      message: 'Your parking session has ended.\nTotal cost: UGX $finalCost',
+      message: 'Your parking session has ended.\nTotal cost: $formattedCost',
       icon: Icons.local_parking,
       iconColor: Colors.blue,
       primaryButtonText: 'View Details',

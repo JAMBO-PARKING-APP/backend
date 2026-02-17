@@ -12,12 +12,18 @@ class OfficerProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
+  // Daily Stats for Dashboard
+  int _dailyScans = 0;
+  int _dailyViolations = 0;
+
   OfficerStatus? get officerStatus => _officerStatus;
   List<QRCodeScan> get qrScans => _qrScans;
   List<QRCodeScan> get activityLogs => _activityLogs;
   bool get isLoading => _isLoading;
   bool get isOnline => _officerStatus?.isOnline ?? false;
   String? get errorMessage => _errorMessage;
+  int get dailyScans => _dailyScans;
+  int get dailyViolations => _dailyViolations;
 
   Future<bool> toggleOnlineStatus(
     bool goOnline, {
@@ -77,8 +83,30 @@ class OfficerProvider with ChangeNotifier {
 
     final logs = await _officerService.getActivityLogs();
     _activityLogs = logs;
+    _updateDailyStats();
 
     _isLoading = false;
+    notifyListeners();
+  }
+
+  void _updateDailyStats() {
+    final now = DateTime.now();
+    final todayLogs = _activityLogs.where((log) {
+      final date = log.createdAt;
+      return date.year == now.year &&
+          date.month == now.month &&
+          date.day == now.day;
+    }).toList();
+
+    _dailyScans = todayLogs.where((log) => log.scanStatus == 'valid').length;
+    // Note: Violations might need a different provider or combined check
+    // For now, we'll try to count 'violation_issued' actions if they exist in logs
+    // Or we might need to fetch them from EnforcementProvider
+    notifyListeners();
+  }
+
+  void incrementDailyViolations() {
+    _dailyViolations++;
     notifyListeners();
   }
 

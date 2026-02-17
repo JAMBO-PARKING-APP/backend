@@ -70,12 +70,20 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
         """Get all messages in a conversation"""
         conversation = self.get_object()
         
-        # Check permission
-        if conversation.user != request.user and conversation.assigned_agent != request.user:
-            return Response(
-                {'error': 'You do not have permission to view this conversation'},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        # Check permission: Users see their own, Agents/Officers see assigned OR unassigned
+        if user.role not in ['support_agent', 'officer', 'admin']:
+            if conversation.user != user:
+                return Response(
+                    {'error': 'You do not have permission to view this conversation'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        elif conversation.assigned_agent and conversation.assigned_agent != user:
+             # If assigned to someone else, only allow admin or the assigned agent
+             if user.role != 'admin' and conversation.assigned_agent != user:
+                return Response(
+                    {'error': 'This conversation is assigned to another agent'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
         
         messages = conversation.messages.all()
         page = self.paginate_queryset(messages)
@@ -91,12 +99,20 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
         """Send a message in a conversation"""
         conversation = self.get_object()
         
-        # Check permission
-        if conversation.user != request.user and conversation.assigned_agent != request.user:
-            return Response(
-                {'error': 'You do not have permission to message in this conversation'},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        # Check permission: Users message their own, Agents/Officers message assigned OR unassigned
+        if user.role not in ['support_agent', 'officer', 'admin']:
+            if conversation.user != user:
+                return Response(
+                    {'error': 'You do not have permission to message in this conversation'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        elif conversation.assigned_agent and conversation.assigned_agent != user:
+             # If assigned to someone else, only allow admin or the assigned agent
+             if user.role != 'admin' and conversation.assigned_agent != user:
+                return Response(
+                    {'error': 'This conversation is assigned to another agent'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
         
         # Create message
         message = ChatMessage.objects.create(

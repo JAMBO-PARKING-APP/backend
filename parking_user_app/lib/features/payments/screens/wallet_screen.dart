@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:parking_user_app/features/payments/providers/payment_provider.dart';
-import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_user_app/features/payments/screens/pesapal_webview_screen.dart';
 import 'package:parking_user_app/features/payments/screens/transaction_history_screen.dart';
 import 'package:parking_user_app/core/dialog_service.dart';
+import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
+import 'package:parking_user_app/core/utils/currency_formatter.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -115,12 +116,17 @@ class _WalletScreenState extends State<WalletScreen> {
                           style: TextStyle(color: Colors.white70),
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          '${context.read<AuthProvider>().currencySymbol} ${provider.balance.toInt()}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 36,
-                            fontWeight: FontWeight.bold,
+                        Consumer<SettingsProvider>(
+                          builder: (context, settings, _) => Text(
+                            CurrencyFormatter.formatCurrency(
+                              provider.balance,
+                              settings.countryConfig,
+                            ),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
@@ -139,8 +145,11 @@ class _WalletScreenState extends State<WalletScreen> {
                   controller: _amountController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    labelText:
-                        'Amount (${context.read<AuthProvider>().currencySymbol})',
+                    label: Consumer<SettingsProvider>(
+                      builder: (context, settings, _) => Text(
+                        'Amount (${settings.countryConfig.currencySymbol})',
+                      ),
+                    ),
                     prefixIcon: const Icon(Icons.account_balance_wallet),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -157,8 +166,13 @@ class _WalletScreenState extends State<WalletScreen> {
                   children: [1000, 5000, 10000, 20000]
                       .map(
                         (amt) => ActionChip(
-                          label: Text(
-                            '${context.read<AuthProvider>().currencySymbol} $amt',
+                          label: Consumer<SettingsProvider>(
+                            builder: (context, settings, _) => Text(
+                              CurrencyFormatter.formatCurrency(
+                                amt.toDouble(),
+                                settings.countryConfig,
+                              ),
+                            ),
                           ),
                           onPressed: () =>
                               _amountController.text = amt.toString(),
@@ -221,11 +235,13 @@ class _WalletScreenState extends State<WalletScreen> {
                       subtitle: Text(
                         DateFormat('MMM dd, HH:mm').format(tx.timestamp),
                       ),
-                      trailing: Text(
-                        '${isCredit ? "+" : "-"} ${tx.amount.toInt()}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: isCredit ? Colors.green : Colors.red,
+                      trailing: Consumer<SettingsProvider>(
+                        builder: (context, settings, _) => Text(
+                          '${isCredit ? "+" : "-"} ${CurrencyFormatter.formatCurrency(tx.amount, settings.countryConfig)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isCredit ? Colors.green : Colors.red,
+                          ),
                         ),
                       ),
                     );

@@ -497,3 +497,48 @@ def notify_reservation_cancelled(reservation):
         notification_event=notification
     )
     logger.info(f"Sent reservation cancelled notification to user {user.id}")
+
+
+def notify_officers_session_event(session, event_type):
+    """
+    Notify online officers in the zone about a session event (end or extension)
+    
+    Args:
+        session: ParkingSession instance
+        event_type: 'session_ended' or 'session_extended'
+    """
+    from apps.enforcement.models import OfficerStatus
+    
+    zone = session.zone
+    vehicle = session.vehicle
+    
+    # Find online officers in this zone
+    online_officers = OfficerStatus.objects.filter(
+        current_zone=zone,
+        is_online=True
+    ).select_related('officer')
+    
+    if not online_officers.exists():
+        logger.debug(f"No online officers in zone {zone.name} to notify about {event_type}")
+        return
+    
+    title = "Session Update"
+    if event_type == 'session_ended':
+        body = f"Session for {vehicle.license_plate} in {zone.name} has ended."
+    else:
+        body = f"Session for {vehicle.license_plate} in {zone.name} has been extended."
+        
+    data = {
+        'type': event_type,
+        'session_id': str(session.id),
+        'zone_id': str(zone.id),
+        'license_plate': vehicle.license_plate,
+        'timestamp': timezone.now().isoformat(),
+    }
+    
+    # Send to all online officers in the zone
+    officer_users = [status.officer for status in online_officers]
+    from .firebase_service import send_notification_to_multiple_users
+    send_notification_to_multiple_users(officer_users, title, body, data)
+    
+    logger.info(f"Notified {len(officer_users)} officers about {event_type} for session {session.id}")

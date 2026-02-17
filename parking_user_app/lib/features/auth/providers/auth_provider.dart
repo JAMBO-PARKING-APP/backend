@@ -88,6 +88,15 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<void> completePermissions() async {
+    final storage = StorageManager();
+    await storage.setPermissionsRequested(true);
+    _hasRequestedPermissions = true;
+    _status = AuthStatus.unauthenticated;
+    notifyListeners();
+    debugPrint('[AuthProvider] Permissions completed, triggering UI update');
+  }
+
   Future<bool> login(String phoneNumber, String password) async {
     _status = AuthStatus.authenticating;
     _errorMessage = null;

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:parking_user_app/core/storage_manager.dart';
-import 'package:parking_user_app/features/auth/screens/login_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
+// Removed: parking_provider.dart
 
 class PermissionsScreen extends StatefulWidget {
   const PermissionsScreen({super.key});
@@ -13,7 +14,6 @@ class PermissionsScreen extends StatefulWidget {
 class _PermissionsScreenState extends State<PermissionsScreen> {
   bool _isLocationGranted = false;
   bool _isNotificationGranted = false;
-  final StorageManager _storageManager = StorageManager();
 
   @override
   void initState() {
@@ -24,7 +24,9 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
   Future<void> _checkPermissions() async {
     final locationStatus = await Permission.location.status;
     final notificationStatus = await Permission.notification.status;
+    if (!mounted) return;
 
+    if (!mounted) return;
     setState(() {
       _isLocationGranted = locationStatus.isGranted;
       _isNotificationGranted = notificationStatus.isGranted;
@@ -45,13 +47,11 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
     });
   }
 
+  // Removed: _requestOverlayPermission
+
   Future<void> _continue() async {
-    await _storageManager.setPermissionsRequested(true);
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
-    }
+    final authProvider = context.read<AuthProvider>();
+    await authProvider.completePermissions();
   }
 
   @override
@@ -103,6 +103,8 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                 isGranted: _isNotificationGranted,
                 onTap: _requestNotificationPermission,
               ),
+
+              const SizedBox(height: 24),
 
               const Spacer(),
 

@@ -1,0 +1,416 @@
+{% extends 'base/base.html' %}
+{% load i18n static humanize %}
+
+{% block title %}{% trans "Revenue Report" %}{% endblock %}
+{% block page_title %}{% trans "Revenue Report" %}{% endblock %}
+
+{% block extra_css %}
+<!-- Chart.js via CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Header with Export -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold mb-1">{% trans "Revenue Report" %}</h2>
+                <p class="text-muted mb-0">{% trans "Comprehensive revenue analytics and financial performance insights." %}</p>
+            </div>
+            <div>
+                <button class="btn btn-outline-secondary btn-sm me-2">
+                    <i class="bi bi-download me-2"></i>{% trans "Export CSV" %}
+                </button>
+                <button class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-printer me-2"></i>{% trans "Print Report" %}
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label text-muted small fw-bold text-uppercase">{% trans "Start Date" %}</label>
+                        <input type="date" name="start_date" class="form-control" value="{{ start_date|date:'Y-m-d' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted small fw-bold text-uppercase">{% trans "End Date" %}</label>
+                        <input type="date" name="end_date" class="form-control" value="{{ end_date|date:'Y-m-d' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted small fw-bold text-uppercase">{% trans "Zone" %}</label>
+                        <select name="zone" class="form-select">
+                            <option value="">{% trans "All Zones" %}</option>
+                            <option value="downtown">Downtown</option>
+                            <option value="uptown">Uptown</option>
+                            <option value="airport">Airport</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                            <i class="bi bi-funnel me-2"></i>{% trans "Apply Filter" %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- KPI Cards - Main Metrics -->
+<div class="row mb-5">
+    <!-- Total Revenue -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid var(--mantis-primary);">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <p class="text-muted small fw-bold text-uppercase mb-1">{% trans "Total Revenue" %}</p>
+                        <h3 class="fw-bold mb-0 text-dark">${{ total_revenue|default:"0"|intcomma }}</h3>
+                    </div>
+                    <div class="badge bg-primary-soft text-primary fs-6">
+                        <i class="bi bi-cash-coin"></i>
+                    </div>
+                </div>
+                <small class="text-success fw-bold"><i class="bi bi-arrow-up"></i> +14.5% vs {{last_period}}</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Average Revenue Per Session -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid var(--mantis-secondary);">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <p class="text-muted small fw-bold text-uppercase mb-1">{% trans "Avg Revenue/Session" %}</p>
+                        <h3 class="fw-bold mb-0 text-dark">${{ avg_revenue_per_session|default:"0"|intcomma }}</h3>
+                    </div>
+                    <div class="badge bg-info-soft text-info fs-6">
+                        <i class="bi bi-graph-up"></i>
+                    </div>
+                </div>
+                <small class="text-success fw-bold"><i class="bi bi-arrow-up"></i> +8.3% improvement</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Sessions -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid var(--mantis-success);">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <p class="text-muted small fw-bold text-uppercase mb-1">{% trans "Total Sessions" %}</p>
+                        <h3 class="fw-bold mb-0 text-dark">{{ total_sessions|default:"0"|intcomma }}</h3>
+                    </div>
+                    <div class="badge bg-success-soft text-success fs-6">
+                        <i class="bi bi-car-front"></i>
+                    </div>
+                </div>
+                <small class="text-success fw-bold"><i class="bi bi-arrow-up"></i> +22.1% from last month</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Violations -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 border-0 shadow-sm" style="border-left: 4px solid var(--mantis-error);">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <p class="text-muted small fw-bold text-uppercase mb-1">{% trans "Violations Issued" %}</p>
+                        <h3 class="fw-bold mb-0 text-dark">{{ total_violations|default:"0"|intcomma }}</h3>
+                    </div>
+                    <div class="badge bg-danger-soft text-danger fs-6">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                </div>
+                <small class="text-danger fw-bold"><i class="bi bi-arrow-down"></i> -5.2% fewer violations</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="row mb-5">
+    <!-- Revenue Trend Chart -->
+    <div class="col-lg-8 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom py-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0">{% trans "Revenue Trend Analysis" %}</h6>
+                    <small class="text-muted">{% trans "Daily breakdown" %}</small>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <canvas id="revenueChart" style="position: relative; max-height: 350px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Zones Table -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom py-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0">{% trans "Top Performing Zones" %}</h6>
+                    <small class="badge bg-primary text-white">Top 5</small>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <div class="table-responsive">
+                    <table class="table table-borderless table-sm mb-0">
+                        <thead>
+                            <tr class="text-muted text-uppercase small border-bottom">
+                                <th>{% trans "Zone" %}</th>
+                                <th class="text-end">{% trans "Revenue" %}</th>
+                                <th class="text-end text-nowrap">% Share</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for zone in top_zones %}
+                            <tr class="border-bottom-light">
+                                <td class="fw-medium py-3">
+                                    <span class="badge bg-light text-dark small me-2">{{ forloop.counter }}</span>
+                                    {{ zone.zone__name|default:"Zone" }}
+                                </td>
+                                <td class="text-end fw-bold py-3">${{ zone.zone_rev|default:"0"|intcomma }}</td>
+                                <td class="text-end py-3">
+                                    <span class="badge bg-success-soft text-success small">{{ zone.percentage|default:"0" }}%</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox"></i><br/>
+                                    {% trans "No data available" %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Distribution Charts -->
+<div class="row mb-5">
+    <!-- Payment Methods Distribution -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom py-4">
+                <h6 class="fw-bold mb-0">{% trans "Revenue by Payment Method" %}</h6>
+            </div>
+            <div class="card-body p-4">
+                <canvas id="paymentMethodChart" style="position: relative; max-height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Distribution -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom py-4">
+                <h6 class="fw-bold mb-0">{% trans "Sessions by Hour" %}</h6>
+            </div>
+            <div class="card-body p-4">
+                <canvas id="sessionDistributionChart" style="position: relative; max-height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Metrics Table -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom py-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0">{% trans "Detailed Daily Breakdown" %}</h6>
+                    <small class="text-muted">{% trans "Complete analysis" %}</small>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm mb-0">
+                        <thead class="table-light">
+                            <tr class="text-muted text-uppercase small">
+                                <th>{% trans "Date" %}</th>
+                                <th class="text-end">{% trans "Sessions" %}</th>
+                                <th class="text-end">{% trans "Revenue" %}</th>
+                                <th class="text-end">{% trans "Avg/Session" %}</th>
+                                <th class="text-end">{% trans "Violations" %}</th>
+                                <th class="text-center">{% trans "Occupancy %" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for day in daily_data %}
+                            <tr>
+                                <td class="fw-medium py-3">{{ day.date|date:"M d, Y" }}</td>
+                                <td class="text-end py-3">{{ day.sessions|intcomma }}</td>
+                                <td class="text-end fw-bold py-3">${{ day.revenue|intcomma }}</td>
+                                <td class="text-end py-3">${{ day.avg_revenue|intcomma }}</td>
+                                <td class="text-end py-3">
+                                    <span class="badge bg-danger-soft text-danger small">{{ day.violations }}</span>
+                                </td>
+                                <td class="text-center py-3">
+                                    <div class="progress" style="height: 20px; width: 100%;">
+                                        <div class="progress-bar bg-primary" style="width: {{ day.occupancy }}%"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    {% trans "No data available for selected period" %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Revenue Trend Chart
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        const revenueLabels = {{ chart_labels|default:"[]"|safe }};
+        const revenueData = {{ chart_revenue|default:"[]"|safe }};
+        const sessionData = {{ chart_sessions|default:"[]"|safe }};
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: revenueLabels,
+                datasets: [
+                    {
+                        label: '{% trans "Revenue ($)" %}',
+                        data: revenueData,
+                        borderColor: 'var(--mantis-primary)',
+                        backgroundColor: 'rgba(24, 144, 255, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointBackgroundColor: 'var(--mantis-primary)',
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: '{% trans "Sessions" %}',
+                        data: sessionData,
+                        borderColor: 'var(--mantis-success)',
+                        backgroundColor: 'transparent',
+                        borderDash: [5, 5],
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointBackgroundColor: 'var(--mantis-success)',
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 15,
+                            font: { size: 12, weight: 'bold' }
+                        }
+                    },
+                    filler: {
+                        propagate: true
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        position: 'left',
+                        title: { display: true, text: 'Revenue ($)', font: { weight: 'bold' } },
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    y1: {
+                        position: 'right',
+                        beginAtZero: true,
+                        title: { display: true, text: 'Sessions', font: { weight: 'bold' } },
+                        grid: { drawOnChartArea: false }
+                    }
+                }
+            }
+        });
+
+        // Payment Method Distribution (Pie Chart) - Only show if data exists
+        const paymentCtx = document.getElementById('paymentMethodChart')?.getContext('2d');
+        if (paymentCtx && '{{ payment_method_data|default:""|safe }}') {
+            new Chart(paymentCtx, {
+                type: 'doughnut',
+                data: {{ payment_method_data|default:"{}"|safe }},
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 15,
+                                font: { size: 11 }
+                            }
+                        }
+                    }
+                }
+            });
+        } else if (paymentCtx) {
+            // Show "No data" message
+            paymentCtx.canvas.parentElement.innerHTML = '<div class="text-center text-muted py-4"><i class="bi bi-inbox"></i><br/>No payment data available</div>';
+        }
+
+        // Session Distribution by Hour (Bar Chart) - Only show if data exists
+        const sessionCtx = document.getElementById('sessionDistributionChart')?.getContext('2d');
+        if (sessionCtx && '{{ session_distribution_data|default:""|safe }}') {
+            new Chart(sessionCtx, {
+                type: 'bar',
+                data: {{ session_distribution_data|default:"{}"|safe }},
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: undefined,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0,0,0,0.05)' }
+                        }
+                    }
+                }
+            });
+        } else if (sessionCtx) {
+            // Show "No data" message
+            sessionCtx.canvas.parentElement.innerHTML = '<div class="text-center text-muted py-4"><i class="bi bi-inbox"></i><br/>No session data available</div>';
+        }
+    });
+</script>
+{% endblock %}

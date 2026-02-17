@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:parking_user_app/features/parking/models/zone_model.dart';
-import 'package:parking_user_app/features/parking/models/parking_session_model.dart';
 import 'package:parking_user_app/features/parking/providers/zone_provider.dart';
 import 'package:parking_user_app/features/parking/providers/parking_provider.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
@@ -12,6 +11,8 @@ import 'package:parking_user_app/features/parking/screens/parking_map_screen.dar
 import 'package:parking_user_app/features/payments/services/payment_service.dart';
 import 'package:parking_user_app/core/dialog_service.dart';
 import 'package:parking_user_app/features/payments/screens/pesapal_webview_screen.dart';
+import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
+import 'package:parking_user_app/core/utils/currency_formatter.dart';
 
 class ZoneListScreen extends StatefulWidget {
   const ZoneListScreen({super.key});
@@ -73,8 +74,10 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Rate: ${context.read<AuthProvider>().currencySymbol} ${zone.hourlyRate.toInt()}/hr',
+                Consumer<SettingsProvider>(
+                  builder: (context, settings, _) => Text(
+                    'Rate: ${CurrencyFormatter.formatCurrency(zone.hourlyRate, settings.countryConfig)}/hr',
+                  ),
                 ),
                 const SizedBox(height: 16),
                 const Text('Select Vehicle:'),
@@ -137,9 +140,11 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                   'Duration: ${durationHours.toStringAsFixed(1)} hrs',
                   style: TextStyle(color: Colors.grey.shade600),
                 ),
-                Text(
-                  'Est. Cost: ${context.read<AuthProvider>().currencySymbol} ${estimatedCost.toStringAsFixed(0)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                Consumer<SettingsProvider>(
+                  builder: (context, settings, _) => Text(
+                    'Est. Cost: ${CurrencyFormatter.formatCurrency(estimatedCost, settings.countryConfig)}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),
@@ -235,10 +240,15 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                   'Duration',
                   '${durationHours.toStringAsFixed(1)} hrs',
                 ),
-                _buildConfirmRow(
-                  'Cost',
-                  '${context.read<AuthProvider>().currencySymbol} ${cost.toStringAsFixed(0)}',
-                  isBold: true,
+                Consumer<SettingsProvider>(
+                  builder: (context, settings, _) => _buildConfirmRow(
+                    'Cost',
+                    CurrencyFormatter.formatCurrency(
+                      cost,
+                      settings.countryConfig,
+                    ),
+                    isBold: true,
+                  ),
                 ),
               ],
             ),
@@ -287,15 +297,34 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
     required bool isWallet,
   }) async {
     if (isWallet) {
-      final session = await context.read<ParkingProvider>().startParking(
+      // Show loading
+      showDialog(
         context: context,
-        zoneId: zone.id,
-        vehicleId: vehicle.id,
-        durationHours: durationHours,
-        paymentMethod: 'wallet',
+        barrierDismissible: false,
+        builder: (c) => const Center(child: CircularProgressIndicator()),
       );
-      if (mounted && session != null) {
-        _showSuccessDialog(context, zone);
+
+      try {
+        final session = await context.read<ParkingProvider>().startParking(
+          context: context,
+          zoneId: zone.id,
+          vehicleId: vehicle.id,
+          durationHours: durationHours,
+          paymentMethod: 'wallet',
+        );
+
+        if (mounted) Navigator.pop(context); // Hide loading
+
+        if (mounted && session != null) {
+          _showSuccessDialog(context, zone);
+        }
+      } catch (e) {
+        if (mounted) Navigator.pop(context); // Hide loading on error
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error starting session: $e')));
+        }
       }
     } else {
       // Pesapal Flow
@@ -416,8 +445,10 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  Text(
-                                    'Rate: ${context.read<AuthProvider>().currencySymbol} ${zone.hourlyRate.toInt()}/hr',
+                                  Consumer<SettingsProvider>(
+                                    builder: (context, settings, _) => Text(
+                                      'Rate: ${CurrencyFormatter.formatCurrency(zone.hourlyRate, settings.countryConfig)}/hr',
+                                    ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(

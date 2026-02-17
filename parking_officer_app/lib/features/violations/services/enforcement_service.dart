@@ -8,7 +8,7 @@ class EnforcementService {
   Future<bool> issueViolation({
     String? vehicleId,
     String? vehiclePlate,
-    required String zoneId,
+    String? zoneId,
     required String type,
     required String description,
     required double fineAmount,
@@ -19,15 +19,15 @@ class EnforcementService {
   }) async {
     try {
       final formData = FormData.fromMap({
-        if (vehicleId != null) 'vehicle': vehicleId,
-        if (vehiclePlate != null) 'vehicle_plate': vehiclePlate,
+        'vehicle': vehicleId,
+        'vehicle_plate': vehiclePlate,
         'zone': zoneId,
         'violation_type': type,
         'description': description,
         'fine_amount': fineAmount,
         'latitude': lat,
         'longitude': lng,
-        if (sessionId != null) 'parking_session': sessionId,
+        'parking_session': sessionId,
       });
 
       // Handle multiple evidence photos
@@ -67,8 +67,8 @@ class EnforcementService {
         data: {
           'action': action,
           'details': details ?? {},
-          if (lat != null) 'latitude': lat,
-          if (lng != null) 'longitude': lng,
+          'latitude': lat,
+          'longitude': lng,
         },
       );
     } catch (e) {

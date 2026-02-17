@@ -1,5 +1,6 @@
 import uuid
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from apps.common.constants import Currency, DEFAULT_CURRENCY
 
 class BaseModel(models.Model):
@@ -79,3 +80,31 @@ class SystemConfiguration(models.Model):
         """Get or create system configuration"""
         config, created = cls.objects.get_or_create(pk=1)
         return config
+
+
+class CountryConfig(BaseModel):
+    """Payment and currency configuration for each country"""
+    country = models.OneToOneField(
+        Country,
+        on_delete=models.CASCADE,
+        related_name='payment_config',
+        help_text="Country this configuration applies to"
+    )
+    payment_methods = models.JSONField(
+        default=list,
+        help_text="Available payment methods: ['wallet', 'pesapal', 'mpesa', 'flutterwave']"
+    )
+    exchange_rate_to_base = models.DecimalField(
+        max_digits=10,
+        decimal_places=4,
+        default=1.0,
+        help_text="Exchange rate from base currency (UGX) to this country's currency"
+    )
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = _("Country Payment Configuration")
+        verbose_name_plural = _("Country Payment Configurations")
+
+    def __str__(self):
+        return f"{self.country.name} Payment Config"

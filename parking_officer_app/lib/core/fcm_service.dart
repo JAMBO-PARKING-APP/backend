@@ -1,7 +1,12 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:provider/provider.dart';
+import 'package:parking_officer_app/main.dart';
+import 'package:parking_officer_app/features/enforcement/providers/officer_provider.dart';
+import 'package:parking_officer_app/features/parking/providers/zone_provider.dart';
 import 'api_client.dart';
 
 /// Background message handler - must be top-level function
@@ -113,6 +118,12 @@ class FCMService {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('Foreground message received: ${message.notification?.title}');
       _showLocalNotification(message);
+
+      // Auto-refresh data if it's a session event
+      final type = message.data['type'];
+      if (type == 'session_ended' || type == 'session_extended') {
+        _refreshAppData();
+      }
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
@@ -205,6 +216,15 @@ class FCMService {
       debugPrint('Officer FCM token unregistered');
     } catch (e) {
       debugPrint('Error unregistering FCM token: $e');
+    }
+  }
+
+  void _refreshAppData() {
+    final context = SpaceOfficerApp.navigatorKey.currentContext;
+    if (context != null) {
+      debugPrint('Refreshing app data from FCM trigger');
+      context.read<OfficerProvider>().refreshAllData();
+      context.read<ZoneProvider>().fetchZones();
     }
   }
 }

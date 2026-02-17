@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:parking_user_app/features/parking/models/parking_session_model.dart';
@@ -7,6 +6,10 @@ import 'package:parking_user_app/features/parking/providers/parking_provider.dar
 import 'package:parking_user_app/features/parking/screens/qr_code_view_screen.dart';
 import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/core/dialog_service.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
 
 class ActiveSessionScreen extends StatefulWidget {
   final ParkingSession session;
@@ -181,6 +184,98 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
     );
   }
 
+  // --- Phase 6: Find My Car ---
+
+  void _handleSaveSpot() async {
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+      if (mounted) {
+        await context.read<ParkingProvider>().saveSpot(
+          widget.session.id,
+          position.latitude,
+          position.longitude,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Parking location saved!')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not save location: $e')));
+      }
+    }
+  }
+
+  void _handleTakePhoto() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.camera);
+
+    if (image != null && mounted) {
+      await context.read<ParkingProvider>().savePhoto(
+        widget.session.id,
+        image.path,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Parking photo saved!')));
+      }
+    }
+  }
+
+  void _handleLocateCar() async {
+    final info = await context.read<ParkingProvider>().getSavedSpot(
+      widget.session.id,
+    );
+    final double? lat = info['lat'];
+    final double? lng = info['lng'];
+
+    if (lat != null && lng != null) {
+      final url = 'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
+      if (await canLaunchUrl(Uri.parse(url))) {
+        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No location saved for this session')),
+        );
+      }
+    }
+  }
+
+  // --- Phase 8: Share My Parking ---
+
+  void _handleShareSpot() async {
+    final endTimeStr = widget.session.endTime != null
+        ? DateFormat('hh:mm a').format(widget.session.endTime!)
+        : 'Unknown';
+
+    final message =
+        'I am parked at ${widget.session.zoneName} '
+        'in vehicle ${widget.session.vehiclePlate}. '
+        'My session ends at $endTimeStr.';
+
+    final url = 'whatsapp://send?text=${Uri.encodeComponent(message)}';
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url));
+    } else {
+      // Fallback to generic share if whatsapp not found (ideally use share_plus)
+      final genericUrl = 'sms:?body=${Uri.encodeComponent(message)}';
+      if (await canLaunchUrl(Uri.parse(genericUrl))) {
+        await launchUrl(Uri.parse(genericUrl));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -237,7 +332,36 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 60),
+              const SizedBox(height: 40),
+
+              // Interactive Actions Phase 6 & 8
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildCircleAction(
+                    icon: Icons.location_searching,
+                    label: 'Save Spot',
+                    onTap: _handleSaveSpot,
+                  ),
+                  _buildCircleAction(
+                    icon: Icons.camera_alt_outlined,
+                    label: 'Photo',
+                    onTap: _handleTakePhoto,
+                  ),
+                  _buildCircleAction(
+                    icon: Icons.map_outlined,
+                    label: 'Locate',
+                    onTap: _handleLocateCar,
+                  ),
+                  _buildCircleAction(
+                    icon: Icons.share_outlined,
+                    label: 'Share',
+                    onTap: _handleShareSpot,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 40),
+
               ElevatedButton.icon(
                 onPressed: () {
                   Navigator.push(
@@ -277,6 +401,33 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCircleAction({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: AppTheme.primaryColor),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+        ],
       ),
     );
   }

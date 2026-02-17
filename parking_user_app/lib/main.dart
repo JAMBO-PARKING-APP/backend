@@ -22,6 +22,7 @@ import 'package:parking_user_app/core/notification_dialog_service.dart';
 import 'package:parking_user_app/core/dialog_service.dart';
 import 'package:parking_user_app/features/rewards/providers/rewards_provider.dart';
 import 'package:parking_user_app/core/api_client.dart';
+// Removed: overlay_timer.dart
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,8 +30,8 @@ void main() async {
   // Initialize Firebase
   await Firebase.initializeApp();
 
-  // Initialize FCM Service
-  await FCMService().initialize();
+  // Initialize FCM Service (Non-blocking)
+  FCMService().initialize();
 
   runApp(
     MultiProvider(
@@ -65,7 +66,7 @@ class MyApp extends StatelessWidget {
 
         return MaterialApp(
           navigatorKey: DialogService.navigatorKey,
-          title: 'Space',
+          title: 'Jambo Space',
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: settings.themeMode,

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:parking_officer_app/features/violations/providers/enforcement_provider.dart';
-import 'package:parking_officer_app/features/violations/screens/camera_screen.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:parking_officer_app/core/app_theme.dart';
 
 class ViolationFormScreen extends StatefulWidget {
@@ -76,9 +76,8 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
     bool success = false;
     try {
       success = await context.read<EnforcementProvider>().issueViolation(
-        vehicleId: widget.vehicleId,
         vehiclePlate: widget.vehiclePlate,
-        zoneId: widget.zoneId ?? '0',
+        zoneId: widget.zoneId,
         type: _selectedType,
         description: _descriptionController.text,
         fineAmount: double.parse(_fineAmountController.text),
@@ -252,13 +251,11 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
   Widget _buildAddPhotoButton() {
     return InkWell(
       onTap: () async {
-        final File? image = await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const CameraScreen()),
-        );
+        final ImagePicker picker = ImagePicker();
+        final XFile? image = await picker.pickImage(source: ImageSource.camera);
         if (image != null) {
           setState(() {
-            _evidence.add(image);
+            _evidence.add(File(image.path));
           });
         }
       },

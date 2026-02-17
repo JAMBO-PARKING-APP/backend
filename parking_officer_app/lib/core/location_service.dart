@@ -79,9 +79,9 @@ class LocationService {
 
   Future<void> _sendLocationUpdate(Position position) async {
     try {
-      // Officer app posts to 'location/' which is 'api/officer/location/'
+      // Officer app posts to 'officer/location/'
       await _apiClient.post(
-        'location/',
+        'officer/location/',
         data: {
           'latitude': position.latitude,
           'longitude': position.longitude,

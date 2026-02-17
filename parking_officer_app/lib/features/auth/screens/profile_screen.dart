@@ -170,7 +170,7 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
                           onChanged: (bool value) async {
                             final success = await authProvider
                                 .updateChatAvailability(value);
-                            if (mounted && !success) {
+                            if (context.mounted && !success) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(

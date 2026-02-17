@@ -22,6 +22,7 @@ DJANGO_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
 ]
 
 THIRD_PARTY_APPS = [
@@ -41,6 +42,7 @@ LOCAL_APPS = [
     'apps.enforcement',
     'apps.notifications',
     'apps.analytics',
+    'apps.support_chat',  # AI Assistant
     'apps.rewards',
 ]
 
@@ -234,6 +236,9 @@ PESAPAL_CALLBACK_URL = config('PESAPAL_CALLBACK_URL', default='https://curtis-un
 FIREBASE_CREDENTIALS_PATH = BASE_DIR / 'jambo-parking-d6e88-firebase-adminsdk-fbsvc-9ba12edacb.json'
 FIREBASE_ENABLED = config('FIREBASE_ENABLED', default=True, cast=bool)
 
+# Google Gemini API
+GOOGLE_API_KEY = config('GOOGLE_API_KEY', default='')
+
 # Celery Beat Schedule
 CELERY_BEAT_SCHEDULE = {
     'check-expired-sessions': {
@@ -242,6 +247,10 @@ CELERY_BEAT_SCHEDULE = {
     },
     'cancel-overdue-reservations': {
         'task': 'apps.parking.tasks.cancel_overdue_reservations',
+        'schedule': crontab(minute='*/5'),  # Every 5 minutes
+    },
+    'notify-exit-overdue': {
+        'task': 'apps.parking.tasks.notify_exit_overdue',
         'schedule': crontab(minute='*/5'),  # Every 5 minutes
     },
     'validate-active-session-location': {
@@ -255,5 +264,19 @@ CELERY_BEAT_SCHEDULE = {
     'generate-daily-revenue': {
         'task': 'apps.analytics.tasks.generate_daily_revenue',
         'schedule': crontab(minute=5, hour=0),  # Daily at 00:05
+    },
+    # Autonomous Maintenance
+    'check-system-health': {
+        'task': 'apps.common.tasks.check_system_health',
+        'schedule': crontab(minute=0, hour='*/1'),  # Every hour
+    },
+    'cleanup-system-data': {
+        'task': 'apps.common.tasks.cleanup_system_data',
+        'schedule': crontab(minute=0, hour=3, day_of_week=0),  # Weekly: Sunday at 03:00 AM
+    },
+    # Reporting
+    'send-weekly-admin-report': {
+        'task': 'apps.analytics.reporting_tasks.send_weekly_admin_report',
+        'schedule': crontab(minute=0, hour=8, day_of_week=1),  # Weekly: Monday at 08:00 AM
     },
 }

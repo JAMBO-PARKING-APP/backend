@@ -65,8 +65,8 @@ class ParkingSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ParkingSession
         fields = ['id', 'vehicle_plate', 'zone_name', 'slot_code', 'start_time',
-                  'planned_end_time', 'actual_end_time', 'status', 'estimated_cost',
-                  'final_cost', 'qr_code_data', 'created_at']
+                  'planned_end_time', 'actual_end_time', 'status', 'is_overdue', 
+                  'estimated_cost', 'final_cost', 'qr_code_data', 'created_at']
         read_only_fields = ['id', 'start_time', 'created_at']
 
 class StartParkingSerializer(serializers.Serializer):
@@ -142,7 +142,7 @@ class ParkingSessionDetailSerializer(serializers.ModelSerializer):
         model = ParkingSession
         fields = ['id', 'vehicle_plate', 'driver_name', 'driver_phone', 'zone_name',
                   'slot_number', 'start_time', 'planned_end_time', 'actual_end_time',
-                  'status', 'estimated_cost', 'final_cost', 'created_at']
+                  'status', 'is_overdue', 'estimated_cost', 'final_cost', 'created_at']
     
     def get_driver_name(self, obj):
         """Get driver's full name"""

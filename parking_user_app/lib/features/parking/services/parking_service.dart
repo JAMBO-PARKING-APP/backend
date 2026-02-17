@@ -47,7 +47,7 @@ class ParkingService {
         data: {
           'zone_id': zoneId,
           'vehicle_id': vehicleId,
-          'duration_hours': durationHours,
+          'duration_hours': double.parse(durationHours.toStringAsFixed(2)),
           'payment_method': paymentMethod,
         },
       );

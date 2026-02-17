@@ -8,6 +8,7 @@ class Zone {
   final int totalSlots;
   final int availableSlots;
   final String? description;
+  final String? imageUrl;
 
   Zone({
     required this.id,
@@ -19,6 +20,7 @@ class Zone {
     required this.totalSlots,
     required this.availableSlots,
     this.description,
+    this.imageUrl,
   });
 
   factory Zone.fromJson(Map<String, dynamic> json) {
@@ -33,6 +35,7 @@ class Zone {
       totalSlots: json['total_slots'] ?? 0,
       availableSlots: json['available_slots'] ?? 0,
       description: json['description'],
+      imageUrl: json['zone_image'],
     );
   }
 }

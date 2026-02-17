@@ -351,12 +351,14 @@ class DeleteAccountAPIView(APIView):
 
     def delete(self, request):
         user = request.user
-        # Soft delete: set is_active to False
+        # Soft delete: set is_active to False and set deletion timestamps
         user.is_active = False
+        user.deletion_requested_at = timezone.now()
+        user.deletion_planned_at = timezone.now() + timedelta(days=30)
         user.save()
         
         return Response({
-            'message': 'Account deleted successfully'
+            'message': 'Account deletion requested successfully. Your account will be permanently deleted in 30 days.'
         }, status=status.HTTP_204_NO_CONTENT)
 
 class UserLocationAPIView(generics.CreateAPIView):

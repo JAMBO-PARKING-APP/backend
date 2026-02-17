@@ -64,12 +64,16 @@ void unawaited(Future<void> future) {}
 class SpaceOfficerApp extends StatelessWidget {
   const SpaceOfficerApp({super.key});
 
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Space Officer',
-      theme: AppTheme.officerTheme,
       debugShowCheckedModeBanner: false,
+      theme: AppTheme.officerTheme,
       home: const AuthWrapper(),
     );
   }

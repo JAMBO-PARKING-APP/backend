@@ -171,6 +171,13 @@ class ParkingSession(BaseModel):
     estimated_cost = models.DecimalField(max_digits=12, decimal_places=2)
     final_cost = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
+    @property
+    def is_overdue(self):
+        """Check if session is currently active but passed planned end time"""
+        if self.status != ParkingStatus.ACTIVE:
+            return False
+        return timezone.now() > self.planned_end_time
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
@@ -250,6 +257,10 @@ class ParkingSession(BaseModel):
             
             # Send refund notification
             notify_wallet_refund(wallet_tx, self)
+        
+        # Notify officers in real-time
+        from apps.notifications.notification_triggers import notify_officers_session_event
+        notify_officers_session_event(self, 'session_ended')
         
         self.status = ParkingStatus.COMPLETED
         

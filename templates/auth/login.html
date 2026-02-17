@@ -9,14 +9,17 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         :root {
-            --primary-orange: #ff6b35;
-            --secondary-orange: #ff8c42;
-            --dark-blue: #1a1f36;
+            --primary-blue: #1890ff;
+            --primary-blue-dark: #0050b3;
+            --neutral-bg: #f0f2f5;
+            --text-primary: #262626;
+            --text-secondary: #8c8c8c;
+            --border-color: #d9d9d9;
         }
         
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--neutral-bg);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -25,187 +28,179 @@
         }
         
         .login-container {
-            max-width: 450px;
+            max-width: 420px;
             width: 100%;
         }
         
         .login-card {
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             overflow: hidden;
-            animation: slideUp 0.5s ease;
-        }
-        
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
         
         .login-header {
-            background: linear-gradient(135deg, var(--primary-orange) 0%, var(--secondary-orange) 100%);
-            padding: 40px 30px;
+            background-color: var(--primary-blue);
+            padding: 36px 24px;
             text-align: center;
             color: white;
+            border-bottom: 1px solid var(--border-color);
         }
         
         .logo-container {
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
         
         .logo-container img {
-            max-width: 180px;
+            max-width: 140px;
             height: auto;
             filter: brightness(0) invert(1);
-            animation: fadeIn 0.8s ease;
         }
         
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        .login-header h4 {
-            margin: 0;
-            font-weight: 700;
-            font-size: 1.5rem;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        .login-header h3 {
+            margin: 12px 0 4px;
+            font-weight: 600;
+            font-size: 1.25rem;
         }
         
         .login-header p {
-            margin: 10px 0 0;
-            opacity: 0.95;
-            font-size: 0.95rem;
+            margin: 0;
+            opacity: 0.9;
+            font-size: 0.9rem;
+            font-weight: 400;
         }
         
         .login-body {
-            padding: 40px 30px;
+            padding: 32px 24px;
         }
         
         .form-label {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 6px;
             font-size: 0.9rem;
         }
         
         .form-control {
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 12px 16px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 10px 12px;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
         }
         
         .form-control:focus {
-            border-color: var(--primary-orange);
-            box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.15);
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.15);
         }
         
         .input-group-text {
             background: white;
-            border: 2px solid #e0e0e0;
+            border: 1px solid var(--border-color);
             border-right: none;
-            border-radius: 10px 0 0 10px;
-            color: #666;
+            border-radius: 4px 0 0 4px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
         }
         
         .input-group .form-control {
             border-left: none;
-            border-radius: 0 10px 10px 0;
+            border-radius: 0 4px 4px 0;
         }
         
         .input-group:focus-within .input-group-text {
-            border-color: var(--primary-orange);
+            border-color: var(--primary-blue);
         }
         
         .btn-login {
-            background: linear-gradient(135deg, var(--primary-orange) 0%, var(--secondary-orange) 100%);
+            background-color: var(--primary-blue);
             border: none;
-            border-radius: 10px;
-            padding: 14px;
-            font-weight: 600;
-            font-size: 1rem;
+            border-radius: 4px;
+            padding: 10px 16px;
+            font-weight: 500;
+            font-size: 0.95rem;
             color: white;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+            transition: all 0.2s ease;
+            cursor: pointer;
         }
         
         .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
-            background: linear-gradient(135deg, var(--secondary-orange) 0%, var(--primary-orange) 100%);
+            background-color: var(--primary-blue-dark);
         }
         
         .btn-login:active {
-            transform: translateY(0);
+            opacity: 0.95;
+        }
+        
+        .btn-login:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
         
         .alert {
-            border-radius: 10px;
-            border: none;
-            padding: 12px 16px;
-            margin-bottom: 20px;
-            animation: slideDown 0.3s ease;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            padding: 10px 12px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
         }
         
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .alert-danger {
+            background-color: #fff1f0;
+            border-color: #ffccc7;
+            color: #d4380d;
+        }
+        
+        .alert-success {
+            background-color: #f6ffed;
+            border-color: #b7eb8f;
+            color: #274e00;
         }
         
         .login-footer {
             text-align: center;
-            padding: 20px 30px;
-            background: #f8f9fa;
-            border-top: 1px solid #e0e0e0;
+            padding: 16px 24px;
+            background-color: #fafafa;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
         }
         
-        .login-footer small {
-            color: #666;
-        }
-        
-        .feature-list {
-            list-style: none;
-            padding: 0;
-            margin: 20px 0 0;
-        }
-        
-        .feature-list li {
-            padding: 8px 0;
-            color: #666;
-            font-size: 0.9rem;
-        }
-        
-        .feature-list li i {
-            color: var(--primary-orange);
-            margin-right: 10px;
+        .form-divider {
+            margin: 20px 0 16px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
         }
         
         .password-toggle {
             position: absolute;
-            right: 15px;
+            right: 12px;
             top: 50%;
             transform: translateY(-50%);
             cursor: pointer;
-            color: #666;
+            color: var(--text-secondary);
             z-index: 10;
+            font-size: 0.95rem;
+            border: none;
+            background: none;
+            padding: 0;
+        }
+        
+        .password-toggle:hover {
+            color: var(--text-primary);
         }
         
         .password-wrapper {
             position: relative;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group:last-of-type {
+            margin-bottom: 8px;
         }
     </style>
 </head>
@@ -216,20 +211,19 @@
                 <div class="logo-container">
                     <img src="{% static 'JAMBO.png' %}" alt="JAMBO Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                     <div style="display:none;">
-                        <i class="bi bi-car-front-fill" style="font-size: 4rem;"></i>
+                        <i class="bi bi-car-front-fill" style="font-size: 3.5rem;"></i>
                     </div>
                 </div>
-                <h4>Smart Parking System</h4>
-                <p>Officer & Admin Portal</p>
+                <h3>JAMBO Parking</h3>
+                <p>Management Portal</p>
             </div>
             
             <div class="login-body">
                 {% if messages %}
                     {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            <i class="bi bi-{% if message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+                        <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
                             {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     {% endfor %}
                 {% endif %}
@@ -237,34 +231,34 @@
                 <form method="post" id="loginForm">
                     {% csrf_token %}
                     
-                    <div class="mb-3">
+                    <div class="form-group">
                         <label for="username" class="form-label">
-                            <i class="bi bi-person-circle me-1"></i>
-                            Phone Number / Username
+                            Phone Number or Username
                         </label>
                         <div class="input-group">
                             <span class="input-group-text">
                                 <i class="bi bi-telephone"></i>
                             </span>
                             <input type="text" class="form-control" id="username" name="username" 
-                                   placeholder="Enter your phone number" required autofocus>
+                                   placeholder="Enter phone or username" required autofocus>
                         </div>
                     </div>
                     
-                    <div class="mb-4">
+                    <div class="form-group">
                         <label for="password" class="form-label">
-                            <i class="bi bi-shield-lock me-1"></i>
                             Password
                         </label>
                         <div class="password-wrapper">
                             <div class="input-group">
                                 <span class="input-group-text">
-                                    <i class="bi bi-key"></i>
+                                    <i class="bi bi-lock"></i>
                                 </span>
                                 <input type="password" class="form-control" id="password" name="password" 
                                        placeholder="Enter your password" required>
                             </div>
-                            <i class="bi bi-eye password-toggle" id="togglePassword"></i>
+                            <button type="button" class="password-toggle" id="togglePassword">
+                                <i class="bi bi-eye"></i>
+                            </button>
                         </div>
                     </div>
                     
@@ -273,19 +267,11 @@
                         Sign In
                     </button>
                 </form>
-                
-                <ul class="feature-list">
-                    <li><i class="bi bi-check-circle-fill"></i> Secure Authentication</li>
-                    <li><i class="bi bi-check-circle-fill"></i> Real-time Monitoring</li>
-                    <li><i class="bi bi-check-circle-fill"></i> Violation Management</li>
-                </ul>
             </div>
             
             <div class="login-footer">
-                <small>
-                    <i class="bi bi-shield-check me-1"></i>
-                    Powered by JAMBO Smart Parking &copy; 2024
-                </small>
+                <i class="bi bi-shield-check me-1"></i>
+                JAMBO Smart Parking System &copy; 2024-2026
             </div>
         </div>
     </div>
@@ -297,11 +283,10 @@
             const password = document.getElementById('password');
             const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
             password.setAttribute('type', type);
-            this.classList.toggle('bi-eye');
-            this.classList.toggle('bi-eye-slash');
+            this.innerHTML = type === 'password' ? '<i class="bi bi-eye"></i>' : '<i class="bi bi-eye-slash"></i>';
         });
         
-        // Form animation
+        // Form submission
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             const btn = this.querySelector('button[type="submit"]');
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Signing in...';

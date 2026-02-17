@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
+import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
+import 'package:parking_user_app/core/utils/currency_formatter.dart';
 
 class PaymentSelectionDialog extends StatelessWidget {
   final double amount;
@@ -35,9 +36,11 @@ class PaymentSelectionDialog extends StatelessWidget {
             const SizedBox(height: 8),
 
             // Amount
-            Text(
-              'Amount: ${context.read<AuthProvider>().currencySymbol} ${amount.toStringAsFixed(0)}',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+            Consumer<SettingsProvider>(
+              builder: (context, settings, _) => Text(
+                'Amount: ${CurrencyFormatter.formatCurrency(amount, settings.countryConfig)}',
+                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+              ),
             ),
             const SizedBox(height: 24),
 
@@ -84,13 +87,15 @@ class PaymentSelectionDialog extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            'Balance: ${context.read<AuthProvider>().currencySymbol} ${walletBalance.toStringAsFixed(0)}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: hasSufficientBalance
-                                  ? Colors.green.shade700
-                                  : Colors.red,
+                          Consumer<SettingsProvider>(
+                            builder: (context, settings, _) => Text(
+                              'Balance: ${CurrencyFormatter.formatCurrency(walletBalance, settings.countryConfig)}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: hasSufficientBalance
+                                    ? Colors.green.shade700
+                                    : Colors.red,
+                              ),
                             ),
                           ),
                           if (!hasSufficientBalance)
@@ -109,47 +114,76 @@ class PaymentSelectionDialog extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Pesapal Option
-            InkWell(
-              onTap: () {
-                Navigator.pop(context);
-                onPesapalSelected();
-              },
-              borderRadius: BorderRadius.circular(15),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: Colors.blue, width: 2),
-                ),
-                child: Row(
+            // Mobile Money / Card Option (if enabled)
+            Consumer<SettingsProvider>(
+              builder: (context, settings, _) {
+                // Check if any external payment method (like pesapal) is enabled
+                final hasExternal = settings.countryConfig.paymentMethods.any(
+                  (m) => m != 'wallet',
+                );
+
+                if (!hasExternal) return const SizedBox.shrink();
+
+                return Column(
                   children: [
-                    Icon(Icons.credit_card, color: Colors.blue, size: 32),
-                    const SizedBox(width: 16),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Mobile Money / Card',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                    const SizedBox(height: 16),
+                    InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                        onPesapalSelected();
+                      },
+                      borderRadius: BorderRadius.circular(15),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(color: Colors.blue, width: 2),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.credit_card,
+                              color: Colors.blue,
+                              size: 32,
                             ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Pay securely via Pesapal',
-                            style: TextStyle(fontSize: 14, color: Colors.grey),
-                          ),
-                        ],
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    settings.countryConfig.paymentMethods
+                                            .contains('mpesa')
+                                        ? 'M-Pesa / Card'
+                                        : 'Mobile Money / Card',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Pay securely via ${settings.countryConfig.countryCode == 'UG' ? 'Pesapal' : 'Flutterwave'}',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.arrow_forward_ios,
+                              color: Colors.blue,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_ios, color: Colors.blue),
                   ],
-                ),
-              ),
+                );
+              },
             ),
             const SizedBox(height: 16),
 

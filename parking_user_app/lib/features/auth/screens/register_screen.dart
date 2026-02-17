@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_user_app/features/auth/screens/otp_verification_screen.dart';
@@ -133,11 +134,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    CountryCodePicker(
-                      onChanged: (code) =>
-                          setState(() => _countryCode = code.dialCode!),
-                      initialSelection: 'UG',
-                      favorite: const ['UG', 'KE', 'TZ'],
+                    Consumer<SettingsProvider>(
+                      builder: (context, settings, _) {
+                        return CountryCodePicker(
+                          onChanged: (code) =>
+                              setState(() => _countryCode = code.dialCode!),
+                          initialSelection: settings.isoCountryCode ?? 'UG',
+                          favorite: const ['UG', 'KE', 'TZ'],
+                        );
+                      },
                     ),
                     Expanded(
                       child: TextFormField(

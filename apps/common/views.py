@@ -1,23 +1,80 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import TemplateView, View, ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib import messages
 from django.utils.translation import gettext as _
 from django.urls import reverse_lazy
 from django.http import JsonResponse
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
 from django.db.models import Q, Count, Sum
 from django.utils import timezone
 from datetime import datetime, timedelta
 import json
 from apps.common.constants import UserRole, CURRENCY_SYMBOLS, DEFAULT_CURRENCY, ParkingStatus, TransactionStatus
-from apps.common.models import SystemConfiguration
+from apps.common.models import Country, CountryConfig, SystemConfiguration
 from apps.accounts.models import User, Vehicle
 from apps.parking.models import Zone, ParkingSlot, ParkingSession, Reservation
 from apps.payments.models import Transaction, PaymentMethod, Refund, Invoice, WalletTransaction, PaymentGatewayConfig
 from apps.enforcement.models import Violation, OfficerLog, OfficerStatus, QRCodeScan
 from apps.rewards.models import LoyaltyAccount, PointTransaction
 from apps.notifications.models import NotificationEvent, ChatConversation, ChatMessage
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_country_config(request, country_code):
+    """
+    Get payment and currency configuration for a specific country
+    """
+    try:
+        from apps.common.models import Country, CountryConfig
+        country = Country.objects.get(iso_code=country_code.upper(), is_active=True)
+        
+        try:
+            config = CountryConfig.objects.get(country=country, is_active=True)
+            payment_methods = config.payment_methods
+            exchange_rate = str(config.exchange_rate_to_base)
+        except CountryConfig.DoesNotExist:
+            payment_methods = ['wallet']
+            if country.iso_code == 'UG':
+                payment_methods.append('pesapal')
+            exchange_rate = '1.0000'
+        
+        return Response({
+            'country_code': country.iso_code,
+            'country_name': country.name,
+            'currency_code': country.currency,
+            'currency_symbol': country.currency_symbol,
+            'payment_methods': payment_methods,
+            'exchange_rate': exchange_rate,
+        }, status=status.HTTP_200_OK)
+        
+    except Country.DoesNotExist:
+        return Response({
+            'error': f'Country with code {country_code} not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+
+@login_required
+def dashboard_legacy(request):
+    """
+    Legacy dashboard redirect
+    """
+    return redirect('dashboard')
+
+@login_required
+def placeholder_view(request, feature_name=None):
+    """
+    Placeholder view for unimplemented features
+    """
+    context = {
+        'page_title': feature_name or 'Feature',
+        'feature_name': feature_name or 'This feature',
+    }
+    return render(request, 'base/placeholder.html', context)
 
 class AdminRequiredMixin(UserPassesTestMixin):
     def test_func(self):

@@ -31,6 +31,10 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     # Chat availability for officers/support
     can_receive_chats = models.BooleanField(default=False, verbose_name=_("Can Receive Chats"), help_text="Whether this officer/agent is available to receive chat assignments")
     
+    # Account deletion fields
+    deletion_requested_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Deletion Requested At"))
+    deletion_planned_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Deletion Planned At"), help_text="Scheduled date for permanent deletion")
+    
     # Officer zone assignments
     assigned_zones = models.ManyToManyField(
         'parking.Zone',
@@ -57,6 +61,7 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
             models.Index(fields=['created_at'], name='acc_usr_created_idx'),
             models.Index(fields=['role', 'is_active'], name='acc_usr_role_act_idx'),
             models.Index(fields=['email'], name='acc_usr_email_idx'),
+            models.Index(fields=['deletion_planned_at'], name='acc_usr_del_plan_idx'),
         ]
 
     def __str__(self):
@@ -95,6 +100,10 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
                 # Silently fail to ensure user can still sign up if parsing fails
                 pass
                 
+        if self.is_active:
+            self.deletion_requested_at = None
+            self.deletion_planned_at = None
+
         super().save(*args, **kwargs)
 
 class Vehicle(BaseModel):

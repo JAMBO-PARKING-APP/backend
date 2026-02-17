@@ -27,11 +27,11 @@
             <div class="col-md-3">
                 <select name="role" class="form-select form-select-sm" onchange="this.form.submit()">
                     <option value="">{% trans "All Roles" %}</option>
-                    <option value="driver" {% if request.GET.role=='driver' %}selected{% endif %}>{% trans "Driver" %}
+                    <option value="driver" {% if request.GET.role == 'driver' %}selected{% endif %}>{% trans "Driver" %}
                     </option>
-                    <option value="officer" {% if request.GET.role=='officer' %}selected{% endif %}>{% trans "Officer"
+                    <option value="officer" {% if request.GET.role == 'officer' %}selected{% endif %}>{% trans "Officer"
                         %}</option>
-                    <option value="admin" {% if request.GET.role=='admin' %}selected{% endif %}>{% trans "Admin" %}
+                    <option value="admin" {% if request.GET.role == 'admin' %}selected{% endif %}>{% trans "Admin" %}
                     </option>
                 </select>
             </div>

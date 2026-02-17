@@ -63,117 +63,166 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
 
     final endDateTime = startDateTime.add(Duration(minutes: _durationMinutes));
 
-    final reservation = await context
-        .read<ReservationProvider>()
-        .createReservation(
-          vehicleId: _selectedVehicleId!,
-          zoneId: _selectedZoneId!,
-          startTime: startDateTime,
-          endTime: endDateTime,
+    // Show confirmation modal
+    await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Confirm Reservation'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Do you want to book this parking spot?'),
+                const SizedBox(height: 16),
+                Text('Date: ${DateFormat('yyyy-MM-dd').format(_startDate)}'),
+                Text('Time: ${_startTime.format(context)}'),
+                Text('Duration: $_durationMinutes min'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Confirm'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!mounted) return;
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final reservation = await context
+          .read<ReservationProvider>()
+          .createReservation(
+            vehicleId: _selectedVehicleId!,
+            zoneId: _selectedZoneId!,
+            startTime: startDateTime,
+            endTime: endDateTime,
+          );
+
+      if (mounted) Navigator.pop(context); // Hide loading
+
+      if (reservation != null && mounted) {
+        // Calculate cost
+        final zone = context.read<ParkingProvider>().zones.firstWhere(
+          (z) => z.id == _selectedZoneId,
         );
+        final cost = zone.hourlyRate * (_durationMinutes / 60.0);
+        final walletBalance =
+            context.read<AuthProvider>().user?.walletBalance ?? 0.0;
 
-    if (reservation != null && mounted) {
-      // Calculate cost
-      final zone = context.read<ParkingProvider>().zones.firstWhere(
-        (z) => z.id == _selectedZoneId,
-      );
-      final cost = zone.hourlyRate * (_durationMinutes / 60.0);
-      final walletBalance =
-          context.read<AuthProvider>().user?.walletBalance ?? 0.0;
-
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) => PaymentSelectionDialog(
-          amount: cost,
-          walletBalance: walletBalance,
-          onWalletSelected: () {
-         
-            Navigator.pop(dialogContext);
-            if (mounted) {
-              Navigator.pop(context); 
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Reservation Created! Wallet payment for reservations coming soon.',
-                  ),
-                ),
-              );
-            }
-          },
-          onPesapalSelected: () async {
-            Navigator.pop(dialogContext); // Close payment selection dialog
-
-            // Show loading
-            if (!mounted) return;
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (c) => const Center(child: CircularProgressIndicator()),
-            );
-
-            try {
-              // Initiate Pesapal Payment
-              final paymentService = PaymentService();
-              final result = await paymentService.initiatePesapalPayment(
-                amount: cost,
-                description: "Reservation Payment: ${reservation.id}",
-                isWalletTopup: false,
-                reservationId: reservation.id,
-              );
-
-              // Hide loading
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) => PaymentSelectionDialog(
+            amount: cost,
+            walletBalance: walletBalance,
+            onWalletSelected: () {
+              Navigator.pop(dialogContext);
               if (mounted) {
                 Navigator.pop(context);
-              }
-
-              if (result['success'] == true && mounted) {
-                Navigator.pop(context); // Close CreateReservationScreen
-
-                final url = result['redirect_url'];
-                if (url != null) {
-                  final uri = Uri.parse(url);
-                  if (await canLaunchUrl(uri)) {
-                    await launchUrl(uri, mode: LaunchMode.externalApplication);
-                  } else {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Could not launch payment URL'),
-                        ),
-                      );
-                    }
-                  }
-                }
-              } else if (mounted) {
-                // Show error
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
+                  const SnackBar(
                     content: Text(
-                      result['message'] ?? 'Payment initiation failed',
+                      'Reservation Created! Wallet payment for reservations coming soon.',
                     ),
                   ),
                 );
               }
-            } catch (e) {
-              // Hide loading on error
-              if (mounted) {
-                Navigator.pop(context);
-              }
+            },
+            onPesapalSelected: () async {
+              Navigator.pop(dialogContext); // Close payment selection dialog
 
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error initiating payment: $e')),
+              // Show loading
+              if (!mounted) return;
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (c) =>
+                    const Center(child: CircularProgressIndicator()),
+              );
+
+              try {
+                // Initiate Pesapal Payment
+                final paymentService = PaymentService();
+                final result = await paymentService.initiatePesapalPayment(
+                  amount: cost,
+                  description: "Reservation Payment: ${reservation.id}",
+                  isWalletTopup: false,
+                  reservationId: reservation.id,
                 );
+
+                // Hide loading
+                if (mounted) {
+                  Navigator.pop(context);
+                }
+
+                if (result['success'] == true && mounted) {
+                  Navigator.pop(context); // Close CreateReservationScreen
+
+                  final url = result['redirect_url'];
+                  if (url != null) {
+                    final uri = Uri.parse(url);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
+                    } else {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Could not launch payment URL'),
+                          ),
+                        );
+                      }
+                    }
+                  }
+                } else if (mounted) {
+                  // Show error
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        result['message'] ?? 'Payment initiation failed',
+                      ),
+                    ),
+                  );
+                }
+              } catch (e) {
+                // Hide loading on error
+                if (mounted) {
+                  Navigator.pop(context);
+                }
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error initiating payment: $e')),
+                  );
+                }
               }
-            }
-          },
-        ),
-      );
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to create reservation')),
-      );
+            },
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) Navigator.pop(context); // Hide loading on error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error creating reservation: $e')),
+        );
+      }
     }
   }
 

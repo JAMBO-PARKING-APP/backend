@@ -1,145 +1,145 @@
-# Smart Parking Django System
+# 🏙️ JAMBO PARK: Enterprise Intelligent Parking System
 
-A comprehensive parking management system built with Django, designed for municipal use with officer enforcement capabilities.
+> A state-of-the-art, multi-tenant parking management ecosystem designed for municipal authorities, private operators, and vehicle owners. Built for scalability, security, and real-time operations.
 
-## Features
+---
 
-- **Phone-based Authentication** with OTP verification
-- **Real-time Parking Sessions** with zone management
-- **Payment Processing** with transaction tracking
-- **Officer Enforcement Tools** with violation management
-- **Web Dashboard** for officers and administrators
-- **RESTful API** for mobile applications
+## 🏗️ System Architecture
 
-## Architecture
+The JAMBO PARK ecosystem consists of a high-performance Django backend serving two native Flutter mobile applications and a web-based administrative dashboard.
 
-- **Django + DRF** for backend API and web interface
-- **PostgreSQL** for data storage
-- **Redis** for caching and sessions
-- **Celery** for background tasks
-- **Bootstrap 5** for responsive web UI
-
-## Quick Start
-
-### 1. Environment Setup
-
-```bash
-# Clone and navigate to project
-cd "PARKING SYSTEM"
-
-# Create virtual environment
-python -m venv venv
-venv\Scripts\activate  # Windows
-# source venv/bin/activate  # Linux/Mac
-
-# Install dependencies
-pip install -r requirements/development.txt
+```mermaid
+graph TD
+    UserApp[Flutter User App] -->|REST API| Backend[Django API Layer]
+    OfficerApp[Flutter Officer App] -->|REST API/WS| Backend
+    AdminWeb[Admin Dashboard] -->|Internal API| Backend
+    
+    Backend --> DB[(PostgreSQL)]
+    Backend --> Redis[(Redis Cache/Queue)]
+    Backend --> Celery[Celery Tasks]
+    
+    Backend --> Firebase[FCM Push Service]
+    Backend --> Gemini[Google Gemini AI]
+    Backend --> Pesapal[Payment Gateway]
+    
+    Celery -->|Scheduled| DB
+    Celery -->|Async| Firebase
 ```
 
-### 2. Database Setup
+---
 
-```bash
-# Create PostgreSQL database
-createdb smart_parking_dev
+## 🚀 Core Components
 
-# Copy environment variables
-copy .env.example .env
-# Edit .env with your database credentials
+### 1. Backend Engine (Django REST Framework)
+- **Framework**: Django 4.2+ with Channels (WebSockets).
+- **Architecture**: Modular Monolith with 10+ internal apps.
+- **Key Modules**:
+  - `accounts`: Advanced user profiles, vehicle management, and single-device login enforcement.
+  - `parking`: Real-time session tracking, zone availability, and reservation engine.
+  - `enforcement`: Officer management, violation issuance with evidence capture, and GPS tracking.
+  - `payments`: Multi-provider gateway (Pesapal), transaction auditing, and digital wallet system.
+  - `notifications`: Multi-channel notification engine (FCM, SMS, In-app).
+  - `support_chat`: AI-powered customer support integrated with Google Gemini.
 
-# Run migrations
-python manage.py migrate
+### 2. Mobile Ecosystem (Flutter)
+- **Parking User App**: Features zone exploration via `flutter_map`, real-time session timers, digital payments, and violation management.
+- **Parking Officer App**: Optimized for field operations, featuring QR code scanning, violation reporting with camera integration, and real-time zone monitoring.
+- **State Management**: Scalable `Provider` architecture with Clean Architecture patterns.
 
-# Create superuser
-python manage.py createsuperuser
-```
+---
 
-### 3. Run Development Server
+## 🔒 Enterprise Security & Compliance
 
-```bash
-python manage.py runserver
-```
+The system is designed with a "security-first" mindset, adhering to industry standards for data protection and financial integrity.
 
-Visit:
-- **Web Dashboard**: http://127.0.0.1:8000/
-- **Admin Panel**: http://127.0.0.1:8000/admin/
-- **API Root**: http://127.0.0.1:8000/api/
+### Data Protection
+- **JWT Authentication**: Secure token-based auth with device-specific session IDs (`JTI`).
+- **Encryption**: HTTPS/TLS 1.2+ mandatory for all API communication.
+- **HSTS & Security Headers**: Full implementation of HSTS, X-Content-Type-Options, and X-XSS-Protection.
+- **Single Device Policy**: Middleware restriction ensuring user accounts can only be active on one mobile device at a time.
 
-## API Endpoints
+### Financial Integrity
+- **Immutable Auditing**: Every transaction is logged with a non-modifiable audit trail.
+- **Compliance**: Adherent to municipal reporting requirements with accurate revenue attribution.
+- **Evidence Management**: Violation records include cryptographically linked GPS coordinates and photographic proof.
 
-### Authentication
-- `POST /api/auth/register/` - User registration
-- `POST /api/auth/verify-otp/` - OTP verification
-- `POST /api/auth/login/` - User login
+---
 
-### Parking
-- `GET /api/parking/zones/` - List parking zones
-- `POST /api/parking/sessions/start/` - Start parking session
-- `POST /api/parking/sessions/end/` - End parking session
+## 🛠️ Deployment Guide
 
-### Enforcement (Officers only)
-- `GET /api/enforcement/check/{plate}/` - Check vehicle status
-- `POST /api/enforcement/violations/` - Issue violation
+### Backend (Production - Render/Cloud)
+1. **Environment Configuration**: Configure `.env` with `DJANGO_SETTINGS_MODULE=config.settings.production`.
+2. **Infrastructure**:
+   - **DB**: PostgreSQL (Managed).
+   - **Cache**: Redis 6.0+.
+   - **Broker**: Redis for Celery tasks.
+3. **Execution**:
+   ```bash
+   # Collect static assets
+   python manage.py collectstatic --noinput
+   # Run migrations
+   python manage.py migrate
+   # Start Gunicorn/Daphne
+   gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+   ```
 
-### Payments
-- `POST /api/payments/init/` - Initialize payment
-- `GET /api/payments/history/` - Transaction history
+### Mobile Apps (Flutter)
+1. **Prerequisites**: Flutter SDK 3.10.7+, Java 17+, Xcode 14+.
+2. **Android Build**:
+   ```bash
+   cd parking_user_app
+   flutter pub get
+   flutter build apk --release --split-per-abi
+   ```
+3. **iOS Build**:
+   ```bash
+   cd parking_user_app/ios
+   pod install
+   cd ..
+   flutter build ios --release --no-codesign
+   ```
 
-## Development Workflow
+---
 
-### Phase 1: Core Foundation ✅
-- [x] Project structure and settings
-- [x] Common utilities and base models
-- [x] User authentication system
+## 📡 API Reference Documentation
 
-### Phase 2: Core Parking Logic ✅
-- [x] Zone and slot management
-- [x] Parking session handling
-- [x] Payment processing
+### Authentication Flow (V2)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/user/auth/register/` | Register new vehicle owner |
+| `POST` | `/api/user/auth/login/` | Phone-based login with JTI emission |
+| `POST` | `/api/user/auth/verify-otp/` | MFA verification step |
 
-### Phase 3: Enforcement System ✅
-- [x] Officer tools and permissions
-- [x] Violation management
-- [x] Evidence handling
+### Parking Operations
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET`  | `/api/user/zones/` | List zones with real-time slot occupancy |
+| `POST` | `/api/user/parking/start/` | Begin active session (supports geolocation validation) |
+| `POST` | `/api/user/parking/extend/` | Extend session duration with automated pricing |
 
-### Phase 4: Web Interface ✅
-- [x] Bootstrap-based templates
-- [x] Officer dashboard
-- [x] Authentication views
+### Enforcement (Officer API)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/officer/violations/issue/` | File violation with image evidence |
+| `GET`  | `/api/officer/validate/qr/` | Verify active session via QR scan |
 
-## Testing
+---
 
-```bash
-# Run tests
-python manage.py test
+## 🔄 Autonomous Maintenance (Celery Beat)
 
-# With coverage
-coverage run --source='.' manage.py test
-coverage report
-```
+The system maintains itself through a series of scheduled autonomous tasks:
+- **`check-expired-sessions`**: Runs every 1 minute to auto-notify users.
+- **`generate-daily-revenue`**: Automated accounting at 00:05 AM.
+- **`check-system-health`**: Hourly diagnostics and error reporting.
+- **`cleanup-system-data`**: Weekly purging of redundant logs (Sundays at 3:00 AM).
 
-## Production Deployment
+---
 
-1. **Environment**: Set `DJANGO_SETTINGS_MODULE=config.settings.production`
-2. **Database**: Configure PostgreSQL with PostGIS extension
-3. **Static Files**: Run `python manage.py collectstatic`
-4. **Web Server**: Use Gunicorn with Nginx
-5. **Background Tasks**: Start Celery workers
+## 📊 References & Further Reading
 
-## Security Features
+- [System Design Document](./docs/architecture.md)
+- [Database Schema](./docs/database_schema.md)
+- [Mobile App Style Guide](./docs/design_system.md)
 
-- JWT token authentication with refresh rotation
-- Role-based permissions (Driver/Officer/Admin)
-- CSRF protection on all forms
-- Rate limiting on enforcement endpoints
-- Audit logging for all officer actions
-
-## Municipal Compliance
-
-- **Financial Auditing**: Immutable transaction records
-- **Legal Evidence**: Violation photos with GPS coordinates
-- **Officer Accountability**: Complete activity logging
-- **Data Integrity**: Foreign key constraints and validation
-
-## Support
-
-For technical issues or feature requests, please contact the development team.
+---
+*© 2026 JAMBO PARK Solutions. Confidential and Proprietary.*

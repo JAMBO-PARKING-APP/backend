@@ -9,7 +9,7 @@ from apps.parking import api_views_v2 as parking_views
 from apps.enforcement import api_views_v2 as enforcement_views
 from apps.payments import api_views_v2 as payments_views
 from apps.notifications import api_views as notifications_views
-from apps.common import api_views_help
+from apps.common import api_views_help, views as common_views
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
@@ -62,5 +62,7 @@ urlpatterns = [
     path('preferences/', notifications_views.UserPreferencesAPIView.as_view(), name='user-preferences'),
     path('help/', api_views_help.HelpCenterListAPIView.as_view(), name='help-list'),
     path('help/<int:item_id>/', api_views_help.HelpCenterDetailAPIView.as_view(), name='help-detail'),
+    path('support/', include('apps.support_chat.urls')),
     path('location/', accounts_views.UserLocationAPIView.as_view(), name='user-location'),
+    path('country-config/<str:country_code>/', common_views.get_country_config, name='country-config'),
 ]

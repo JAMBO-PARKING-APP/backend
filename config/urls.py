@@ -19,7 +19,8 @@ urlpatterns = [
     
     # Shared endpoints for both apps
     path('api/notifications/', include('apps.notifications.urls')),
-    path('api/rewards/', include('apps.rewards.urls')),
+    path('api/support/', include('apps.support_chat.urls')),  # AI Support
+    path('api/', include('apps.common.urls')),  # Common APIs (country config)
   # Chat and notifications (for officer app)
     
     path('i18n/', include('django.conf.urls.i18n')),
@@ -28,6 +29,7 @@ urlpatterns = [
 urlpatterns += i18n_patterns(
     path('admin/', admin.site.urls),
     path('', include('apps.common.urls')),  # Web interface
+    path('reports/', include('apps.analytics.urls')), # Analytics & Reports
 )
 
 if settings.DEBUG:

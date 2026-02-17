@@ -11,7 +11,7 @@ class EnforcementProvider with ChangeNotifier {
   Future<bool> issueViolation({
     String? vehicleId,
     String? vehiclePlate,
-    required String zoneId,
+    String? zoneId,
     required String type,
     required String description,
     required double fineAmount,
