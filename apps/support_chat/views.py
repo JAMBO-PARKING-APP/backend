@@ -2,7 +2,6 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
-from django.conf import settings
 from .services import ReasoningAIService as AIService
 
 class AskAIView(APIView):
@@ -27,5 +26,5 @@ class AskAIView(APIView):
 
         return Response({
             'response': response_text,
-            'suggested_actions': [] # Future: dynamic suggestions
+            'suggested_actions': service._generate_suggested_actions(request.user, response_text)
         })

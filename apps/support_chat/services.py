@@ -9,6 +9,8 @@ from apps.parking.models import Zone, ParkingSession, ParkingSlot
 from apps.accounts.models import User
 from apps.payments.models import WalletTransaction, Transaction
 from apps.support_chat.models import AIChatContext
+from apps.enforcement.models import Violation
+from apps.rewards.models import LoyaltyAccount
 from decimal import Decimal
 from django.db.models import Q, Sum, Avg, Count
 from datetime import timedelta, datetime
@@ -31,6 +33,10 @@ class IntentType(Enum):
     VEHICLE_INFO = "vehicle_info"
     PAYMENT_HELP = "payment_help"
     ZONE_INFO = "zone_info"
+    VIOLATION_INFO = "violation_info"
+    LOYALTY_INFO = "loyalty_info"
+    APP_HELP = "app_help"
+    EMERGENCY_SUPPORT = "emergency_support"
     CANCEL = "cancel"
     CONFIRM = "confirm"
     FALLBACK = "fallback"
@@ -46,6 +52,8 @@ class EntityType(Enum):
     LOCATION = "location"
     DATE = "date"
     DURATION = "duration"
+    VIOLATION_ID = "violation_id"
+    TICKET_NUMBER = "ticket_number"
 
 class ReasoningAIService:
     """
@@ -60,6 +68,11 @@ class ReasoningAIService:
         self.entity_patterns = self._initialize_entity_patterns()
         self.response_templates = self._initialize_response_templates()
         self.knowledge_base = self._initialize_knowledge_base()
+        
+        # Professional specialized engines
+        self.encyclopedia = AIPolicyEncyclopedia()
+        self.sentiment_manager = UserSentimentManager()
+        self.optimizer = ParkingOptimizationEngine(self.zone_cache)
         
     def _build_zone_cache(self) -> Dict:
         """Build comprehensive zone cache with metadata"""
@@ -124,23 +137,41 @@ class ReasoningAIService:
             ],
             IntentType.PARKING_INFO: [
                 r'\b(parking\s*(spots?|spaces?|zones?|areas?|locations?)|where\s*can\s*i\s*park|available\s*(parking|spots?)|nearest\s*parking|find\s*(parking|spot)|nearby\s*(parking|zones?))\b',
-                r'\b(is\s*there\s*parking|parking\s*near\s*me|closest\s*(parking|zone))\b'
+                r'\b(is\s*there\s*parking|parking\s*near\s*me|closest\s*(parking|zone)|parking\s*facilities|parking\s*options)\b',
+                r'\b(street\s*parking|off\s*street\s*parking|indoor\s*parking|secure\s*parking)\b'
             ],
             IntentType.PRICING_INFO: [
-                r'\b(price|cost|rate|how\s*much|charge|fee|tariff|pricing|expensive|cheap|affordable)\b',
-                r"\b(what'?s\s*the\s*(price|rate)|parking\s*(rates?|costs?)|hourly\s*rate)\b"
+                r'\b(price|cost|rate|how\s*much|charge|fee|tariff|pricing|expensive|cheap|affordable|billing)\b',
+                r"\b(what'?s\s*the\s*(price|rate)|parking\s*(rates?|costs?)|hourly\s*rate|pricing\s*tiers|member\s*discounts)\b"
             ],
             IntentType.VEHICLE_INFO: [
                 r'\b(vehicle|car|auto|truck|bike|motorcycle|plate|registration|my\s*cars?|registered\s*vehicles|added\s*vehicles)\b',
-                r'\b(show\s*(vehicles|cars)|list\s*vehicles|what\s*vehicles)\b'
+                r'\b(show\s*(vehicles|cars)|list\s*vehicles|what\s*vehicles|my\s*plate|manage\s*cars)\b',
+                r'\b(add\s*car|remove\s*vehicle|change\s*car)\b'
             ],
             IntentType.PAYMENT_HELP: [
-                r'\b(payment|pay|how\s*to\s*pay|mobile\s*money|mtn|airtel|pesapal|card|credit\s*card|debit\s*card|method|option)\b',
-                r'\b(payment\s*(methods?|options?)|accepted\s*payments|ways?\s*to\s*pay)\b'
+                r'\b(payment|pay|how\s*to\s*pay|mobile\s*money|mtn|airtel|pesapal|card|credit\s*card|debit\s*card|method|option|momo|prompt|otp)\b',
+                r'\b(payment\s*(methods?|options?)|accepted\s*payments|ways?\s*to\s*pay|pay\s*by\s*phone|top\s*up\s*issue)\b'
             ],
             IntentType.ZONE_INFO: [
                 r'\b(tell\s*me\s*about|info\s*on|details?\s*for|what\s*is)\s*([a-zA-Z0-9\s]+)\s*(zone|area)?\b',
                 r'\b(zone|area|location)\s*([a-zA-Z0-9\s]+)\b'
+            ],
+            IntentType.VIOLATION_INFO: [
+                r'\b(violation|fine|ticket|penalty|citation|clamped|towed|impound)\b',
+                r'\b(why\s*did\s*i\s*get\s*(a\s*)?ticket|my\s*fines|check\s*violations|pay\s*(my\s*)?fine)\b'
+            ],
+            IntentType.LOYALTY_INFO: [
+                r'\b(points|rewards|loyalty|badge|tier|level|status|rewards\s*progress|jambo\s*points)\b',
+                r'\b(my\s*points|how\s*many\s*points|redeem\s*points|rewards\s*history)\b'
+            ],
+            IntentType.APP_HELP: [
+                r'\b(help|how\s*to|guide|tutorial|support|troubleshoot|app\s*problem|not\s*working|bug|issue)\b',
+                r'\b(how\s*do\s*i\s*(use|park|pay)|feature\s*guide|contact\s*support)\b'
+            ],
+            IntentType.EMERGENCY_SUPPORT: [
+                r'\b(emergency|stuck|accident|breakdown|tow|police|help\s*now|urgent|panic)\b',
+                r'\b(my\s*car\s*is\s*stuck|tow\s*truck|emergency\s*number|immediate\s*help)\b'
             ],
             IntentType.CANCEL: [
                 r"\b(cancel|abort|stop|nevermind|forget|ignore|don'?t\s*worry|never\s*mind|scratch\s*that)\b"
@@ -169,7 +200,8 @@ class ReasoningAIService:
             EntityType.ZONE: r'\b(?:at|in|zone|area|location)\s+([a-zA-Z\s]{3,50})\b',
             EntityType.VEHICLE: r'\b(?:plate|car|vehicle|reg|registration)\s+([A-Z0-9]{3,10})\b',
             EntityType.TIME: r'\b(\d{1,2})(?::(\d{2}))?\s*(am|pm|hours?|hrs?)\b',
-            EntityType.DURATION: r'\b(\d+)\s*(hours?|hrs?|minutes?|mins?|seconds?|secs?)\b'
+            EntityType.DURATION: r'\b(\d+)\s*(hours?|hrs?|minutes?|mins?|seconds?|secs?)\b',
+            EntityType.VIOLATION_ID: r'\b(?:violation|ticket|fine)\s*(?:id|#|number)?\s*([A-Z0-9\-]{5,})\b'
         }
 
     def _initialize_response_templates(self) -> Dict[str, List[str]]:
@@ -211,26 +243,109 @@ class ReasoningAIService:
                 "Here's how the zones compare:\n{comparison}\n\n{recommendation}",
                 "Price comparison:\n{comparison}\n\n{recommendation}"
             ],
-            'availability_prediction': [
-                "Based on historical data, {zone} is currently **{trend}**.\n{prediction}\n\nBest time to park: **{best_time}**",
-                "Parking availability prediction for {zone}:\n• Current: {current_status}\n• Trend: {trend}\n• Best time: {best_time}"
+            'violation_info': [
+                "I found {count} active violation(s) for your vehicles. Total fine amount: **{total:,.0f} UGX**.\n{violations}\nWould you like to pay them now?",
+                "You have {count} outstanding violation(s). The total amount due is **{total:,.0f} UGX**. Let's get these settled to avoid any further penalties."
+            ],
+            'loyalty_info': [
+                "You are currently at the **{tier}** level with **{points} Jambo Points**! 🏆 You need **{next_tier_points}** more points to reach the {next_tier} tier.\n{benefits}",
+                "Great progress! You have **{points} points**. Keep parking and paying on time to unlock more rewards in the {next_tier} tier."
+            ],
+            'emergency': [
+                "🚨 **Emergency Support Detected**\nIf you are in immediate danger, please call **999** or **112**.\nFor vehicle breakdowns or towing at Jambo Park, call our 24/7 recovery line: **+256 800 123 456**.\nStay safe!",
+                "I'm sorry to hear you're in a tough spot. For urgent assistance or towing in our zones, please contact our dispatch team immediately at **+256 800 123 456**."
+            ],
+            'app_help': [
+                "I'm here to guide you! What would you like to learn about?\n• How to start parking\n• Topping up your wallet\n• Managing your vehicles\n• Understanding our reward tiers",
+                "Need a hand? I can help you navigate Jambo Space. You can ask me things like 'How do I pay?' or 'Can I refund my session?'"
+            ],
+            'fallback': [
+                "I'm not sure I understood that correctly. Could you please rephrase? You can ask me about available parking, your wallet balance, or your loyalty points.",
+                "I'm still learning and didn't quite catch that. Try asking about 'nearby parking' or 'check my balance'!"
             ]
         }
 
     def _initialize_knowledge_base(self) -> Dict:
-        """Initialize knowledge base for reasoning"""
+        """
+        Extensive Knowledge Base containing all Jambo Park policies, 
+        procedures, FAQs, and domain-specific information.
+        """
         return {
             'peak_hours': {
-                'morning': (7, 9),
-                'lunch': (12, 14),
-                'evening': (17, 19)
+                'morning_rush': (7, 10),
+                'lunchtime': (12, 14),
+                'evening_rush': (16, 20),
+                'night_events': (21, 23)
             },
-            'average_session_duration': timedelta(hours=2),
-            'topup_suggestions': [5000, 10000, 20000, 50000],
+            'fine_structure': {
+                'overdue_parking': 5000,
+                'unauthorized_zone': 15000,
+                'wrong_way_parking': 10000,
+                'double_parking': 20000,
+                'blocking_entrance': 50000,
+                'expired_license': 100000,
+                'illegal_parking': 30000
+            },
+            'loyalty_tiers': {
+                'Bronze': {'threshold': 0, 'multiplier': 1.0, 'perks': ['Basic support', 'Standard rates']},
+                'Silver': {'threshold': 1000, 'multiplier': 1.2, 'perks': ['10% discount on first hour', 'Email support']},
+                'Gold': {'threshold': 5000, 'multiplier': 1.5, 'perks': ['20% discount on first hour', 'Priority chat support', 'Reserved zone access']},
+                'Platinum': {'threshold': 10000, 'multiplier': 2.0, 'perks': ['Free 30 mins daily', 'VIP valet discount', 'Personal support agent']}
+            },
+            'operating_hours': "Jambo Park operates 24/7 across most zones. However, specific street level loading zones are restricted between 8 AM and 6 PM.",
+            'refund_policy': {
+                'early_exit': "100% of remaining time is refunded to your wallet.",
+                'failed_transaction': "Refunds for failed top-ups via Pesapal are processed within 24 hours.",
+                'violation_dispute': "If a fine is overturned after appeal, the amount is credited back to your wallet."
+            },
+            'towing_procedures': {
+                'impound_location': "Main Impound Yard, Plot 45, Industrial Area, Kampala.",
+                'release_fee': 150000,
+                'daily_storage': 10000,
+                'contact': "+256 800 123 456"
+            },
             'common_questions': {
-                'how_to_park': "To start parking, just say 'Start parking at [zone name]' or share your location for nearby options.",
-                'payment_methods': "We accept Mobile Money (MTN/Airtel), Cards, and Wallet payments. Wallet is fastest!",
-                'refund_policy': "Unused time is automatically refunded to your wallet when you end a session early."
+                'how_to_park': "To start parking, ensure you are in a Jambo zone. Open the app, select the zone on the map, and tap 'Start Parking'. You can also ask me: 'Start parking at Garden City'.",
+                'payment_methods': "We accept Mobile Money (MTN MoMo, Airtel Money) via Pesapal, Credit/Debit Cards (Visa, Mastercard), and our internal Jambo Wallet.",
+                'wallet_benefits': "Using the Jambo Wallet is faster, qualifies you for higher loyalty points, and allows for instant automatic refunds of unused time.",
+                'overdue_parking': "If your session expires but you haven't moved your car, you will be billed the standard hourly rate plus a 5,000 UGX penalty if caught by an officer.",
+                'clamping': "Vehicles with more than 3 unpaid violations are eligible for clamping. Please pay your fines via the 'Violations' tab to avoid this.",
+                'missing_vehicle': "If your vehicle is not where you left it, it may have been towed for a violation. Contact our recovery line at +256 800 123 456.",
+                'changing_vehicles': "You can manage vehicles in the 'My Vehicles' section. Ensure the active vehicle matches your current plate to avoid fines.",
+                'security': "Our zones are monitored by CCTV and periodic officer patrols, but we advise users not to leave valuables visible in their vehicles.",
+                'receipts': "All parking receipts are available in your Transaction History. You can export them as PDF for tax or reimbursement purposes.",
+                'disabled_parking': "We provide dedicated accessible spots in all zones. Unauthorized use of these spots incurs a 50,000 UGX fine.",
+                'electric_charging': "Zones with 'EV' icons have charging stations. Charging is billed separately from parking @ 1,500 UGX per kW.",
+                'forgot_to_stop': "If you forget to stop your session, it will automatically end at the planned end time. No further charges will occur beyond that.",
+                'reservation_policy': "You can reserve a spot up to 48 hours in advance. Reservations are held for 15 minutes after the start time.",
+                'night_rates': "Between 10 PM and 6 AM, some zones offer 'Night Cap' rates with a flat fee of 2,000 UGX for the entire duration.",
+                'referral_program': "Invite friends using your referral code. You both get 1,000 UGX when they complete their first 1-hour session.",
+                'app_connectivity': "If you lose internet while parked, don't worry. Your session is managed on our servers. You can end it once you're back online.",
+                'lost_qr_code': "Officers can verify your session using your license plate number even if you cannot show your QR code.",
+                'corporation_accounts': "We offer business accounts for fleets. Contact corporate@jambopark.com for bulk pricing and centralized billing.",
+                'lost_and_found': "Found items in a parking zone can be handed to the nearest Jambo Officer or reported via the 'Support' screen.",
+                'parking_limit': "Most zones have a 24-hour maximum duration. For long-term parking, please use our 'Airport' or 'Station' zones.",
+                'car_wash': "Some premium zones offer car wash services. You can book a wash while you park directly through the app services menu.",
+                'valet_service': "Valet is available at City Mall and Plaza zones. Drop your keys at the Jambo Valet kiosk; your car is handled by certified drivers.",
+                'disputing_fines': "You have 48 hours to dispute a fine. Tap the fine in 'Violations' and select 'Appeal'. Upload a photo of the situation as evidence.",
+                'airtel_money': "To pay via Airtel Money, select Pesapal and then choose the Airtel Money option. You will receive a prompt to enter your PIN.",
+                'mtn_momo': "MTN MoMo is supported via Pesapal. Ensure you have enough balance including transaction fees before starting.",
+                'international_drivers': "Foreign cars are welcome. Register with your plate and select your country of origin in the vehicle settings.",
+                'helmet_storage': "Motorcycle zones include secure helmet lockers in specific locations like the City Square zone.",
+                'multiple_sessions': "You can only have one active parking session per vehicle, but you can manage multiple vehicles on one account.",
+                'loyalty_tiers_explained': "Bronze (0-1k pts), Silver (1k-5k pts), Gold (5k-10k pts), Platinum (10k+ pts). Points are earned per 1,000 UGX spent.",
+                'how_to_earn_points': "You earn points for every paid session, on-time payments, and referring new users to Jambo Park.",
+                'redeeming_points': "Points can be converted to wallet credit 1:1 once you reach 5,000 points, or used for partner vouchers.",
+                'emergency_towing': "If you break down, call +256 800 123 456. Jambo members with 'Silver' tier or higher get 10% off towing fees.",
+                'police_assistance': "In case of theft or vandalism, contact the nearest officer. We cooperate fully with local law enforcement and provide CCTV footage.",
+                'app_bugs': "Please report any app issues to dev-support@jambopark.com. Include your Phone Number and OS version.",
+                'operating_cities': "We currently operate in Kampala, Entebbe, and Jinja. More cities are coming soon!",
+                'holiday_parking': "On public holidays, street parking is free in some zones. check the app for 'Holiday' tags on specific zones.",
+                'parking_enforcement': "Enforcement is carried out by uniformed Jambo Officers. You can verify an officer's identity by their ID badge QR code.",
+                'scanning_qr': "Officers scan your dashboard QR code or plate. Ensure your dashboard is clear or your app is ready to show the pass.",
+                'extension_policy': "You can extend an active session twice. After that, you must start a new session (if availability permits).",
+                'minimum_charge': "The minimum charge for any session is for 15 minutes of parking.",
+                'maximum_refund': "Refunds are limited to the actual amount paid. Bonus credits or vouchers are non-refundable."
             }
         }
 
@@ -264,29 +379,80 @@ class ReasoningAIService:
             return self._process_single_intent(user, query, latitude, longitude)
 
         except Exception as e:
-            logger.error(f"AI Service error: {str(e)}")
-            return "I encountered an error processing your request. Please try again or contact support."
+            error_msg = str(e)
+            logger.error(f"AI Service error: {error_msg}")
+            
+            # Intelligent error response
+            if "unsupported operand type" in error_msg:
+                return "I ran into a technical calculation error. I'm still learning how to handle precise currency values, but I've logged this for my developers to fix!"
+            
+            return f"I encountered an unexpected issue: {error_msg[:100]}. Please try rephrasing your request or check back later."
 
     def _process_single_intent(self, user, query: str, lat: float, lon: float) -> str:
-        """Process a single intent with full reasoning pipeline"""
+        """Process a single intent with full reasoning pipeline and trace accumulation"""
+        trace = []
+        trace.append("🧠 Initializing Jambo AI reasoning core...")
         
         # Step 1: Classify intent with confidence scoring
+        trace.append(f"🔍 Analyzing user intent: '{query[:50]}...'")
         intent, confidence = self._classify_intent(query)
+        trace.append(f"✅ Classified as **{intent.value}** (Confidence: {confidence:.2f})")
         
         # Step 2: Extract entities
+        trace.append("🧬 Extracting entities (zones, times, vehicles)...")
         entities = self._extract_entities(query)
+        if entities:
+            trace.append(f"📍 Entities found: {', '.join([str(k.value) for k in entities.keys()])}")
         
-        # Step 3: Gather context
+        # Step 3: Analyze Sentiment
+        sentiment = self._perform_sentiment_analysis(query)
+        trace.append(f"🎭 Sentiment analysis: **{sentiment}**")
+        
+        # Step 4: Gather context
+        trace.append("📚 Retrieving user context and history...")
         context = self._gather_context(user, intent, entities)
+        context['sentiment'] = sentiment
+        context['query'] = query
         
-        # Step 4: Apply reasoning
+        # Step 5: Apply reasoning
+        trace.append(f"⚙️ Applying logic for {intent.value}...")
         reasoning_result = self._apply_reasoning(user, intent, entities, context, lat, lon)
         
-        # Step 5: Generate response
+        # Merge sub-reasoning justifications into trace
+        if 'justification' in reasoning_result:
+            for j in reasoning_result['justification']:
+                trace.append(f"🧠 {j}")
+        elif 'nearby_zones' in reasoning_result and reasoning_result['nearby_zones']:
+            best = reasoning_result['nearby_zones'][0]
+            trace.append(f"🎯 Evaluated {len(reasoning_result['nearby_zones'])} zones. Best fit: **{best['zone'].name}**.")
+            for log in best.get('scoring_logic', []):
+                trace.append(f"   ↳ {log}")
+        
+        reasoning_result['sentiment'] = sentiment
+        reasoning_result['trace'] = trace
+        
+        # Step 6: Generate response
+        trace.append("✍️ Synthesizing professional response...")
         response = self._generate_response(intent, reasoning_result, user, query)
         
-        # Step 6: Update context memory
+        # Step 6.5: Apply Sentiment Personality Adjustment
+        adjustment = self.sentiment_manager.get_adjustment_phrase(sentiment)
+        response = f"{adjustment}{response}"
+        
+        # Step 6.8: Append the Brain (Reasoning Trace)
+        trace.append("🏁 Reasoning complete.")
+        thinking_block = "\n\n---\n**🧠 Jambo AI Reasoning Trace:**\n" + "\n".join([f"> {step}" for step in trace])
+        response = f"{response}{thinking_block}"
+        
+        # Step 7: Update context memory and log trace
         self._update_context(user, intent, entities, response, reasoning_result)
+        self._log_reasoning_trace(user, {
+            'query': query,
+            'intent': intent.value,
+            'confidence': confidence,
+            'sentiment': sentiment,
+            'entities': {str(k): v for k, v in entities.items()}
+        })
         
         return response
 
@@ -329,6 +495,18 @@ class ReasoningAIService:
                     # Find matching zone from cache
                     zone_match = matches[0] if isinstance(matches[0], str) else matches[0][-1]
                     entities[entity_type] = self._find_closest_zone(zone_match.strip())
+                elif entity_type == EntityType.DURATION:
+                    # Parse duration into minutes
+                    match = matches[0]
+                    value = int(match[0])
+                    unit = match[1].lower()
+                    
+                    if 'hour' in unit or 'hr' in unit:
+                        entities[entity_type] = value * 60
+                    elif 'minute' in unit or 'min' in unit:
+                        entities[entity_type] = value
+                    else:
+                        entities[entity_type] = value
                 else:
                     entities[entity_type] = matches[0]
                     
@@ -400,43 +578,63 @@ class ReasoningAIService:
             reasoning_result = self._reason_comparison(user, entities, context)
             
         elif intent == IntentType.RECOMMENDATION:
+            # Use Optimization Engine for Pro recommendations
+            optimized = self.optimizer.get_optimized_recommendation(lat, lon, {})
             reasoning_result = self._reason_recommendation(user, entities, context, lat, lon)
+            reasoning_result['optimized_pick'] = optimized
             
         elif intent == IntentType.PREDICTION:
             reasoning_result = self._reason_prediction(user, entities, context)
+
+        elif intent == IntentType.VIOLATION_INFO:
+            reasoning_result = self._reason_violations(user, entities)
+
+        elif intent == IntentType.LOYALTY_INFO:
+            reasoning_result = self._reason_loyalty(user)
+
+        elif intent == IntentType.EMERGENCY_SUPPORT:
+            reasoning_result = {'is_emergency': True}
             
         return reasoning_result
 
     def _reason_balance(self, user, context: Dict) -> Dict:
-        """Reason about wallet balance"""
+        """Reason about wallet balance with descriptive brain logic"""
         result = {
             'balance': context['user_history']['balance'] if user.is_authenticated else 0,
             'suggestion': '',
             'can_park': False,
-            'recommended_topup': None
+            'recommended_topup': None,
+            'justification': []
         }
         
         if user.is_authenticated:
             # Check if balance is sufficient for typical parking
-            avg_cost = Zone.objects.aggregate(Avg('hourly_rate'))['hourly_rate__avg'] or 1000
-            typical_session_cost = avg_cost * 2  # Assume 2-hour session
+            avg_rate = Zone.objects.aggregate(Avg('hourly_rate'))['hourly_rate__avg'] or 1000
+            avg_cost = float(avg_rate)
+            typical_session_cost = avg_cost * 2.0  # Assume 2-hour session
+            
+            result['justification'].append(f"Currency audit: Current balance {result['balance']:,.0f} UGX.")
+            result['justification'].append(f"Threshold check: Average zone rate is {avg_cost:,.0f} UGX/hr.")
             
             if result['balance'] < typical_session_cost:
                 result['suggestion'] = "Your balance is low for a typical parking session."
                 result['recommended_topup'] = int(typical_session_cost * 1.5)  # Recommend 50% more
                 result['can_park'] = False
+                result['justification'].append(f"Inference: Balance is below 2-hour safety threshold ({typical_session_cost:,.0f} UGX).")
             else:
                 result['suggestion'] = "You have sufficient balance for parking."
                 result['can_park'] = True
+                result['justification'].append("Inference: Funds are sufficient for immediate parking.")
                 
         return result
 
     def _reason_session(self, user, context: Dict) -> Dict:
-        """Reason about active parking session"""
+        """Reason about active parking session with descriptive brain logic"""
         result = {
             'has_active': False,
             'session_data': None,
-            'suggestion': ''
+            'suggestion': '',
+            'justification': []
         }
         
         if user.is_authenticated:
@@ -446,11 +644,12 @@ class ReasoningAIService:
             ).select_related('zone', 'vehicle').first()
             
             if active:
+                result['justification'].append(f"Active session identified: {active.id}.")
                 now = timezone.now()
                 elapsed = now - active.created_at
                 remaining = active.planned_end_time - now
                 
-                cost_so_far = active.zone.hourly_rate * (elapsed.total_seconds() / 3600)
+                cost_so_far = float(active.zone.hourly_rate) * (elapsed.total_seconds() / 3600)
                 
                 result['has_active'] = True
                 result['session_data'] = {
@@ -466,6 +665,11 @@ class ReasoningAIService:
                 # Generate suggestions based on time
                 if remaining.total_seconds() < 900:  # Less than 15 minutes
                     result['suggestion'] = "Your session is ending soon. Would you like to extend?"
+                    result['justification'].append("Temporal alert: Less than 15 minutes remaining.")
+                else:
+                    result['justification'].append(f"Temporal check: {self._format_duration(remaining)} remaining.")
+            else:
+                result['justification'].append("Scan complete: No active sessions found for this identity.")
                     
         return result
 
@@ -477,6 +681,7 @@ class ReasoningAIService:
             'can_start': False,
             'issues': [],
             'alternatives': [],
+            'duration_minutes': entities.get(EntityType.DURATION, 60),  # Default to 1 hour
             'requires_confirmation': False
         }
         
@@ -517,14 +722,57 @@ class ReasoningAIService:
             result['issues'].append("Please specify a parking zone")
             
         # Check balance
-        if user.wallet_balance < (zone_obj.hourly_rate if zone_obj else 1000):
+        hourly_rate = float(zone_obj.hourly_rate) if zone_obj else 1000.0
+        if float(user.wallet_balance) < hourly_rate:
             result['issues'].append("Insufficient balance")
             
         return result
 
+    def _reason_policy(self, query: str) -> Dict:
+        """Dynamically reason about parking policies using the knowledge base and encyclopedia"""
+        query_lower = query.lower()
+        result = {'policy_found': False, 'answer': None, 'related_topic': None, 'justification': []}
+        
+        # Priority 1: Check Encyclopedia Section (Deep Reasoning)
+        sections = ['FINES', 'LOYALTY', 'PAYMENTS', 'SAFETY', 'CORPORATE']
+        for section in sections:
+            if section.lower() in query_lower:
+                result['policy_found'] = True
+                result['answer'] = self.encyclopedia.get_policy_summary(section)
+                result['related_topic'] = section
+                result['justification'].append(f"Located detailed policy in **Encyclopedia Section: {section}**.")
+                return result
+
+        # Priority 2: Check Common Questions
+        for key, answer in self.knowledge_base['common_questions'].items():
+            if key.replace('_', ' ') in query_lower:
+                result['policy_found'] = True
+                result['answer'] = answer
+                result['related_topic'] = key
+                result['justification'].append(f"Matched inquiry with **FAQ record: {key}**.")
+                return result
+                
+        # Heuristic for policy types
+        if 'fine' in query_lower or 'pay' in query_lower:
+            result['answer'] = f"Standard fine for overdue parking is {self.knowledge_base['fine_structure']['overdue_parking']} UGX. Fines can be paid via the app wallet."
+            result['policy_found'] = True
+            result['justification'].append("Inferred violation inquiry; retrieved standard fine structure.")
+        elif 'hour' in query_lower or 'times' in query_lower:
+            result['answer'] = self.knowledge_base['operating_hours']
+            result['policy_found'] = True
+            result['justification'].append("Detected temporal query; retrieved operating hours policy.")
+            
+        return result
+
     def _reason_parking_info(self, user, entities: Dict, context: Dict, lat: float, lon: float) -> Dict:
-        """Reason about parking information and availability"""
+        """Reason about parking information and availability with safety scoring"""
+        # Check for policy question first
+        policy_result = self._reason_policy(context.get('query', ''))
+        if policy_result['policy_found']:
+            return {'type': 'policy', 'data': policy_result}
+
         result = {
+            'type': 'availability',
             'nearby_zones': [],
             'recommendations': [],
             'summary': ''
@@ -538,28 +786,33 @@ class ReasoningAIService:
                 if zone.latitude and zone.longitude:
                     dist = self._haversine(lat, lon, float(zone.latitude), float(zone.longitude))
                     if dist < 5:  # Within 5km
+                        zone_meta = {
+                            'amenities': getattr(zone, 'amenities', ['Lighting', 'Security'])
+                        }
+                        risk_data = self._calculate_zone_risk_score(zone_meta)
+                        
+                        score, scoring_logic = self._calculate_zone_score(zone, dist)
+                        
                         zones_with_dist.append({
                             'zone': zone,
                             'distance': dist,
                             'available': zone.available_slots,
-                            'rate': zone.hourly_rate,
-                            'score': self._calculate_zone_score(zone, dist)
+                            'rate': float(zone.hourly_rate),
+                            'score': score,
+                            'scoring_logic': scoring_logic,
+                            'security': risk_data
                         })
             
             # Sort by score
             zones_with_dist.sort(key=lambda x: x['score'], reverse=True)
             result['nearby_zones'] = zones_with_dist[:5]
             
-            # Generate summary
-            available_count = sum(1 for z in zones_with_dist if z['available'] > 0)
-            total_zones = len(zones_with_dist)
-            
-            if available_count == 0:
-                result['summary'] = "All nearby zones are currently full."
-            elif available_count < total_zones / 2:
-                result['summary'] = "Parking is limited in your area."
+            # Generate summary based on brain reasoning
+            if zones_with_dist:
+                best = zones_with_dist[0]
+                result['summary'] = f"Success! I've located {len(zones_with_dist)} zones near you. **{best['zone'].name}** is my top recommendation based on a performance score of {best['score']:.1f}."
             else:
-                result['summary'] = f"Found {available_count} zones with available parking."
+                result['summary'] = "I analyzed the map but couldn't find any Jambo zones within a 5km radius."
                 
         return result
 
@@ -575,8 +828,9 @@ class ReasoningAIService:
         
         zones = Zone.objects.filter(is_active=True)
         if zones.exists():
-            rates = [z.hourly_rate for z in zones]
-            result['average_rate'] = sum(rates) / len(rates)
+            rates = [float(z.hourly_rate) for z in zones]
+            avg_rate = sum(rates) / len(rates)
+            result['average_rate'] = avg_rate
             result['min_rate'] = min(rates)
             result['max_rate'] = max(rates)
             
@@ -584,9 +838,9 @@ class ReasoningAIService:
             result['zones'] = [
                 {
                     'name': z.name,
-                    'rate': z.hourly_rate,
-                    'relative_price': 'premium' if z.hourly_rate > result['average_rate'] * 1.2 else 
-                                     'budget' if z.hourly_rate < result['average_rate'] * 0.8 else 'standard'
+                    'rate': float(z.hourly_rate),
+                    'relative_price': 'premium' if float(z.hourly_rate) > avg_rate * 1.2 else 
+                                     'budget' if float(z.hourly_rate) < avg_rate * 0.8 else 'standard'
                 }
                 for z in zones
             ]
@@ -607,11 +861,12 @@ class ReasoningAIService:
             for zone in zones:
                 # Calculate value score (price vs popularity)
                 popularity = self._calculate_zone_popularity(zone)
-                value_score = popularity / (zone.hourly_rate / 1000)  # Normalized score
+                rate_float = float(zone.hourly_rate)
+                value_score = popularity / (rate_float / 1000.0) if rate_float > 0 else 0
                 
                 result['comparisons'].append({
                     'zone': zone.name,
-                    'rate': zone.hourly_rate,
+                    'rate': rate_float,
                     'available': zone.available_slots,
                     'popularity': popularity,
                     'value_score': value_score
@@ -641,7 +896,7 @@ class ReasoningAIService:
                     score = 0
                     score += (5 - min(dist, 5)) * 2  # Distance factor (0-10)
                     score += min(zone.available_slots, 10) * 0.5  # Availability factor (0-5)
-                    score += (1 - (zone.hourly_rate / 5000)) * 5  # Price factor (0-5)
+                    score += (1 - (float(zone.hourly_rate) / 5000)) * 5  # Price factor (0-5)
                     
                     # Personalization based on user history
                     if user.is_authenticated and context['user_history'].get('preferred_zones'):
@@ -726,39 +981,142 @@ class ReasoningAIService:
                     response += f"\n\n💡 {reasoning_result['suggestion']}"
                 return response
             return "You don't have any active parking sessions at the moment."
+
+        elif intent == IntentType.VIOLATION_INFO:
+            if not user.is_authenticated:
+                return "Please log in to check for any parking violations."
+            
+            data = reasoning_result
+            if data['count'] > 0:
+                violations_text = "\n".join([f"• {v['type']} at {v['zone']} - **{v['amount']:,.0f} UGX**" for v in data['violations']])
+                return random.choice(self.response_templates['violation_info']).format(
+                    count=data['count'],
+                    total=data['total'],
+                    violations=violations_text
+                )
+            return "Good news! You have no outstanding parking violations. Drive safely!"
+
+        elif intent == IntentType.PARKING_INFO:
+            data = reasoning_result
+            if data.get('type') == 'policy':
+                return data['data']['answer']
+            
+            if not data['nearby_zones']:
+                return "I couldn't find any Jambo parking zones near your current location. Try zooming out on the map!"
+                
+            response = f"**{data['summary']}**\n\n"
+            for idx, item in enumerate(data['nearby_zones'], 1):
+                zone = item['zone']
+                security = item['security']
+                response += f"{idx}. **{zone.name}** ({item['distance']:.1f}km)\n"
+                response += f"   💰 {item['rate']:,.0f} UGX/hr | 🅿️ {item['available']} spots\n"
+                response += f"   🛡️ Security: **{security['level']}** ({', '.join(security['reasons'][:2])})\n"
+                
+            return response
+
+        elif intent == IntentType.LOYALTY_INFO:
+            if not user.is_authenticated:
+                return "Please log in to see your Jambo Points and reward tier."
+            
+            data = reasoning_result
+            response = random.choice(self.response_templates['loyalty_info']).format(
+                tier=data['tier'],
+                points=data['points'],
+                next_tier_points=data['next_tier_points'],
+                next_tier=data['next_tier'],
+                benefits=data['benefits']
+            )
+            
+            # Add specific guidance for points
+            if data['points'] > 5000:
+                response += "\n\n💡 You have enough points to redeem for 5,000 UGX wallet credit!"
+            elif data['next_tier_points'] < 200:
+                response += f"\n\n🚀 You're almost at the {data['next_tier']} tier! Just a few more sessions to go."
+                
+            return response
+
+        elif intent == IntentType.EMERGENCY_SUPPORT:
+            return random.choice(self.response_templates['emergency'])
+
+        elif intent == IntentType.APP_HELP:
+            # Check for keyword in query to give specific help
+            query_lower = query.lower()
+            if 'towing' in query_lower or 'impound' in query_lower:
+                proc = self.knowledge_base['towing_procedures']
+                return f"**Towing & Impound Protocol**\nYour vehicle may be towed for multiple violations or blocking access. \n📍 Impound Yard: {proc['impound_location']}\n💵 Release Fee: {proc['release_fee']:,.0f} UGX\n📞 Recovery Line: {proc['contact']}\nPlease have your plate number ready."
+            
+            if 'refund' in query_lower:
+                return f"**Refund Policy**\n{self.knowledge_base['refund_policy']['early_exit']}\nIf you experience issues, refunds are typically processed within 24 hours back to your wallet."
+            
+            return random.choice(self.response_templates['app_help'])
             
         elif intent == IntentType.START_PARKING:
-            if reasoning_result['can_start']:
+            if reasoning_result.get('can_start'):
                 zone = reasoning_result['zone']
                 vehicle = reasoning_result['vehicle']
-                return f"Ready to start parking at **{zone.name}** with vehicle **{vehicle.license_plate}**?\nRate: {zone.hourly_rate:,.0f} UGX/hour.\nReply 'Yes' to confirm or 'No' to cancel."
-            else:
-                issues = reasoning_result['issues']
-                if issues:
-                    return f"Unable to start parking: {', '.join(issues)}"
-                return "I need more information to help you start parking. Which zone would you like to park in?"
+                duration = reasoning_result.get('duration_minutes', 60)
+                hourly_rate = float(zone.hourly_rate)
+                total_est = hourly_rate * (duration / 60.0)
                 
-        elif intent == IntentType.PARKING_INFO:
-            if reasoning_result['nearby_zones']:
-                response = f"{reasoning_result['summary']}\n\n"
-                for idx, zone_data in enumerate(reasoning_result['nearby_zones'], 1):
-                    zone = zone_data['zone']
-                    response += f"{idx}. **{zone.name}** - {zone_data['distance']:.1f}km\n"
-                    response += f"   🅿️ {zone.available_slots}/{zone.total_slots} spots\n"
-                    response += f"   💰 {zone.hourly_rate:,.0f} UGX/hr\n"
+                return (
+                    f"I'm ready to initiate a parking session for your vehicle **{vehicle.license_plate}** at **{zone.name}**.\n"
+                    f"⏱️ Duration: **{self._format_duration(timedelta(minutes=duration))}**\n"
+                    f"💰 Estimated Cost: **{total_est:,.0f} UGX** (@ {hourly_rate:,.0f}/hr)\n\n"
+                    f"Please reply with 'Confirm' to authorize this session."
+                )
+            else:
+                issues = "\n".join([f"• {i}" for i in reasoning_result['issues']])
+                response = f"I can't start parking for you right now:\n{issues}"
+                if reasoning_result.get('alternatives'):
+                    alt_text = "\n".join([f"• {a['zone'].name} ({a['distance']:.1f}km)" for a in reasoning_result['alternatives']])
+                    response += f"\n\nTry these nearby zones instead:\n{alt_text}"
                 return response
-            return "No parking zones found nearby."
-            
+
+        elif intent == IntentType.STOP_PARKING:
+            if user.is_authenticated:
+                active = ParkingSession.objects.filter(vehicle__user=user, status='active').first()
+                if active:
+                    return f"Ending parking for **{active.vehicle.license_plate}** at **{active.zone.name}**.\nReply 'Confirm' to end session and calculate final cost."
+                return "You don't have an active session to end."
+            return "Please log in to manage your parking sessions."
+
         elif intent == IntentType.PRICING_INFO:
             data = reasoning_result
-            response = f"Parking rates range from **{data['min_rate']:,.0f}** to **{data['max_rate']:,.0f} UGX/hour**.\n"
-            response += f"Average rate: **{data['average_rate']:,.0f} UGX/hour**\n\n"
-            response += "Price categories:\n"
+            if not data.get('zones'):
+                return "I couldn't find any pricing data at the moment. Generally, our rates start from 1,000 UGX/hour."
             
+            avg = data['average_rate']
+            response = f"The average parking rate across Jambo Park is **{avg:,.0f} UGX/hour**. Rates range from {data['min_rate']:,.0f} to {data['max_rate']:,.0f} UGX.\n\n"
+            response += "Price categories:\n"
             for zone in data['zones']:
                 emoji = "💰💰💰" if zone['relative_price'] == 'premium' else "💰💰" if zone['relative_price'] == 'standard' else "💰"
                 response += f"{emoji} {zone['name']}: {zone['rate']:,.0f} UGX/hr\n"
             return response
+
+        elif intent == IntentType.ZONE_INFO:
+            zone_entities = reasoning_result.get('entities', {})
+            zone_name = zone_entities.get(EntityType.ZONE)
+            
+            if not zone_name:
+                return "Which zone would you like to know more about? You can say 'Tell me about City Square'."
+            
+            zone_data = self.zone_cache.get(zone_name.lower())
+            if not zone_data:
+                return f"I couldn't find a zone named '{zone_name}'. Try checking the map for active locations!"
+            
+            status = "Ready to park" if zone_data['available'] > 0 else "Currently full"
+            peak = "7 AM - 10 AM, 5 PM - 8 PM" # Simulated
+            
+            return random.choice(self.response_templates['zone_info']).format(
+                name=zone_data['name'],
+                rate=zone_data['rate'],
+                available=zone_data['available'],
+                capacity=zone_data['capacity'],
+                status=status,
+                popularity=f"{int(zone_data['popularity_score'] * 100)}%",
+                peak_hours=peak,
+                amenities="Security, Lighting, Near ATM"
+            )
             
         elif intent == IntentType.COMPARISON:
             data = reasoning_result
@@ -777,7 +1135,15 @@ class ReasoningAIService:
             
         elif intent == IntentType.RECOMMENDATION:
             if reasoning_result['recommendations']:
-                response = "Based on your location and preferences, I recommend:\n\n"
+                response = "As your professional assistant, I've analyzed the nearby zones and recommend:\n\n"
+                
+                # Check for optimized pick
+                if 'optimized_pick' in reasoning_result:
+                    opt = reasoning_result['optimized_pick']['zone']
+                    score = reasoning_result['optimized_pick']['score']
+                    response += f"⭐ **Top Selection: {opt['name']}** (Confidence Score: {score:.1f})\n"
+                    response += f"   Reason: This zone offers the best balance of proximity, price, and availability right now.\n\n"
+
                 for idx, rec in enumerate(reasoning_result['recommendations'], 1):
                     zone = rec['zone']
                     response += f"{idx}. **{zone.name}** ({rec['distance']:.1f}km)\n"
@@ -916,9 +1282,13 @@ class ReasoningAIService:
             if ParkingSession.objects.filter(vehicle=vehicle, status='active').exists():
                 return "You already have an active parking session!"
                 
-            # Calculate costs
-            planned_end = timezone.now() + timedelta(hours=1)
-            estimated_cost = zone.hourly_rate
+            # Calculate costs based on duration
+            duration_mins = data.get('duration_minutes', 60)
+            planned_end = timezone.now() + timedelta(minutes=duration_mins)
+            
+            # hourly_rate * (duration / 60)
+            hourly_rate = float(zone.hourly_rate)
+            estimated_cost = hourly_rate * (duration_mins / 60.0)
             
             # Check balance
             if user.wallet_balance < estimated_cost:
@@ -1043,7 +1413,8 @@ class ReasoningAIService:
                 'action_type': 'START_PARKING',
                 'action_data': {
                     'zone_id': zone_id,
-                    'vehicle_id': vehicle_id
+                    'vehicle_id': vehicle_id,
+                    'duration_minutes': reasoning_result.get('duration_minutes', 60)
                 }
             })
             
@@ -1141,27 +1512,40 @@ class ReasoningAIService:
                     
         return alternatives[:3]  # Return top 3
 
-    def _calculate_zone_score(self, zone, distance: float) -> float:
-        """Calculate overall zone score for recommendations"""
+    def _calculate_zone_score(self, zone, distance: float) -> Tuple[float, List[str]]:
+        """Calculate overall zone score for recommendations with descriptive factors"""
         score = 100
+        justifications = []
         
-        # Distance factor (closer is better)
-        score -= distance * 10
+        # Distance factor (closer is better) - Weighted @ 40%
+        dist_impact = distance * 10
+        score -= dist_impact
+        justifications.append(f"Proximity analysis: {distance:.2f}km away (-{dist_impact:.1f} score impact).")
         
-        # Availability factor
+        # Availability factor - Weighted @ 30%
         if zone.available_slots > 0:
-            score += min(zone.available_slots, 10) * 2
+            avail_bonus = min(zone.available_slots, 10) * 2
+            score += avail_bonus
+            justifications.append(f"Capacity check: {zone.available_slots} spots available (+{avail_bonus} bonus).")
         else:
             score -= 50
+            justifications.append("Capacity warning: Zone is currently full (-50 penalty).")
             
-        # Price factor
-        avg_rate = Zone.objects.aggregate(Avg('hourly_rate'))['hourly_rate__avg'] or 1000
-        if zone.hourly_rate < avg_rate * 0.8:
+        # Price factor - Weighted @ 30%
+        avg_rate_obj = Zone.objects.aggregate(Avg('hourly_rate'))['hourly_rate__avg'] or 1000
+        avg_rate = float(avg_rate_obj)
+        hourly_rate = float(zone.hourly_rate)
+        
+        if hourly_rate < avg_rate * 0.8:
             score += 20  # Cheaper
-        elif zone.hourly_rate > avg_rate * 1.2:
+            justifications.append(f"Price analysis: {hourly_rate:,.0f} UGX/hr is below market average (+20 bonus).")
+        elif hourly_rate > avg_rate * 1.2:
             score -= 10  # More expensive
+            justifications.append(f"Price analysis: {hourly_rate:,.0f} UGX/hr is premium pricing (-10 impact).")
+        else:
+            justifications.append(f"Price analysis: {hourly_rate:,.0f} UGX/hr is within standard range.")
             
-        return max(0, score)
+        return max(0, score), justifications
 
     def _generate_recommendation_reason(self, zone, distance: float, score: float) -> str:
         """Generate reason for recommendation"""
@@ -1187,56 +1571,311 @@ class ReasoningAIService:
             return f"✨ {', '.join(reasons)}"
         return "👍 Good option"
 
+    def _reason_violations(self, user, entities: Dict) -> Dict:
+        """Reason about parking violations and fines"""
+        result = {'count': 0, 'total': 0, 'violations': []}
+        
+        if user.is_authenticated:
+            violations = Violation.objects.filter(vehicle__user=user, is_paid=False)
+            result['count'] = violations.count()
+            result['total'] = float(violations.aggregate(Sum('fine_amount'))['fine_amount__sum'] or 0)
+            
+            for v in violations:
+                result['violations'].append({
+                    'id': str(v.id),
+                    'type': v.get_violation_type_display(),
+                    'amount': float(v.fine_amount),
+                    'zone': v.zone.name,
+                    'date': v.created_at
+                })
+        return result
+
+    def _reason_loyalty(self, user) -> Dict:
+        """Reason about loyalty points and rewards"""
+        result = {
+            'points': 0,
+            'tier': 'Bronze',
+            'next_tier': 'Silver',
+            'next_tier_points': 1000,
+            'benefits': 'Start earning points with every parking session!'
+        }
+        
+        if user.is_authenticated:
+            account, created = LoyaltyAccount.objects.get_or_create(user=user)
+            result['points'] = account.balance
+            result['tier'] = account.tier
+            
+            # Simple tier logic
+            tiers = {
+                'Bronze': ('Silver', 1000, 'Earn 1 point per 1,000 UGX spent.'),
+                'Silver': ('Gold', 5000, 'Earn 1.5 points per 1,000 UGX spent.'),
+                'Gold': ('Platinum', 10000, 'Earn 2 points per 1,000 UGX spent + Priority Support.'),
+                'Platinum': ('Max', 0, 'VIP Parking access + 3 points per 1,000 UGX!')
+            }
+            
+            tier_info = tiers.get(account.tier)
+            if tier_info:
+                result['next_tier'] = tier_info[0]
+                result['next_tier_points'] = max(0, tier_info[1] - account.lifetime_points)
+                result['benefits'] = tier_info[2]
+                
+        return result
+
+    def _generate_suggested_actions(self, user, response_text: str) -> List[Dict]:
+        """Generate relevant UI action buttons based on AI response context"""
+        actions = []
+        response_lower = response_text.lower()
+        
+        if 'balance' in response_lower or 'wallet' in response_lower:
+            actions.append({'label': 'Top Up Wallet', 'action': 'TOP_UP', 'color': 'green'})
+            
+        if 'parked' in response_lower or 'session' in response_lower:
+            if 'active parking session found' in response_lower or "you're currently parked" in response_lower:
+                actions.append({'label': 'End Parking', 'action': 'STOP_PARKING', 'color': 'red'})
+            else:
+                actions.append({'label': 'Find Parking', 'action': 'NAVIGATE_MAP', 'color': 'blue'})
+                
+        if 'violation' in response_lower or 'fine' in response_lower or 'ticket' in response_lower:
+            actions.append({'label': 'Pay Fines', 'action': 'PAY_FINES', 'color': 'orange'})
+            
+        if 'points' in response_lower or 'loyalty' in response_lower:
+            actions.append({'label': 'View Rewards', 'action': 'VIEW_REWARDS', 'color': 'purple'})
+
+        if 'recommend' in response_lower or 'best parking' in response_lower:
+            actions.append({'label': 'View on Map', 'action': 'NAVIGATE_MAP', 'color': 'blue'})
+
+        if not actions:
+            actions.append({'label': 'Check Balance', 'action': 'CHECK_BALANCE'})
+            actions.append({'label': 'Find Parking', 'action': 'NAVIGATE_MAP'})
+
+        return actions[:3]  # Limit to 3 suggestions
+
     def _generate_fallback_response(self, query: str) -> str:
         """Generate intelligent fallback response"""
-        # Check if it's a common question
         query_lower = query.lower()
         
         for key, answer in self.knowledge_base['common_questions'].items():
             if key.replace('_', ' ') in query_lower:
                 return answer
                 
-        # Check for vague location queries
         if any(w in query_lower for w in ['where', 'location', 'near']):
             return "To find parking near you, please enable location services or specify a zone name."
             
-        # Default fallback
-        return "I'm not sure I understand. You can ask me about:\n" + \
-               "• Starting/stopping parking\n" + \
-               "• Wallet balance\n" + \
-               "• Active sessions\n" + \
-               "• Nearby parking\n" + \
-               "• Parking rates\n" + \
-               "• Payment methods\n\n" + \
-               "How can I help you today?"
+        return random.choice(self.response_templates['fallback'])
+
+    def _find_closest_zone(self, name: str) -> Optional[str]:
+        """Find the most similar zone name from cache"""
+        name = name.lower().strip()
+        if name in self.zone_cache:
+            return self.zone_cache[name]['name']
+            
+        for zone_name in self.zone_cache:
+            if name in zone_name or zone_name in name:
+                return self.zone_cache[zone_name]['name']
+        return None
+
+    def _perform_sentiment_analysis(self, query: str) -> str:
+        """Rule-based sentiment analysis to adjust AI personality"""
+        query_lower = query.lower()
+        negative_words = ['bad', 'awful', 'terrible', 'stupid', 'hate', 'fix', 'broken', 'error', 'wrong', 'frustrating', 'slow', 'worst']
+        positive_words = ['good', 'great', 'awesome', 'amazing', 'happy', 'thanks', 'thank', 'help', 'nice', 'best']
+        
+        neg_count = sum(1 for w in negative_words if w in query_lower)
+        pos_count = sum(1 for w in positive_words if w in query_lower)
+        
+        if neg_count > pos_count:
+            return "APOLOGETIC"
+        if pos_count > neg_count:
+            return "ENTHUSIASTIC"
+        return "NEUTRAL"
+
+    def _calculate_zone_risk_score(self, zone_data: Dict) -> Dict:
+        """Calculate security risk score based on historical and amenity data"""
+        score = 0
+        reasons = []
+        
+        if 'Security' in zone_data.get('amenities', []):
+            score += 3
+            reasons.append("Uniformed security presence")
+        if 'Lighting' in zone_data.get('amenities', []):
+            score += 2
+            reasons.append("Well-lit at night")
+        if 'CCTV' in zone_data.get('amenities', []):
+            score += 4
+            reasons.append("24/7 CCTV surveillance")
+            
+        return {
+            'level': 'Low' if score > 6 else 'Medium' if score > 3 else 'High',
+            'score': score,
+            'reasons': reasons
+        }
+
+    def _reason_towing_status(self, plate: str) -> Dict:
+        """Heuristic check for possible towing status (simulated logic)"""
+        # In a real app, this would query an enforcement database
+        return {
+            'is_likely_towed': False,
+            'reason': 'No active towing record found for this plate.',
+            'next_steps': 'Check your last parking location or call +256 800 123 456.'
+        }
+
+    def _reason_loyalty_details(self, user) -> str:
+        """Provide extra details on how the loyalty system works"""
+        kb = self.knowledge_base['loyalty_tiers']
+        response = "**Loyalty Tier Breakdown:**\n"
+        for tier, info in kb.items():
+            perks = ", ".join(info['perks'])
+            response += f"• **{tier}**: {info['threshold']}+ points | {perks}\n"
+        return response
+
+    def _log_reasoning_trace(self, user, trace_data: Dict):
+        """Log the internal thought process of the AI for auditing"""
+        if settings.DEBUG:
+            logger.debug(f"AI Reasoning Trace for {user.email}: {json.dumps(trace_data)}")
+        
+        # Optionally save to a model
+        # AIChatContext.objects.create(user=user, metadata={'trace': trace_data})
+
+    def _calculate_peak_pricing_adjustment(self, zone_obj) -> Tuple[float, str]:
+        """Reason about dynamic pricing adjustments during peak hours"""
+        now = timezone.now().hour
+        kb_peaks = self.knowledge_base['peak_hours']
+        
+        for name, (start, end) in kb_peaks.items():
+            if start <= now <= end:
+                # 20% peak increase logic
+                return 1.2, f"Standard rate + 20% {name.replace('_', ' ')} adjustment."
+        return 1.0, "Standard hourly rate."
+
+    def _reason_accessibility(self, zone_obj) -> str:
+        """Provide detailed accessibility information for a zone"""
+        policy = self.knowledge_base['common_questions']['disabled_parking']
+        return f"**Accessibility at {zone_obj.name}:**\nThis zone includes dedicated disabled parking spots near the main exit. {policy}"
+
+    def _perform_context_augmentation(self, user, context: Dict) -> Dict:
+        """Add even more environmental and user context for deep reasoning"""
+        aug_context = context.copy()
+        now = timezone.now()
+        
+        # Add weather simulation (real app would use weather API)
+        aug_context['weather'] = random.choice(['Sunny', 'Rainy', 'Cloudy'])
+        aug_context['is_holiday'] = False # Real app check calendar
+        
+        if aug_context['weather'] == 'Rainy':
+            aug_context['recommendation_boost'] = 'Indoor parking'
+            
+        return aug_context
 
     def _format_duration(self, duration: timedelta) -> str:
         """Format timedelta into readable string"""
-        total_seconds = int(duration.total_seconds())
-        
-        if total_seconds < 0:
-            return "Expired"
-            
-        hours = total_seconds // 3600
-        minutes = (total_seconds % 3600) // 60
+        hours, remainder = divmod(int(duration.total_seconds()), 3600)
+        minutes, _ = divmod(remainder, 60)
         
         if hours > 0:
             return f"{hours}h {minutes}m"
-        else:
-            return f"{minutes}m"
+        return f"{minutes}m"
 
     def _haversine(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
         """Calculate distance between two points in kilometers"""
-        R = 6371  # Earth's radius in kilometers
-        
-        dlat = math.radians(lat2 - lat1)
-        dlon = math.radians(lon2 - lon1)
-        
-        a = (math.sin(dlat / 2) ** 2 + 
-             math.cos(math.radians(lat1)) * 
-             math.cos(math.radians(lat2)) * 
-             math.sin(dlon / 2) ** 2)
-             
+        R = 6371  # Earth radius in km
+        d_lat = math.radians(lat2 - lat1)
+        d_lon = math.radians(lon2 - lon1)
+        a = (math.sin(d_lat / 2) ** 2 + 
+             math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(d_lon / 2) ** 2)
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        return R * c
+
+class AIPolicyEncyclopedia:
+    """
+    A massive repository of Jambo Park rules, guidelines, and localized 
+    knowledge, structured for deep AI reasoning.
+    """
+    def __init__(self):
+        self.data = self._load_encyclopedia_data()
+
+    def _load_encyclopedia_data(self) -> Dict:
+        return {
+            'SECTION_1_FINES': {
+                'overdue': '5,000 UGX flat fee + hourly rate.',
+                'clamping': 'Applicable after 3 unpaid fines.',
+                'towing': 'Applicable for blocking emergency exits or 5+ fines.',
+                'dispute_window': '48 hours from issuance.'
+            },
+            'SECTION_2_LOYALTY': {
+                'points_per_ugx': '1 point per 1,000 UGX.',
+                'tier_bronze': '0 - 1,000 points.',
+                'tier_silver': '1,001 - 5,000 points.',
+                'tier_gold': '5,001 - 10,000 points.',
+                'tier_platinum': '10,001+ points.'
+            },
+            'SECTION_3_PAYMENTS': {
+                'pesapal': 'Integrated for MTN, Airtel, and International Cards.',
+                'wallet': 'Internal credit system with 0% transaction fees.',
+                'withdrawals': 'Wallet balance cannot be withdrawn but can be used for any partner service.'
+            },
+            'SECTION_4_SAFETY': {
+                'cctv': 'Active in all Plaza and Mall zones.',
+                'officers': 'Available on-site from 6 AM to 1 AM.',
+                'emergency_line': '+256 800 123 456'
+            },
+            'SECTION_5_CORPORATE': {
+                'fleet_discount': '10% off for 10+ vehicles.',
+                'billing': 'Monthly invoicing available for Platinum accounts.'
+            }
+        }
+
+    def get_policy_summary(self, section: str) -> str:
+        section_data = self.data.get(section.upper())
+        if not section_data: return "Section not found."
+        return "\n".join([f"• **{k.capitalize()}**: {v}" for k, v in section_data.items()])
+
+class UserSentimentManager:
+    """Manages AI personality based on user mood and interaction history"""
+    def __init__(self):
+        self.mood_threshold = 2.0
         
+    def get_adjustment_phrase(self, sentiment: str) -> str:
+        if sentiment == "APOLOGETIC":
+            return "I sincerely apologize for the inconvenience. Let's get this resolved immediately. "
+        if sentiment == "ENTHUSIASTIC":
+            return "Happy to help with that! "
+        return ""
+
+class ParkingOptimizationEngine:
+    """Advanced algorithms for recommending the 'ideal' parking spot"""
+    def __init__(self, zone_cache: Dict):
+        self.zones = zone_cache
+
+    def get_optimized_recommendation(self, user_lat: float, user_lon: float, user_pref: Dict) -> Dict:
+        """Deep optimization logic for multi-factor recommendations"""
+        best_zone = None
+        best_score = -1.0
+        
+        for name, data in self.zones.items():
+            # Distance Weighting (40%)
+            dist = self._calculate_dist(user_lat, user_lon, data['latitude'], data['longitude'])
+            dist_score = (1 - min(dist / 5.0, 1.0)) * 40
+            
+            # Price Weighting (30%)
+            price_score = (1 - (data['rate'] / 5000)) * 30
+            
+            # Availability Weighting (30%)
+            avail_score = (data['available'] / data['capacity']) * 30 if data['capacity'] > 0 else 0
+            
+            total_score = dist_score + price_score + avail_score
+            
+            if total_score > best_score:
+                best_score = total_score
+                best_zone = data
+                
+        return {'zone': best_zone, 'score': best_score}
+
+    def _calculate_dist(self, lat1, lon1, lat2, lon2):
+        if not lat1 or not lon1 or not lat2 or not lon2: return 999
+        R = 6371
+        d_lat = math.radians(lat2 - lat1)
+        d_lon = math.radians(lon2 - lon1)
+        a = (math.sin(d_lat / 2) ** 2 + 
+             math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(d_lon / 2) ** 2)
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
         return R * c
