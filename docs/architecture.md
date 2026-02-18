@@ -1,6 +1,6 @@
-# 🏗️ JAMBO PARK Architecture & System Design
+# 🏗️ JAMBO PARK: Architecture & Engineering Spec
 
-This document provides an exhaustive technical breakdown of the JAMBO PARK infrastructure, architectural patterns, and internal data flows.
+This document provides a deep-dive into the technical foundations of the JAMBO PARK ecosystem.
 
 ---
 
@@ -10,83 +10,69 @@ The system follows a decoupled architecture using high-performance, industry-sta
 
 | Layer | Component | Implementation |
 |-------|-----------|----------------|
-| **Core** | Django 4.2+ | Primary application framework following the MTV pattern. |
-| **API** | Django REST Framework | Stateless RESTful interface with versioned endpoints. |
-| **Real-time** | Django Channels 4.0 | ASGI-based WebSocket handling for live officer telemetry. |
+| **Core** | Django 4.2+ | Primary application framework with modular apps. |
+| **API** | Django REST Framework | Stateless RESTful interface with JWT authentication. |
+| **Real-time** | Django Channels 4.0 | ASGI-based WebSockets for live officer telemetry. |
 | **Database** | PostgreSQL 15 | Relational data store with geospatial indexing. |
-| **Cache** | Redis 7.0 | Distributed cache for sessions, throttling, and task results. |
-| **Tasks** | Celery 5.3+ | Distributed task queue for asynchronous and scheduled jobs. |
-| **Monitoring** | Sentry / Logging | Unified logging via shared console and file handlers. |
+| **Cache** | Redis 7.0 | Used for sessions, throttling, and task results. |
+| **Tasks** | Celery 5.3+ | Distributed task queue for geofencing and expiry checks. |
+| **CI/CD** | GitHub Actions | Automated testing and linting for Backend and Flutter. |
 
 ---
 
 ## 🔒 2. Security & Identity Architecture
 
 ### 2.1 authentication Lifecycle
-Authentication utilizes `rest_framework_simplejwt` with custom enhancements for enterprise-grade session control.
-
-- **Non-Expiring Mobile Tokens**: For mobile apps, `ACCESS_TOKEN_LIFETIME` is set to 365 days to minimize friction.
-- **JTI Session Tracking**: Every token contains a unique `jti` (JWT ID). This ID is synchronized in the `User` model.
-- **Single-Device Enforcement**:
-  - `SingleDeviceLoginMiddleware` intercepts every API request.
-  - It compares the token's `jti` against `user.current_session_token`.
-  - If a mismatch is detected (due to a login on a new device), the middleware returns a `401 Unauthorized` with an `X-Session-Invalidated` header.
+- **JTI Session Tracking**: Every JWT contains a unique `jti`. This is synchronized in the database to enable **Single-Device Enforcement (SDE)**.
+- **Middleware Guard**: `SingleDeviceLoginMiddleware` intercepts every request to verify the token is from the most recent login.
 
 ### 2.2 Data Isolation (Regional Multi-Tenancy)
-- **RegionalContextMiddleware**: Identifies the user's `Country` context during the request lifecycle.
-- **Thread-safe Isolation**: Uses `asgiref.local` (via `set_current_country`) to ensure queries are automatically filtered by `country_id` at the database level without manual developer intervention.
+The system natively supports cross-border operations using **Regional Routing Context**.
+- **RegionalContextMiddleware**: Identifies the user's country context.
+- **Thread-safe Isolation**: Uses `asgiref.local` to ensure all queries are automatically filtered by `country_id` without manual code changes.
 
 ---
 
 ## 📡 3. Background Processing & Geofencing
 
-The system performs significant "off-main-thread" heavy lifting via Celery Beat.
+The system performs critical "off-main-thread" heavy lifting via Celery.
 
 ### 3.1 Geofencing Algorithm (Haversine)
-The system uses the Haversine formula to calculate the "Great Circle Distance" between users and zones:
-```python
-def calculate_distance(lat1, lon1, lat2, lon2):
-    lon1, lat1, lon2, lat2 = map(math.radians, [lon1, lat1, lon2, lat2])
-    dlon = lon2 - lon1 
-    dlat = lat2 - lat1 
-    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
-    c = 2 * math.asin(math.sqrt(a)) 
-    r = 6371 # Earth radius in km
-    return c * r
-```
+Used to calculate the distance between vehicle's GPS and the parking zone center.
+- **Thresholds**: 
+    - **Proximity**: 200m radius for session active check.
+    - **Drift warning**: >1km movement triggers a "Don't Forget" alert.
 
 ### 3.2 Automated Task Schedule
 | Task | Frequency | Purpose |
 |------|-----------|---------|
-| `check_expired_sessions` | 1 min | Auto-ends sessions, releases `ParkingSlot`, and triggers FCM notifications. |
-| `validate_active_session_location` | 10 min | Geofencing check: Notifies users >1km away from their zone. |
-| `notify_exit_overdue` | 5 min | Checks if users who ended their session are still within 200m (radius) of the zone. |
-| `cleanup_system_data` | Weekly | Purges redundant audit logs and temporary session data. |
+| `check_expired_sessions` | 1 min | Auto-ends sessions and releases slots. |
+| `validate_location` | 10 min | Geofencing validation for active sessions. |
+| `notify_exit_overdue` | 5 min | Alerts officers to users still in zone post-session. |
 
 ---
 
-## 🔄 4. Message Flow Sequence
+## 🧠 4. Jambo AI Pro: Local Reasoning Engine
+
+Operating entirely within the Python/Django stack (no external API), the AI engine uses a multi-stage reasoning pipeline:
+
+1.  **Intent Detection**: Classifies user queries (Financial, Support, Policy).
+2.  **Context Loading**: Pulls relevant system data (User status, Policy entries).
+3.  **Reasoning Trace**: Accumulates a logic trail to justify responses.
+4.  **Professional Synthesis**: Generates a zero-latency response with suggested next actions.
+
+---
+
+## 🔄 5. CI/CD & Automation Flow
 
 ```mermaid
-sequenceDiagram
-    participant App as Mobile App
-    participant API as Django API
-    participant Cache as Redis Cache
-    participant DB as PostgreSQL
-    participant Worker as Celery Worker
-
-    App->>API: POST /api/parking/start/
-    API->>Cache: Check availability (Zones Cache)
-    API->>DB: Record ParkingSession (Status: Active)
-    API->>DB: Mark ParkingSlot (Status: Occupied)
-    API-->>App: 201 Created (QR Data)
-    
-    loop Every 1 min
-        Worker->>DB: Find Expired Sessions
-        Worker->>DB: End Session & Calculate Refund
-        Worker->>App: Push Notification (FCM)
-    end
+graph TD
+    Code[Developer Push] -->|GitHub Actions| CI[Continuous Integration]
+    CI -->|Lint| flake8[flake8/Analyze]
+    CI -->|Test| Tests[Django/Flutter Tests]
+    Tests -->|Success| Build[Build Staging/Prod]
+    Build -->|Deploy Hook| Render[Render.com / Docker Hub]
 ```
 
 ---
-*© 2026 JAMBO PARK Solutions. Confidential and Proprietary.*
+*© 2026 JAMBO PARK Solutions. Confidential and Proprietary. v2.6*

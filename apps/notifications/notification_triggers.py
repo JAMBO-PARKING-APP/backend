@@ -157,6 +157,21 @@ def notify_parking_ended(session):
         title = "Parking Session Ended"
         message = f"Your parking session at {session.zone.name} has ended. Total cost: {symbol} {session.final_cost}"
     
+    # Proximity Check: If user is still in the zone, remind them to leave
+    from apps.accounts.models import UserLocation
+    from apps.common.utils import calculate_distance
+    
+    last_location = UserLocation.objects.filter(user=user).order_by('-timestamp').first()
+    if last_location:
+        distance = calculate_distance(
+            last_location.latitude, last_location.longitude,
+            session.zone.latitude, session.zone.longitude
+        )
+        
+        # If user is within zone radius + 20m buffer
+        if distance <= (session.zone.radius_meters + 20):
+            message += " Our system indicates you are still in the parking zone. Please vacate the spot now to avoid enforcement actions."
+    
     notification = NotificationEvent.objects.create(
         user=user,
         title=title,

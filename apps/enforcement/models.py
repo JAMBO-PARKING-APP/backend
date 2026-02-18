@@ -1,11 +1,9 @@
 from django.db import models
-from apps.common.models import BaseModel
-from apps.common.constants import ViolationType
-from django.utils import timezone
-
 from django.utils.translation import gettext_lazy as _
+from apps.common.models import BaseModel, RegionalModel
+from apps.common.constants import ViolationType
 
-class Violation(BaseModel):
+class Violation(RegionalModel, BaseModel):
     vehicle = models.ForeignKey('accounts.Vehicle', on_delete=models.CASCADE, related_name='violations', verbose_name=_("Vehicle"))
     officer = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='issued_violations', verbose_name=_("Officer"))
     zone = models.ForeignKey('parking.Zone', on_delete=models.CASCADE, related_name='violations', verbose_name=_("Zone"))
@@ -36,6 +34,11 @@ class Violation(BaseModel):
 
     def __str__(self):
         return f"{self.vehicle.license_plate} - {self.violation_type} (${self.fine_amount})"
+
+    def save(self, *args, **kwargs):
+        if self.zone and not self.country:
+            self.country = self.zone.country
+        super().save(*args, **kwargs)
 
 class ViolationEvidence(BaseModel):
     violation = models.ForeignKey(Violation, on_delete=models.CASCADE, related_name='evidence')
@@ -72,8 +75,6 @@ class OfficerStatus(BaseModel):
     went_online_at = models.DateTimeField(null=True, blank=True)
     went_offline_at = models.DateTimeField(null=True, blank=True)
     current_zone = models.ForeignKey('parking.Zone', on_delete=models.SET_NULL, null=True, blank=True)
-    
-    # Location data
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
 
@@ -108,11 +109,8 @@ class QRCodeScan(BaseModel):
         verbose_name=_("Scan Status")
     )
     
-    # Location data
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
-    
-    # Whether officer ended the session from this scan
     session_ended = models.BooleanField(default=False)
     
     class Meta:

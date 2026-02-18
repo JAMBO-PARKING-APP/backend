@@ -1,167 +1,90 @@
 # 🏙️ JAMBO PARK: Enterprise Intelligent Parking System
 
+[![Django CI](https://github.com/jambo-park/system/actions/workflows/django.yml/badge.svg)](https://github.com/jambo-park/system/actions/workflows/django.yml)
+[![Flutter CI](https://github.com/jambo-park/system/actions/workflows/flutter.yml/badge.svg)](https://github.com/jambo-park/system/actions/workflows/flutter.yml)
 [![Live Demo](https://img.shields.io/badge/Demo-Live-brightgreen)](https://jambo-park.render.com)
 [![License: Proprietary](https://img.shields.io/badge/License-Proprietary-blue.svg)](LICENSE)
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/your-repo/jambo-park/graphs/commit-activity)
 
-> **JAMBO PARK** is a state-of-the-art, multi-tenant parking management ecosystem designed for municipal authorities, private operators, and vehicle owners. Built for massive scalability, financial integrity, and real-time operations without external AI latency.
-
----
-
-## 🏛️ Ecosystem Architecture
-
-The system follows a modular monolith architecture with a decoupled frontend ecosystem.
-
-```mermaid
-graph TD
-    subgraph Clients
-        UserApp[Flutter User App]
-        OfficerApp[Flutter Officer App]
-        AdminWeb[Admin Dashboard]
-    end
-
-    subgraph "API Layer (Django REST Framework)"
-        Backend[Core Engine]
-        WS[WebSocket Channels]
-        JamboAI[🧠 Jambo AI Reasoning Engine]
-    end
-
-    subgraph "Data & Messaging"
-        DB[(PostgreSQL 15)]
-        Redis[(Redis 7.0 Cache)]
-        MQ[(Redis Task Queue)]
-    end
-
-    subgraph "Background Services"
-        Worker[Celery Worker]
-        Beat[Celery Beat Scheduler]
-    end
-
-    UserApp -->|REST API| Backend
-    OfficerApp -->|WS/REST| WS
-    AdminWeb -->|Internal API| Backend
-    
-    Backend --> JamboAI
-    Backend --> DB
-    Backend --> Redis
-    Backend --> MQ
-    MQ --> Worker
-    Worker --> Beat
-```
+> **JAMBO PARK** is a state-of-the-art, multi-tenant parking management ecosystem designed for municipal authorities and vehicle owners. Built for massive scalability, regional isolation, and real-time operations.
 
 ---
 
-## 🧠 The Jambo AI "Brain" (Local Reasoning)
+## 🏛️ Project Ecosystem
 
-One of JAMBO PARK's most advanced features is the **Jambo AI Pro**—a sophisticated reasoning engine that operates entirely locally, providing "Brain-like" intelligence without external API costs or data privacy concerns.
+The system consists of three primary pillars, all integrated into a unified backend core.
 
-### Reasoning Pipeline
-```mermaid
-graph LR
-    Input[User Query] --> Intent[Intent Classifier]
-    Intent --> Entities[Entity Extractor]
-    Entities --> Sentiment[Sentiment Analysis]
-    Sentiment --> Trace[Reasoning Trace Accumulator]
-    Trace --> Logic[Specialized Reasoning Engines]
-    
-    subgraph "Internal Brain Logics"
-        Logic --> Policy[Policy Encyclopedia]
-        Logic --> Opt[Parking Optimizer]
-        Logic --> Balance[Fiscal Threshold Logic]
-    end
-    
-    Logic --> Output[Professional Response + Trace]
-```
+- **[User Application](file:///c:/Users/tutum/Downloads/JAMBO%20PARK/parking_user_app)**: Flutter-based consumer app for session management, payments, and navigation.
+- **[Officer Application](file:///c:/Users/tutum/Downloads/JAMBO%20PARK/parking_officer_app)**: Flutter tool for real-time enforcement, photo-evidence collection, and zone monitoring.
+- **[Admin Dashboard](file:///c:/Users/tutum/Downloads/JAMBO%20PARK/templates/dashboard)**: Responsive web interface for regional management and financial auditing.
+
+---
+
+## 📚 Technical Documentation Index
+
+For detailed specifications, refer to the documents in the `docs/` directory:
+
+| Document | Description |
+|----------|-------------|
+| 🏗️ **[Architecture](file:///c:/Users/tutum/Downloads/JAMBO%20PARK/docs/architecture.md)** | Infrastructure, Security, and Background Task logic. |
+| 🚀 **[Features](file:///c:/Users/tutum/Downloads/JAMBO%20PARK/docs/features.md)** | Complete glossary of capabilities for Users, Officers, and Admins. |
+| 📊 **[Diagrams](file:///c:/Users/tutum/Downloads/JAMBO%20PARK/docs/diagrams.md)** | Visual maps of system architectures and operational flows. |
+| 🗄️ **[Database Schema](file:///c:/Users/tutum/Downloads/JAMBO%20PARK/docs/database_schema.md)** | Detailed ERD and table specifications for PostgreSQL. |
+| 🎨 **[Design System](file:///c:/Users/tutum/Downloads/JAMBO%20PARK/docs/design_system.md)** | Branding tokens, Flutter glassmorphism, and web styling rules. |
+| 🌐 **[i18n Guide](file:///c:/Users/tutum/Downloads/JAMBO%20PARK/docs/i18n_guide.md)** | Instructions for maintaining translations in 5+ languages. |
+| 🛠️ **[Deployment](file:///c:/Users/tutum/Downloads/JAMBO%20PARK/docs/deployment_and_secrets.md)** | Setup guide for Docker, Render, and GitHub Actions. |
+
+---
+
+## 🧠 Jambo AI Pro (Local Intelligence)
+
+One of JAMBO PARK's most advanced features is the **Jambo AI Pro Reasoning Engine**, which provides "Brain-like" intelligence without external API calls.
+
+- **Instant Context**: AI reasons using real-time user data and local policy encyclopedia.
+- **Zero Latency**: Processed entirely on the backend server stack.
+- **Defensible Decisions**: Every AI response includes a reasoning justification trace.
 
 ---
 
 ## 🏗️ Repository Blueprint
 
-A guided map through the JAMBO PARK codebase:
-
 ```text
 JAMBO PARK/
 ├── apps/                       # Backend Application Modules
-│   ├── accounts/               # Identity, Auth, & Vehicle Management
+│   ├── accounts/               # Identity & Multi-Tenancy Logic
 │   ├── parking/                # core logic: Zones, Sessions, Slots
-│   ├── enforcement/            # Officer logs, Violations, QR Scanning
-│   ├── rewards/                # Loyalty tiers & Point transactions
-│   ├── payments/               # Fiscal ledger & Gateway integrations
-│   ├── support_chat/           # 🧠 Jambo AI Home & Reasoning Core
-│   └── common/                 # Reusable BaseModels & Mixins
-├── config/                     # Django Project Settings & Routing
-├── parking_user_app/           # Flutter: Primary Consumer Application
+│   ├── enforcement/            # Officer logs & QR Verification
+│   ├── rewards/                # Loyalty tiers & Transactions
+│   ├── payments/               # Fiscal ledger (Stripe, Pesapal)
+│   ├── support_chat/           # 🧠 Jambo AI Reasoning Core
+│   └── common/                 # Regional Middleware & Local reverse-geocoding
+├── parking_user_app/           # Flutter: Consumer Application
 ├── parking_officer_app/        # Flutter: Operational Enforcement Tool
 ├── docs/                       # Comprehensive Technical Specs
-├── templates/                  # Django Responsive Admin Templates
-└── scripts/                    # Deployment & Maintenance Utilities
+└── .github/workflows/          # Automated CI/CD (Django & Flutter)
 ```
 
 ---
 
-## 🛡️ Enterprise-Grade Security & Infrastructure
-
-### 1. Single-Device Enforcement (SDE)
-To prevent account sharing and ensure high-integrity enforcement, the system employs a custom `SingleDeviceLoginMiddleware`.
-- **Mechanism**: Every JWT contains a standard `jti` (JWT ID). The database maintains the `current_session_jti`.
-- **Enforcement**: If a request comes in with a non-matching `jti`, the session is instantly invalidated across all channels.
-
-### 2. Regional Multi-Tenancy
-The system natively supports cross-border operations using a **Regional Routing Context**.
-- **Model Isolation**: Models inheriting from `RegionalModel` are automatically partitioned by `country_id`.
-- **Automatic Filtering**: `RegionalContextMiddleware` ensures that a user in Kenya never sees parking data from Uganda, enforced at the query level.
+## 🛡️ Enterprise-Grade Security
+- **Single-Device Enforcement (SDE)**: Custom middleware ensures accounts are never shared across concurrent devices.
+- **Regional Isolation**: Automated country-level partitioning ensures data sovereignty for multi-national operators.
+- **Geofencing**: High-precision Haversine algorithm validates vehicle positions in real-time.
 
 ---
 
-## 📡 Core System Flows
+## 🛠️ Development Quick Start
 
-### Parking Session Lifecycle
-```mermaid
-sequenceDiagram
-    participant User
-    participant API
-    participant Worker
-    
-    User->>API: Request Start (Zone + Duration)
-    API->>API: 🧠 Brain: Check Balance & Geofence
-    API->>User: 201 Created (QR Verification Pass)
-    
-    loop Every 60 Seconds
-        Worker->>API: Check Expiry/Geofence
-        alt User Far Away or Expired
-            Worker->>User: Push Alert (FCM)
-            Worker->>API: Auto-End Session
-        end
-    end
-```
-
----
-
-## 🛠️ Development & Deployment
-
-### ⚡ Quick Start
 ```bash
-# Clone and install dependencies
-git clone https://github.com/jambo-park/system.git
+# Install environment & dependencies
 make install
 
-# Spin up local development environment
-docker-compose up -d
-
-# Initialize database
+# Initialize local database & regional data
 make migrate
 make seed-data
+
+# Run all services (API, Celery, Redis)
+make run
 ```
 
-### ⌨️ Management Interface
-| Command | Action |
-|---------|--------|
-| `make run` | Starts Django + Celery + Redis |
-| `make test` | Executes full suite (Backend + Flutter) |
-| `make worker` | Dedicated Celery background worker |
-| `make build-apk` | Generates release-ready Flutter distribution |
-
 ---
-
-
-*© 2026 JAMBO PARK Solutions. Confidential and Proprietary. Enterprise Edition v2.4.*
+*© 2026 JAMBO PARK Solutions. Confidential and Proprietary. v2.7*

@@ -10,20 +10,24 @@ class RegionalContextMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Default to None
         set_current_country(None)
         
-        # On request, identify user's country if authenticated
         if request.user.is_authenticated:
-            # Superusers should see everything, so don't set a restriction context
-            if not request.user.is_superuser:
+            session_country_id = request.session.get('selected_country_id')
+            if request.user.is_superuser and session_country_id:
+                from .models import Country
+                try:
+                    country = Country.objects.get(id=session_country_id)
+                    set_current_country(country)
+                except Country.DoesNotExist:
+                    pass
+            elif not request.user.is_superuser:
                 country = getattr(request.user, 'country', None)
                 if country:
                     set_current_country(country)
         
         response = self.get_response(request)
         
-        # Clean up after request to prevent leaks between threads
         set_current_country(None)
         
         return response

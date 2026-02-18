@@ -1,5 +1,6 @@
 {% extends 'base/base.html' %}
 {% load i18n %}
+{% load cache %}
 
 {% block title %}{% trans "Dashboard" %} - {% trans "Smart Parking Admin" %}{% endblock %}
 {% block page_title %}{% trans "Dashboard" %}{% endblock %}
@@ -9,6 +10,7 @@
 {% endblock %}
 
 {% block content %}
+{% cache 300 dashboard_stats request.user.role selected_country_id request.LANGUAGE_CODE %}
 <!-- Stats Cards with Consistent Colors -->
 <div class="row mb-4">
     <div class="col-xl-3 col-md-6 mb-4">
@@ -84,6 +86,7 @@
         </div>
     </div>
 </div>
+{% endcache %}
 
 <!-- Charts Row -->
 <div class="row mb-4">
@@ -180,7 +183,8 @@
                             <div>
                                 <h6 class="mb-1">{{ session.vehicle.license_plate }}</h6>
                                 <p class="mb-1 text-muted">{{ session.zone.name }}</p>
-                                <small class="text-muted">{% blocktrans with time=session.created_at|timesince %}{{ time }} ago{% endblocktrans %}</small>
+                                <small class="text-muted">{% blocktrans with time=session.created_at|timesince %}{{ time
+                                    }} ago{% endblocktrans %}</small>
                             </div>
                             <div class="text-end">
                                 <span

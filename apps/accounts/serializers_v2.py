@@ -119,9 +119,42 @@ class UserLocationSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         from .models import UserLocation
+        from apps.common.utils import get_country_from_coords
+        
         # Ensure we have the user from context if not passed
         user = validated_data.pop('user', None)
         if not user and 'view' in self.context:
             user = self.context['view'].request.user
+        
+        # Automatic Country Transition
+        lat = validated_data.get('latitude')
+        lng = validated_data.get('longitude')
+        if lat and lng and user:
+            new_country = get_country_from_coords(lat, lng)
+            if new_country and user.country != new_country:
+                from django.db import transaction
+                with transaction.atomic():
+                    old_country_name = user.country.name if user.country else "None"
+                    user.country = new_country
+                    user.save(update_fields=['country'])
+                    
+                    # Log transition for debugging/audit
+                    from apps.enforcement.models import OfficerLog
+                    if user.role == 'officer':
+                        OfficerLog.objects.create(
+                            officer=user,
+                            action='country_transition',
+                            details=f"Transitioned from {old_country_name} to {new_country.name} based on GPS."
+                        )
+                    
+                    # Trigger notification about country switch
+                    from apps.notifications.notification_triggers import notify_custom
+                    notify_custom(
+                        user, 
+                        title="Region Updated", 
+                        message=f"You have entered {new_country.name}. Your regional settings have been updated.",
+                        category='system',
+                        data={'country_id': str(new_country.id), 'iso_code': new_country.iso_code}
+                    )
         
         return UserLocation.objects.create(user=user, **validated_data)

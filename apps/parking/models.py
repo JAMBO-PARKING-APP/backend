@@ -158,7 +158,7 @@ class DrivePath(BaseModel):
     def __str__(self):
         return f"{self.zone.name} - {self.name}"
 
-class ParkingSession(BaseModel):
+class ParkingSession(RegionalModel, BaseModel):
     vehicle = models.ForeignKey('accounts.Vehicle', on_delete=models.CASCADE, related_name='parking_sessions')
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE, related_name='sessions')
     parking_slot = models.ForeignKey(ParkingSlot, on_delete=models.SET_NULL, null=True, blank=True)
@@ -199,9 +199,14 @@ class ParkingSession(BaseModel):
     def __str__(self):
         return f"{self.vehicle.license_plate} - {self.zone.name}"
 
-    def clean(self):
         if self.parking_slot and self.parking_slot.zone != self.zone:
             raise ValidationError(_("Parking slot must belong to the selected zone"))
+
+    def save(self, *args, **kwargs):
+        # Auto-populate country from zone
+        if self.zone and not self.country:
+            self.country = self.zone.country
+        super().save(*args, **kwargs)
 
     @property
     def duration_minutes(self):
@@ -259,10 +264,6 @@ class ParkingSession(BaseModel):
             # Send refund notification
             notify_wallet_refund(wallet_tx, self)
         
-        # Notify officers in real-time
-        from apps.notifications.notification_triggers import notify_officers_session_event
-        notify_officers_session_event(self, 'session_ended')
-        
         self.status = ParkingStatus.COMPLETED
         
         # Award Loyalty Points
@@ -284,6 +285,13 @@ class ParkingSession(BaseModel):
             self.parking_slot.save()
         
         self.save()
+
+        # Trigger notifications
+        from apps.notifications.notification_triggers import notify_parking_ended, notify_officers_session_event
+        notify_parking_ended(self)
+        notify_officers_session_event(self, 'session_ended')
+        
+        return True
 
     def cancel_session(self):
         """Cancel an active session and calculate refund"""

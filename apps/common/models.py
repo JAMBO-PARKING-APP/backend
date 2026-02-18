@@ -42,7 +42,6 @@ class RegionalManager(models.Manager):
     def get_queryset(self):
         qs = super().get_queryset()
         country = get_current_country()
-        # Only filter if we have a context country
         if country:
             return qs.filter(country=country)
         return qs
@@ -52,7 +51,7 @@ class RegionalModel(models.Model):
     country = models.ForeignKey(Country, on_delete=models.PROTECT, related_name="%(class)s_related", null=True, blank=True)
     
     objects = RegionalManager()
-    all_objects = models.Manager() # Escape hatch
+    all_objects = models.Manager() 
 
     class Meta:
         abstract = True
@@ -70,7 +69,6 @@ class SystemConfiguration(models.Model):
         verbose_name_plural = 'System Configuration'
     
     def save(self, *args, **kwargs):
-        # Ensure only one configuration instance exists
         if not self.pk and SystemConfiguration.objects.exists():
             raise ValueError('Only one system configuration instance is allowed')
         super().save(*args, **kwargs)

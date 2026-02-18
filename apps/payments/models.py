@@ -43,7 +43,7 @@ class PaymentMethod(BaseModel):
     def __str__(self):
         return f"{self.card_brand} ****{self.card_last_four}"
 
-class Transaction(BaseModel):
+class Transaction(RegionalModel, BaseModel):
     user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='transactions')
     parking_session = models.ForeignKey('parking.ParkingSession', on_delete=models.CASCADE, 
                                        related_name='transactions', null=True, blank=True)
@@ -72,7 +72,13 @@ class Transaction(BaseModel):
     def __str__(self):
         return f"{self.user.phone} - {self.amount} ({self.status})"
 
-class Refund(BaseModel):
+    def save(self, *args, **kwargs):
+        # Auto-populate country from user
+        if self.user and not self.country:
+            self.country = self.user.country
+        super().save(*args, **kwargs)
+
+class Refund(RegionalModel, BaseModel):
     original_transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name='refunds')
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     reason = models.CharField(max_length=200)
@@ -88,6 +94,12 @@ class Refund(BaseModel):
 
     def __str__(self):
         return f"Refund ${self.amount} for {self.original_transaction}"
+
+    def save(self, *args, **kwargs):
+        # Auto-populate country from original transaction
+        if self.original_transaction and not self.country:
+            self.country = self.original_transaction.country
+        super().save(*args, **kwargs)
 
 class Invoice(BaseModel):
     transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name='invoice')

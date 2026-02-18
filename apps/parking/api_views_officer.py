@@ -130,3 +130,63 @@ def officer_zone_sessions(request, zone_id):
             {'error': 'Zone not found'},
             status=status.HTTP_404_NOT_FOUND
         )
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def overdue_users(request, zone_id):
+    """
+    Get users who are still in the zone radius but have no active session
+    (sessions that are expired or recently completed)
+    
+    GET /api/officer/zones/{zone_id}/overdue-users/
+    """
+    if request.user.role != UserRole.OFFICER:
+        return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+        
+    try:
+        zone = Zone.objects.get(id=zone_id, is_active=True)
+        
+        # Get sessions that ended recently (e.g., last 2 hours) or are expired
+        from django.utils import timezone
+        from datetime import timedelta
+        cutoff = timezone.now() - timedelta(hours=2)
+        
+        overdue_sessions = ParkingSession.objects.filter(
+            zone=zone,
+            status__in=[ParkingStatus.EXPIRED, ParkingStatus.COMPLETED],
+            updated_at__gte=cutoff
+        ).select_related('vehicle__user')
+        
+        from apps.accounts.models import UserLocation
+        from apps.common.utils import calculate_distance
+        
+        overdue_data = []
+        for session in overdue_sessions:
+            user = session.vehicle.user
+            last_location = UserLocation.objects.filter(user=user).order_by('-timestamp').first()
+            
+            if last_location:
+                distance = calculate_distance(
+                    last_location.latitude, last_location.longitude,
+                    zone.latitude, zone.longitude
+                )
+                
+                # Still within zone radius + buffer
+                if distance <= (zone.radius_meters + 20):
+                    overdue_data.append({
+                        'session_id': str(session.id),
+                        'vehicle_plate': session.vehicle.license_plate,
+                        'driver_name': f"{user.first_name} {user.last_name}",
+                        'driver_phone': user.phone,
+                        'status': session.status,
+                        'distance_meters': int(distance),
+                        'last_seen': last_location.timestamp.isoformat()
+                    })
+        
+        return Response({
+            'zone_name': zone.name,
+            'overdue_users': overdue_data,
+            'count': len(overdue_data)
+        })
+        
+    except Zone.DoesNotExist:
+        return Response({'error': 'Zone not found'}, status=404)

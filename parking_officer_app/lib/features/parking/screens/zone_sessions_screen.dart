@@ -5,7 +5,8 @@ import 'package:parking_officer_app/features/parking/models/parking_session_mode
 import 'package:parking_officer_app/features/parking/providers/zone_provider.dart';
 import 'package:parking_officer_app/core/app_theme.dart';
 import 'package:intl/intl.dart';
-import 'package:parking_officer_app/features/violations/screens/violation_form_screen.dart';
+
+import 'package:parking_officer_app/features/parking/screens/session_detail_screen.dart';
 
 class ZoneSessionsScreen extends StatefulWidget {
   final Zone zone;
@@ -16,13 +17,23 @@ class ZoneSessionsScreen extends StatefulWidget {
   State<ZoneSessionsScreen> createState() => _ZoneSessionsScreenState();
 }
 
-class _ZoneSessionsScreenState extends State<ZoneSessionsScreen> {
+class _ZoneSessionsScreenState extends State<ZoneSessionsScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ZoneProvider>().selectZone(widget.zone.id);
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -30,6 +41,13 @@ class _ZoneSessionsScreenState extends State<ZoneSessionsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.zone.name),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Active Sessions'),
+            Tab(text: 'Overdue Users'),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -39,49 +57,76 @@ class _ZoneSessionsScreenState extends State<ZoneSessionsScreen> {
           ),
         ],
       ),
-      body: Consumer<ZoneProvider>(
-        builder: (context, provider, _) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // Tab 1: Active Sessions
+          Consumer<ZoneProvider>(
+            builder: (context, provider, _) {
+              if (provider.isLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-          if (provider.activeSessions.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.local_parking, size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No active sessions in ${widget.zone.name}',
-                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: () {
-                      context.read<ZoneProvider>().selectZone(widget.zone.id);
-                    },
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Refresh'),
-                  ),
-                ],
-              ),
-            );
-          }
+              if (provider.activeSessions.isEmpty) {
+                return _buildEmptyState(context, 'No active sessions');
+              }
 
-          return RefreshIndicator(
-            onRefresh: () =>
-                context.read<ZoneProvider>().selectZone(widget.zone.id),
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: provider.activeSessions.length,
-              itemBuilder: (context, index) {
-                final session = provider.activeSessions[index];
-                return _SessionCard(session: session);
-              },
-            ),
-          );
-        },
+              return RefreshIndicator(
+                onRefresh: () =>
+                    context.read<ZoneProvider>().selectZone(widget.zone.id),
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: provider.activeSessions.length,
+                  itemBuilder: (context, index) {
+                    final session = provider.activeSessions[index];
+                    return _SessionCard(session: session);
+                  },
+                ),
+              );
+            },
+          ),
+
+          // Tab 2: Overdue Users (Simplified for now, using existing data)
+          Consumer<ZoneProvider>(
+            builder: (context, provider, _) {
+              final overdue = provider.activeSessions
+                  .where(
+                    (s) =>
+                        s.status == 'expired' ||
+                        s.plannedEndTime.isBefore(DateTime.now()),
+                  )
+                  .toList();
+
+              if (overdue.isEmpty) {
+                return _buildEmptyState(context, 'No overdue users detected');
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: overdue.length,
+                itemBuilder: (context, index) {
+                  return _SessionCard(session: overdue[index]);
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.local_parking, size: 64, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+          ),
+        ],
       ),
     );
   }
@@ -101,7 +146,14 @@ class _SessionCard extends StatelessWidget {
     final isExpired = timeRemaining.isNegative;
 
     return InkWell(
-      onTap: () => _showSessionDetails(context, session),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SessionDetailScreen(session: session),
+          ),
+        );
+      },
       child: Card(
         margin: const EdgeInsets.only(bottom: 12),
         elevation: 2,
@@ -271,188 +323,6 @@ class _SessionCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _showSessionDetails(BuildContext context, ParkingSession session) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: DraggableScrollableSheet(
-          initialChildSize: 0.6,
-          maxChildSize: 0.9,
-          minChildSize: 0.4,
-          expand: false,
-          builder: (context, scrollController) => SingleChildScrollView(
-            controller: scrollController,
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Text(
-                      session.vehiclePlate,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryColor,
-                      ),
-                    ),
-                    const Spacer(),
-                    _buildStatusBadge(session),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                _DetailRow(
-                  icon: Icons.person,
-                  label: 'Driver',
-                  value: session.driverName ?? 'Unknown',
-                ),
-                _DetailRow(
-                  icon: Icons.phone,
-                  label: 'Phone',
-                  value: session.driverPhone ?? 'Not available',
-                ),
-                _DetailRow(
-                  icon: Icons.location_on,
-                  label: 'Slot',
-                  value: session.slotNumber ?? session.slotCode ?? 'N/A',
-                ),
-                const Divider(height: 32),
-                _DetailRow(
-                  icon: Icons.access_time,
-                  label: 'Started At',
-                  value: DateFormat('MMM d, HH:mm').format(session.startTime),
-                ),
-                _DetailRow(
-                  icon: Icons.timer,
-                  label: 'Planned End',
-                  value: DateFormat(
-                    'MMM d, HH:mm',
-                  ).format(session.plannedEndTime),
-                ),
-                _DetailRow(
-                  icon: Icons.money,
-                  label: 'Estimated Cost',
-                  value: 'UGX ${session.amountDue.toStringAsFixed(0)}',
-                ),
-                const SizedBox(height: 32),
-                if (session.status == 'expired' ||
-                    session.plannedEndTime.isBefore(DateTime.now()))
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ViolationFormScreen(
-                            vehiclePlate: session.vehiclePlate,
-                            sessionId: session.id,
-                            // zoneId should be passed if available in session model
-                          ),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.warning, color: Colors.white),
-                    label: const Text('ISSUE VIOLATION'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.all(16),
-                    ),
-                  ),
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('CLOSE'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge(ParkingSession session) {
-    final isExpired =
-        session.status == 'expired' ||
-        session.plannedEndTime.isBefore(DateTime.now());
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: isExpired ? Colors.red[50] : Colors.green[50],
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isExpired ? Colors.red : Colors.green),
-      ),
-      child: Text(
-        session.status.toUpperCase(),
-        style: TextStyle(
-          color: isExpired ? Colors.red : Colors.green,
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
-        ),
-      ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _DetailRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: Colors.grey[600]),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

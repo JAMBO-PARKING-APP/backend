@@ -1,78 +1,84 @@
-# 🎨 Mobile Design System (Enterprise spec)
+# 🎨 JAMBO PARK: Design System & UI/UX Specs
 
-The JAMBO PARK Design System is a comprehensive set of tokens, components, and layout rules designed for high-performance Flutter mobile applications.
-
----
-
-## 🛑 1. Brand Tokens (Colors)
-
-We utilize a Material 3 palette optimized for readability in outdoor environments.
-
-| Token | Value | Hex | Usage |
-|-------|-------|-----|-------|
-| `primary` | Blue 6 | `#1890FF` | Primary actions, state indicators. |
-| `success` | Green 6 | `#52C41A` | Paid sessions, slot availability. |
-| `warning` | Gold 6 | `#FAAD14` | Approaching expiry, pending payment. |
-| `error` | Red 6 | `#FF4D4F` | Illegal parking, system failure alerts. |
-| `background`| Neutral 1 | `#FAFAFA` | Main screen surface. |
+JAMBO PARK follows a "Premium Utility" design philosophy—balancing high-density data visualization with sleek, modern aesthetics across Web and Mobile.
 
 ---
 
-## 📐 2. Layout & Geometry
+## 💎 Design Tokens (Brand Identity)
 
-All components follow a strict geometric grid to ensure visual harmony.
-
-- **Corner Radius**: Standardized **12px** for all interactive elements (Cards, Dialogs, Inputs).
-- **Edge Insets**: 
-  - Page Padding: `16px`
-  - Internal Card Padding: `12px`
-  - Vertical Spacing (Small): `8px`
-  - Vertical Spacing (Large): `24px`
+| Token | Value | usage |
+|-------|-------|-------|
+| **Primary** | `#2D5CFE` | Main branding, buttons, active states. |
+| **Primary Soft**| `#E9EFFF` | Background for primary buttons, highlights. |
+| **Danger** | `#FC5185` | Violations, errors, critical alerts. |
+| **Success** | `#3FC1C9` | Confirmed sessions, payments. |
+| **Surface** | `#FFFFFF` | Card backgrounds, elevated surfaces. |
+| **Text Primary**| `#1A1A1B` | Main headings and body text. |
 
 ---
 
-## 🛠️ 3. Component Specifications
+## 📱 Mobile (Flutter) Components
 
-### 3.1 Buttons
-- **Primary Elevated**: Uses `primaryColor` with a 30% alpha tinted shadow.
-- **Outlined**: Uses `#D9D9D9` borders for secondary actions (e.g., Cancel).
+### 1. Glassmorphic Cards
+Used in the `User App` to provide a premium, modern feel.
+- **Implementation**: Uses `BackdropFilter` with `ImageFilter.blur`.
+- **Properties**: `sigmaX: 10, sigmaY: 10`.
+- **Border**: Thin 1px white border with 20% opacity.
 
+### 2. Skeleton Loaders
+Implemented globally for data fetching states.
+- **Library**: `shimmer` package.
+- **Pattern**: Matching the exact geometry of the loaded card to prevent layout shifts.
+
+### 3. Animated Transitions
+- **Hero Animations**: License plates animate from list view to detail view.
+- **Slide Transitions**: Used for tab switching in `ZoneSessionsScreen`.
+
+---
+
+## 🌐 Web (Django Admin) Styling
+
+### 1. Responsive Layout
+The dashboard uses **Bootstrap 5** with custom glassmorphism overrides.
+- **Sidebar**: High-contrast dark theme with hover-state indicators.
+- **Stats Cards**: Animated number counting on load.
+
+### 2. Typography
+- **Primary**: `Inter`, Sans-serif.
+- **Secondary**: `Roboto Mono` for license plates and transaction IDs.
+
+---
+
+## 🛠️ Implementation Snippets
+
+### Flutter Glassmorphism Mixin
 ```dart
-// Standard Button Implementation
-ElevatedButton(
-  style: AppTheme.lightTheme.elevatedButtonTheme.style,
-  onPressed: () {},
-  child: const Text('START PARKING'),
-)
+Widget glassBox({required Widget child}) {
+  return ClipRRect(
+    borderRadius: BorderRadius.circular(15),
+    child: BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.1),
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
+        ),
+        child: child,
+      ),
+    ),
+  );
+}
 ```
 
-### 3.2 Cards
-- **Architecture**: `elevation: 1` with a `0.5px` border of `dividerColor`.
-- **Logic**: Used for grouping logically related data (e.g., Active Session details).
-
-### 3.3 Inputs (Forms)
-- **Filled State**: Light grey background (`#FAFAFA`) to differentiate from page background.
-- **Focus State**: `2px` primary blue border to comply with accessibility standards.
-
----
-
-## 🌗 4. Dark Mode Strategy
-
-The apps utilize an **OLED-optimized** dark theme.
-
-| Light Component | Dark Value | Rationale |
-|-----------------|------------|-----------|
-| `background` | `#141414` | True black for battery savings. |
-| `surface` | `#1F1F1F` | Subtle elevation contrast. |
-| `textPrimary` | `#EBEBEB` | Off-white to reduce eye strain. |
+### CSS Utility: Glassmorphism
+```css
+.glass-panel {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+```
 
 ---
-
-## ♿ 5. Accessibility (A11y)
-
-- **Touch Targets**: Minimum `48x48px` for all interactive elements.
-- **Contrast**: Text-to-background ratio maintained above **4.5:1**.
-- **Haptics**: Integration of `HapticFeedback.mediumImpact()` on critical transactions (Payment start, Session end).
-
----
-*© 2026 JAMBO PARK Solutions. Confidential and Proprietary.*
+*© 2026 JAMBO PARK Solutions. Confidential and Proprietary. v2.2*

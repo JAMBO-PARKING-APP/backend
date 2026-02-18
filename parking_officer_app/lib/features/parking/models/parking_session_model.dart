@@ -11,6 +11,9 @@ class ParkingSession {
   final String? driverName;
   final String? driverPhone;
 
+  final DateTime? actualEndTime;
+  final String? zoneName;
+
   ParkingSession({
     required this.id,
     required this.vehiclePlate,
@@ -18,11 +21,13 @@ class ParkingSession {
     this.slotNumber,
     required this.startTime,
     required this.plannedEndTime,
+    this.actualEndTime,
     required this.durationMinutes,
     required this.amountDue,
     required this.status,
     this.driverName,
     this.driverPhone,
+    this.zoneName,
   });
 
   factory ParkingSession.fromJson(Map<String, dynamic> json) {
@@ -34,6 +39,9 @@ class ParkingSession {
       slotNumber: json['slot_number'] ?? json['parking_slot']?['slot_number'],
       startTime: DateTime.parse(json['start_time']),
       plannedEndTime: DateTime.parse(json['planned_end_time']),
+      actualEndTime: json['actual_end_time'] != null
+          ? DateTime.parse(json['actual_end_time'])
+          : null,
       durationMinutes: json['duration_minutes'] ?? 0,
       amountDue:
           double.tryParse(
@@ -46,6 +54,7 @@ class ParkingSession {
       driverName:
           json['driver_name'] ?? json['vehicle']?['owner']?['full_name'],
       driverPhone: json['driver_phone'] ?? json['vehicle']?['owner']?['phone'],
+      zoneName: json['zone_name'],
     );
   }
 }

@@ -87,20 +87,13 @@ class DashboardView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Get system configuration
         config = SystemConfiguration.get_config()
         currency_symbol = CURRENCY_SYMBOLS.get(config.currency, '$')
-        
-        # Calculate real dashboard stats
         today = timezone.now().date()
-        
-        # Today's revenue
         today_revenue = Transaction.objects.filter(
             created_at__date=today,
             status='completed'
         ).aggregate(total=Sum('amount'))['total'] or 0
-        
-        # Revenue data for last 7 days
         revenue_data = []
         revenue_labels = []
         for i in range(6, -1, -1):
@@ -111,13 +104,11 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             ).aggregate(total=Sum('amount'))['total'] or 0
             revenue_data.append(float(revenue))
             revenue_labels.append(date.strftime('%m/%d'))
-        
-        # Zone occupancy data
         zones = Zone.objects.filter(is_active=True)
         occupancy_labels = []
         occupancy_data = []
         
-        for zone in zones[:5]:  # Top 5 zones
+        for zone in zones[:5]:  
             total_slots = zone.slots.count()
             if total_slots > 0:
                 occupied = zone.slots.filter(status='occupied').count()
@@ -164,7 +155,21 @@ class LogoutView(View):
         logout(request)
         return redirect('login')
 
-# User Management Views
+class SwitchCountryView(AdminRequiredMixin, View):
+    """View for superusers to switch their regional context manually."""
+    def post(self, request):
+        country_id = request.POST.get('country_id')
+        if country_id:
+            request.session['selected_country_id'] = country_id
+            messages.success(request, _("Regional context updated successfully."))
+        else:
+            if 'selected_country_id' in request.session:
+                del request.session['selected_country_id']
+            messages.info(request, _("Default regional context restored."))
+        
+        next_url = request.POST.get('next', 'dashboard')
+        return redirect(next_url)
+
 class UserListView(AdminRequiredMixin, ListView):
     model = User
     template_name = 'users/list.html'
@@ -194,7 +199,6 @@ class UserUpdateView(AdminRequiredMixin, UpdateView):
     fields = ['phone', 'email', 'first_name', 'last_name', 'role', 'is_active']
     success_url = reverse_lazy('user-list')
 
-# Vehicle Management Views
 class VehicleListView(AdminRequiredMixin, ListView):
     model = Vehicle
     template_name = 'vehicles/list.html'
@@ -218,7 +222,6 @@ class VehicleListView(AdminRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Add users for dropdown
         context['users'] = User.objects.filter(role='driver', is_active=True).order_by('first_name')
         return context
 
@@ -229,45 +232,37 @@ class VehicleDetailView(AdminRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         vehicle = get_object_or_404(Vehicle, pk=kwargs['pk'])
         
-        # Get parking history
         parking_sessions = ParkingSession.objects.filter(
             vehicle=vehicle
         ).select_related('zone', 'parking_slot').order_by('-created_at')
         
-        # Get violations
         violations = Violation.objects.filter(
             vehicle=vehicle
         ).select_related('officer', 'zone').order_by('-created_at')
         
-        # Get transactions
         transactions = Transaction.objects.filter(
             parking_session__vehicle=vehicle
         ).select_related('parking_session', 'payment_method').order_by('-created_at')
         
-        # Calculate stats
         total_sessions = parking_sessions.count()
         active_sessions = parking_sessions.filter(status=ParkingStatus.ACTIVE).count()
         completed_sessions = parking_sessions.filter(status=ParkingStatus.COMPLETED).count()
         total_violations = violations.count()
         unpaid_violations = violations.filter(is_paid=False).count()
-        
-        # Calculate total spent
         total_spent = transactions.filter(
             status='completed'
         ).aggregate(total=Sum('amount'))['total'] or 0
         
-        # Get current active session
         current_session = parking_sessions.filter(status=ParkingStatus.ACTIVE).first()
         
-        # Get system configuration for currency
         config = SystemConfiguration.get_config()
         currency_symbol = CURRENCY_SYMBOLS.get(config.currency, '$')
         
         context.update({
             'vehicle': vehicle,
-            'parking_sessions': parking_sessions[:10],  # Last 10 sessions
-            'violations': violations[:10],  # Last 10 violations
-            'transactions': transactions[:10],  # Last 10 transactions
+            'parking_sessions': parking_sessions[:10],  
+            'violations': violations[:10],  
+            'transactions': transactions[:10],  
             'total_sessions': total_sessions,
             'active_sessions': active_sessions,
             'completed_sessions': completed_sessions,
@@ -280,7 +275,6 @@ class VehicleDetailView(AdminRequiredMixin, TemplateView):
         
         return context
 
-# Zone Management Views
 class ZoneListView(AdminRequiredMixin, ListView):
     model = Zone
     template_name = 'zones/list.html'
@@ -929,7 +923,6 @@ class QRCodeScanListView(AdminRequiredMixin, ListView):
     def get_queryset(self):
         return QRCodeScan.objects.select_related('officer', 'parking_session__vehicle').order_by('-created_at')
 
-# Rewards & Loyalty Views
 class LoyaltyAccountListView(AdminRequiredMixin, ListView):
     model = LoyaltyAccount
     template_name = 'rewards/loyalty_list.html'
@@ -948,7 +941,6 @@ class PointTransactionListView(AdminRequiredMixin, ListView):
     def get_queryset(self):
         return PointTransaction.objects.select_related('account__user').order_by('-created_at')
 
-# Notification & Chat Views
 class NotificationEventListView(AdminRequiredMixin, ListView):
     model = NotificationEvent
     template_name = 'notifications/event_list.html'
@@ -967,7 +959,6 @@ class ChatConversationListView(AdminRequiredMixin, ListView):
     def get_queryset(self):
         return ChatConversation.objects.select_related('user', 'assigned_agent').order_by('-created_at')
 
-# System Settings View
 class SystemSettingsView(AdminRequiredMixin, TemplateView):
     template_name = 'settings/config.html'
 
@@ -1012,13 +1003,11 @@ class SlotDeleteAllAjaxView(AdminRequiredMixin, View):
         
         try:
             zone = Zone.objects.get(pk=zone_id)
-            # Delete only available slots, keep occupied ones
             deleted_count = zone.slots.filter(status='available').delete()[0]
             return JsonResponse({'success': True, 'deleted_count': deleted_count})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
-# Boundary Management AJAX Views
 class BoundaryCreateAjaxView(AdminRequiredMixin, View):
     def post(self, request):
         import json

@@ -1,5 +1,6 @@
 {% load static %}
 {% load i18n %}
+{% load cache %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -97,9 +98,11 @@
             0% {
                 opacity: 1;
             }
+
             50% {
                 opacity: 0.7;
             }
+
             100% {
                 opacity: 1;
             }
@@ -373,7 +376,8 @@
         }
 
         /* Tables - Unified Professional Style */
-        .table, .table-modern {
+        .table,
+        .table-modern {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
@@ -582,6 +586,7 @@
             </div>
         </div>
 
+        {% cache 3600 sidebar_nav request.user.role selected_country_id request.LANGUAGE_CODE %}
         <div class="sidebar-content">
             <div class="nav-section-title">{% trans "Main" %}</div>
             <div class="nav-item">
@@ -758,6 +763,7 @@
                 </a>
             </div>
         </div>
+        {% endcache %}
 
         <div class="sidebar-footer">
             <form method="post" action="{% url 'logout' %}">
@@ -788,6 +794,28 @@
             </div>
 
             <div class="d-flex align-items-center gap-4">
+                <!-- Regional Context Switcher (Superuser Only) -->
+                {% if user.is_superuser %}
+                <div class="d-none d-md-block">
+                    <form action="{% url 'switch-country' %}" method="post" id="countrySwitcherForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <select name="country_id"
+                            class="form-select form-select-sm border-0 bg-primary-soft fw-bold text-primary"
+                            style="width: auto; cursor: pointer; border-radius: 20px; padding-left: 15px; padding-right: 35px;"
+                            onchange="this.form.submit()">
+                            <option value="">{% trans "All Regions" %}</option>
+                            {% for country in available_countries %}
+                            <option value="{{ country.id }}" {% if
+                                country.id|stringformat:"s"==selected_country_id|stringformat:"s" %}selected{% endif %}>
+                                {{ country.flag_emoji }} {{ country.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </div>
+                {% endif %}
+
                 <!-- Language Switcher -->
                 <form action="{% url 'set_language' %}" method="post" class="d-none d-sm-block">
                     {% csrf_token %}
@@ -798,7 +826,7 @@
                         {% get_available_languages as LANGUAGES %}
                         {% get_language_info_list for LANGUAGES as languages %}
                         {% for language in languages %}
-                        <option value="{{ language.code }}" {% if language.code == LANGUAGE_CODE %}selected{% endif %}>
+                        <option value="{{ language.code }}" {% if language.code==LANGUAGE_CODE %}selected{% endif %}>
                             {{ language.name_local }} ({{ language.code }})
                         </option>
                         {% endfor %}
@@ -828,7 +856,8 @@
                                 <select name="language" class="form-select form-select-sm"
                                     onchange="this.form.submit()">
                                     {% for language in languages %}
-                                    <option value="{{ language.code }}" {% if language.code == LANGUAGE_CODE %}selected{% endif %}>
+                                    <option value="{{ language.code }}" {% if language.code==LANGUAGE_CODE %}selected{%
+                                        endif %}>
                                         {{ language.name_local }}
                                     </option>
                                     {% endfor %}
