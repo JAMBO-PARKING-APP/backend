@@ -3,6 +3,7 @@ Serializers for Notifications App
 """
 from rest_framework import serializers
 from .models import NotificationEvent, UserPreferences, ChatConversation, ChatMessage
+from drf_spectacular.utils import extend_schema_field
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -134,19 +135,23 @@ class ChatConversationSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'user', 'created_at', 'updated_at']
     
+    @extend_schema_field(serializers.CharField(allow_null=True))
     def get_agent_name(self, obj):
         if obj.assigned_agent:
             return obj.assigned_agent.full_name
         return None
     
+    @extend_schema_field(serializers.CharField(allow_null=True))
     def get_agent_phone(self, obj):
         if obj.assigned_agent:
             return obj.assigned_agent.phone
         return None
     
+    @extend_schema_field(serializers.IntegerField())
     def get_unread_count(self, obj):
         return obj.messages.filter(is_read=False).count()
     
+    @extend_schema_field(ChatMessageSerializer(allow_null=True))
     def get_last_message(self, obj):
         last_msg = obj.messages.last()
         if last_msg:
@@ -202,7 +207,7 @@ class SendCustomNotificationSerializer(serializers.Serializer):
     data = serializers.JSONField(required=False, help_text="Additional custom data")
     
     def validate(self, attrs):
-        # At least one target must be specified
+
         if not any([attrs.get('user_id'), attrs.get('user_ids'), attrs.get('role')]):
             raise serializers.ValidationError(
                 "Must specify at least one of: user_id, user_ids, or role"

@@ -28,9 +28,7 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
-        # Users see their conversations, support agents and officers see assigned conversations
         if user.role in ['support_agent', 'officer', 'admin']:
-            # Officers should see conversations assigned to them as well as unassigned
             from django.db.models import Q
             return ChatConversation.objects.filter(
                 Q(assigned_agent=user) | Q(assigned_agent__isnull=True)
@@ -48,8 +46,6 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
     def close(self, request, pk=None):
         """Close/resolve a conversation"""
         conversation = self.get_object()
-        
-        # Only the assigned agent or the user can close
         if conversation.user != request.user and conversation.assigned_agent != request.user:
             return Response(
                 {'error': 'You do not have permission to close this conversation'},
@@ -69,8 +65,6 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
     def messages(self, request, pk=None):
         """Get all messages in a conversation"""
         conversation = self.get_object()
-        
-        # Check permission: Users see their own, Agents/Officers see assigned OR unassigned
         if user.role not in ['support_agent', 'officer', 'admin']:
             if conversation.user != user:
                 return Response(
@@ -78,7 +72,6 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_403_FORBIDDEN
                 )
         elif conversation.assigned_agent and conversation.assigned_agent != user:
-             # If assigned to someone else, only allow admin or the assigned agent
              if user.role != 'admin' and conversation.assigned_agent != user:
                 return Response(
                     {'error': 'This conversation is assigned to another agent'},
@@ -98,8 +91,6 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
     def send_message(self, request, pk=None):
         """Send a message in a conversation"""
         conversation = self.get_object()
-        
-        # Check permission: Users message their own, Agents/Officers message assigned OR unassigned
         if user.role not in ['support_agent', 'officer', 'admin']:
             if conversation.user != user:
                 return Response(
@@ -107,14 +98,12 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_403_FORBIDDEN
                 )
         elif conversation.assigned_agent and conversation.assigned_agent != user:
-             # If assigned to someone else, only allow admin or the assigned agent
              if user.role != 'admin' and conversation.assigned_agent != user:
                 return Response(
                     {'error': 'This conversation is assigned to another agent'},
                     status=status.HTTP_403_FORBIDDEN
                 )
         
-        # Create message
         message = ChatMessage.objects.create(
             conversation=conversation,
             sender=request.user,
@@ -122,18 +111,16 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
             message_type=request.data.get('message_type', 'text')
         )
         
-        # If user sends message and conversation is open, change status to in_progress
         if request.user == conversation.user and conversation.status == 'open':
             conversation.status = 'in_progress'
             conversation.save()
         
-        # Send notification to assigned officer
         if conversation.assigned_agent and request.user == conversation.user:
             from apps.notifications.firebase_service import send_notification_to_user
             send_notification_to_user(
                 user=conversation.assigned_agent,
                 title=f"New message from {request.user.full_name}",
-                body=message.content[:100],  # First 100 chars
+                body=message.content[:100], 
                 data={
                     'type': 'chat_message',
                     'conversation_id': str(conversation.id),
@@ -141,13 +128,11 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
                 }
             )
         
-        # Handle file attachment if provided
         if 'attachment' in request.FILES:
             message.attachment = request.FILES['attachment']
             message.message_type = 'file'
             message.save()
         
-        # Broadcast to group
         from asgiref.sync import async_to_sync
         from channels.layers import get_channel_layer
         
@@ -170,14 +155,12 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
         """Mark all messages in conversation as read"""
         conversation = self.get_object()
         
-        # Check permission
         if conversation.user != request.user and conversation.assigned_agent != request.user:
             return Response(
                 {'error': 'You do not have permission to access this conversation'},
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Mark unread messages as read (excluding messages sent by the user)
         unread_messages = conversation.messages.filter(is_read=False).exclude(sender=request.user)
         unread_messages.update(is_read=True, read_at=timezone.now())
         

@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
-from .serializers import ZoneSerializer, VehicleDetailSerializer, ViolationSerializer, ParkingSlotSerializer, OfficerLogSerializer
+from .serializers import ZoneSerializer, VehicleDetailSerializer, ViolationSerializer, ParkingSlotSerializer, OfficerActionLogSerializer
 from .models import Violation
 from apps.parking.models import Zone, ParkingSession
 from apps.accounts.models import Vehicle
@@ -17,7 +17,6 @@ class OfficerZoneListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        # For now, return all active zones. In production, filter by officer assignment
         return Zone.objects.filter(is_active=True)
 
 class ZoneDetailView(generics.RetrieveAPIView):
@@ -67,20 +66,17 @@ def zone_live_status(request, zone_id):
     if cached:
         return Response(cached)
 
-    # Get active sessions
     active_sessions = ParkingSession.objects.filter(
         zone=zone,
         status='active'
     ).select_related('vehicle', 'parking_slot')
 
-    # Get zone stats
     total_slots = zone.slots.count() or 50
     occupied_slots = active_sessions.count()
 
     sessions_data = []
     now = timezone.now()
     for session in active_sessions:
-        # Calculate remaining time
         remaining_seconds = (session.planned_end_time - now).total_seconds()
         remaining_seconds = max(0, remaining_seconds)
         remaining_minutes = int(remaining_seconds / 60)
@@ -117,11 +113,18 @@ class CreateViolationView(generics.CreateAPIView):
     serializer_class = ViolationSerializer
     permission_classes = [IsAuthenticated]
     
+    def post(self, request, *args, **kwargs):
+        logger = logging.getLogger(__name__)
+        logger.debug(f"CreateViolationView: Received request data: {request.data}")
+        logger.debug(f"CreateViolationView: Received FILES: {request.FILES}")
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            logger.error(f"CreateViolationView: Validation failed: {serializer.errors}")
+        return super().post(request, *args, **kwargs)
+
     @transaction.atomic
     def perform_create(self, serializer):
         from apps.payments.models import WalletTransaction
-        
-        # Infer zone from officer status if not provided and not in session
         zone = serializer.validated_data.get('zone')
         officer = self.request.user
         
@@ -134,18 +137,11 @@ class CreateViolationView(generics.CreateAPIView):
             except Exception:
                 pass
                 
-        # Save violation
         violation = serializer.save(officer=officer, zone=zone)
-        
-        # Auto-deduct fine from wallet (allowing negative balance)
         user = violation.vehicle.user
         fine_amount = violation.fine_amount
-        
-        # Deduct amount
         user.wallet_balance -= fine_amount
         user.save(update_fields=['wallet_balance'])
-        
-        # Log transaction
         WalletTransaction.objects.create(
             user=user,
             amount=-fine_amount,
@@ -158,12 +154,10 @@ class CreateViolationView(generics.CreateAPIView):
             }
         )
         
-        # Mark violation as paid
         violation.is_paid = True
         violation.paid_at = timezone.now()
         violation.save(update_fields=['is_paid', 'paid_at'])
         
-        # Handle evidence images
         evidence_files = self.request.FILES.getlist('evidence')
         if evidence_files:
             from .models import ViolationEvidence
@@ -177,8 +171,6 @@ class CreateViolationView(generics.CreateAPIView):
 @permission_classes([IsAuthenticated])
 def officer_stats(request):
     officer = request.user
-    
-    # Get officer's violations today
     from django.utils import timezone
     today = timezone.now().date()
     
@@ -188,8 +180,6 @@ def officer_stats(request):
     ).count()
     
     total_violations = Violation.objects.filter(officer=officer).count()
-    
-    # Get assigned zones (for now, all active zones)
     assigned_zones = Zone.objects.filter(is_active=True).count()
     
     return Response({
@@ -200,7 +190,7 @@ def officer_stats(request):
     })
 
 class LogOfficerActionAPIView(generics.CreateAPIView):
-    serializer_class = OfficerLogSerializer
+    serializer_class = OfficerActionLogSerializer
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):

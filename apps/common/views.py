@@ -128,6 +128,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             'revenue_labels': json.dumps(revenue_labels),
             'occupancy_data': json.dumps(occupancy_data),
             'occupancy_labels': json.dumps(occupancy_labels),
+            'occupancy_stats': zip(occupancy_labels, occupancy_data),  # For template iteration
         })
         
         return context
@@ -286,12 +287,8 @@ class ZoneListView(AdminRequiredMixin, ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Optimize: Use select_related and prefetch_related
         zones = context['zones']
-        
-        # Batch calculate stats for all zones
         for zone in zones:
-            # Use the property to get active sessions count
             zone.total_capacity = zone.total_slots if zone.total_slots > 0 else 50
             zone.calculated_occupancy_rate = (zone.active_sessions_count * 100) // zone.total_capacity if zone.total_capacity > 0 else 0
         
@@ -305,39 +302,32 @@ class ZoneDetailView(AdminRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         zone = self.object
-        
-        # Get active sessions
         active_sessions = ParkingSession.objects.filter(
             zone=zone,
             status=ParkingStatus.ACTIVE
         ).select_related('vehicle', 'parking_slot').order_by('-start_time')
-        
-        # Get recent completions
+
         recent_sessions = ParkingSession.objects.filter(
             zone=zone,
             status=ParkingStatus.COMPLETED
         ).select_related('vehicle', 'parking_slot').order_by('-actual_end_time')[:10]
-        
-        # Get recent violations
+
         recent_violations = Violation.objects.filter(
             zone=zone
         ).select_related('vehicle', 'officer').order_by('-created_at')[:10]
-        
-        # Calculate stats
+
         total_slots = zone.slots.count() or zone.total_slots or 50
         occupied_slots = active_sessions.count()
         available_slots = max(0, total_slots - occupied_slots)
         occupancy_rate = (occupied_slots / total_slots * 100) if total_slots > 0 else 0
-        
-        # Get revenue
+
         today = timezone.now().date()
         today_revenue = Transaction.objects.filter(
             parking_session__zone=zone,
             created_at__date=today,
             status='completed'
         ).aggregate(total=Sum('amount'))['total'] or 0
-        
-        # Get system configuration for currency
+
         config = SystemConfiguration.get_config()
         currency_symbol = CURRENCY_SYMBOLS.get(config.currency, '$')
         
@@ -364,12 +354,10 @@ class ZoneCreateView(AdminRequiredMixin, CreateView):
     
     def form_valid(self, form):
         response = super().form_valid(form)
-        # Auto-generate parking slots based on total_slots
         zone = self.object
         total_slots = zone.total_slots
         
         if total_slots > 0:
-            # Calculate grid layout
             slots_per_row = 10
             slot_width = 50
             slot_height = 50
@@ -398,8 +386,6 @@ class ZoneMapView(AdminRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         zones = Zone.objects.filter(is_active=True)
-        
-        # Add real occupancy data for each zone
         zones_data = []
         for zone in zones:
             active_sessions = ParkingSession.objects.filter(zone=zone, status=ParkingStatus.ACTIVE)
@@ -434,8 +420,6 @@ class ZoneUpdateView(AdminRequiredMixin, UpdateView):
         
         response = super().form_valid(form)
         zone = self.object
-        
-        # If total_slots increased, add more slots
         if new_total > old_total:
             slots_per_row = 10
             slot_width = 50
@@ -457,7 +441,6 @@ class ZoneUpdateView(AdminRequiredMixin, UpdateView):
                 )
             messages.success(self.request, _('Added %(count)d new parking slots!') % {'count': new_total - old_total})
         elif new_total < old_total:
-            # Remove excess slots (only if they're available)
             excess_slots = zone.slots.filter(status='available').order_by('-created_at')[:old_total - new_total]
             deleted_count = excess_slots.count()
             excess_slots.delete()
@@ -471,20 +454,12 @@ class ZoneDiagramView(AdminRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         zone = get_object_or_404(Zone, pk=kwargs['pk'])
-        
-        # Get all slots with their current status
         slots = zone.slots.all()
-        
-        # Get active sessions for this zone to update slot status
         active_sessions = ParkingSession.objects.filter(
             zone=zone,
             status=ParkingStatus.ACTIVE
         ).select_related('vehicle', 'parking_slot')
-        
-        # Create a mapping of occupied slots
         occupied_slots = {session.parking_slot_id: session for session in active_sessions if session.parking_slot_id}
-        
-        # Update slot status based on active sessions
         for slot in slots:
             if slot.id in occupied_slots:
                 slot.current_status = 'occupied'
@@ -492,8 +467,6 @@ class ZoneDiagramView(AdminRequiredMixin, TemplateView):
             else:
                 slot.current_status = 'available'
                 slot.current_vehicle = None
-        
-        # Get boundaries, entrances, and drive paths (with error handling)
         try:
             boundaries = zone.boundaries.all()
         except:
@@ -520,8 +493,6 @@ class ZoneDiagramView(AdminRequiredMixin, TemplateView):
             'available_count': slots.count() - len(occupied_slots)
         })
         return context
-
-# Parking Session Views
 class SessionListView(AdminRequiredMixin, ListView):
     model = ParkingSession
     template_name = 'sessions/list.html'
@@ -537,7 +508,6 @@ class SessionListView(AdminRequiredMixin, ListView):
         context['currency_symbol'] = CURRENCY_SYMBOLS.get(config.currency, '$')
         return context
 
-# Payment Views
 class PaymentListView(AdminRequiredMixin, ListView):
     model = Transaction
     template_name = 'payments/list.html'
@@ -563,8 +533,6 @@ class PaymentListView(AdminRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         config = SystemConfiguration.get_config()
-        
-        # Calculate real payment stats
         today = timezone.now().date()
         today_revenue = Transaction.objects.filter(
             created_at__date=today,
@@ -597,8 +565,6 @@ class PaymentListView(AdminRequiredMixin, ListView):
             'success_rate': success_percentage,
         })
         return context
-
-# Violation Views
 class ViolationListView(AdminRequiredMixin, ListView):
     model = Violation
     template_name = 'violations/list.html'
@@ -611,8 +577,6 @@ class ViolationListView(AdminRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         config = SystemConfiguration.get_config()
-        
-        # Calculate violation stats
         unpaid_violations = Violation.objects.filter(is_paid=False).count()
         paid_today = Violation.objects.filter(
             paid_at__date=timezone.now().date()
@@ -633,7 +597,6 @@ class ViolationListView(AdminRequiredMixin, ListView):
         })
         return context
 
-# AJAX Views for dynamic content
 class CheckPlateAjaxView(AdminRequiredMixin, View):
     def get(self, request):
         plate = request.GET.get('plate', '').strip()
@@ -673,22 +636,37 @@ class CheckPlateAjaxView(AdminRequiredMixin, View):
         except Vehicle.DoesNotExist:
             return JsonResponse({'error': _('Vehicle not found')}, status=404)
 
-# Zone Live Status API View
+class TerminateSessionAjaxView(AdminRequiredMixin, View):
+    """
+    Admin-only AJAX view to terminate any parking session
+    """
+    def post(self, request, session_id):
+        try:
+            session = get_object_or_404(ParkingSession, pk=session_id)
+            if session.status != ParkingStatus.ACTIVE:
+                return JsonResponse({'error': _('Session is not active')}, status=400)
+            
+            # Explicitly end the session using the model method
+            session.end_session()
+            
+            return JsonResponse({
+                'success': True,
+                'message': _('Session for plate %(plate)s terminated successfully.') % {'plate': session.vehicle.license_plate}
+            })
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
 class ZoneLiveStatusAjaxView(AdminRequiredMixin, View):
     def get(self, request, zone_id):
         try:
             zone = Zone.objects.get(pk=zone_id)
-            
-            # Get active sessions for this zone
             active_sessions = ParkingSession.objects.filter(
                 zone=zone,
                 status=ParkingStatus.ACTIVE
             ).select_related('vehicle', 'parking_slot')
-            
-            # Get all slots for this zone
+
             all_slots = zone.slots.all()
-            
-            # Create slot status data
+
             slots_data = []
             occupied_slots = {session.parking_slot_id: session for session in active_sessions if session.parking_slot_id}
             
@@ -707,9 +685,7 @@ class ZoneLiveStatusAjaxView(AdminRequiredMixin, View):
                         'vehicle': None
                     })
             
-            # If no slots defined, create mock slots based on active sessions
             if not all_slots.exists():
-                # Limit to 100 slots for performance
                 total_slots = min(100, max(50, active_sessions.count() * 2))
                 slots_data = []
                 
@@ -728,7 +704,6 @@ class ZoneLiveStatusAjaxView(AdminRequiredMixin, View):
                             'vehicle': None
                         })
             
-            # Prepare active sessions list
             active_sessions_list = []
             for session in active_sessions:
                 duration = timezone.now() - session.start_time
@@ -761,7 +736,6 @@ class ZoneLiveStatusAjaxView(AdminRequiredMixin, View):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
 
-# User search AJAX for dropdowns
 class UserSearchAjaxView(AdminRequiredMixin, View):
     def get(self, request):
         query = request.GET.get('q', '').strip()
@@ -780,7 +754,6 @@ class UserSearchAjaxView(AdminRequiredMixin, View):
         
         return JsonResponse({'results': results})
 
-# Vehicle search by plate AJAX
 class VehicleByPlateAjaxView(AdminRequiredMixin, View):
     def get(self, request):
         plate = request.GET.get('plate', '').strip()
@@ -800,7 +773,6 @@ class VehicleByPlateAjaxView(AdminRequiredMixin, View):
         except Vehicle.DoesNotExist:
             return JsonResponse({'error': _('Vehicle not found')}, status=404)
 
-# Slot Management AJAX Views
 class SlotCreateAjaxView(AdminRequiredMixin, View):
     def post(self, request):
         zone_id = request.POST.get('zone_id')
@@ -836,9 +808,6 @@ class SlotCreateAjaxView(AdminRequiredMixin, View):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
-# Additional Enterprise Views
-
-# Reservation Views
 class ReservationListView(AdminRequiredMixin, ListView):
     model = Reservation
     template_name = 'reservations/list.html'
@@ -858,7 +827,6 @@ class ReservationListView(AdminRequiredMixin, ListView):
             queryset = queryset.filter(status=status)
         return queryset.order_by('-created_at')
 
-# Payment Expansion Views
 class RefundListView(AdminRequiredMixin, ListView):
     model = Refund
     template_name = 'payments/refund_list.html'
@@ -896,7 +864,6 @@ class WalletTransactionListView(AdminRequiredMixin, ListView):
         context['currency_symbol'] = CURRENCY_SYMBOLS.get(config.currency, '$')
         return context
 
-# Enforcement Expansion Views
 class OfficerLogListView(AdminRequiredMixin, ListView):
     model = OfficerLog
     template_name = 'enforcement/log_list.html'

@@ -25,6 +25,38 @@ from .pesapal_service import PesapalService
 from apps.enforcement.models import Violation
 from apps.parking.models import ParkingSession, ParkingStatus, Reservation
 
+class PesapalPreWarmView(APIView):
+    """
+    Pre-warm Pesapal cache by fetching auth token and registering IPN in background.
+    Called by mobile app when user enters payment flow to reduce latency.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"PesapalPreWarmView: Pre-warming for user {request.user.id}")
+        
+        # Determine country from user or request
+        country = "Uganda" # Default string for lookup
+        if hasattr(request.user, 'country') and request.user.country:
+            country = request.user.country # Use the actual Country object
+            
+        pesapal_config = PesapalService.get_config_for_country(country)
+        service = PesapalService(config_obj=pesapal_config)
+        
+        # Hit the token endpoint (cached in Redis inside get_token)
+        token = service.get_token()
+        
+        # Also pre-cache IPN ID if possible
+        if token:
+            cache_key = f"pesapal_ipn_id_{(service.consumer_key or '')[:8]}"
+            from django.core.cache import cache
+            if not cache.get(cache_key):
+                service.register_ipn(token)
+                
+        return Response({'status': 'pre-warm initiated'}, status=status.HTTP_200_OK)
+
 class PaymentMethodsListAPIView(generics.ListAPIView):
     """List user's payment methods"""
     permission_classes = [IsAuthenticated]
@@ -40,14 +72,9 @@ class SetDefaultPaymentMethodAPIView(APIView):
     def post(self, request, pk):
         try:
             payment_method = request.user.payment_methods.get(id=pk, is_active=True)
-            
-            # Remove default from others
             request.user.payment_methods.exclude(id=pk).update(is_default=False)
-            
-            # Set this as default
             payment_method.is_default = True
             payment_method.save()
-            
             return Response({
                 'message': 'Default payment method updated',
                 'payment_method': PaymentMethodSerializer(payment_method).data
@@ -77,14 +104,11 @@ class CreatePaymentAPIView(APIView):
         
         try:
             amount = Decimal(str(amount))
-            
-            # Validate payment method
             payment_method = request.user.payment_methods.get(
                 id=payment_method_id,
                 is_active=True
             )
             
-            # Validate target (parking session or violation)
             parking_session = None
             if parking_session_id:
                 parking_session = ParkingSession.objects.get(
@@ -114,7 +138,6 @@ class CreatePaymentAPIView(APIView):
                         'error': f'Reservation is in status {reservation.status}, not pending payment'
                     }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Create transaction
             idempotency_key = str(uuid.uuid4())
             
             trans = Transaction.objects.create(
@@ -124,21 +147,16 @@ class CreatePaymentAPIView(APIView):
                 parking_session=parking_session,
                 reservation=reservation,
                 idempotency_key=idempotency_key,
-                status='completed'  # In production, integrate with Stripe/payment gateway
+                status='completed' 
             )
-            
-            # Confirm reservation if applicable
             if reservation:
                 from apps.parking.services.reservation_service import ReservationService
                 ReservationService.confirm_reservation(reservation, payment_method='wallet' if payment_method.card_brand == 'wallet' else 'card')
-            
-            # Mark violation as paid if applicable
             if violation:
                 violation.is_paid = True
                 violation.paid_at = trans.created_at
                 violation.save()
             
-            # Create invoice
             invoice_number = f"INV-{trans.id:06d}"
             invoice = Invoice.objects.create(
                 transaction=trans,
@@ -259,18 +277,14 @@ class InitiatePesapalPaymentAPIView(APIView):
         serializer = PesapalPaymentSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Get config for user's country
         country = getattr(request.user, 'country', None)
         config_obj = PesapalService.get_config_for_country(country)
         
         if config_obj:
             pesapal = PesapalService(config_obj=config_obj)
         else:
-            # Fallback for now if no config found, uses settings
+
             pesapal = PesapalService()
-        
-        # Create transaction
         merchant_reference = str(uuid.uuid4())
         idempotency_key = merchant_reference
         
@@ -324,9 +338,14 @@ class InitiatePesapalPaymentAPIView(APIView):
         trans.pesapal_order_tracking_id = response['order_tracking_id']
         trans.save()
         
+        redirect_url = response.get('redirect_url')
+        if not redirect_url:
+            logger.error(f"Pesapal response missing redirect_url: {response}")
+            return Response({'error': 'Failed to get payment redirect URL from Pesapal'}, status=status.HTTP_400_BAD_REQUEST)
+
         return Response({
             'message': 'Payment initiated',
-            'redirect_url': response['redirect_url'],
+            'redirect_url': redirect_url,
             'order_tracking_id': response['order_tracking_id'],
             'merchant_reference': merchant_reference
         }, status=status.HTTP_200_OK)
@@ -344,8 +363,6 @@ class PesapalUserCallbackView(APIView):
             
         try:
             trans = Transaction.objects.get(pesapal_merchant_reference=order_merchant_reference)
-            
-            # Resolve config for the transaction's user
             country = getattr(trans.user, 'country', None)
             config_obj = PesapalService.get_config_for_country(country)
             
@@ -355,8 +372,6 @@ class PesapalUserCallbackView(APIView):
                 pesapal = PesapalService()
             
             status_response = pesapal.get_transaction_status(order_tracking_id)
-            
-            # Update status logic (similar to IPN but for user feedback)
             p_status = status_response.get('payment_status_description', '').lower()
             if p_status == 'completed' and trans.status != 'completed':
                 trans.status = 'completed'
@@ -366,8 +381,6 @@ class PesapalUserCallbackView(APIView):
                 if trans.reservation:
                     from apps.parking.services.reservation_service import ReservationService
                     ReservationService.confirm_reservation(trans.reservation, payment_method='pesapal')
-                
-                # Wallet topup
                 is_wallet_topup = trans.processor_response.get('is_wallet_topup', False) if trans.processor_response else False
                 if is_wallet_topup:
                     with transaction.atomic():
@@ -385,14 +398,11 @@ class PesapalUserCallbackView(APIView):
                             status='completed',
                             related_transaction=trans
                         )
-                        
-                        # Send wallet top-up notification
                         from apps.notifications.notification_triggers import notify_payment_success
                         wallet_tx = WalletTransaction.objects.filter(related_transaction=trans).first()
                         if wallet_tx:
                             notify_payment_success(wallet_tx)
                 else:
-                    # Send payment success notification for non-wallet payments
                     from apps.notifications.notification_triggers import notify_payment_success
                     notify_payment_success(trans)
             elif p_status in ['failed', 'invalid', 'rejected']:
@@ -400,9 +410,6 @@ class PesapalUserCallbackView(APIView):
                 
             trans.processor_response = {**trans.processor_response, **status_response}
             trans.save()
-            
-            # Redirect to a simple success/failure HTML page or custom scheme
-            # For now, returning a JSON status that the app can intercept or a simple HTML
             from django.http import HttpResponse
             html_content = f"""
             <html>
@@ -441,8 +448,6 @@ class PesapalIPNAPIView(APIView):
         
         try:
             trans = Transaction.objects.get(pesapal_merchant_reference=order_merchant_reference)
-            
-            # Resolve config for the transaction's user
             country = getattr(trans.user, 'country', None)
             config_obj = PesapalService.get_config_for_country(country)
             
@@ -456,15 +461,12 @@ class PesapalIPNAPIView(APIView):
             p_status = status_response.get('payment_status_description', '').lower()
             if p_status == 'completed' and trans.status != 'completed':
                 trans.status = 'completed'
-                # Finalize parking session if exists
                 if trans.parking_session:
                     trans.parking_session.end_session()
                 
                 if trans.reservation:
                     from apps.parking.services.reservation_service import ReservationService
                     ReservationService.confirm_reservation(trans.reservation, payment_method='pesapal')
-                
-                # If it's a wallet top-up, credit the wallet
                 is_wallet_topup = trans.processor_response.get('is_wallet_topup', False) if trans.processor_response else False
                 if is_wallet_topup:
                     with transaction.atomic():
@@ -482,14 +484,12 @@ class PesapalIPNAPIView(APIView):
                             status='completed',
                             related_transaction=trans
                         )
-                        
-                        # Send wallet top-up notification
+                
                         from apps.notifications.notification_triggers import notify_payment_success
                         wallet_tx = WalletTransaction.objects.filter(related_transaction=trans).first()
                         if wallet_tx:
                             notify_payment_success(wallet_tx)
                 else:
-                    # Send payment success notification for non-wallet payments
                     from apps.notifications.notification_triggers import notify_payment_success
                     notify_payment_success(trans)
             elif p_status in ['failed', 'invalid', 'rejected']:

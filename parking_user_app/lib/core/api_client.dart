@@ -38,10 +38,12 @@ class ApiClient {
             final token = await _storageManager.getAccessToken();
             if (token != null) {
               options.headers['Authorization'] = 'Bearer $token';
-              debugPrint('[ApiClient] Added auth token for ${options.path}');
+              debugPrint(
+                '[ApiClient] added Bearer token (${token.substring(0, 5)}...) for ${options.path}',
+              );
             } else {
               debugPrint(
-                '[ApiClient] ⚠️ No token found for ${options.path} - user may not be authenticated',
+                '[ApiClient] ⚠️ NO token found for ${options.path} - user may not be authenticated',
               );
             }
           } else {

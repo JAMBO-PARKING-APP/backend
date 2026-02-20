@@ -29,7 +29,7 @@ class PaymentGatewayConfig(RegionalModel, BaseModel):
 class PaymentMethod(BaseModel):
     user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='payment_methods')
     card_last_four = models.CharField(max_length=4)
-    card_brand = models.CharField(max_length=20)  # visa, mastercard, etc.
+    card_brand = models.CharField(max_length=20)  
     is_default = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     stripe_payment_method_id = models.CharField(max_length=100, unique=True)
@@ -53,14 +53,10 @@ class Transaction(RegionalModel, BaseModel):
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     status = models.CharField(max_length=20, choices=TransactionStatus.choices, default=TransactionStatus.PENDING)
     payment_method = models.ForeignKey(PaymentMethod, on_delete=models.SET_NULL, null=True)
-    
-    # External payment processor fields
     stripe_payment_intent_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
     pesapal_order_tracking_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
     pesapal_merchant_reference = models.CharField(max_length=100, unique=True, null=True, blank=True)
     processor_response = models.JSONField(default=dict, blank=True)
-    
-    # Idempotency
     idempotency_key = models.CharField(max_length=100, unique=True)
 
     class Meta:
@@ -73,7 +69,6 @@ class Transaction(RegionalModel, BaseModel):
         return f"{self.user.phone} - {self.amount} ({self.status})"
 
     def save(self, *args, **kwargs):
-        # Auto-populate country from user
         if self.user and not self.country:
             self.country = self.user.country
         super().save(*args, **kwargs)
@@ -96,7 +91,6 @@ class Refund(RegionalModel, BaseModel):
         return f"Refund ${self.amount} for {self.original_transaction}"
 
     def save(self, *args, **kwargs):
-        # Auto-populate country from original transaction
         if self.original_transaction and not self.country:
             self.country = self.original_transaction.country
         super().save(*args, **kwargs)
@@ -128,8 +122,6 @@ class WalletTransaction(BaseModel):
     transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
     status = models.CharField(max_length=20, choices=TransactionStatus.choices, default=TransactionStatus.COMPLETED)
     description = models.CharField(max_length=255)
-    
-    # Optional references
     related_transaction = models.ForeignKey(Transaction, on_delete=models.SET_NULL, null=True, blank=True)
     parking_session = models.ForeignKey('parking.ParkingSession', on_delete=models.SET_NULL, null=True, blank=True)
     metadata = models.JSONField(default=dict, blank=True)

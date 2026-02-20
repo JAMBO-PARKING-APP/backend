@@ -1,10 +1,17 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:parking_user_app/core/storage_manager.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:parking_user_app/core/dialog_service.dart';
+import 'package:parking_user_app/features/parking/providers/parking_provider.dart';
+import 'package:parking_user_app/features/parking/screens/active_session_screen.dart';
 import 'api_client.dart';
 import 'notification_dialog_service.dart';
 
@@ -201,7 +208,7 @@ class FCMService {
       notification.title,
       notification.body,
       details,
-      payload: message.data.toString(),
+      payload: jsonEncode(message.data),
     );
   }
 
@@ -210,8 +217,17 @@ class FCMService {
     if (kDebugMode) {
       print('Notification tapped: ${response.payload}');
     }
-    // Parse payload and navigate accordingly
-    // This will be handled by the app's navigation logic
+
+    if (response.payload != null) {
+      try {
+        final Map<String, dynamic> data = jsonDecode(response.payload!);
+        _handleNotificationTap(data);
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error parsing notification payload: $e');
+        }
+      }
+    }
   }
 
   /// Handle notification tap with data
@@ -220,26 +236,36 @@ class FCMService {
       print('Handling notification tap with data: $data');
     }
 
+    final context = DialogService.navigatorKey.currentContext;
+    if (context == null) return;
+
     final type = data['type'];
     switch (type) {
+      case 'parking_started':
       case 'parking_expiring':
       case 'parking_ended':
-        // Navigate to parking sessions screen
-        // This will be implemented in the app's navigation
+        // Refresh sessions and navigate to active session screen
+        final parkingProvider = context.read<ParkingProvider>();
+        parkingProvider.fetchSessions().then((_) {
+          if (parkingProvider.activeSessions.isNotEmpty) {
+            final session = parkingProvider.activeSessions.first;
+            DialogService.navigatorKey.currentState?.push(
+              MaterialPageRoute(
+                builder: (context) => ActiveSessionScreen(session: session),
+              ),
+            );
+          }
+        });
         break;
       case 'payment_success':
       case 'payment_failed':
-        // Navigate to payments screen
+        // Navigate to payments (stretch goal or future update)
         break;
       case 'violation_issued':
-        // Navigate to violations screen
-        break;
-      case 'geofence_warning':
-        // Navigate to active session to show map/warning
-        debugPrint('Geofence warning received');
+        // Navigate to violations (stretch goal or future update)
         break;
       default:
-        // Navigate to notifications screen
+        // Default behavior
         break;
     }
   }
@@ -279,6 +305,18 @@ class FCMService {
 
   Future<bool> _registerTokenWithBackend(String token) async {
     try {
+      final storage = StorageManager();
+      final accessToken = await storage.getAccessToken();
+
+      if (accessToken == null) {
+        if (kDebugMode) {
+          print(
+            '[FCMService] User not authenticated, skipping backend registration',
+          );
+        }
+        return false;
+      }
+
       if (kDebugMode) {
         print('Attempting to register FCM token with backend...');
         print('Token: ${token.substring(0, 20)}...');

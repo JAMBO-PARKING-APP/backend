@@ -12,11 +12,12 @@ Officer API Endpoints
 from django.db import transaction
 import logging
 from django.utils import timezone
-from rest_framework import generics, status
+from rest_framework import generics, status, serializers
 from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 
 from apps.common.constants import ParkingStatus, SlotStatus
 from apps.accounts.models import Vehicle
@@ -25,7 +26,7 @@ from apps.notifications.models import NotificationEvent
 from .models import Violation, OfficerStatus, OfficerLog, QRCodeScan
 from .serializers_v2 import (
     ViolationListSerializer, ViolationDetailSerializer,
-    OfficerStatusSerializer, QRCodeScanSerializer, OfficerLogSerializer
+    OfficerStatusSerializer, QRCodeScanSerializer, OfficerActionLogV2Serializer
 )
 
 class UserViolationsListAPIView(generics.ListAPIView):
@@ -35,13 +36,9 @@ class UserViolationsListAPIView(generics.ListAPIView):
     
     def get_queryset(self):
         user_vehicles = self.request.user.vehicles.filter(is_active=True)
-        
-        # Filter by paid status
         paid_only = self.request.query_params.get('paid_only', 'false').lower() == 'true'
         unpaid_only = self.request.query_params.get('unpaid_only', 'false').lower() == 'true'
-        
         queryset = Violation.objects.filter(vehicle__in=user_vehicles)
-        
         if paid_only:
             queryset = queryset.filter(is_paid=True)
         elif unpaid_only:
@@ -63,6 +60,8 @@ class UnpaidViolationsCountAPIView(APIView):
     """Get count of unpaid violations"""
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(responses={200: OpenApiExample('Success', value={'unpaid_count': 0, 'total_amount': 0.0})})
+    
     def get(self, request):
         user_vehicles = request.user.vehicles.filter(is_active=True)
         count = Violation.objects.filter(
@@ -82,12 +81,15 @@ class UnpaidViolationsCountAPIView(APIView):
             'total_amount': float(total_amount)
         }, status=status.HTTP_200_OK)
 
-
-# ============== OFFICER API ENDPOINTS ==============
-
 class OfficerStatusToggleAPIView(APIView):
     """Toggle officer online/offline status"""
     permission_classes = [IsAuthenticated]
+    serializer_class = OfficerStatusSerializer
+
+    @extend_schema(
+        request=serializers.Serializer, 
+        responses={200: OpenApiExample('Success', value={'message': '...', 'is_online': True, 'status': {}})},
+    )
     
     @transaction.atomic
     def post(self, request):
@@ -95,10 +97,8 @@ class OfficerStatusToggleAPIView(APIView):
         is_going_online = request.data.get('is_online', True)
         latitude = request.data.get('latitude')
         longitude = request.data.get('longitude')
-        
-        # Get or create officer status
         status_obj, created = OfficerStatus.objects.get_or_create(officer=officer)
-        
+
         if is_going_online:
             status_obj.is_online = True
             status_obj.went_online_at = timezone.now()
@@ -115,7 +115,6 @@ class OfficerStatusToggleAPIView(APIView):
         
         status_obj.save()
         
-        # Log the action
         OfficerLog.objects.create(
             officer=officer,
             action=action,
@@ -137,6 +136,9 @@ class OfficerStatusToggleAPIView(APIView):
 class OfficerStatusAPIView(APIView):
     """Get current officer status"""
     permission_classes = [IsAuthenticated]
+    serializer_class = OfficerStatusSerializer
+
+    @extend_schema(responses={200: OfficerStatusSerializer})
     
     def get(self, request):
         try:
@@ -151,6 +153,11 @@ class OfficerStatusAPIView(APIView):
 class SearchVehicleByPlateAPIView(APIView):
     """Search vehicle by license plate"""
     permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[OpenApiParameter("plate", str, OpenApiParameter.QUERY, description="License plate")],
+        responses={200: OpenApiExample('Success', value={'id': '...', 'license_plate': '...', 'active_session': {}})},
+    )
     
     def get(self, request):
         license_plate = request.query_params.get('plate', '').upper()
@@ -162,8 +169,6 @@ class SearchVehicleByPlateAPIView(APIView):
         
         try:
             vehicle = Vehicle.objects.get(license_plate=license_plate)
-            
-            # Get active parking session if any
             active_session = ParkingSession.objects.filter(
                 vehicle=vehicle,
                 status=ParkingStatus.ACTIVE
@@ -205,6 +210,11 @@ class SearchVehicleByPlateAPIView(APIView):
 class ScanQRCodeAPIView(APIView):
     """Log QR code scan and optionally end session"""
     permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=serializers.Serializer, 
+        responses={200: OpenApiExample('Success', value={'scan_id': '...', 'scan_status': '...', 'session': {}})},
+    )
     @transaction.atomic
     def post(self, request):
         logger = logging.getLogger(__name__)
@@ -227,16 +237,12 @@ class ScanQRCodeAPIView(APIView):
             now = timezone.now()
             logger.debug("Session fetched: id=%s status=%s planned_end=%s now=%s",
                          session.id, session.status, session.planned_end_time.isoformat(), now.isoformat())
-
-            # Determine scan status with explicit timezone-aware comparison
             if session.status != ParkingStatus.ACTIVE:
                 scan_status = 'already_ended'
             elif session.planned_end_time <= now:
                 scan_status = 'expired'
             else:
                 scan_status = 'valid'
-
-            # Log the QR scan
             qr_scan = QRCodeScan.objects.create(
                 officer=officer,
                 parking_session=session,
@@ -247,7 +253,6 @@ class ScanQRCodeAPIView(APIView):
                 session_ended=False
             )
 
-            # Log action
             OfficerLog.objects.create(
                 officer=officer,
                 action='qr_scan',
@@ -276,22 +281,15 @@ class ScanQRCodeAPIView(APIView):
                 'message': 'QR code scanned successfully'
             }
 
-            # End session if requested and it's valid
             if end_session and scan_status == 'valid':
                 session.actual_end_time = timezone.now()
                 session.status = ParkingStatus.COMPLETED
                 session.save()
-
-                # Free up the slot
                 if session.parking_slot:
                     session.parking_slot.status = SlotStatus.AVAILABLE
                     session.parking_slot.save()
-
-                # Update QR scan
                 qr_scan.session_ended = True
                 qr_scan.save()
-
-                # Send notification to user
                 user = session.vehicle.user
                 NotificationEvent.objects.create(
                     user=user,
@@ -321,7 +319,7 @@ class ScanQRCodeAPIView(APIView):
 class OfficerActivityLogsAPIView(generics.ListAPIView):
     """Get officer's activity logs"""
     permission_classes = [IsAuthenticated]
-    serializer_class = OfficerLogSerializer
+    serializer_class = OfficerActionLogV2Serializer
     
     def get_queryset(self):
         return OfficerLog.objects.filter(officer=self.request.user).order_by('-created_at')

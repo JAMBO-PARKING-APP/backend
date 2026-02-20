@@ -40,26 +40,23 @@ class StartParkingView(APIView):
     def post(self, request):
         vehicle_id = request.data.get('vehicle_id')
         zone_id = request.data.get('zone_id')
-        slot_id = request.data.get('slot_id')  # Optional
+        slot_id = request.data.get('slot_id')  
         duration_hours = request.data.get('duration_hours', 1)
 
         try:
             vehicle = request.user.vehicles.get(id=vehicle_id, is_active=True)
             zone = Zone.objects.get(id=zone_id, is_active=True)
             
-            # Check for active session
             if ParkingSession.objects.filter(vehicle=vehicle, status=ParkingStatus.ACTIVE).exists():
                 return Response({'error': 'Vehicle already has an active parking session'}, 
                               status=status.HTTP_400_BAD_REQUEST)
             
-            # Handle slot selection
             parking_slot = None
             if slot_id:
                 parking_slot = ParkingSlot.objects.get(id=slot_id, zone=zone, status=SlotStatus.AVAILABLE)
                 parking_slot.status = SlotStatus.OCCUPIED
                 parking_slot.save()
             
-            # Create session
             planned_end = timezone.now() + timedelta(hours=duration_hours)
             estimated_cost = zone.hourly_rate * duration_hours
             

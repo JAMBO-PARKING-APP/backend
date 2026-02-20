@@ -1,1 +1,99 @@
-# Zone Live Status API View\nclass ZoneLiveStatusAjaxView(AdminRequiredMixin, View):\n    def get(self, request, zone_id):\n        try:\n            zone = Zone.objects.get(pk=zone_id)\n            \n            # Get active sessions for this zone\n            active_sessions = ParkingSession.objects.filter(\n                zone=zone,\n                status='active'\n            ).select_related('vehicle', 'slot')\n            \n            # Get all slots for this zone\n            all_slots = zone.slots.all()\n            \n            # Create slot status data\n            slots_data = []\n            occupied_slots = {session.slot_id: session for session in active_sessions if session.slot_id}\n            \n            for slot in all_slots:\n                if slot.id in occupied_slots:\n                    session = occupied_slots[slot.id]\n                    slots_data.append({\n                        'id': slot.slot_code or slot.id,\n                        'status': 'occupied',\n                        'vehicle': session.vehicle.license_plate\n                    })\n                else:\n                    slots_data.append({\n                        'id': slot.slot_code or slot.id,\n                        'status': 'available',\n                        'vehicle': None\n                    })\n            \n            # If no slots defined, create mock slots based on active sessions\n            if not all_slots.exists():\n                # Create slots based on active sessions + some available ones\n                total_slots = max(50, active_sessions.count() * 2)  # At least 50 slots\n                slots_data = []\n                \n                for i in range(1, total_slots + 1):\n                    # Check if this slot number has an active session\n                    session = active_sessions.filter(slot_number=i).first()\n                    if session:\n                        slots_data.append({\n                            'id': i,\n                            'status': 'occupied',\n                            'vehicle': session.vehicle.license_plate\n                        })\n                    else:\n                        slots_data.append({\n                            'id': i,\n                            'status': 'available',\n                            'vehicle': None\n                        })\n            \n            # Prepare active sessions list\n            active_sessions_list = []\n            for session in active_sessions:\n                duration = timezone.now() - session.start_time\n                hours, remainder = divmod(duration.total_seconds(), 3600)\n                minutes, _ = divmod(remainder, 60)\n                \n                active_sessions_list.append({\n                    'vehicle': session.vehicle.license_plate,\n                    'slot': session.slot.slot_code if session.slot else session.slot_number or 'N/A',\n                    'start_time': session.start_time.strftime('%H:%M'),\n                    'duration': f\"{int(hours)}h {int(minutes)}m\" if hours > 0 else f\"{int(minutes)}m\"\n                })\n            \n            occupied_count = len([s for s in slots_data if s['status'] == 'occupied'])\n            total_slots_count = len(slots_data)\n            \n            data = {\n                'zone_name': zone.name,\n                'total_slots': total_slots_count,\n                'occupied_slots': occupied_count,\n                'active_sessions': active_sessions.count(),\n                'slots': slots_data,\n                'active_sessions_list': active_sessions_list\n            }\n            \n            return JsonResponse(data)\n            \n        except Zone.DoesNotExist:\n            return JsonResponse({'error': 'Zone not found'}, status=404)\n        except Exception as e:\n            return JsonResponse({'error': str(e)}, status=500)
+from django.http import JsonResponse
+from django.utils import timezone
+from django.views import View
+from django.utils.translation import gettext as _
+
+from apps.common.permissions import AdminRequiredMixin
+from apps.common.constants import ParkingStatus
+from apps.parking.models import Zone, ParkingSession
+
+class ZoneLiveStatusAjaxView(AdminRequiredMixin, View):
+    """
+    AJAX view to get real-time status of a parking zone, 
+    including slot occupancy and active sessions.
+    """
+    def get(self, request, zone_id):
+        try:
+            zone = Zone.objects.get(pk=zone_id)
+            
+            # Get active sessions for this zone
+            active_sessions = ParkingSession.objects.filter(
+                zone=zone,
+                status=ParkingStatus.ACTIVE
+            ).select_related('vehicle', 'parking_slot')
+            
+            # Get all slots for this zone
+            all_slots = zone.slots.all()
+            
+            # Create slot status data
+            slots_data = []
+            occupied_slots = {session.parking_slot_id: session for session in active_sessions if session.parking_slot_id}
+            
+            for slot in all_slots:
+                if slot.id in occupied_slots:
+                    session = occupied_slots[slot.id]
+                    slots_data.append({
+                        'id': slot.slot_code or str(slot.id),
+                        'status': 'occupied',
+                        'vehicle': session.vehicle.license_plate
+                    })
+                else:
+                    slots_data.append({
+                        'id': slot.slot_code or str(slot.id),
+                        'status': 'available',
+                        'vehicle': None
+                    })
+            
+            # If no slots defined, create mock slots based on active sessions
+            if not all_slots.exists():
+                # Limit to 100 slots for performance
+                total_slots = min(100, max(50, active_sessions.count() * 2))
+                slots_data = []
+                
+                for i in range(1, total_slots + 1):
+                    if i <= active_sessions.count():
+                        session = list(active_sessions)[i-1]
+                        slots_data.append({
+                            'id': f'S{i:02d}',
+                            'status': 'occupied',
+                            'vehicle': session.vehicle.license_plate
+                        })
+                    else:
+                        slots_data.append({
+                            'id': f'S{i:02d}',
+                            'status': 'available',
+                            'vehicle': None
+                        })
+            
+            # Prepare active sessions list
+            active_sessions_list = []
+            for session in active_sessions:
+                duration = timezone.now() - session.start_time
+                hours, remainder = divmod(duration.total_seconds(), 3600)
+                minutes, _ = divmod(remainder, 60)
+                
+                active_sessions_list.append({
+                    'vehicle': session.vehicle.license_plate,
+                    'slot': session.parking_slot.slot_code if session.parking_slot else 'N/A',
+                    'start_time': session.start_time.strftime('%H:%M'),
+                    'duration': f"{int(hours)}h {int(minutes)}m" if hours > 0 else f"{int(minutes)}m"
+                })
+            
+            occupied_count = len([s for s in slots_data if s['status'] == 'occupied'])
+            total_slots_count = len(slots_data)
+            
+            data = {
+                'zone_name': zone.name,
+                'total_slots': total_slots_count,
+                'occupied_slots': occupied_count,
+                'active_sessions': active_sessions.count(),
+                'slots': slots_data,
+                'active_sessions_list': active_sessions_list
+            }
+            
+            return JsonResponse(data)
+            
+        except Zone.DoesNotExist:
+            return JsonResponse({'error': _('Zone not found')}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)

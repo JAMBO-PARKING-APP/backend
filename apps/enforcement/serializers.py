@@ -3,6 +3,7 @@ from .models import Violation, OfficerLog
 from apps.parking.models import Zone, ParkingSession, ParkingSlot
 from apps.accounts.models import Vehicle, User
 from apps.payments.models import Transaction
+from drf_spectacular.utils import extend_schema_field
 
 class ZoneSerializer(serializers.ModelSerializer):
     active_sessions_count = serializers.SerializerMethodField()
@@ -14,12 +15,15 @@ class ZoneSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'description', 'hourly_rate', 'latitude', 'longitude', 
                  'radius_meters', 'is_active', 'active_sessions_count', 'total_capacity', 'occupancy_rate')
     
+    @extend_schema_field(serializers.IntegerField())
     def get_active_sessions_count(self, obj):
         return ParkingSession.objects.filter(zone=obj, status='active').count()
     
+    @extend_schema_field(serializers.IntegerField())
     def get_total_capacity(self, obj):
         return obj.slots.count() or 50
     
+    @extend_schema_field(serializers.IntegerField())
     def get_occupancy_rate(self, obj):
         total = self.get_total_capacity(obj)
         active = self.get_active_sessions_count(obj)
@@ -30,7 +34,7 @@ class ParkingSlotSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = ParkingSlot
-        fields = ('id', 'slot_code', 'diagram_x', 'diagram_y', 'is_active', 'current_session')
+        fields = ('id', 'slot_code', 'diagram_x', 'diagram_y', 'current_session')
     
     def get_current_session(self, obj):
         session = ParkingSession.objects.filter(parking_slot=obj, status='active').first()
@@ -65,7 +69,6 @@ class VehicleDetailSerializer(serializers.ModelSerializer):
     def get_current_session(self, obj):
         session = ParkingSession.objects.filter(vehicle=obj, status='active').first()
         if session:
-            # Calculate amount_due as estimated_cost or final_cost if available
             amount_due = float(session.final_cost) if session.final_cost is not None else float(session.estimated_cost)
             return {
                 'id': str(session.id),
@@ -106,19 +109,16 @@ class ViolationSerializer(serializers.ModelSerializer):
         
         if not attrs.get('vehicle'):
             raise serializers.ValidationError({"vehicle": "Vehicle is required."})
-
-        # Infer zone from parking session if available
         session = attrs.get('parking_session')
         if not attrs.get('zone') and session:
             attrs['zone'] = session.zone
             
-        # Remove write-only field to prevent model error
         if 'vehicle_plate' in attrs:
             del attrs['vehicle_plate']
             
         return attrs
 
-class OfficerLogSerializer(serializers.ModelSerializer):
+class OfficerActionLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = OfficerLog
         fields = ('id', 'officer', 'action', 'details', 'latitude', 'longitude', 'created_at')

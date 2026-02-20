@@ -39,4 +39,12 @@ class ReservationProvider with ChangeNotifier {
     if (success) await fetchReservations();
     return success;
   }
+
+  Future<bool> confirmReservationWallet(String reservationId) async {
+    final success = await _reservationService.confirmReservationWallet(
+      reservationId,
+    );
+    if (success) await fetchReservations();
+    return success;
+  }
 }

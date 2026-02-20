@@ -2,34 +2,32 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 from django.conf.urls.i18n import i18n_patterns
 
 urlpatterns = [
-    # User Mobile App API
-    path('api/user/', include('apps.common.api_urls_user')),  # User app - Flutter
-    
-    # Legacy API endpoints
+    path('api/user/', include('apps.common.api_urls_user')), 
     path('api/auth/', include('apps.accounts.urls')),
     path('api/parking/', include('apps.parking.urls')),
     path('api/payments/', include('apps.payments.urls')),
     path('api/enforcement/', include('apps.enforcement.urls')),
-    path('api/officer/', include('apps.enforcement.api_urls')),  # Officer mobile API (violations)
-    path('api/officer/', include('apps.common.api_urls_officer')),  # Officer mobile API (zones, QR)
-    
-    # Shared endpoints for both apps
+    path('api/officer/', include('apps.enforcement.api_urls')),  
+    path('api/officer/', include('apps.common.api_urls_officer')), 
     path('api/notifications/', include('apps.notifications.urls')),
-    path('api/support/', include('apps.support_chat.urls')),  # AI Support
-    path('api/', include('apps.common.urls')),  # Common APIs (country config)
-  # Chat and notifications (for officer app)
+    path('api/support/', include('apps.support_chat.urls')),  
+    path('api/', include('apps.common.urls')), 
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     
     path('i18n/', include('django.conf.urls.i18n')),
 ]
 
 urlpatterns += i18n_patterns(
     path('admin/', admin.site.urls),
-    path('', include('apps.common.urls')),  # Web interface
-    path('reports/', include('apps.analytics.urls')), # Analytics & Reports
+    path('', include('apps.common.urls')),  
+    path('reports/', include('apps.analytics.urls')), 
 )
 
 if settings.DEBUG:

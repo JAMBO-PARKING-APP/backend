@@ -79,7 +79,10 @@ class _ZoneSessionsScreenState extends State<ZoneSessionsScreen>
                   itemCount: provider.activeSessions.length,
                   itemBuilder: (context, index) {
                     final session = provider.activeSessions[index];
-                    return _SessionCard(session: session);
+                    return _SessionCard(
+                      session: session,
+                      zoneId: widget.zone.id,
+                    );
                   },
                 ),
               );
@@ -105,7 +108,10 @@ class _ZoneSessionsScreenState extends State<ZoneSessionsScreen>
                 padding: const EdgeInsets.all(16),
                 itemCount: overdue.length,
                 itemBuilder: (context, index) {
-                  return _SessionCard(session: overdue[index]);
+                  return _SessionCard(
+                    session: overdue[index],
+                    zoneId: widget.zone.id,
+                  );
                 },
               );
             },
@@ -134,8 +140,9 @@ class _ZoneSessionsScreenState extends State<ZoneSessionsScreen>
 
 class _SessionCard extends StatelessWidget {
   final ParkingSession session;
+  final String zoneId;
 
-  const _SessionCard({required this.session});
+  const _SessionCard({required this.session, required this.zoneId});
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +157,8 @@ class _SessionCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => SessionDetailScreen(session: session),
+            builder: (context) =>
+                SessionDetailScreen(session: session, zoneId: zoneId),
           ),
         );
       },

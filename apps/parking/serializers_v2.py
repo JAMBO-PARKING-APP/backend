@@ -102,7 +102,6 @@ class ReservationSerializer(serializers.ModelSerializer):
 class CreateReservationSerializer(serializers.Serializer):
     vehicle_id = serializers.UUIDField()
     zone_id = serializers.UUIDField()
-    # Support both old and new field names
     start_time = serializers.DateTimeField(required=False)
     end_time = serializers.DateTimeField(required=False)
     reserved_from = serializers.DateTimeField(required=False)
@@ -122,7 +121,6 @@ class CreateReservationSerializer(serializers.Serializer):
         return data
 
 
-# Officer App Serializers
 class ZoneSerializer(serializers.ModelSerializer):
     """Simple zone serializer for officer app"""
     active_sessions = serializers.SerializerMethodField()

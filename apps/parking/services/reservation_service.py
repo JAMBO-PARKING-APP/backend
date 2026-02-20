@@ -27,7 +27,6 @@ class ReservationService:
         if total_capacity <= 0:
             return False
 
-        # 1. Count overlapping confirmed/pending reservations
         overlapping_reservations = Reservation.objects.filter(
             zone=zone,
             status__in=['confirmed', 'pending_payment'],
@@ -35,13 +34,6 @@ class ReservationService:
             reserved_until__gt=start_time
         ).count()
 
-        # 2. Count active sessions (only if start_time is "now" or very soon)
-        # For future bookings, we assume current sessions will end, unless they are long-term? 
-        # For simplicity in this MVP: 
-        # If booking is for NOW, we check active sessions.
-        # If booking is for FUTURE, we mostly rely on reservations. 
-        # A more robust system would track "estimated end time" of active sessions.
-        
         active_sessions = 0
         if start_time < timezone.now() + timedelta(hours=1):
              active_sessions = ParkingSession.objects.filter(
@@ -64,26 +56,18 @@ class ReservationService:
         """
         Create a reservation with concurrency locking.
         """
-        # Lock an available slot for update instead of the entire zone
-        # This allows multiple users to book different slots in the same zone concurrently.
         parking_slot = ParkingSlot.objects.filter(
             zone=zone,
             status=SlotStatus.AVAILABLE
         ).select_for_update(skip_locked=True).first()
 
         if not parking_slot:
-            # Fallback check: if we explicitly track slots, but none are available
-            # Or if we rely on capacity, check if the calculated availability is > 0
+
             if not ReservationService.check_availability(zone, start_time, end_time):
                 raise ValueError("No parking slots available for the selected time.")
             
-            # If availability check passed but no specific slot was found, 
-            # it might be a zone without pre-defined slots (using capacity only).
-            # In that case, we still need a lock. We'll use the zone lock as fallback
-            # but ideally, all zones should have defined slots for high scalability.
             _ = Zone.objects.select_for_update().get(id=zone.id)
 
-        # Calculate cost
         duration_seconds = (end_time - start_time).total_seconds()
         duration_hours = Decimal(str(duration_seconds / 3600))
         if duration_hours < Decimal('0.25'):
@@ -101,14 +85,11 @@ class ReservationService:
             status='pending_payment'
         )
 
-        # Mark slot as reserved if we found one
         if parking_slot:
-            parking_slot.status = SlotStatus.RESERVED  # Need to ensure SlotStatus.RESERVED exists or use OCCUPIED
+            parking_slot.status = SlotStatus.RESERVED 
             parking_slot.save()
         
-        # Schedule expiration task
         from apps.parking.tasks import expire_reservation_task
-        # Schedules task to run after 15 minutes
         expire_reservation_task.apply_async((reservation.id,), countdown=900)
 
         return reservation
@@ -140,37 +121,44 @@ class ReservationService:
         reservation.status = 'confirmed'
         reservation.is_active = True
         reservation.save()
-        
-        # Notify user
         notify_reservation_confirmed(reservation)
         
         return reservation
 
     @staticmethod
+    @transaction.atomic
     def cancel_reservation(reservation: Reservation) -> None:
         if reservation.status in ['cancelled', 'expired', 'completed']:
             return
 
-        # If confirmed and start time hasn't passed (or with penalty), refund?
-        # For MVP: Full refund if cancelled before start time
+        user = reservation.vehicle.user
+
         if reservation.status == 'confirmed':
-             if timezone.now() < reservation.reserved_from:
-                 # Refund logic
+             penalty_percent = Decimal('0.05')
+             penalty_amount = (reservation.cost * penalty_percent).quantize(Decimal('0.01'))
+             refund_amount = reservation.cost - penalty_amount
+             
+             if refund_amount > 0:
                  from django.db.models import F
-                 user.wallet_balance = F('wallet_balance') + reservation.cost
+                 user.wallet_balance = F('wallet_balance') + refund_amount
                  user.save(update_fields=['wallet_balance'])
                  
                  WalletTransaction.objects.create(
                     user=user,
-                    amount=reservation.cost,
+                    amount=refund_amount,
                     transaction_type='refund',
                     status=TransactionStatus.COMPLETED,
-                    description=f"Refund for reservation cancellation {reservation.id}",
-                    metadata={'reservation_id': str(reservation.id)}
+                    description=f"Refund (95%) for reservation cancellation {reservation.id}. 5% penalty applied.",
+                    metadata={
+                        'reservation_id': str(reservation.id),
+                        'penalty_amount': float(penalty_amount),
+                        'original_cost': float(reservation.cost)
+                    }
                 )
 
         reservation.status = 'cancelled'
         reservation.is_active = False
         reservation.save()
         
+        from apps.notifications.notification_triggers import notify_reservation_cancelled
         notify_reservation_cancelled(reservation)

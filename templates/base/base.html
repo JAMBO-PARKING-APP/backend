@@ -559,366 +559,70 @@
     {% block extra_css %}{% endblock %}
 </head>
 
-<body>
-
+<body class="{% if request.COOKIES.sidebarCollapsed == 'true' %}sidebar-collapsed{% endif %}">
     <!-- Top Loading Bar -->
     <div class="top-loader" id="topLoader"></div>
-
-    <!-- Mobile Overlay -->
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
-    <!-- Sidebar -->
-    <nav class="sidebar" id="sidebar">
-        <div class="sidebar-brand">
-            <div class="d-flex align-items-center gap-2">
-                <!-- Fallback Icon if Image Fails -->
-                <div class="d-flex align-items-center justify-content-center bg-primary-soft rounded p-1"
-                    style="width: 40px; height: 40px;">
-                    <img src="{% static 'JAMBO.png' %}" alt="Logo"
-                        style="width: 100%; height: auto; object-fit: contain;"
-                        onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                    <i class="bi bi-p-square-fill text-primary" style="font-size: 1.5rem; display: none;"></i>
-                </div>
-                <div>
-                    <h6 class="mb-0 fw-bold" style="letter-spacing: -0.5px;">{% trans "Smart Parking" %}</h6>
-                    <small class="text-muted" style="font-size: 0.7rem;">{% trans "Admin Console" %}</small>
-                </div>
-            </div>
-        </div>
+    <div class="page-container">
+        <!-- Modular Sidebar -->
+        {% include 'components/sidebar.html' %}
 
-        {% cache 3600 sidebar_nav request.user.role selected_country_id request.LANGUAGE_CODE %}
-        <div class="sidebar-content">
-            <div class="nav-section-title">{% trans "Main" %}</div>
-            <div class="nav-item">
-                <a href="{% url 'dashboard' %}"
-                    class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-                    <i class="bi bi-grid-1x2-fill"></i>
-                    <span>{% trans "Dashboard" %}</span>
-                </a>
-            </div>
+        <div class="main-wrapper">
+            <!-- Modular Navbar -->
+            {% include 'components/navbar.html' %}
 
-            <div class="nav-section-title">{% trans "Management" %}</div>
-            {% if user.role == 'admin' %}
-            <div class="nav-item">
-                <a href="{% url 'user-list' %}"
-                    class="nav-link {% if 'user' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-people"></i>
-                    <span>{% trans "Users" %}</span>
-                </a>
-            </div>
-            {% endif %}
-
-            <div class="nav-item">
-                <a href="{% url 'vehicle-list' %}"
-                    class="nav-link {% if 'vehicle' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-car-front"></i>
-                    <span>{% trans "Vehicles" %}</span>
-                </a>
-            </div>
-
-            <div class="nav-item">
-                <a href="{% url 'zone-list' %}"
-                    class="nav-link {% if 'zone' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-geo-alt"></i>
-                    <span>{% trans "Parking Zones" %}</span>
-                </a>
-            </div>
-
-            <div class="nav-item">
-                <a href="{% url 'zone-map' %}"
-                    class="nav-link {% if request.resolver_match.url_name == 'zone-map' %}active{% endif %}">
-                    <i class="bi bi-map"></i>
-                    <span>{% trans "Zone Map" %}</span>
-                </a>
-            </div>
-
-            <!-- Operations Section -->
-            <div class="nav-section-title">{% trans "Operations" %}</div>
-            <div class="nav-item">
-                <a href="{% url 'session-list' %}"
-                    class="nav-link {% if 'session' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-clock-history"></i>
-                    <span>{% trans "Active Sessions" %}</span>
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="{% url 'reservation-list' %}"
-                    class="nav-link {% if 'reservation' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-calendar-check"></i>
-                    <span>{% trans "Reservations" %}</span>
-                </a>
-            </div>
-
-            <!-- Revenue Section -->
-            <div class="nav-section-title">{% trans "Revenue" %}</div>
-            <div class="nav-item">
-                <a href="{% url 'payment-list' %}"
-                    class="nav-link {% if request.resolver_match.url_name == 'payment-list' %}active{% endif %}">
-                    <i class="bi bi-credit-card"></i>
-                    <span>{% trans "Transactions" %}</span>
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="{% url 'refund-list' %}"
-                    class="nav-link {% if 'refund' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-arrow-counterclockwise"></i>
-                    <span>{% trans "Refunds" %}</span>
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="{% url 'invoice-list' %}"
-                    class="nav-link {% if 'invoice' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-file-earmark-text"></i>
-                    <span>{% trans "Invoices" %}</span>
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="{% url 'wallet-transactions' %}"
-                    class="nav-link {% if 'wallet' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-wallet2"></i>
-                    <span>{% trans "Wallets" %}</span>
-                </a>
-            </div>
-
-            <!-- Reports Section -->
-            <div class="nav-section-title">{% trans "Reports" %}</div>
-            <div class="nav-item">
-                <a href="{% url 'revenue-report' %}"
-                    class="nav-link {% if 'revenue' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-graph-up-arrow"></i>
-                    <span>{% trans "Revenue Report" %}</span>
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="{% url 'system-health' %}"
-                    class="nav-link {% if 'health' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-activity"></i>
-                    <span>{% trans "System Health" %}</span>
-                </a>
-            </div>
-
-            <!-- Enforcement Section -->
-            <div class="nav-section-title">{% trans "Enforcement" %}</div>
-            <div class="nav-item">
-                <a href="{% url 'violation-list' %}"
-                    class="nav-link {% if 'violation' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    <span>{% trans "Violations" %}</span>
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="{% url 'officer-status' %}"
-                    class="nav-link {% if 'officer-status' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-shield-check"></i>
-                    <span>{% trans "Officer Status" %}</span>
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="{% url 'officer-logs' %}"
-                    class="nav-link {% if 'officer-logs' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-journal-text"></i>
-                    <span>{% trans "Activity Logs" %}</span>
-                </a>
-            </div>
-
-            <!-- Customer Success Section -->
-            <div class="nav-section-title">{% trans "Customer Success" %}</div>
-            <div class="nav-item">
-                <a href="{% url 'loyalty-list' %}"
-                    class="nav-link {% if 'loyalty' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-award"></i>
-                    <span>{% trans "Loyalty Programs" %}</span>
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="{% url 'notification-list' %}"
-                    class="nav-link {% if 'notification' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-bell"></i>
-                    <span>{% trans "System Alerts" %}</span>
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="{% url 'chat-list' %}"
-                    class="nav-link {% if 'chat' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-chat-dots"></i>
-                    <span>{% trans "Support Chats" %}</span>
-                </a>
-            </div>
-
-            <!-- System Section -->
-            <div class="nav-section-title">{% trans "System" %}</div>
-            <div class="nav-item">
-                <a href="{% url 'system-settings' %}"
-                    class="nav-link {% if request.resolver_match.url_name == 'system-settings' %}active{% endif %}">
-                    <i class="bi bi-gear-fill"></i>
-                    <span>{% trans "Configuration" %}</span>
-                </a>
-            </div>
-
-            <div class="nav-section-title">{% trans "Tools" %}</div>
-            <div class="nav-item">
-                <a href="#" class="nav-link" onclick="showCheckPlateModal()">
-                    <i class="bi bi-search"></i>
-                    <span>{% trans "Check Plate" %}</span>
-                </a>
-            </div>
-        </div>
-        {% endcache %}
-
-        <div class="sidebar-footer">
-            <form method="post" action="{% url 'logout' %}">
-                {% csrf_token %}
-                <button type="submit"
-                    class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2">
-                    <i class="bi bi-box-arrow-right"></i>
-                    <span>{% trans "Logout" %}</span>
-                </button>
-            </form>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <div class="main-content">
-        <!-- Sticky Header -->
-        <header class="topbar">
-            <div class="d-flex align-items-center gap-3">
-                <!-- Mobile Toggle -->
-                <button class="hamburger d-lg-none" onclick="toggleSidebar()">
-                    <i class="bi bi-list"></i>
-                </button>
-                <!-- Desktop Toggle -->
-                <button class="hamburger d-none d-lg-block" onclick="toggleDesktopSidebar()">
-                    <i class="bi bi-list"></i>
-                </button>
-                <h5 class="mb-0 fw-bold text-dark">{% block page_title %}{% trans "Dashboard" %}{% endblock %}</h5>
-            </div>
-
-            <div class="d-flex align-items-center gap-4">
-                <!-- Regional Context Switcher (Superuser Only) -->
-                {% if user.is_superuser %}
-                <div class="d-none d-md-block">
-                    <form action="{% url 'switch-country' %}" method="post" id="countrySwitcherForm">
-                        {% csrf_token %}
-                        <input type="hidden" name="next" value="{{ request.path }}">
-                        <select name="country_id"
-                            class="form-select form-select-sm border-0 bg-primary-soft fw-bold text-primary"
-                            style="width: auto; cursor: pointer; border-radius: 20px; padding-left: 15px; padding-right: 35px;"
-                            onchange="this.form.submit()">
-                            <option value="">{% trans "All Regions" %}</option>
-                            {% for country in available_countries %}
-                            <option value="{{ country.id }}" {% if
-                                country.id|stringformat:"s"==selected_country_id|stringformat:"s" %}selected{% endif %}>
-                                {{ country.flag_emoji }} {{ country.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </form>
-                </div>
-                {% endif %}
-
-                <!-- Language Switcher -->
-                <form action="{% url 'set_language' %}" method="post" class="d-none d-sm-block">
-                    {% csrf_token %}
-                    <input name="next" type="hidden" value="{{ redirect_to }}">
-                    <select name="language" class="form-select form-select-sm border-0 bg-light fw-bold text-secondary"
-                        style="width: auto; cursor: pointer;" onchange="this.form.submit()">
-                        {% get_current_language as LANGUAGE_CODE %}
-                        {% get_available_languages as LANGUAGES %}
-                        {% get_language_info_list for LANGUAGES as languages %}
-                        {% for language in languages %}
-                        <option value="{{ language.code }}" {% if language.code==LANGUAGE_CODE %}selected{% endif %}>
-                            {{ language.name_local }} ({{ language.code }})
-                        </option>
-                        {% endfor %}
-                    </select>
-                </form>
-
-                <!-- User Profile Dropdown / Area -->
-                <div class="dropdown">
-                    <div class="user-profile" data-bs-toggle="dropdown">
-                        <div class="text-end me-2 d-none d-md-block">
-                            <div class="fw-bold" style="font-size: 0.9rem;">{{ user.full_name }}</div>
-                            <div class="text-muted" style="font-size: 0.75rem;">{{ user.get_role_display }}</div>
-                        </div>
-                        <div class="avatar-circle">
-                            {{ user.first_name|first|default:"U" }}
-                        </div>
+            <!-- Main Content Body -->
+            <main class="content-body">
+                <!-- Global Messages -->
+                <div id="message-container">
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show border-0"
+                        role="alert">
+                        <i class="bi bi-info-circle me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2" style="border-radius: 12px;">
-                        <li>
-                            <h6 class="dropdown-header">{% trans "Account" %}</h6>
-                        </li>
-                        <li>
-                            <!-- Mobile Language Switcher inside dropdown -->
-                            <form action="{% url 'set_language' %}" method="post" class="px-3 py-2 d-block d-sm-none">
-                                {% csrf_token %}
-                                <label class="form-label small text-muted">{% trans "Language" %}</label>
-                                <select name="language" class="form-select form-select-sm"
-                                    onchange="this.form.submit()">
-                                    {% for language in languages %}
-                                    <option value="{{ language.code }}" {% if language.code==LANGUAGE_CODE %}selected{%
-                                        endif %}>
-                                        {{ language.name_local }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </form>
-                        </li>
-                        <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>{% trans "Profile" %}</a>
-                        </li>
-                        <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>{% trans "Settings" %}</a>
-                        </li>
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
-                        <li>
-                            <form method="post" action="{% url 'logout' %}" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="dropdown-item text-danger"><i
-                                        class="bi bi-box-arrow-right me-2"></i>{% trans "Logout" %}</button>
-                            </form>
-                        </li>
-                    </ul>
+                    {% endfor %}
+                    {% endif %}
                 </div>
-            </div>
-        </header>
 
-        <!-- Page Content -->
-        <div class="content-wrapper">
-            <!-- Global Messages -->
-            {% if messages %}
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show border-0 shadow-sm" role="alert"
-                style="border-radius: 8px;">
-                <i
-                    class="bi bi-{% if message.tags == 'success' %}check-circle-fill{% elif message.tags == 'error' %}exclamation-circle-fill{% else %}info-circle-fill{% endif %} me-2"></i>
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            {% endfor %}
-            {% endif %}
+                {% block content %}{% endblock %}
+            </main>
 
-            {% block content %}{% endblock %}
+            <!-- Modular Footer -->
+            {% include 'components/footer.html' %}
+        </div>
+    </div>
+
+    <!-- Modals (Global) -->
+    <!-- Verification/Action Modal Template -->
+    <div class="modal fade" id="globalModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg border-0" id="globalModalContent">
+                <!-- Content injected via JS -->
+            </div>
         </div>
     </div>
 
     <!-- Check Plate Modal (Global) -->
     <div class="modal fade" id="checkPlateModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-0 pb-0">
                     <h5 class="modal-title fw-bold">{% trans "Check Vehicle Plate" %}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <form id="checkPlateForm" class="mb-4">
-                        <div class="form-floating mb-3">
-                            <input type="text" class="form-control" id="licensePlate" placeholder="ABC-123" required
-                                style="text-transform: uppercase;">
-                            <label for="licensePlate">{% trans "License Plate Number" %}</label>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">{% trans "License Plate Number" %}</label>
+                            <input type="text" class="form-control" id="licensePlate"
+                                placeholder="{% trans 'e.g., UAX 123Y' %}" required style="text-transform: uppercase;">
                         </div>
                         <button type="submit" class="btn btn-primary w-100 py-2">
-                            <i class="bi bi-search me-2"></i>{% trans "Search Vehicle" %}
+                            <i class="bi bi-search me-2"></i>{% trans "Inspect Vehicle" %}
                         </button>
                     </form>
                     <div id="plateResult"></div>
@@ -927,180 +631,130 @@
         </div>
     </div>
 
-    <!-- Global Confirmation Modal -->
-    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content text-center overflow-hidden">
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <div class="mx-auto d-flex align-items-center justify-content-center bg-warning-soft rounded-circle"
-                            style="width: 64px; height: 64px;">
-                            <i class="bi bi-exclamation-lg text-warning" style="font-size: 2rem;"></i>
-                        </div>
-                    </div>
-                    <h5 class="mb-2 fw-bold" id="confirmTitle">{% trans "Are you sure?" %}</h5>
-                    <p class="text-muted mb-4" id="confirmMessage" style="font-size: 0.9rem;">{% trans "This action
-                        cannot be undone." %}</p>
-
-                    <div class="d-flex gap-2 justify-content-center">
-                        <button type="button" class="btn btn-light w-50" data-bs-dismiss="modal">{% trans "Cancel"
-                            %}</button>
-                        <button type="button" class="btn btn-primary w-50" id="confirmBtn">{% trans "Confirm"
-                            %}</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bootstrap Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- JQuery & UI Libraries -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-        // TOP LOADER functionality
-        const showLoader = () => document.getElementById('topLoader').classList.add('loading');
-        const hideLoader = () => document.getElementById('topLoader').classList.remove('loading');
+        // GLOBAL UTILS
+        const showLoader = () => $('#topLoader').addClass('loading');
+        const hideLoader = () => $('#topLoader').removeClass('loading');
 
-        document.addEventListener('DOMContentLoaded', () => {
-            // Attach loader to forms and links
-            document.querySelectorAll('form').forEach(f => f.addEventListener('submit', showLoader));
-            document.querySelectorAll('a:not([href^="#"]):not([target="_blank"])').forEach(a => a.addEventListener('click', (e) => {
-                if (!e.ctrlKey && !e.shiftKey) showLoader();
-            }));
-        });
-        window.addEventListener('load', hideLoader);
+        $(document).ready(function () {
+            // Sidebar Toggles
+            window.toggleSidebar = function () {
+                $('#sidebar, #sidebarOverlay').toggleClass('show');
+            };
 
-        // SIDEBAR TOGGLE
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
+            window.toggleDesktopSidebar = function () {
+                $('body').toggleClass('sidebar-collapsed');
+                const isCollapsed = $('body').hasClass('sidebar-collapsed');
+                document.cookie = `sidebarCollapsed=${isCollapsed}; path=/; max-age=31536000`;
+            };
 
-            if (window.innerWidth <= 992) {
-                sidebar.classList.toggle('show');
-                overlay.classList.toggle('show');
-            }
-        }
-        window.addEventListener('resize', () => {
-            if (window.innerWidth > 992) {
-                document.getElementById('sidebar').classList.remove('show');
-                document.getElementById('sidebarOverlay').classList.remove('show');
-            }
-        });
+            // Global AJAX setup for CSRF
+            $.ajaxSetup({
+                beforeSend: function (xhr, settings) {
+                    if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+                        xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+                    }
+                    showLoader();
+                },
+                complete: function () {
+                    hideLoader();
+                }
+            });
 
-        // DESKTOP SIDEBAR COLLAPSE
-        function toggleDesktopSidebar() {
-            document.body.classList.toggle('sidebar-collapsed');
-            const isCollapsed = document.body.classList.contains('sidebar-collapsed');
-            localStorage.setItem('sidebarCollapsed', isCollapsed);
-        }
+            // Modern Toast Notifications
+            window.showAlert = function (title, text, icon = 'info') {
+                Swal.fire({
+                    title: title,
+                    text: text,
+                    icon: icon,
+                    confirmButtonText: '{% trans "OK" %}',
+                    customClass: {
+                        confirmButton: 'btn btn-primary px-4'
+                    },
+                    buttonsStyling: false
+                });
+            };
 
-        // Restore sidebar state
-        document.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.getItem('sidebarCollapsed') === 'true') {
-                document.body.classList.add('sidebar-collapsed');
-            }
-        });
+            window.showToast = function (message, type = 'success') {
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+                Toast.fire({
+                    icon: type,
+                    title: message
+                });
+            };
 
-        // CHECK PLATE MODAL
-        function showCheckPlateModal() {
-            new bootstrap.Modal(document.getElementById('checkPlateModal')).show();
-        }
+            // Confirmation Helper
+            window.confirmAction = function (options) {
+                Swal.fire({
+                    title: options.title || '{% trans "Are you sure?" %}',
+                    text: options.text || '{% trans "This action cannot be undone." %}',
+                    icon: options.icon || 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: options.confirmText || '{% trans "Confirm" %}',
+                    cancelButtonText: options.cancelText || '{% trans "Cancel" %}',
+                    customClass: {
+                        confirmButton: `btn btn-${options.type || 'primary'} mx-2`,
+                        cancelButton: 'btn btn-light mx-2'
+                    },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed && options.onConfirm) {
+                        options.onConfirm();
+                    }
+                });
+            };
 
-        document.getElementById('checkPlateForm')?.addEventListener('submit', function (e) {
-            e.preventDefault();
-            const btn = this.querySelector('button[type="submit"]');
-            const input = document.getElementById('licensePlate');
-            const resultDiv = document.getElementById('plateResult');
-            const plate = input.value.trim();
+            // Plate Check Logic
+            $('#checkPlateForm').on('submit', function (e) {
+                e.preventDefault();
+                const plate = $('#licensePlate').val().trim();
+                const $result = $('#plateResult');
 
-            if (!plate) return;
-
-            // Loading state
-            const originalBtnContent = btn.innerHTML;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>{% trans "Searching..." %}';
-            btn.disabled = true;
-
-            fetch(`{% url 'check-plate-ajax' %}?plate=${encodeURIComponent(plate)}`)
-                .then(r => r.json())
-                .then(data => {
+                $.get("{% url 'check-plate-ajax' %}", { plate: plate }, function (data) {
+                    let html = '';
                     if (data.error) {
-                        resultDiv.innerHTML = `<div class="alert alert-warning mt-3 mb-0">${data.error}</div>`;
+                        html = `<div class="alert alert-danger-soft border-0 small mt-3">${data.error}</div>`;
                     } else {
-                        // Render Success Result
-                        resultDiv.innerHTML = `
-                            <div class="card mt-3 mb-0 border bg-light">
+                        html = `
+                            <div class="card bg-light border-0 mt-3">
                                 <div class="card-body p-3">
-                                    <h6 class="fw-bold mb-1">${data.vehicle.license_plate}</h6>
-                                    <small class="text-muted d-block mb-2">${data.vehicle.make} ${data.vehicle.model}</small>
-                                    <div class="d-flex align-items-center justify-content-between">
-                                        <span class="badge ${data.violations_count > 0 ? 'bg-danger' : 'bg-success'}">
-                                            ${data.violations_count} {% trans "Violations" %}
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="fw-bold mb-0">${data.vehicle.license_plate}</h6>
+                                        <span class="badge ${data.active_session ? 'bg-success-soft' : 'bg-secondary-soft'}">
+                                            ${data.active_session ? '{% trans "Active" %}' : '{% trans "No Session" %}'}
                                         </span>
                                     </div>
+                                    <p class="small text-muted mb-2">${data.vehicle.owner}</p>
+                                    <div class="d-flex gap-2 mt-2">
+                                        <a href="/vehicles/${data.vehicle_id}/" class="btn btn-sm btn-outline-primary flex-grow-1">{% trans "View Profile" %}</a>
+                                        ${data.violations_count > 0 ? `<span class="badge bg-danger d-flex align-items-center">${data.violations_count} {% trans "Violations" %}</span>` : ''}
+                                    </div>
                                 </div>
-                            </div>`;
+                            </div>
+                        `;
                     }
-                })
-                .catch(() => {
-                    resultDiv.innerHTML = `<div class="alert alert-danger mt-3 mb-0">{% trans "Network Error" %}</div>`;
-                })
-                .finally(() => {
-                    btn.innerHTML = originalBtnContent;
-                    btn.disabled = false;
+                    $result.html(html);
                 });
+            });
+
+            // Auto-dismiss Django messages
+            setTimeout(() => {
+                $('.alert-dismissible').fadeOut('slow');
+            }, 5000);
         });
-
-        // CONFIRMATION MODAL HELPER
-        /**
-         * specialized Confirmation Modal
-         * @param {string} title - Title of the modal
-         * @param {string} message - Description message
-         * @param {function} onConfirm - Callback function when confirmed
-         * @param {string} confirmText - Text for confirm button (default 'Confirm')
-         * @param {string} type - 'primary', 'danger', 'warning' (default 'primary')
-         */
-        window.showConfirmation = function (title, message, onConfirm, confirmText = '{% trans "Confirm" %}', type = 'primary') {
-            const modalEl = document.getElementById('confirmationModal');
-            const titleEl = document.getElementById('confirmTitle');
-            const msgEl = document.getElementById('confirmMessage');
-            const confirmBtn = document.getElementById('confirmBtn');
-            const iconContainer = modalEl.querySelector('.rounded-circle');
-            const icon = modalEl.querySelector('i');
-
-            // Set Content
-            titleEl.textContent = title;
-            msgEl.textContent = message;
-            confirmBtn.textContent = confirmText;
-
-            // Reset Classes
-            confirmBtn.className = `btn w-50 btn-${type}`;
-            iconContainer.className = `mx-auto d-flex align-items-center justify-content-center rounded-circle bg-${type}-soft`;
-            icon.className = `bi bi-${type === 'danger' ? 'trash' : 'exclamation-lg'} text-${type}`;
-
-            // Handle Click
-            const modal = new bootstrap.Modal(modalEl);
-
-            // Remove previous event listeners
-            const newBtn = confirmBtn.cloneNode(true);
-            confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
-
-            newBtn.addEventListener('click', () => {
-                modal.hide();
-                if (onConfirm) onConfirm();
-            });
-
-            modal.show();
-        };
-
-        // Auto hide alerts
-        setTimeout(() => {
-            document.querySelectorAll('.alert-dismissible').forEach(alert => {
-                bootstrap.Alert.getOrCreateInstance(alert).close();
-            });
-        }, 5000);
-
     </script>
+
     {% block extra_js %}{% endblock %}
 </body>
 

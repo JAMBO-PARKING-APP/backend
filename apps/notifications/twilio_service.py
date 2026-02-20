@@ -27,9 +27,7 @@ class MockVerification:
         self.status = status
 
 def send_verification(to_phone: str, channel: str = 'sms', service_sid: str = None):
-    # Call the Celery task
     tasks.send_twilio_verification_task.delay(to_phone, channel)
-    # Return a mock verification object so API views don't crash
     return MockVerification(sid='async_queued', status='pending')
 
 def check_verification(to_phone: str, code: str, service_sid: str = None):

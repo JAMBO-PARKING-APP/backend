@@ -39,14 +39,10 @@ class NotificationEvent(BaseModel):
     type = models.CharField(max_length=50, choices=NOTIFICATION_TYPES, default='other')
     category = models.CharField(max_length=20, choices=CATEGORIES, default='system')
     is_read = models.BooleanField(default=False, db_index=True)
-    metadata = models.JSONField(null=True, blank=True)  # Store additional data like parking_session_id, violation_id
-    
-    # Admin notification fields
+    metadata = models.JSONField(null=True, blank=True)  
     show_as_dialog = models.BooleanField(default=False, help_text="Show as in-app dialog when user opens app")
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium', help_text="Priority level for custom notifications")
     is_promotional = models.BooleanField(default=False, help_text="Mark as promotional content")
-    
-    # Push notification tracking
     sent_via_push = models.BooleanField(default=False, help_text="Whether push notification was sent via FCM")
     push_sent_at = models.DateTimeField(null=True, blank=True, help_text="When push notification was sent")
     push_error = models.TextField(blank=True, null=True, help_text="Error message if push notification failed")
@@ -96,8 +92,6 @@ class UserPreferences(BaseModel):
     user = models.OneToOneField('accounts.User', on_delete=models.CASCADE, related_name='preferences')
     language = models.CharField(max_length=5, choices=LANGUAGE_CHOICES, default='en')
     currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='USD')
-    
-    # Notification Preferences
     enable_parking_notifications = models.BooleanField(default=True)
     enable_violation_notifications = models.BooleanField(default=True)
     enable_payment_notifications = models.BooleanField(default=True)
@@ -105,8 +99,6 @@ class UserPreferences(BaseModel):
     enable_push_notifications = models.BooleanField(default=True)
     enable_sms_notifications = models.BooleanField(default=False)
     enable_email_notifications = models.BooleanField(default=True)
-    
-    # Display Preferences
     theme_mode = models.CharField(
         max_length=10,
         choices=[('light', 'Light'), ('dark', 'Dark'), ('auto', 'Auto')],
@@ -118,7 +110,6 @@ class UserPreferences(BaseModel):
         default='normal'
     )
     
-    # Privacy Settings
     biometric_enabled = models.BooleanField(default=False)
     two_factor_enabled = models.BooleanField(default=False)
     

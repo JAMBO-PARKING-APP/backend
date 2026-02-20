@@ -36,7 +36,6 @@ class NotificationAdmin(admin.ModelAdmin):
         failed_count = 0
         
         for notification in queryset:
-            # Prepare notification data
             data = {
                 'type': notification.type,
                 'title': notification.title,
@@ -46,14 +45,11 @@ class NotificationAdmin(admin.ModelAdmin):
             
             if notification.show_as_dialog:
                 data['show_dialog'] = 'true'
-            
-            # Add metadata if exists
             if notification.metadata:
                 data.update(notification.metadata)
             
             from apps.notifications.notification_triggers import broadcast_parking_update
             
-            # Send notification
             success = send_notification_to_user(
                 user=notification.user,
                 title=notification.title,
@@ -62,7 +58,6 @@ class NotificationAdmin(admin.ModelAdmin):
                 notification_event=notification
             )
             
-            # Also broadcast via WebSocket
             broadcast_parking_update(notification.user, {
                 'event': 'admin_notification',
                 'title': notification.title,

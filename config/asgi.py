@@ -7,12 +7,8 @@ from django.urls import path
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.production')
 
 django_asgi_app = get_asgi_application()
-
-# Import routing here to avoid AppRegistryNotReady error
 from apps.notifications.routing import websocket_urlpatterns
-
 from apps.common.channels_middleware import JWTAuthMiddlewareStack
-
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
     "websocket": JWTAuthMiddlewareStack(

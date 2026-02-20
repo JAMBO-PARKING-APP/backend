@@ -28,8 +28,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         from apps.common.models import Country
         import phonenumbers
         from phonenumbers import geocoder
-
-        # Parse phone to detect country
         try:
             parsed = phonenumbers.parse(str(value), None)
             if not phonenumbers.is_valid_number(parsed):
@@ -37,7 +35,6 @@ class RegisterSerializer(serializers.ModelSerializer):
             
             region_code = phonenumbers.region_code_for_number(parsed)
             if region_code:
-                # Check if country exists and is active
                 country = Country.objects.filter(iso_code=region_code, is_active=True).first()
                 if not country:
                     raise serializers.ValidationError("Jambo Park is not currently available in your region.")

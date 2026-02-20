@@ -34,6 +34,7 @@ For detailed specifications, refer to the documents in the `docs/` directory:
 | 🛠️ **[Deployment](file:///c:/Users/tutum/Downloads/JAMBO%20PARK/docs/deployment_and_secrets.md)** | 🚀 | Setup guide for Docker, Render, and GitHub Actions. |
 | � **[CI: Django](file:///c:/Users/tutum/Downloads/JAMBO%20PARK/.github/workflows/django.yml)** | 🐍 | Automated backend testing and linting configuration. |
 | 🤖 **[CI: Flutter](file:///c:/Users/tutum/Downloads/JAMBO%20PARK/.github/workflows/flutter.yml)** | 📱 | Automated mobile app analysis and testing configuration. |
+| 📖 **[API Documentation](http://localhost:8000/api/docs/)** | 📑 | Interactive Swagger UI for all system endpoints. |
 
 ---
 

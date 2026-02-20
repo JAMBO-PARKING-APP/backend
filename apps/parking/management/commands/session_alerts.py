@@ -64,17 +64,8 @@ class Command(BaseCommand):
         ).exists()
         
         if not existing:
-            NotificationEvent.objects.create(
-                user=session.vehicle.user,
-                title=title,
-                message=message,
-                type=type,
-                category='parking',
-                metadata={
-                    'parking_session_id': str(session.id),
-                    'minutes_left': minutes_left
-                }
-            )
+            from apps.notifications.notification_triggers import notify_parking_expiring_soon
+            notify_parking_expiring_soon(session, minutes_left)
             self.stdout.write(f"Sent {minutes_left}m alert to {session.vehicle.user.phone}")
 
     def _handle_expired_session(self, session, now):
@@ -133,17 +124,8 @@ class Command(BaseCommand):
                 )
                 
                 # Send notification about charge
-                NotificationEvent.objects.create(
-                    user=user,
-                    title="Overdue Parking Charge",
-                    message=f"UGX {overdue_charge} has been deducted from your wallet for {overdue_hours:.2f} hours of overdue parking.",
-                    type='payment_successful',
-                    category='payments',
-                    metadata={
-                        'parking_session_id': str(session.id),
-                        'amount': float(overdue_charge)
-                    }
-                )
+                from apps.notifications.notification_triggers import notify_overdue_charge
+                notify_overdue_charge(user, overdue_charge, overdue_hours, session.id)
                 
                 self.stdout.write(
                     f"✓ Charged {user.phone} UGX {overdue_charge} for {overdue_hours:.2f}h overdue"
@@ -178,19 +160,9 @@ class Command(BaseCommand):
                 )
                 
                 # Send violation notification
-                NotificationEvent.objects.create(
-                    user=user,
-                    title="Parking Violation Issued",
-                    message=f"A violation has been issued for {overdue_hours:.2f} hours of unpaid overdue parking at {session.zone.name}. Fine: UGX {violation_fine}. Your wallet balance is now UGX {user.wallet_balance}",
-                    type='violation_received',
-                    category='violations',
-                    metadata={
-                        'parking_session_id': str(session.id),
-                        'violation_id': str(violation.id),
-                        'fine_amount': float(violation_fine),
-                        'wallet_balance': float(user.wallet_balance)
-                    }
-                )
+                from apps.notifications.notification_triggers import notify_violation_issued
+                v_message = f"A violation has been issued for {overdue_hours:.2f} hours of unpaid overdue parking at {session.zone.name}. Fine: UGX {violation_fine}. Your wallet balance is now UGX {user.wallet_balance}"
+                notify_violation_issued(violation, message=v_message)
                 
                 self.stdout.write(
                     f"✗ Violation created for {user.phone}: {overdue_hours:.2f}h overdue, fine UGX {violation_fine}, balance: UGX {user.wallet_balance}"

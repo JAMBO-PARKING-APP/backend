@@ -15,24 +15,27 @@ from .firebase_service import send_notification_to_user
 
 logger = logging.getLogger(__name__)
 
+def _safe_orm_operation(func, *args, **kwargs):
+    """Helper to perform ORM operations in a way that handles async contexts"""
+    import os
+    # Allow async unsafe for these notification triggers which are often called from background tasks
+    os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
+    try:
+        return func(*args, **kwargs)
+    finally:
+        pass
+
 def broadcast_parking_update(user, data):
     """
-    Broadcast a parking update to the user via WebSocket
+    Broadcast a parking update to the user via WebSocket (Asynchronous)
     """
-    channel_layer = get_channel_layer()
-    user_group_name = f"user_{user.id}".replace("-", "_")
+    from .tasks import broadcast_websocket_update_task
+    from django.db import transaction
     
-    try:
-        async_to_sync(channel_layer.group_send)(
-            user_group_name,
-            {
-                'type': 'parking_update',
-                'data': data
-            }
-        )
-        logger.info(f"Broadcasted WebSocket update to user {user.id}")
-    except Exception as e:
-        logger.error(f"Failed to broadcast WebSocket update: {str(e)}")
+    transaction.on_commit(lambda: broadcast_websocket_update_task.delay(
+        str(user.id), data
+    ))
+    logger.debug(f"Scheduled WebSocket broadcast task for user {user.id}")
 
 
 def notify_parking_started(session):
@@ -47,7 +50,7 @@ def notify_parking_started(session):
     title = "Parking Session Started"
     message = f"Your parking at {session.zone.name} has started. Session ends at {session.planned_end_time.strftime('%I:%M %p')}"
     
-    notification = NotificationEvent.objects.create(
+    notification = _safe_orm_operation(NotificationEvent.objects.create,
         user=user,
         title=title,
         message=message,
@@ -72,19 +75,20 @@ def notify_parking_started(session):
             'session_id': str(session.id),
             'zone_id': str(session.zone.id),
             'slot_code': session.parking_slot.slot_code if session.parking_slot else '',
-            'show_dialog': 'true',  # Flag to show in-app dialog
+            'show_dialog': 'true',  
         },
         notification_event=notification
     )
     
-    # ... existing logic ...
     logger.info(f"Sent parking started notification to user {user.id} for session {session.id}")
-    
-    # WebSocket broadcast
     broadcast_parking_update(user, {
+        'type': 'parking_started',
         'event': 'parking_started',
         'session_id': str(session.id),
-        'status': session.status
+        'status': session.status,
+        'title': title,
+        'message': message,
+        'show_dialog': 'true',
     })
 
 
@@ -101,8 +105,7 @@ def notify_parking_expiring_soon(session, minutes_remaining: int):
     title = "Parking Expiring Soon"
     message = f"Your parking session at {session.zone.name} expires in {minutes_remaining} minutes."
     
-    # Create notification event
-    notification = NotificationEvent.objects.create(
+    notification = _safe_orm_operation(NotificationEvent.objects.create,
         user=user,
         title=title,
         message=message,
@@ -117,7 +120,6 @@ def notify_parking_expiring_soon(session, minutes_remaining: int):
         }
     )
     
-    # Send push notification
     send_notification_to_user(
         user=user,
         title=title,
@@ -127,27 +129,43 @@ def notify_parking_expiring_soon(session, minutes_remaining: int):
             'session_id': str(session.id),
             'zone_id': str(session.zone.id),
             'minutes_remaining': str(minutes_remaining),
-            'show_dialog': 'true',  # Flag to show in-app dialog
+            'show_dialog': 'true', 
         },
         notification_event=notification
     )
+    
+    # Broadcast via WebSocket
+    broadcast_parking_update(user, {
+        'type': 'parking_expiring',
+        'event': 'parking_expiring',
+        'session_id': str(session.id),
+        'minutes_remaining': minutes_remaining,
+        'title': title,
+        'message': message,
+        'show_dialog': 'true',
+    })
     
     logger.info(f"Sent parking expiring notification to user {user.id} for session {session.id}")
 
 
 def notify_parking_ended(session):
     """
-    Notify user that their parking session has ended
+    Notify user that their parking session has ended (Asynchronous)
+    """
+    from .tasks import notify_parking_ended_task
+    from django.db import transaction
     
-    Args:
-        session: ParkingSession instance
+    transaction.on_commit(lambda: notify_parking_ended_task.delay(str(session.id)))
+    logger.info(f"Scheduled parking ended notification task for session {session.id}")
+
+def notify_parking_ended_sync(session):
+    """
+    The actual synchronous logic for parking ended notifications
+    (Called by Celery task)
     """
     user = session.vehicle.user
     
-    # Check if session ended after planned time or is marked as expired
     is_expired = session.status == 'expired' or (session.planned_end_time and timezone.now() > session.planned_end_time)
-    
-    # Get currency symbol for user
     symbol = getattr(user.country, 'currency_symbol', 'UGX') if hasattr(user, 'country') else 'UGX'
     
     if is_expired:
@@ -157,7 +175,6 @@ def notify_parking_ended(session):
         title = "Parking Session Ended"
         message = f"Your parking session at {session.zone.name} has ended. Total cost: {symbol} {session.final_cost}"
     
-    # Proximity Check: If user is still in the zone, remind them to leave
     from apps.accounts.models import UserLocation
     from apps.common.utils import calculate_distance
     
@@ -168,11 +185,10 @@ def notify_parking_ended(session):
             session.zone.latitude, session.zone.longitude
         )
         
-        # If user is within zone radius + 20m buffer
         if distance <= (session.zone.radius_meters + 20):
             message += " Our system indicates you are still in the parking zone. Please vacate the spot now to avoid enforcement actions."
     
-    notification = NotificationEvent.objects.create(
+    notification = _safe_orm_operation(NotificationEvent.objects.create,
         user=user,
         title=title,
         message=message,
@@ -196,21 +212,30 @@ def notify_parking_ended(session):
             'session_id': str(session.id),
             'zone_id': str(session.zone.id),
             'final_cost': str(session.final_cost),
-            'show_dialog': 'true',  # Flag to show in-app dialog
+            'show_dialog': 'true',  
         },
         notification_event=notification
     )
     
-    # ... existing logic ...
-    logger.info(f"Sent parking ended notification to user {user.id} for session {session.id}")
-
-    # WebSocket broadcast
-    broadcast_parking_update(user, {
-        'event': 'parking_ended',
-        'session_id': str(session.id),
-        'status': session.status,
-        'final_cost': str(session.final_cost)
-    })
+    # Low-level broadcast for the task to avoid double-tasking
+    channel_layer = get_channel_layer()
+    user_group_name = f"user_{user.id}".replace("-", "_")
+    async_to_sync(channel_layer.group_send)(
+        user_group_name,
+        {
+            'type': 'parking_update',
+            'data': {
+                'type': 'parking_ended',
+                'event': 'parking_ended',
+                'session_id': str(session.id),
+                'status': session.status,
+                'final_cost': str(session.final_cost),
+                'title': title,
+                'message': message,
+                'show_dialog': 'true',
+            }
+        }
+    )
 
 
 def notify_payment_success(payment):
@@ -220,7 +245,6 @@ def notify_payment_success(payment):
     Args:
         payment: Transaction or WalletTransaction instance
     """
-    # Handle both Transaction and WalletTransaction
     from apps.payments.models import WalletTransaction
     
     if isinstance(payment, WalletTransaction):
@@ -233,14 +257,12 @@ def notify_payment_success(payment):
         amount = payment.amount
         payment_method = getattr(payment, 'payment_method', 'wallet')
         payment_id = payment.id
-    
-    # Get currency symbol for user
     symbol = getattr(user.country, 'currency_symbol', 'UGX') if hasattr(user, 'country') else 'UGX'
     
     title = "Payment Successful"
     message = f"Your payment of {symbol} {amount} was successful."
     
-    notification = NotificationEvent.objects.create(
+    notification = _safe_orm_operation(NotificationEvent.objects.create,
         user=user,
         title=title,
         message=message,
@@ -261,12 +283,22 @@ def notify_payment_success(payment):
             'type': 'payment_success',
             'payment_id': str(payment_id),
             'amount': str(amount),
-            'show_dialog': 'true',  # Flag to show in-app dialog
+            'show_dialog': 'true',  
         },
         notification_event=notification
     )
     
     logger.info(f"Sent payment success notification to user {user.id} for payment {payment_id}")
+
+    broadcast_parking_update(user, {
+        'type': 'payment_success',
+        'event': 'payment_success',
+        'payment_id': str(payment_id),
+        'amount': str(amount),
+        'title': title,
+        'message': message,
+        'show_dialog': 'true',
+    })
 
 
 def notify_payment_failed(payment, reason: str = ""):
@@ -278,8 +310,6 @@ def notify_payment_failed(payment, reason: str = ""):
         reason: Reason for payment failure
     """
     user = payment.user
-    
-    # Get currency symbol for user
     symbol = getattr(user.country, 'currency_symbol', 'UGX') if hasattr(user, 'country') else 'UGX'
     
     title = "Payment Failed"
@@ -287,7 +317,7 @@ def notify_payment_failed(payment, reason: str = ""):
     if reason:
         message += f" Reason: {reason}"
     
-    notification = NotificationEvent.objects.create(
+    notification = _safe_orm_operation(NotificationEvent.objects.create,
         user=user,
         title=title,
         message=message,
@@ -311,16 +341,29 @@ def notify_payment_failed(payment, reason: str = ""):
         },
         notification_event=notification
     )
+
+    # Broadcast via WebSocket
+    broadcast_parking_update(user, {
+        'type': 'payment_failed',
+        'event': 'payment_failed',
+        'payment_id': str(payment.id),
+        'amount': str(payment.amount),
+        'reason': reason,
+        'title': title,
+        'message': message,
+        'show_dialog': 'true',
+    })
     
     logger.info(f"Sent payment failed notification to user {user.id} for payment {payment.id}")
 
 
-def notify_violation_issued(violation):
+def notify_violation_issued(violation, message: str = ""):
     """
     Notify user that a violation has been issued
     
     Args:
         violation: Violation instance
+        message: Optional custom message
     """
     user = violation.vehicle.user
     
@@ -328,9 +371,10 @@ def notify_violation_issued(violation):
     symbol = getattr(user.country, 'currency_symbol', 'UGX') if hasattr(user, 'country') else 'UGX'
     
     title = "Parking Violation Issued"
-    message = f"A parking violation has been issued for {violation.vehicle.license_plate}. Fine: {symbol} {violation.fine_amount}"
+    if not message:
+        message = f"A parking violation has been issued for {violation.vehicle.license_plate}. Fine: {symbol} {violation.fine_amount}"
     
-    notification = NotificationEvent.objects.create(
+    notification = _safe_orm_operation(NotificationEvent.objects.create,
         user=user,
         title=title,
         message=message,
@@ -356,25 +400,150 @@ def notify_violation_issued(violation):
         },
         notification_event=notification
     )
+
+    # Broadcast via WebSocket
+    broadcast_parking_update(user, {
+        'type': 'violation_issued',
+        'event': 'violation_issued',
+        'violation_id': str(violation.id),
+        'fine_amount': str(violation.fine_amount),
+        'title': title,
+        'message': message,
+        'show_dialog': 'true',
+    })
     
     logger.info(f"Sent violation notification to user {user.id} for violation {violation.id}")
+
+
+def notify_overdue_charge(user, amount, hours, session_id):
+    """
+    Notify user of overdue parking charge deducted from wallet
+    """
+    symbol = getattr(user.country, 'currency_symbol', 'UGX') if hasattr(user, 'country') else 'UGX'
+    
+    title = "Overdue Parking Charge"
+    message = f"{symbol} {amount} has been deducted from your wallet for {hours:.2f} hours of overdue parking."
+    
+    notification = _safe_orm_operation(NotificationEvent.objects.create,
+        user=user,
+        title=title,
+        message=message,
+        type='payment_successful',
+        category='payments',
+        metadata={
+            'parking_session_id': str(session_id),
+            'amount': str(amount),
+            'hours': float(hours)
+        }
+    )
+    
+    send_notification_to_user(
+        user=user,
+        title=title,
+        body=message,
+        data={
+            'type': 'overdue_charge',
+            'amount': str(amount),
+            'show_dialog': 'true',
+        },
+        notification_event=notification
+    )
+    
+    broadcast_parking_update(user, {
+        'type': 'payment_success',
+        'event': 'overdue_charge',
+        'amount': str(amount),
+        'title': title,
+        'message': message,
+        'show_dialog': 'true',
+    })
+    
+    logger.info(f"Sent overdue charge notification to user {user.id}")
+
+
+    logger.info(f"Sent overdue charge notification to user {user.id}")
+
+
+def notify_session_reminder(session):
+    """
+    Notify user that they are far from their active parking session
+    """
+    user = session.vehicle.user
+    title = "Active Parking Session"
+    message = f"You seem to be away from {session.zone.name}. Did you forget to end your parking session?"
+    
+    notification = _safe_orm_operation(NotificationEvent.objects.create,
+        user=user,
+        title=title,
+        message=message,
+        type='system_alert',
+        category='parking',
+        metadata={'session_id': str(session.id)}
+    )
+    
+    send_notification_to_user(
+        user=user,
+        title=title,
+        body=message,
+        data={'type': 'session_reminder', 'session_id': str(session.id)},
+        notification_event=notification
+    )
+    
+    broadcast_parking_update(user, {
+        'event': 'session_reminder',
+        'session_id': str(session.id),
+        'title': title,
+        'message': message
+    })
+
+
+def notify_exit_reminder(session):
+    """
+    Notify user to exit the zone after session has ended
+    """
+    user = session.vehicle.user
+    title = "Exit Reminder"
+    message = f"Your session at {session.zone.name} has ended. Please remember to exit the zone to avoid penalties."
+    
+    notification = _safe_orm_operation(NotificationEvent.objects.create,
+        user=user,
+        title=title,
+        message=message,
+        type='system_alert',
+        category='parking',
+        metadata={'session_id': str(session.id)}
+    )
+    
+    send_notification_to_user(
+        user=user,
+        title=title,
+        body=message,
+        data={'type': 'exit_reminder', 'session_id': str(session.id)},
+        notification_event=notification
+    )
+    
+    broadcast_parking_update(user, {
+        'event': 'exit_reminder',
+        'session_id': str(session.id),
+        'title': title,
+        'message': message
+    })
 
 
 def notify_custom(user, title: str, message: str, category: str = 'system', data: dict = None):
     """
     Send a custom notification to a user
     """
-    notification = NotificationEvent.objects.create(
+    notification = _safe_orm_operation(NotificationEvent.objects.create,
         user=user,
         title=title,
         message=message,
         type='custom_admin',
         category=category,
-        show_as_dialog=True,  # Set to True for admin messages
+        show_as_dialog=True, 
         metadata=data or {}
     )
     
-    # Combined data for push and websocket
     notification_data = {
         'type': 'custom_admin',
         'show_dialog': 'true',
@@ -390,8 +559,8 @@ def notify_custom(user, title: str, message: str, category: str = 'system', data
         notification_event=notification
     )
     
-    # Also broadcast via WebSocket
     broadcast_parking_update(user, {
+        'type': 'custom_admin',
         'event': 'custom_notification',
         'title': title,
         'message': message,
@@ -405,7 +574,7 @@ def notify_campaign(user, title: str, message: str, image_url: str = None, data:
     """
     Send a promotional campaign notification to a user
     """
-    notification = NotificationEvent.objects.create(
+    notification = _safe_orm_operation(NotificationEvent.objects.create,
         user=user,
         title=title,
         message=message,
@@ -434,8 +603,8 @@ def notify_campaign(user, title: str, message: str, image_url: str = None, data:
         notification_event=notification
     )
     
-    # Broadcast via WebSocket for real-time pop-up if user is online
     broadcast_parking_update(user, {
+        'type': 'campaign',
         'event': 'campaign',
         'title': title,
         'message': message,
@@ -456,7 +625,7 @@ def notify_officer_zone_assignment(officer, zone):
     title = "Zone Assignment"
     message = f"You have been assigned to monitor {zone.name}."
     
-    notification = NotificationEvent.objects.create(
+    notification = _safe_orm_operation(NotificationEvent.objects.create,
         user=officer,
         title=title,
         message=message,
@@ -482,6 +651,43 @@ def notify_officer_zone_assignment(officer, zone):
     logger.info(f"Sent zone assignment notification to officer {officer.id}")
 
 
+def notify_hotspot_detected(officer, zone, count):
+    """
+    Notify officer of a violation hotspot
+    """
+    title = "Violation Hotspot Detected"
+    message = f"High violation activity in {zone.name} ({count} potential violations). Please patrol."
+    
+    notification = _safe_orm_operation(NotificationEvent.objects.create,
+        user=officer,
+        title=title,
+        message=message,
+        type='system_alert',
+        category='violations',
+        metadata={
+            'zone_id': str(zone.id),
+            'zone_name': zone.name,
+            'count': count
+        }
+    )
+    
+    send_notification_to_user(
+        officer,
+        title=title,
+        body=message,
+        data={'type': 'officer_dispatch', 'zone_id': str(zone.id)},
+        notification_event=notification
+    )
+    
+    # Broadcast via WebSocket for officers
+    broadcast_parking_update(officer, {
+        'event': 'officer_dispatch',
+        'zone_id': str(zone.id),
+        'title': title,
+        'message': message
+    })
+
+
 def notify_wallet_refund(wallet_transaction, parking_session):
     """
     Notify user of wallet refund for early session end
@@ -491,14 +697,12 @@ def notify_wallet_refund(wallet_transaction, parking_session):
         parking_session: ParkingSession instance
     """
     user = wallet_transaction.user
-    
-    # Get currency symbol for user
     symbol = getattr(user.country, 'currency_symbol', 'UGX') if hasattr(user, 'country') else 'UGX'
     
     title = "Wallet Refund"
     message = f"You've been refunded {symbol} {wallet_transaction.amount} for ending your parking session early at {parking_session.zone.name}."
     
-    notification = NotificationEvent.objects.create(
+    notification = _safe_orm_operation(NotificationEvent.objects.create,
         user=user,
         title=title,
         message=message,
@@ -521,10 +725,22 @@ def notify_wallet_refund(wallet_transaction, parking_session):
             'wallet_transaction_id': str(wallet_transaction.id),
             'session_id': str(parking_session.id),
             'amount': str(wallet_transaction.amount),
-            'show_dialog': 'true',  # Flag to show in-app dialog
+            'show_dialog': 'true', 
         },
         notification_event=notification
     )
+
+    # Broadcast via WebSocket
+    broadcast_parking_update(user, {
+        'type': 'wallet_refund',
+        'event': 'wallet_refund',
+        'wallet_transaction_id': str(wallet_transaction.id),
+        'session_id': str(parking_session.id),
+        'amount': str(wallet_transaction.amount),
+        'title': title,
+        'message': message,
+        'show_dialog': 'true',
+    })
     
     logger.info(f"Sent wallet refund notification to user {user.id} for {wallet_transaction.amount}")
 
@@ -540,7 +756,7 @@ def notify_reservation_confirmed(reservation):
     title = "Reservation Confirmed"
     message = f"Your parking reservation at {reservation.zone.name} is confirmed for {start_time}."
     
-    notification = NotificationEvent.objects.create(
+    notification = _safe_orm_operation(NotificationEvent.objects.create,
         user=user,
         title=title,
         message=message,
@@ -565,6 +781,18 @@ def notify_reservation_confirmed(reservation):
         },
         notification_event=notification
     )
+
+    # Broadcast via WebSocket
+    broadcast_parking_update(user, {
+        'type': 'reservation_confirmed',
+        'event': 'reservation_confirmed',
+        'reservation_id': str(reservation.id),
+        'zone_name': reservation.zone.name,
+        'title': title,
+        'message': message,
+        'show_dialog': 'true',
+    })
+
     logger.info(f"Sent reservation confirmed notification to user {user.id}")
 
 
@@ -578,7 +806,7 @@ def notify_reservation_cancelled(reservation):
     title = "Reservation Cancelled"
     message = f"Your parking reservation at {reservation.zone.name} has been cancelled."
     
-    notification = NotificationEvent.objects.create(
+    notification = _safe_orm_operation(NotificationEvent.objects.create,
         user=user,
         title=title,
         message=message,
@@ -601,6 +829,17 @@ def notify_reservation_cancelled(reservation):
         },
         notification_event=notification
     )
+
+    # Broadcast via WebSocket
+    broadcast_parking_update(user, {
+        'type': 'reservation_cancelled',
+        'event': 'reservation_cancelled',
+        'reservation_id': str(reservation.id),
+        'title': title,
+        'message': message,
+        'show_dialog': 'true',
+    })
+
     logger.info(f"Sent reservation cancelled notification to user {user.id}")
 
 
@@ -617,7 +856,6 @@ def notify_officers_session_event(session, event_type):
     zone = session.zone
     vehicle = session.vehicle
     
-    # Find online officers in this zone
     online_officers = OfficerStatus.objects.filter(
         current_zone=zone,
         is_online=True
@@ -641,9 +879,103 @@ def notify_officers_session_event(session, event_type):
         'timestamp': timezone.now().isoformat(),
     }
     
-    # Send to all online officers in the zone
     officer_users = [status.officer for status in online_officers]
     from .firebase_service import send_notification_to_multiple_users
     send_notification_to_multiple_users(officer_users, title, body, data)
     
     logger.info(f"Notified {len(officer_users)} officers about {event_type} for session {session.id}")
+
+
+def notify_payment_refund(refund):
+    """
+    Notify user of a payment refund
+    """
+    user = refund.original_transaction.user
+    amount = refund.amount
+    symbol = getattr(user.country, 'currency_symbol', 'UGX') if hasattr(user, 'country') else 'UGX'
+    
+    title = "Refund Processed"
+    message = f"A refund of {symbol} {amount} has been processed for your transaction."
+    
+    notification = _safe_orm_operation(NotificationEvent.objects.create,
+        user=user,
+        title=title,
+        message=message,
+        type='payment_successful',
+        category='payments',
+        metadata={
+            'refund_id': str(refund.id),
+            'transaction_id': str(refund.original_transaction.id),
+            'amount': str(amount),
+            'reason': refund.reason
+        }
+    )
+    
+    send_notification_to_user(
+        user=user,
+        title=title,
+        body=message,
+        data={
+            'type': 'payment_refund',
+            'refund_id': str(refund.id),
+            'amount': str(amount),
+            'show_dialog': 'true',
+        },
+        notification_event=notification
+    )
+    
+    broadcast_parking_update(user, {
+        'type': 'payment_refund',
+        'event': 'payment_refund',
+        'refund_id': str(refund.id),
+        'amount': str(amount),
+        'title': title,
+        'message': message,
+        'show_dialog': 'true',
+    })
+    
+    logger.info(f"Sent payment refund notification to user {user.id}")
+
+def notify_violation_escalation(violation, increase_amount):
+    """
+    Notify user that their violation fine has increased due to non-payment.
+    """
+    user = violation.vehicle.user
+    symbol = getattr(user.country, 'currency_symbol', 'UGX') if hasattr(user, 'country') else 'UGX'
+    
+    title = "Violation Fine Escalated"
+    message = f"Your fine for violation {violation.id} has increased by {symbol} {increase_amount} due to non-payment. Please pay promptly to avoid further penalties."
+    
+    notification = _safe_orm_operation(NotificationEvent.objects.create,
+        user=user,
+        title=title,
+        message=message,
+        type='violation_issued', 
+        category='enforcement',
+        metadata={
+            'violation_id': str(violation.id),
+            'increase_amount': str(increase_amount),
+            'current_total': str(violation.fine_amount)
+        }
+    )
+    
+    send_notification_to_user(
+        user=user,
+        title=title,
+        body=message,
+        data={
+            'type': 'violation_escalated',
+            'violation_id': str(violation.id),
+        },
+        notification_event=notification
+    )
+    
+    broadcast_parking_update(user, {
+        'type': 'violation_update',
+        'event': 'violation_escalated',
+        'violation_id': str(violation.id),
+        'title': title,
+        'message': message
+    })
+    
+    logger.info(f"Sent violation escalation notification to user {user.id}")

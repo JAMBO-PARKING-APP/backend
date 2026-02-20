@@ -3,7 +3,7 @@ from django.conf import settings
 from .models import LoyaltyAccount, PointTransaction
 
 class LoyaltyService:
-    POINTS_PER_UNIT_CURRENCY = 0.01  # 1 point per 100 UGX (e.g. 1000 UGX = 10 pts)
+    POINTS_PER_UNIT_CURRENCY = 0.01  
     
     @staticmethod
     def get_or_create_account(user):
@@ -25,11 +25,9 @@ class LoyaltyService:
             
         account = LoyaltyService.get_or_create_account(user)
         
-        # Update account
         account.balance += points_to_award
         account.lifetime_points += points_to_award
         
-        # Update Tier simply based on lifetime points
         if account.lifetime_points >= 5000:
             account.tier = 'Platinum'
         elif account.lifetime_points >= 2000:
@@ -39,7 +37,6 @@ class LoyaltyService:
             
         account.save()
         
-        # Create transaction
         PointTransaction.objects.create(
             account=account,
             amount=points_to_award,

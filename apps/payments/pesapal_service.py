@@ -3,9 +3,15 @@ import uuid
 import logging
 import os
 from django.conf import settings
+from django.core.cache import cache
 from decouple import config
 
 logger = logging.getLogger(__name__)
+_pesapal_session = requests.Session()
+_pesapal_session.headers.update({
+    "Accept": "application/json",
+    "Content-Type": "application/json"
+})
 
 class PesapalService:
     def __init__(self, config_obj=None):
@@ -13,7 +19,6 @@ class PesapalService:
             self.consumer_key = config_obj.credentials.get('consumer_key')
             self.consumer_secret = config_obj.credentials.get('consumer_secret')
             self.sandbox = config_obj.is_sandbox
-            # Allow per-config callback or use global default
             self.callback_url = config_obj.credentials.get('callback_url', settings.PESAPAL_CALLBACK_URL)
         else:
             self.consumer_key = settings.PESAPAL_CONSUMER_KEY
@@ -30,17 +35,34 @@ class PesapalService:
     def get_config_for_country(country):
         """Helper to get Pesapal config for a country"""
         from .models import PaymentGatewayConfig, PaymentGateway
-        return PaymentGatewayConfig.objects.filter(
-            country=country,
-            gateway=PaymentGateway.PESAPAL,
-            is_active=True
-        ).first()
-
-
-
+        
+        if not country:
+            return None
+            
+        filter_kwargs = {
+            'gateway': PaymentGateway.PESAPAL,
+            'is_active': True
+        }
+        
+        if isinstance(country, str):
+            filter_kwargs['country__name'] = country
+        else:
+            filter_kwargs['country'] = country
+            
+        return PaymentGatewayConfig.objects.filter(**filter_kwargs).first()
 
     def get_token(self):
-        """Get authentication token from PesaPal V3"""
+        """Get authentication token from PesaPal V3 with caching"""
+        cache_key = f"pesapal_auth_token_{self.consumer_key[:8]}"
+        token = None
+        try:
+            token = cache.get(cache_key)
+        except Exception as e:
+            logger.error(f"Pesapal: Cache get error: {str(e)}")
+
+        if token:
+            return token
+
         url = f"{self.base_url}/api/Auth/RequestToken"
         payload = {
             "consumer_key": self.consumer_key,
@@ -48,7 +70,7 @@ class PesapalService:
         }
         
         try:
-            response = requests.post(url, json=payload, timeout=30)
+            response = _pesapal_session.post(url, json=payload, timeout=30)
             response.raise_for_status()
             
             data = response.json()
@@ -57,6 +79,11 @@ class PesapalService:
                 return None
                 
             token = data.get('token')
+            if token:
+                try:
+                    cache.set(cache_key, token, timeout=3300)
+                except Exception as e:
+                    logger.error(f"Pesapal: Cache set error: {str(e)}")
             return token
         except Exception as e:
             logger.error(f"PesaPal get_token error: {str(e)}")
@@ -65,18 +92,14 @@ class PesapalService:
     def register_ipn(self, token):
         """Register IPN URL with PesaPal if not already done"""
         url = f"{self.base_url}/api/URLSetup/RegisterIPN"
-        
-        # Derive IPN URL - replace 'callback' with 'ipn' or append if not present
-        # Assuming PESAPAL_CALLBACK_URL ends with /callback/
-        # We want .../ipn/
         ipn_url = self.callback_url.replace('/callback/', '/ipn/')
         if ipn_url == self.callback_url:
-             # Fallback if pattern doesn't match
+
              ipn_url = self.callback_url + 'ipn/'
 
         payload = {
             "url": ipn_url,
-            "ipn_notification_type": "POST" # Prefer POST for IPN
+            "ipn_notification_type": "POST" 
         }
         headers = {
             "Authorization": f"Bearer {token}",
@@ -84,7 +107,7 @@ class PesapalService:
         }
         
         try:
-            response = requests.post(url, json=payload, headers=headers, timeout=30)
+            response = _pesapal_session.post(url, json=payload, headers=headers, timeout=30)
             response.raise_for_status()
             return response.json().get('ipn_id')
         except Exception as e:
@@ -93,32 +116,56 @@ class PesapalService:
 
     def create_payment(self, amount, merchant_reference, description, user, currency="UGX"):
         """Create a payment request and return redirect URL"""
+        logger.info(f"Pesapal: Starting create_payment for user {user.id}, reference {merchant_reference}")
+        
         token = self.get_token()
         if not token:
+            logger.error("Pesapal: Failed to get auth token")
             return {'error': 'Failed to authenticate with Pesapal'}
             
+        logger.info("Pesapal: Auth token obtained successfully")
         url = f"{self.base_url}/api/Transactions/SubmitOrderRequest"
+        cache_key = f"pesapal_ipn_id_{(self.consumer_key or '')[:8]}"
+        ipn_id = None
+        try:
+            ipn_id = cache.get(cache_key)
+        except Exception as e:
+            logger.error(f"Pesapal: Cache get error: {str(e)}")
         
-        # Registration of IPN might be needed for every transaction or once.
-        # V3 usually expects an IPN ID.
-        ipn_id = self.register_ipn(token)
         if not ipn_id:
-            logger.error("Failed to register/get IPN ID")
+            logger.info("Pesapal: IPN ID not in cache, registering new one...")
+            ipn_id = self.register_ipn(token)
+            if ipn_id:
+                try:
+                    cache.set(cache_key, ipn_id, timeout=86400 * 7) 
+                    logger.info(f"Pesapal: Registered and cached IPN ID: {ipn_id}")
+                except Exception as e:
+                    logger.error(f"Pesapal: Cache set error: {str(e)}")
+        else:
+            logger.info(f"Pesapal: Using cached IPN ID: {ipn_id}")
+                
+        if not ipn_id:
+            logger.error("Pesapal: Failed to register/get IPN ID")
             return {'error': 'Failed to register IPN URL. Check PESAPAL_CALLBACK_URL configuraton.'}
+        formatted_amount = round(float(amount), 2)
+        phone = str(user.phone) if user.phone else "0000000000"
+        if phone.startswith('+'):
+            phone = phone[1:]
+        phone = phone.replace(' ', '')
 
         payload = {
             "id": merchant_reference,
             "currency": currency,
-            "amount": float(amount),
+            "amount": formatted_amount,
             "description": description,
             "callback_url": self.callback_url,
             "notification_id": ipn_id,
             "billing_address": {
                 "email_address": user.email or "user@jambopark.com",
-                "phone_number": str(user.phone) if user.phone else "0000000000",
+                "phone_number": phone,
                 "country_code": "UG",
-                "first_name": user.first_name or "Guest",
-                "last_name": user.last_name or "User"
+                "first_name": (user.first_name or "Partner")[:30],
+                "last_name": (user.last_name or "User")[:30]
             }
         }
 
@@ -127,13 +174,19 @@ class PesapalService:
             "Content-Type": "application/json"
         }
 
+        logger.info(f"Pesapal: Sending SubmitOrderRequest to {url}")
         try:
-            response = requests.post(url, json=payload, headers=headers, timeout=30)
+            response = _pesapal_session.post(url, json=payload, headers=headers, timeout=15)
+            logger.info(f"Pesapal: Received response status {response.status_code}")
+            
             response.raise_for_status()
-            return response.json()
+            data = response.json()
+            logger.info(f"Pesapal: Order submitted successfully. TrackingID: {data.get('order_tracking_id')}")
+            return data
         except Exception as e:
-            logger.error(f"PesaPal create_payment error: {str(e)}")
+            logger.error(f"Pesapal: SubmitOrderRequest error: {str(e)}")
             if hasattr(e, 'response') and e.response is not None:
+                 logger.error(f"Pesapal: Error response body: {e.response.text}")
                  return {'error': f"Pesapal API Error: {e.response.text}"}
             return {'error': str(e)}
 
@@ -150,7 +203,7 @@ class PesapalService:
         }
         
         try:
-            response = requests.get(url, headers=headers, timeout=30)
+            response = _pesapal_session.get(url, headers=headers, timeout=30)
             response.raise_for_status()
             return response.json()
         except Exception as e:

@@ -16,7 +16,6 @@ def verify_qr_code(request):
     POST /api/officer/verify-qr/
     Body: {"session_id": "uuid"}
     """
-    # Check if user is an officer
     if request.user.role != UserRole.OFFICER:
         return Response(
             {'error': 'Only officers can verify QR codes'},
@@ -36,7 +35,6 @@ def verify_qr_code(request):
             'vehicle__user', 'zone', 'parking_slot'
         ).get(id=session_id)
         
-        # Check if session is active
         is_valid = session.status == ParkingStatus.ACTIVE
         
         return Response({
@@ -60,19 +58,16 @@ def officer_zones(request):
     
     GET /api/officer/zones/
     """
-    # Check if user is an officer
     if request.user.role != UserRole.OFFICER:
         return Response(
             {'error': 'Only officers can access this endpoint'},
             status=status.HTTP_403_FORBIDDEN
         )
     
-    # Get assigned zones with stats
     zones = request.user.assigned_zones.filter(is_active=True).prefetch_related('slots')
     
     zones_data = []
     for zone in zones:
-        # Get active sessions count in this zone
         active_sessions = ParkingSession.objects.filter(
             zone=zone,
             status=ParkingStatus.ACTIVE
@@ -96,14 +91,12 @@ def officer_zone_sessions(request, zone_id):
     
     GET /api/officer/zones/{zone_id}/sessions/
     """
-    # Check if user is an officer
     if request.user.role != UserRole.OFFICER:
         return Response(
             {'error': 'Only officers can access this endpoint'},
             status=status.HTTP_403_FORBIDDEN
         )
     
-    # Check if officer is assigned to this zone
     if not request.user.assigned_zones.filter(id=zone_id).exists():
         return Response(
             {'error': 'You are not assigned to this zone'},
@@ -112,8 +105,6 @@ def officer_zone_sessions(request, zone_id):
     
     try:
         zone = Zone.objects.get(id=zone_id, is_active=True)
-        
-        # Get active and expired sessions
         sessions = ParkingSession.objects.filter(
             zone=zone,
             status__in=[ParkingStatus.ACTIVE, ParkingStatus.EXPIRED]
@@ -144,8 +135,6 @@ def overdue_users(request, zone_id):
         
     try:
         zone = Zone.objects.get(id=zone_id, is_active=True)
-        
-        # Get sessions that ended recently (e.g., last 2 hours) or are expired
         from django.utils import timezone
         from datetime import timedelta
         cutoff = timezone.now() - timedelta(hours=2)
@@ -170,7 +159,6 @@ def overdue_users(request, zone_id):
                     zone.latitude, zone.longitude
                 )
                 
-                # Still within zone radius + buffer
                 if distance <= (zone.radius_meters + 20):
                     overdue_data.append({
                         'session_id': str(session.id),

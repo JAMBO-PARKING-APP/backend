@@ -1,0 +1,125 @@
+{% load i18n %}
+{% load static %}
+
+<!-- NAVBAR / TOPBAR -->
+<header class="topbar sticky-top bg-white py-2">
+    <div class="container-fluid px-4 d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center">
+            <!-- Mobile Toggle -->
+            <button class="btn btn-icon me-3 d-lg-none" onclick="toggleSidebar()">
+                <i class="bi bi-list fs-4"></i>
+            </button>
+
+            <!-- Desktop Collapse Toggle -->
+            <button class="btn btn-icon me-4 d-none d-lg-flex" onclick="toggleDesktopSidebar()">
+                <i class="bi bi-grid-fill"></i>
+            </button>
+
+            <!-- Breadcrumbs / Page Title -->
+            <div class="page-header-info d-none d-sm-block">
+                <h5 class="mb-0 fw-bold">{% block page_title %}{% trans "Dashboard" %}{% endblock %}</h5>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0" style="font-size: 0.75rem;">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"
+                                class="text-decoration-none text-muted">{% trans "Home" %}</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">{% block breadcrumb %}{% trans "Overview"
+                            %}{% endblock %}</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <!-- Global Search - Search-as-you-type potential -->
+            <div class="topbar-search d-none d-xl-block">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light border-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" class="form-control bg-light border-0 px-2"
+                        placeholder="{% trans 'Quick Search...' %}" style="width: 250px;">
+                </div>
+            </div>
+
+            <!-- Regional Context Switcher (Superuser/Admin only) -->
+            {% if available_countries %}
+            <div class="regional-context d-none d-md-block">
+                <form action="{% url 'switch-country' %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <select name="country_id" class="form-select form-select-sm region-select"
+                        onchange="this.form.submit()">
+                        <option value="">{% trans "Global / All Regions" %}</option>
+                        {% for country in available_countries %}
+                        <option value="{{ country.id }}" {% if
+                            country.id|stringformat:"s"==selected_country_id|stringformat:"s" %}selected{% endif %}>
+                            {{ country.flag_emoji }} {{ country.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+            {% endif %}
+
+            <!-- Notification Bell -->
+            <button class="btn btn-icon position-relative">
+                <i class="bi bi-bell"></i>
+                <span
+                    class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                    <span class="visually-hidden">New alerts</span>
+                </span>
+            </button>
+
+            <!-- Language Switcher -->
+            <form action="{% url 'set_language' %}" method="post" class="d-none d-lg-block">
+                {% csrf_token %}
+                <input name="next" type="hidden" value="{{ redirect_to }}">
+                <select name="language" class="form-select form-select-sm language-select"
+                    onchange="this.form.submit()">
+                    {% get_current_language as LANGUAGE_CODE %}
+                    {% get_available_languages as LANGUAGES %}
+                    {% get_language_info_list for LANGUAGES as languages %}
+                    {% for language in languages %}
+                    <option value="{{ language.code }}" {% if language.code==LANGUAGE_CODE %}selected{% endif %}>
+                        {{ language.code|upper }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </form>
+
+            <!-- User Dropdown -->
+            <div class="dropdown">
+                <div class="user-profile-toggle d-flex align-items-center" data-bs-toggle="dropdown"
+                    style="cursor: pointer;">
+                    <div
+                        class="avatar-sm me-2 bg-primary-soft text-primary fw-bold rounded-circle d-flex align-items-center justify-content-center">
+                        {{ user.first_name|first|default:"U" }}
+                    </div>
+                    <div class="d-none d-md-block">
+                        <div class="fw-bold" style="font-size: 0.85rem; line-height: 1;">{{ user.full_name }}</div>
+                        <small class="text-muted" style="font-size: 0.7rem;">{{ user.get_role_display }}</small>
+                    </div>
+                </div>
+                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-3 p-2">
+                    <li class="px-3 py-2 border-bottom mb-2 d-md-none">
+                        <div class="fw-bold fs-6">{{ user.full_name }}</div>
+                        <small class="text-muted">{{ user.get_role_display }}</small>
+                    </li>
+                    <li><a class="dropdown-item rounded" href="#"><i class="bi bi-person me-2"></i>{% trans "My Profile"
+                            %}</a></li>
+                    <li><a class="dropdown-item rounded" href="#"><i class="bi bi-gear me-2"></i>{% trans "Settings"
+                            %}</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li>
+                        <form method="post" action="{% url 'logout' %}" class="px-2">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                                <i class="bi bi-box-arrow-right me-2"></i>{% trans "Logout" %}
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</header>

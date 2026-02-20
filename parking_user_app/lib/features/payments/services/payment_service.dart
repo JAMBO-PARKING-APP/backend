@@ -59,9 +59,18 @@ class PaymentService {
           'order_tracking_id': response.data['order_tracking_id'],
         };
       }
+      return {'success': false, 'message': 'Payment initiation failed'};
     } catch (e) {
       return {'success': false, 'message': 'Payment initiation failed'};
     }
-    return {'success': false, 'message': 'Payment initiation failed'};
+  }
+
+  Future<void> preWarmPesapal() async {
+    try {
+      // Fire and forget pre-warm call
+      await _apiClient.get('payments/pesapal/prewarm/');
+    } catch (_) {
+      // Silent fail - it's just an optimization
+    }
   }
 }

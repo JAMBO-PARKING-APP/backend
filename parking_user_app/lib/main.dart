@@ -22,6 +22,7 @@ import 'package:parking_user_app/core/notification_dialog_service.dart';
 import 'package:parking_user_app/core/dialog_service.dart';
 import 'package:parking_user_app/features/rewards/providers/rewards_provider.dart';
 import 'package:parking_user_app/core/api_client.dart';
+import 'package:parking_user_app/core/services/local_notification_service.dart';
 // Removed: overlay_timer.dart
 
 void main() async {
@@ -32,6 +33,9 @@ void main() async {
 
   // Initialize FCM Service (Non-blocking)
   FCMService().initialize();
+
+  // Initialize Local Notifications
+  await LocalNotificationService.init();
 
   runApp(
     MultiProvider(

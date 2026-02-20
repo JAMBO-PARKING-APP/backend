@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:parking_officer_app/core/api_client.dart';
 
@@ -49,6 +50,11 @@ class EnforcementService {
         'officer/violations/create/',
         data: formData,
       );
+      if (response.statusCode != 201) {
+        debugPrint(
+          'Violation creation failed: ${response.statusCode} - ${response.data}',
+        );
+      }
       return response.statusCode == 201;
     } catch (e) {
       return false;

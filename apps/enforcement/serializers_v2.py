@@ -46,7 +46,7 @@ class QRCodeScanSerializer(serializers.ModelSerializer):
         fields = ['id', 'officer_name', 'vehicle_plate', 'zone_name', 'scan_status', 
                   'session_ended', 'latitude', 'longitude', 'created_at']
 
-class OfficerLogSerializer(serializers.ModelSerializer):
+class OfficerActionLogV2Serializer(serializers.ModelSerializer):
     officer_name = serializers.CharField(source='officer.full_name', read_only=True)
     
     class Meta:

@@ -14,19 +14,13 @@ class Zone(RegionalModel, BaseModel):
     total_slots = models.IntegerField(default=0, help_text=_("Total number of parking slots in this zone"))
     code = models.CharField(max_length=20, unique=True, null=True, blank=True, help_text=_("Short unique code for the zone (e.g. JB01)"))
     is_active = models.BooleanField(default=True, db_index=True)
-    
-    # Geographic boundaries
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
     radius_meters = models.IntegerField(default=100)
-    
-    # Zone images and diagram
     zone_image = models.ImageField(upload_to='zones/images/', null=True, blank=True, 
                                   help_text=_("Photo of the actual parking zone"))
     diagram_image = models.ImageField(upload_to='zones/diagrams/', null=True, blank=True,
                                      help_text=_("Parking layout diagram (like airplane seat map)"))
-    
-    # Diagram configuration
     diagram_width = models.IntegerField(default=800, help_text=_("Diagram width in pixels"))
     diagram_height = models.IntegerField(default=600, help_text=_("Diagram height in pixels"))
 
@@ -82,17 +76,13 @@ class Zone(RegionalModel, BaseModel):
 
 class ParkingSlot(BaseModel):
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE, related_name='slots')
-    slot_code = models.CharField(max_length=10)  # A1, B2, etc.
+    slot_code = models.CharField(max_length=10)
     status = models.CharField(max_length=20, choices=SlotStatus.choices, default=SlotStatus.AVAILABLE, db_index=True)
-    
-    # Position on diagram (coordinates)
     diagram_x = models.IntegerField(default=0, help_text=_("X position on diagram"))
     diagram_y = models.IntegerField(default=0, help_text=_("Y position on diagram"))
     diagram_width = models.IntegerField(default=40, help_text=_("Slot width on diagram"))
     diagram_height = models.IntegerField(default=80, help_text=_("Slot height on diagram"))
     diagram_rotation = models.IntegerField(default=0, help_text=_("Rotation angle in degrees"))
-    
-    # Slot type and properties
     slot_type = models.CharField(max_length=20, choices=[
         ('regular', _('Regular')),
         ('disabled', _('Disabled')),
@@ -203,7 +193,6 @@ class ParkingSession(RegionalModel, BaseModel):
             raise ValidationError(_("Parking slot must belong to the selected zone"))
 
     def save(self, *args, **kwargs):
-        # Auto-populate country from zone
         if self.zone and not self.country:
             self.country = self.zone.country
         super().save(*args, **kwargs)
@@ -235,18 +224,15 @@ class ParkingSession(RegionalModel, BaseModel):
         self.actual_end_time = timezone.now()
         self.final_cost = self.calculate_cost()
         
-        # Calculate refund for unused time
         refund_amount = Decimal('0')
         if self.estimated_cost > self.final_cost:
             refund_amount = self.estimated_cost - self.final_cost
             
-            # Credit wallet atomically
             from django.db.models import F
             user = self.vehicle.user
             user.wallet_balance = F('wallet_balance') + refund_amount
             user.save(update_fields=['wallet_balance'])
             
-            # Create wallet transaction record
             wallet_tx = WalletTransaction.objects.create(
                 user=user,
                 amount=refund_amount,
@@ -261,24 +247,20 @@ class ParkingSession(RegionalModel, BaseModel):
                 }
             )
             
-            # Send refund notification
             notify_wallet_refund(wallet_tx, self)
         
         self.status = ParkingStatus.COMPLETED
         
-        # Award Loyalty Points
         try:
-            from apps.rewards.services import LoyaltyService
-            points = LoyaltyService.award_points(
-                user=self.vehicle.user,
-                amount_spent=self.final_cost,
+            from apps.rewards.tasks import award_loyalty_points_task
+            award_loyalty_points_task.delay(
+                user_id=str(self.vehicle.user.id),
+                amount_spent=float(self.final_cost),
                 description=f"Parking at {self.zone.name}",
                 reference_id=str(self.id)
             )
-            # Maybe log or notify?
         except Exception as e:
-            # Don't fail session end if loyalty fails
-            print(f"Error awarding points: {e}")
+            print(f"Error scheduling point awarding: {e}")
 
         if self.parking_slot:
             self.parking_slot.status = SlotStatus.AVAILABLE
@@ -286,7 +268,6 @@ class ParkingSession(RegionalModel, BaseModel):
         
         self.save()
 
-        # Trigger notifications
         from apps.notifications.notification_triggers import notify_parking_ended, notify_officers_session_event
         notify_parking_ended(self)
         notify_officers_session_event(self, 'session_ended')
@@ -300,15 +281,11 @@ class ParkingSession(RegionalModel, BaseModel):
             
         now = timezone.now()
         if now >= self.planned_end_time:
-            # Session already effectively finished
             self.end_session()
             return 0
             
-        # Calculate remaining time and refund
         total_planned_seconds = (self.planned_end_time - self.start_time).total_seconds()
         remaining_seconds = (self.planned_end_time - now).total_seconds()
-        
-        # Simple proportional refund based on estimated cost
         refund_amount = (Decimal(str(remaining_seconds)) / Decimal(str(total_planned_seconds))) * self.estimated_cost
         refund_amount = refund_amount.quantize(Decimal('0.01'))
         
@@ -359,11 +336,8 @@ class Reservation(BaseModel):
     reserved_from = models.DateTimeField(db_index=True)
     reserved_until = models.DateTimeField(db_index=True)
     cost = models.DecimalField(max_digits=12, decimal_places=2)
-    
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_payment', db_index=True)
     payment_reference = models.CharField(max_length=100, blank=True, null=True, help_text=_("Payment transaction reference"))
-    
-    # Deprecated: use status instead
     is_active = models.BooleanField(default=True)
 
     class Meta:

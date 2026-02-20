@@ -13,8 +13,6 @@ class Violation(RegionalModel, BaseModel):
     violation_type = models.CharField(max_length=20, choices=ViolationType.choices, verbose_name=_("Violation Type"), db_index=True)
     description = models.TextField(verbose_name=_("Description"))
     fine_amount = models.DecimalField(max_digits=8, decimal_places=2, verbose_name=_("Fine Amount"))
-    
-    # Location data
     latitude = models.DecimalField(max_digits=9, decimal_places=6, verbose_name=_("Latitude"))
     longitude = models.DecimalField(max_digits=9, decimal_places=6, verbose_name=_("Longitude"))
     
@@ -50,10 +48,8 @@ class ViolationEvidence(BaseModel):
 
 class OfficerLog(BaseModel):
     officer = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='activity_logs')
-    action = models.CharField(max_length=50)  # 'check_plate', 'issue_violation', 'qr_scan', 'online', 'offline'
+    action = models.CharField(max_length=50)  
     details = models.JSONField(default=dict)
-    
-    # Location data
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
 

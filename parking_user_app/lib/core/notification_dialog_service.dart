@@ -21,8 +21,9 @@ class NotificationDialogService {
   void showNotificationDialog(Map<String, dynamic> data) {
     if (_context == null) return;
 
-    final type = data['type'];
-    final showDialog = data['show_dialog'] == 'true';
+    final type = data['type'] ?? data['event'];
+    final showDialog =
+        data['show_dialog'] == 'true' || data['show_dialog'] == true;
 
     if (!showDialog) return;
 
@@ -50,6 +51,18 @@ class NotificationDialogService {
         break;
       case 'campaign':
         _showCampaignDialog(data);
+        break;
+      case 'payment_failed':
+        _showPaymentFailedDialog(data);
+        break;
+      case 'violation_issued':
+        _showViolationIssuedDialog(data);
+        break;
+      case 'payment_refund':
+        _showPaymentRefundDialog(data);
+        break;
+      case 'reservation_cancelled':
+        _showReservationCancelledDialog(data);
         break;
       default:
         _showGenericDialog(data);
@@ -136,6 +149,61 @@ class NotificationDialogService {
       message: 'Your reservation at $zoneName is confirmed!\nSlot: $slotCode',
       icon: Icons.event_available,
       iconColor: Colors.green,
+      primaryButtonText: 'OK',
+      onPrimaryPressed: () => Navigator.of(_context!).pop(),
+    );
+  }
+
+  void _showPaymentFailedDialog(Map<String, dynamic> data) {
+    final reason = data['reason'] ?? 'Unknown error';
+
+    _showCustomDialog(
+      title: '❌ Payment Failed',
+      message: 'Your payment could not be processed.\nReason: $reason',
+      icon: Icons.error_outline,
+      iconColor: Colors.red,
+      primaryButtonText: 'Try Again',
+      onPrimaryPressed: () => Navigator.of(_context!).pop(),
+    );
+  }
+
+  void _showViolationIssuedDialog(Map<String, dynamic> data) {
+    final fineAmount = data['fine_amount'] ?? '0';
+
+    _showCustomDialog(
+      title: '👮 Violation Issued',
+      message:
+          'A parking violation has been issued for your vehicle.\nFine Amount: $fineAmount',
+      icon: Icons.warning_amber_rounded,
+      iconColor: Colors.red,
+      primaryButtonText: 'View Details',
+      onPrimaryPressed: () {
+        Navigator.of(_context!).pop();
+      },
+      secondaryButtonText: 'Dismiss',
+      onSecondaryPressed: () => Navigator.of(_context!).pop(),
+    );
+  }
+
+  void _showPaymentRefundDialog(Map<String, dynamic> data) {
+    final amount = data['amount'] ?? '0';
+
+    _showCustomDialog(
+      title: '💰 Refund Processed',
+      message: 'A refund of $amount has been processed successfully.',
+      icon: Icons.replay_circle_filled,
+      iconColor: Colors.green,
+      primaryButtonText: 'Great',
+      onPrimaryPressed: () => Navigator.of(_context!).pop(),
+    );
+  }
+
+  void _showReservationCancelledDialog(Map<String, dynamic> data) {
+    _showCustomDialog(
+      title: '🚫 Reservation Cancelled',
+      message: 'Your parking reservation has been cancelled.',
+      icon: Icons.cancel,
+      iconColor: Colors.red,
       primaryButtonText: 'OK',
       onPrimaryPressed: () => Navigator.of(_context!).pop(),
     );

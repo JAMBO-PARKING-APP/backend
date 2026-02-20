@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class ParkingSession {
   final String id;
   final String zoneName;
@@ -20,21 +22,38 @@ class ParkingSession {
   });
 
   factory ParkingSession.fromJson(Map<String, dynamic> json) {
-    return ParkingSession(
-      id: json['id'] ?? '',
-      zoneName: json['zone_name'] ?? '',
-      vehiclePlate: json['vehicle_plate'] ?? '',
-        startTime: DateTime.parse(json['start_time']).toLocal(),
+    try {
+      return ParkingSession(
+        id: json['id']?.toString() ?? '',
+        zoneName: json['zone_name']?.toString() ?? 'Unknown Zone',
+        vehiclePlate: json['vehicle_plate']?.toString() ?? 'Unknown Plate',
+        startTime: json['start_time'] != null
+            ? DateTime.parse(json['start_time']).toLocal()
+            : DateTime.now(),
         endTime: json['planned_end_time'] != null
-          ? DateTime.parse(json['planned_end_time']).toLocal()
-          : null,
-      totalCost:
-          double.tryParse(
-            (json['final_cost'] ?? json['estimated_cost'])?.toString() ?? '0',
-          ) ??
-          0.0,
-      status: json['status'] ?? '',
-      qrCodeData: json['qr_code_data'],
-    );
+            ? DateTime.parse(json['planned_end_time']).toLocal()
+            : null,
+        totalCost:
+            double.tryParse(
+              (json['final_cost'] ?? json['estimated_cost'] ?? '0').toString(),
+            ) ??
+            0.0,
+        status: json['status']?.toString() ?? 'unknown',
+        qrCodeData: json['qr_code_data']?.toString(),
+      );
+    } catch (e, stack) {
+      debugPrint('ERROR parsing ParkingSession: $e');
+      debugPrint('JSON data: $json');
+      debugPrint(stack.toString());
+      // Return a minimal session to avoid crashing the whole list/screen
+      return ParkingSession(
+        id: json['id']?.toString() ?? 'error',
+        zoneName: 'Parsing Error',
+        vehiclePlate: '',
+        startTime: DateTime.now(),
+        totalCost: 0.0,
+        status: 'error',
+      );
+    }
   }
 }

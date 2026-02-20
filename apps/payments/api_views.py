@@ -26,10 +26,8 @@ class InitPaymentView(APIView):
         payment_method_id = request.data.get('payment_method_id')
         
         try:
-            # Generate idempotency key
+
             idempotency_key = str(uuid.uuid4())
-            
-            # Initialize payment through service
             result = PaymentService.initialize_payment(
                 user=request.user,
                 session_id=session_id,
@@ -48,7 +46,6 @@ class PaymentWebhookView(APIView):
 
     def post(self, request):
         try:
-            # Process webhook from payment processor
             PaymentService.process_webhook(request.body, request.META.get('HTTP_STRIPE_SIGNATURE'))
             return Response({'status': 'success'})
         except Exception as e:

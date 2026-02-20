@@ -1,10 +1,11 @@
 """
 API Views for Notifications
 """
-from rest_framework import status, permissions
+from rest_framework import status, permissions, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, UpdateAPIView
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from django.db.models import Q
 from apps.notifications.models import NotificationEvent, UserPreferences
 from apps.notifications.serializers import (
@@ -21,13 +22,9 @@ class NotificationListAPIView(ListAPIView):
     def get_queryset(self):
         user = self.request.user
         queryset = NotificationEvent.objects.filter(user=user)
-        
-        # Filter by category if provided
         category = self.request.query_params.get('category')
         if category and category != 'all':
             queryset = queryset.filter(category=category)
-        
-        # Filter by read status if provided
         read_status = self.request.query_params.get('read')
         if read_status == 'true':
             queryset = queryset.filter(is_read=True)
@@ -59,14 +56,12 @@ class NotificationDetailAPIView(UpdateAPIView):
         if serializer.is_valid():
             is_read = serializer.validated_data.get('is_read', True)
             if is_read:
-                # User wants to mark as read, so we delete it
                 notification.delete()
                 return Response(
                     {'message': 'Notification deleted successfully'},
                     status=status.HTTP_204_NO_CONTENT
                 )
             else:
-                # If they want to mark as unread (unlikely in this context but supported by serializer)
                 notification.is_read = False
                 notification.save()
                 return Response(
@@ -81,6 +76,8 @@ class NotificationSummaryAPIView(APIView):
     """Get notification summary (counts by category)"""
     permission_classes = [permissions.IsAuthenticated]
     
+    @extend_schema(responses={200: NotificationSummarySerializer})
+    
     def get(self, request):
         serializer = NotificationSummarySerializer({}, context={'request': request})
         return Response(serializer.data)
@@ -89,6 +86,8 @@ class NotificationSummaryAPIView(APIView):
 class MarkAllNotificationsAsReadAPIView(APIView):
     """Mark all notifications as read for current user"""
     permission_classes = [permissions.IsAuthenticated]
+    
+    @extend_schema(responses={200: OpenApiExample('Success', value={'success': True, 'message': '...'})})
     
     def post(self, request):
         user = request.user
@@ -106,13 +105,15 @@ class MarkAllNotificationsAsReadAPIView(APIView):
 class UserPreferencesAPIView(APIView):
     """Get or update user preferences"""
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserPreferencesSerializer
+
+    @extend_schema(responses={200: UserPreferencesSerializer})
     
     def get(self, request):
         """Get user preferences"""
         try:
             preferences = UserPreferences.objects.get(user=request.user)
         except UserPreferences.DoesNotExist:
-            # Create default preferences if they don't exist
             preferences = UserPreferences.objects.create(user=request.user)
         
         serializer = UserPreferencesSerializer(preferences)
@@ -141,6 +142,9 @@ class UserPreferencesAPIView(APIView):
 class CreateNotificationAPIView(APIView):
     """Create a notification (for testing/admin use)"""
     permission_classes = [permissions.IsAdminUser]
+    serializer_class = NotificationSerializer
+
+    @extend_schema(request=NotificationSerializer, responses={201: NotificationSerializer})
     
     def post(self, request, user_id=None):
         """Create a notification for a user"""
@@ -175,13 +179,18 @@ class BulkCreateNotificationsAPIView(APIView):
     """Create notifications for multiple users (for admin/backend use)"""
     permission_classes = [permissions.IsAdminUser]
     
+    @extend_schema(
+        request=serializers.Serializer, 
+        responses={200: OpenApiExample('Success', value={'success': True, 'created_count': 0, 'message': '...'})},
+    )
+    
     def post(self, request):
         """Create notifications for users matching certain criteria"""
         title = request.data.get('title')
         message = request.data.get('message')
         notification_type = request.data.get('type', 'system_alert')
         category = request.data.get('category', 'system')
-        user_filter = request.data.get('user_filter')  # 'all', 'active', etc.
+        user_filter = request.data.get('user_filter')  
         
         if not title or not message:
             return Response(
@@ -220,6 +229,11 @@ class SendOTPAPIView(APIView):
     """Send an OTP SMS using Twilio Verify"""
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        request=serializers.Serializer, 
+        responses={200: OpenApiExample('Success', value={'sid': '...', 'status': '...'})},
+    )
+
     def post(self, request):
         phone = request.data.get('phone')
         channel = request.data.get('channel', 'sms')
@@ -238,6 +252,11 @@ class SendOTPAPIView(APIView):
 class VerifyOTPAPIView(APIView):
     """Check an OTP code sent via Twilio Verify"""
     permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        request=serializers.Serializer, 
+        responses={200: OpenApiExample('Success', value={'valid': True, 'status': '...'})},
+    )
 
     def post(self, request):
         phone = request.data.get('phone')
@@ -268,8 +287,6 @@ class RegisterFCMTokenAPIView(APIView):
         
         token = serializer.validated_data['token']
         user = request.user
-        
-        # Update user's FCM token
         user.fcm_device_token = token
         user.fcm_token_updated_at = timezone.now()
         user.save(update_fields=['fcm_device_token', 'fcm_token_updated_at'])
@@ -286,8 +303,6 @@ class UnregisterFCMTokenAPIView(APIView):
     
     def post(self, request):
         user = request.user
-        
-        # Clear user's FCM token
         user.fcm_device_token = None
         user.fcm_token_updated_at = None
         user.save(update_fields=['fcm_device_token', 'fcm_token_updated_at'])
@@ -317,12 +332,10 @@ class SendCustomNotificationAPIView(APIView):
         message = data['message']
         category = data.get('category', 'system')
         custom_data = data.get('data', {})
-        
-        # Determine target users
         target_users = []
         
         if data.get('user_id'):
-            # Single user
+
             try:
                 user = User.objects.get(id=data['user_id'])
                 target_users = [user]
@@ -333,11 +346,11 @@ class SendCustomNotificationAPIView(APIView):
                 )
         
         elif data.get('user_ids'):
-            # Multiple specific users
+
             target_users = User.objects.filter(id__in=data['user_ids'])
         
         elif data.get('role'):
-            # All users with specific role
+
             target_users = User.objects.filter(role=data['role'], is_active=True)
         
         if not target_users:
@@ -346,7 +359,7 @@ class SendCustomNotificationAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Send notifications
+
         sent_count = 0
         for user in target_users:
             notify_custom(user, title, message, category, custom_data)

@@ -20,7 +20,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
 class ParkingConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        # We use a user-specific group for private notifications
         self.user = self.scope["user"]
         if self.user.is_anonymous:
             await self.close()
@@ -42,7 +41,6 @@ class ParkingConsumer(AsyncWebsocketConsumer):
             )
 
     async def parking_update(self, event):
-        # Send update to WebSocket
         await self.send(text_data=json.dumps({
             'type': 'parking_update',
             'data': event['data']

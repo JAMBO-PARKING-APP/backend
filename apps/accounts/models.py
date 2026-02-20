@@ -18,24 +18,14 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     is_active = models.BooleanField(default=True, verbose_name=_("Active"))
     is_staff = models.BooleanField(default=False, verbose_name=_("Staff Status"))
     is_verified = models.BooleanField(default=False, verbose_name=_("Verified"))
-    
-    # Single device login enforcement
     current_device_id = models.CharField(max_length=255, blank=True, null=True, verbose_name=_("Current Device ID"), help_text="Unique identifier of the currently logged-in device")
     current_session_token = models.CharField(max_length=500, blank=True, null=  True, verbose_name=_("Current Session Token"), help_text="JWT token ID (jti) of active session")
     last_login_device = models.CharField(max_length=255, blank=True, null=True, verbose_name=_("Last Login Device"), help_text="Device info for logging purposes")
-    
-    # FCM Push Notification fields
     fcm_device_token = models.CharField(max_length=255, blank=True, null=True, verbose_name=_("FCM Device Token"), help_text="Firebase Cloud Messaging device token for push notifications")
     fcm_token_updated_at = models.DateTimeField(null=True, blank=True, verbose_name=_("FCM Token Updated At"))
-    
-    # Chat availability for officers/support
     can_receive_chats = models.BooleanField(default=False, verbose_name=_("Can Receive Chats"), help_text="Whether this officer/agent is available to receive chat assignments")
-    
-    # Account deletion fields
     deletion_requested_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Deletion Requested At"))
     deletion_planned_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Deletion Planned At"), help_text="Scheduled date for permanent deletion")
-    
-    # Officer zone assignments
     assigned_zones = models.ManyToManyField(
         'parking.Zone',
         related_name='assigned_officers',
@@ -72,17 +62,12 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
         return f"{self.first_name} {self.last_name}"
 
     def save(self, *args, **kwargs):
-        # Automatically assign country based on phone code if not set
         if not self.country and self.phone:
             try:
                 import phonenumbers
                 from phonenumbers import geocoder
                 from apps.common.models import Country
-                
-                # Parse the phone number (PhoneNumber objects can be converted to string)
                 parsed = phonenumbers.parse(str(self.phone), None)
-                
-                # Get ISO region code (e.g., 'UG', 'KE', 'US')
                 region_code = phonenumbers.region_code_for_number(parsed)
                 
                 if region_code:
@@ -90,14 +75,12 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
                     if country:
                         self.country = country
                     else:
-                        # Fallback to dialing code matching if ISO lookup fails (though unlikely)
                         dial_code = f"+{parsed.country_code}"
                         country = Country.objects.filter(phone_code=dial_code, is_active=True).first()
                         if country:
                             self.country = country
 
             except Exception:
-                # Silently fail to ensure user can still sign up if parsing fails
                 pass
                 
         if self.is_active:

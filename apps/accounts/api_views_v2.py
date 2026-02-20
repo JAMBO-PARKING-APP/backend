@@ -17,25 +17,31 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 
 from .models import User, Vehicle, OTPCode
 from .serializers_v2 import (
     UserProfileSerializer, UpdateProfileSerializer, RegisterSerializer,
     LoginSerializer, VehicleSerializer, AddVehicleSerializer,
-    PaymentMethodSerializer
+    PaymentMethodSerializer, ResendOTPSerializer
 )
 from apps.payments.models import PaymentMethod
 
 class RegisterAPIView(APIView):
     """User registration with phone number"""
     permission_classes = [AllowAny]
+    serializer_class = RegisterSerializer
+
+    @extend_schema(
+        request=RegisterSerializer,
+        responses={201: RegisterSerializer}, 
+        examples=[OpenApiExample('Success', value={'message': 'Registration successful. OTP sent to your phone.', 'user_id': '...', 'phone': '...'})],
+    )
     
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            
-            # Generate and send OTP
             otp_code = str(random.randint(100000, 999999))
             OTPCode.objects.create(
                 user=user,
@@ -43,13 +49,10 @@ class RegisterAPIView(APIView):
                 expires_at=timezone.now() + timedelta(minutes=10)
             )
 
-            # Send SMS with OTP via Twilio Verify if available
             try:
                 from apps.notifications.twilio_service import send_verification
-                # Use Verify service to send SMS (the actual code is stored in OTPCode for server-side verification)
                 send_verification(to_phone=str(user.phone), channel='sms')
             except Exception:
-                # Fallback to debug print; do not fail registration if SMS sending is not configured
                 print(f"DEBUG: OTP for {user.phone}: {otp_code}")
             
             return Response({
@@ -64,6 +67,11 @@ class VerifyOTPAPIView(APIView):
     """Verify OTP and get JWT tokens - Single Device Login enforced"""
     permission_classes = [AllowAny]
     
+    @extend_schema(
+        request=serializers.Serializer, 
+        responses={200: UserProfileSerializer},
+    )
+    
     def post(self, request):
         phone = request.data.get('phone')
         otp = request.data.get('otp')
@@ -74,9 +82,7 @@ class VerifyOTPAPIView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            user = User.objects.get(phone=phone)
-            
-            # Check OTP validity
+            user = User.objects.get(phone=phone) 
             otp_obj = OTPCode.objects.filter(
                 user=user,
                 code=otp,
@@ -89,25 +95,19 @@ class VerifyOTPAPIView(APIView):
                     'error': 'Invalid or expired OTP'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Mark OTP as used
             otp_obj.is_used = True
             otp_obj.save()
             
-            # Mark user as verified
             user.is_verified = True
             
-            # Get device info from request
             device_id = request.data.get('device_id')
             device_info = request.data.get('device_info', '')
             
-            # Generate new JWT token
             refresh = RefreshToken.for_user(user)
             access_token = refresh.access_token
             
-            # Get token ID (jti) for session tracking
             token_jti = str(access_token.get('jti', ''))
             
-            # Update user session tracking (invalidates previous session)
             if device_id:
                 user.current_device_id = device_id
             user.current_session_token = token_jti
@@ -129,33 +129,25 @@ class VerifyOTPAPIView(APIView):
 class LoginAPIView(APIView):
     """Direct login with phone and password - Single Device Login enforced"""
     permission_classes = [AllowAny]
+    serializer_class = LoginSerializer
+
+    @extend_schema(
+        request=LoginSerializer,
+        responses={200: UserProfileSerializer},
+    )
     
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data['user']
             
-            # Allow login even if not verified for now to facilitate testing
-            # if not user.is_verified:
-            #     return Response({
-            #         'error': 'User not verified. Please verify your phone first.'
-            #     }, status=status.HTTP_403_FORBIDDEN)
-            
             if not user.is_verified:
                 user.is_verified = True
-            
-            # Get device info from request
             device_id = request.data.get('device_id')
             device_info = request.data.get('device_info', '')
-            
-            # Generate new JWT token
             refresh = RefreshToken.for_user(user)
             access_token = refresh.access_token
-            
-            # Get token ID (jti) for session tracking
             token_jti = str(access_token.get('jti', ''))
-            
-            # Update user session tracking (invalidates previous session)
             if device_id:
                 user.current_device_id = device_id
             user.current_session_token = token_jti
@@ -168,17 +160,13 @@ class LoginAPIView(APIView):
                 'user': UserProfileSerializer(user).data,
                 'message': 'Login successful'
             }, status=status.HTTP_200_OK)
-        # Log serializer errors for debugging
         try:
             print(f"LoginAPIView: serializer.errors = {serializer.errors}")
         except Exception:
             print("LoginAPIView: could not print serializer.errors")
-
-        # If serializer provided a 'detail' field (e.g., account disabled), return 403
         errors = serializer.errors
         if isinstance(errors, dict) and errors.get('detail'):
             detail = errors.get('detail')
-            # detail may be a list
             message = detail[0] if isinstance(detail, (list, tuple)) else detail
             return Response({'error': message}, status=status.HTTP_403_FORBIDDEN)
 
@@ -187,6 +175,9 @@ class LoginAPIView(APIView):
 class ProfileAPIView(APIView):
     """Get and update user profile"""
     permission_classes = [IsAuthenticated]
+    serializer_class = UserProfileSerializer
+
+    @extend_schema(responses={200: UserProfileSerializer})
     
     def get(self, request):
         serializer = UserProfileSerializer(request.user, context={'request': request})
@@ -215,7 +206,6 @@ class VehicleListCreateAPIView(generics.ListCreateAPIView):
         return self.request.user.vehicles.filter(is_active=True)
     
     def perform_create(self, serializer):
-        # Check if license plate already exists
         license_plate = serializer.validated_data.get('license_plate')
         if Vehicle.objects.filter(license_plate=license_plate).exists():
             raise serializers.ValidationError({'license_plate': 'Vehicle with this license plate already exists'})
@@ -251,11 +241,7 @@ class SetDefaultPaymentMethodAPIView(APIView):
     def post(self, request, pk):
         try:
             payment_method = request.user.payment_methods.get(id=pk, is_active=True)
-            
-            # Unset all other default methods
             request.user.payment_methods.exclude(id=pk).update(is_default=False)
-            
-            # Set this one as default
             payment_method.is_default = True
             payment_method.save()
             
@@ -272,6 +258,12 @@ class SetDefaultPaymentMethodAPIView(APIView):
 class ResendOTPAPIView(APIView):
     """Resend OTP to phone number"""
     permission_classes = [AllowAny]
+    serializer_class = ResendOTPSerializer
+
+    @extend_schema(
+        request=ResendOTPSerializer,
+        responses={200: OpenApiExample('Success', value={'message': 'OTP resent successfully', 'phone': '...'})},
+    )
     
     def post(self, request):
         phone = request.data.get('phone')
@@ -283,21 +275,13 @@ class ResendOTPAPIView(APIView):
         
         try:
             user = User.objects.get(phone=phone)
-            
-            # Generate new OTP
             otp_code = str(random.randint(100000, 999999))
-            
-            # Mark old OTPs as used
             OTPCode.objects.filter(user=user, is_used=False).update(is_used=True)
-            
-            # Create new OTP
             OTPCode.objects.create(
                 user=user,
                 code=otp_code,
                 expires_at=timezone.now() + timedelta(minutes=10)
             )
-
-            # Send SMS with OTP via Twilio Verify if available
             try:
                 from apps.notifications.twilio_service import send_verification
                 send_verification(to_phone=str(user.phone), channel='sms')
@@ -349,9 +333,13 @@ class DeleteAccountAPIView(APIView):
     """Soft delete user account"""
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        responses={204: None},
+        examples=[OpenApiExample('Success', value={'message': 'Account deletion requested successfully...'})],
+    )
+
     def delete(self, request):
         user = request.user
-        # Soft delete: set is_active to False and set deletion timestamps
         user.is_active = False
         user.deletion_requested_at = timezone.now()
         user.deletion_planned_at = timezone.now() + timedelta(days=30)

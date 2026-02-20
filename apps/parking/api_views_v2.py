@@ -39,12 +39,12 @@ class ZoneListAPIView(generics.ListAPIView):
         queryset = Zone.objects.filter(is_active=True).annotate(
             annotated_active_sessions=Count(
                 'sessions', 
-                filter=Q(sessions__status=ParkingStatus.ACTIVE)
+                filter=Q(sessions__status=ParkingStatus.ACTIVE),
+                distinct=True
             ),
-            # Capacity is either total_slots or the count of pre-defined slots
             annotated_capacity=Case(
                 When(total_slots__gt=0, then=F('total_slots')),
-                default=Count('slots'),
+                default=Count('slots', distinct=True),
             )
         ).annotate(
             annotated_available_slots=Case(
@@ -54,12 +54,10 @@ class ZoneListAPIView(generics.ListAPIView):
             )
         )
         
-        # Filter by user's country
         if hasattr(self.request.user, 'country') and self.request.user.country:
              if not self.request.user.is_superuser:
                  queryset = queryset.filter(country=self.request.user.country)
         
-        # ... rest of the filters ...
         search = self.request.query_params.get('search')
         if search:
             queryset = queryset.filter(Q(name__icontains=search) | Q(description__icontains=search))
@@ -129,17 +127,15 @@ class StartParkingAPIView(APIView):
             duration_hours = float(serializer.validated_data.get('duration_hours', 1))
             logger = logging.getLogger(__name__)
             
-            # Check for active session
             active_session = ParkingSession.objects.filter(
                 vehicle=vehicle,
                 status=ParkingStatus.ACTIVE
             ).first()
             
-            # SELF-HEALING: If active session is overdue, end it automatically
             if active_session and active_session.planned_end_time and timezone.now() > active_session.planned_end_time:
                 logger.info(f"Self-healing: Ending overdue session {active_session.id} for vehicle {vehicle.license_plate}")
                 active_session.end_session()
-                active_session = None # Clear it so we don't return error
+                active_session = None
             
             if active_session:
                 return Response({
@@ -147,7 +143,6 @@ class StartParkingAPIView(APIView):
                     'session': ParkingSessionSerializer(active_session).data
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Handle slot assignment
             parking_slot = None
             slot_id = serializer.validated_data.get('slot_id')
             
@@ -163,18 +158,14 @@ class StartParkingAPIView(APIView):
                         'error': 'Selected parking slot is not available'
                     }, status=status.HTTP_400_BAD_REQUEST)
             else:
-                # Auto-assign first available slot
                 parking_slot = zone.slots.filter(status=SlotStatus.AVAILABLE).first()
                 if not parking_slot:
                     return Response({
                         'error': 'No available slots in this zone'
                     }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Update slot status
             parking_slot.status = SlotStatus.OCCUPIED
             parking_slot.save()
-            
-            # Create parking session with proper decimal handling
             planned_end = timezone.now() + timedelta(hours=duration_hours)
             estimated_cost = zone.hourly_rate * Decimal(str(duration_hours))
             logger.debug("Starting parking: user=%s vehicle=%s zone=%s duration_hours=%s planned_end=%s estimated_cost=%s",
@@ -188,12 +179,10 @@ class StartParkingAPIView(APIView):
                     return Response({
                         'error': f'Insufficient wallet balance. Required: UGX {estimated_cost}, Available: UGX {request.user.wallet_balance}'
                     }, status=status.HTTP_400_BAD_REQUEST)
-                
-                # Deduct from wallet
+    
                 request.user.wallet_balance -= estimated_cost
                 request.user.save()
                 
-                # Create wallet transaction
                 wallet_tx = WalletTransaction.objects.create(
                     user=request.user,
                     amount=estimated_cost,
@@ -202,11 +191,9 @@ class StartParkingAPIView(APIView):
                     description=f'Parking payment for zone {zone.name}'
                 )
                 
-                # Send payment success notification
                 from apps.notifications.notification_triggers import notify_payment_success
                 notify_payment_success(wallet_tx)
             else:
-                # For external payments (Pesapal), set status to pending first
                 initial_status = ParkingStatus.PENDING_PAYMENT
 
             session = ParkingSession.objects.create(
@@ -218,7 +205,6 @@ class StartParkingAPIView(APIView):
                 status=initial_status
             )
             
-            # Send parking session started notification ONLY if active
             if initial_status == ParkingStatus.ACTIVE:
                 from apps.notifications.notification_triggers import notify_parking_started
                 notify_parking_started(session)
@@ -229,9 +215,10 @@ class StartParkingAPIView(APIView):
             }, status=status.HTTP_201_CREATED)
             
         except Exception as e:
-            print(f"DEBUG ERROR: {str(e)}")
+            logger = logging.getLogger(__name__)
+            logger.error(f"StartParkingAPIView EXCEPTION: {str(e)}", exc_info=True)
             return Response({
-                'error': str(e)
+                'error': f'Failed to start parking: {str(e)}'
             }, status=status.HTTP_400_BAD_REQUEST)
 
 class EndParkingAPIView(APIView):
@@ -248,18 +235,24 @@ class EndParkingAPIView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            session = ParkingSession.objects.get(
+            session = ParkingSession.objects.filter(
                 id=session_id,
-                vehicle__user=request.user,
-                status=ParkingStatus.ACTIVE
-            )
+                vehicle__user=request.user
+            ).first()
             
-            # End session using the model method (includes refund logic)
+            if not session:
+                return Response({
+                    'error': 'Parking session not found'
+                }, status=status.HTTP_404_NOT_FOUND)
+                
+            if session.status in [ParkingStatus.COMPLETED, ParkingStatus.EXPIRED, ParkingStatus.CANCELLED]:
+                return Response({
+                    'message': 'Parking session already ended',
+                    'session': ParkingSessionSerializer(session).data,
+                    'amount_due': float(session.final_cost)
+                }, status=status.HTTP_200_OK)
+            
             session.end_session()
-            
-            # Send push notification about session end
-            from apps.notifications.notification_triggers import notify_parking_ended
-            notify_parking_ended(session)
             
             return Response({
                 'message': 'Parking session ended successfully',
@@ -267,10 +260,6 @@ class EndParkingAPIView(APIView):
                 'amount_due': float(session.final_cost)
             }, status=status.HTTP_200_OK)
             
-        except ParkingSession.DoesNotExist:
-            return Response({
-                'error': 'Parking session not found'
-            }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             print(f"DEBUG ERROR: {str(e)}")
             return Response({
@@ -298,10 +287,7 @@ class ExtendParkingAPIView(APIView):
                 status=ParkingStatus.ACTIVE
             )
             
-            # Update planned end time
             session.planned_end_time += timedelta(hours=additional_hours)
-            
-            # Update estimated cost with proper decimal handling
             additional_cost = session.zone.hourly_rate * Decimal(str(additional_hours))
             session.estimated_cost += additional_cost
             
@@ -343,17 +329,14 @@ class CancelParkingSessionAPIView(APIView):
                 vehicle__user=request.user,
                 status=ParkingStatus.ACTIVE
             )
-            
-            # Perform cancellation and get refund amount
+
             refund_amount = session.cancel_session()
             
             if refund_amount > 0:
-                # Credit user wallet
                 user = request.user
                 user.wallet_balance += refund_amount
                 user.save()
                 
-                # Create wallet transaction record
                 WalletTransaction.objects.create(
                     user=user,
                     amount=refund_amount,
@@ -384,13 +367,8 @@ class UserParkingSessionsAPIView(generics.ListAPIView):
     serializer_class = ParkingSessionSerializer
     
     def get_queryset(self):
-        # Return sessions for all user vehicles (even inactive ones)
         queryset = ParkingSession.objects.filter(vehicle__user=self.request.user)
-        
-        # Get filter parameter
         session_type = self.request.query_params.get('type', 'all')
-        
-        
         if session_type == 'active':
             queryset = queryset.filter(status=ParkingStatus.ACTIVE)
         elif session_type == 'completed':
@@ -414,8 +392,6 @@ class CreateReservationAPIView(APIView):
         try:
             vehicle = request.user.vehicles.get(id=serializer.validated_data['vehicle_id'], is_active=True)
             zone = Zone.objects.get(id=serializer.validated_data['zone_id'], is_active=True)
-            
-            # support both new and old field names
             start_time = serializer.validated_data.get('reserved_from') or serializer.validated_data.get('start_time')
             end_time = serializer.validated_data.get('reserved_until') or serializer.validated_data.get('end_time')
             
@@ -432,8 +408,6 @@ class CreateReservationAPIView(APIView):
                     'error': 'Cannot create reservation in the past'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Check for existing pending reservation (Idempotency check handled by Service logic implicitly via checks, 
-            # but explicit check helps UX)
             existing_reservation = Reservation.objects.filter(
                 vehicle=vehicle,
                 zone=zone,
@@ -448,7 +422,6 @@ class CreateReservationAPIView(APIView):
                     'reservation': ReservationSerializer(existing_reservation).data
                 }, status=status.HTTP_200_OK)
 
-            # Use Service to Create Reservation
             reservation = ReservationService.create_reservation(
                 vehicle=vehicle,
                 zone=zone,
@@ -462,6 +435,8 @@ class CreateReservationAPIView(APIView):
             }, status=status.HTTP_201_CREATED)
             
         except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error(f"CreateReservationAPIView: Error: {str(e)}", exc_info=True)
             return Response({
                 'error': str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
@@ -490,6 +465,44 @@ class CancelReservationAPIView(APIView):
             
             return Response({
                 'message': 'Reservation cancelled successfully',
+                'reservation': ReservationSerializer(reservation).data
+            }, status=status.HTTP_200_OK)
+            
+        except Reservation.DoesNotExist:
+            return Response({
+                'error': 'Reservation not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'error': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+class ConfirmReservationWalletAPIView(APIView):
+    """Confirm a reservation using wallet balance"""
+    permission_classes = [IsAuthenticated]
+    
+    @transaction.atomic
+    def post(self, request, reservation_id):
+        try:
+            reservation = Reservation.objects.get(
+                id=reservation_id,
+                vehicle__user=request.user
+            )
+            
+            if reservation.status != 'pending_payment':
+                return Response({
+                    'error': f'Reservation is in status {reservation.status}, not pending payment'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            if request.user.wallet_balance < reservation.cost:
+                return Response({
+                    'error': 'Insufficient wallet balance'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            ReservationService.confirm_reservation(reservation, payment_method='wallet')
+            
+            return Response({
+                'message': 'Reservation confirmed with wallet',
                 'reservation': ReservationSerializer(reservation).data
             }, status=status.HTTP_200_OK)
             

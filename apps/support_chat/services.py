@@ -63,13 +63,11 @@ class ReasoningAIService:
     
     def __init__(self):
         self.zone_cache = self._build_zone_cache()
-        self.user_contexts = {}  # In-memory context cache for performance
+        self.user_contexts = {}  
         self.intent_patterns = self._initialize_intent_patterns()
         self.entity_patterns = self._initialize_entity_patterns()
         self.response_templates = self._initialize_response_templates()
         self.knowledge_base = self._initialize_knowledge_base()
-        
-        # Professional specialized engines
         self.encyclopedia = AIPolicyEncyclopedia()
         self.sentiment_manager = UserSentimentManager()
         self.optimizer = ParkingOptimizationEngine(self.zone_cache)
@@ -100,7 +98,7 @@ class ReasoningAIService:
             zone=zone, 
             created_at__gte=thirty_days_ago
         ).count()
-        return min(sessions_count / 100, 1.0)  # Normalize to 0-1
+        return min(sessions_count / 100, 1.0)  
 
     def _initialize_intent_patterns(self) -> Dict[IntentType, List[str]]:
         """Initialize comprehensive intent patterns with regex"""
@@ -354,14 +352,10 @@ class ReasoningAIService:
         Main entry point with full reasoning pipeline
         """
         try:
-            # Normalize input
             query = query.strip()
             
-            # Check for empty query
             if not query:
                 return "How can I help you with parking today?"
-
-            # Step 1: Check and handle active context
             if user.is_authenticated:
                 context = self._get_or_create_context(user)
                 if context.get('step') == 'WAITING_CONFIRMATION':
@@ -369,20 +363,16 @@ class ReasoningAIService:
                 if context.get('step') == 'WAITING_INPUT':
                     return self._handle_missing_input(user, context, query)
 
-            # Step 2: Multi-intent detection and splitting
             sub_queries = self._split_complex_query(query)
             
             if len(sub_queries) > 1:
                 return self._handle_multi_intent(user, sub_queries, latitude, longitude)
-
-            # Step 3: Single intent processing with full reasoning
             return self._process_single_intent(user, query, latitude, longitude)
 
         except Exception as e:
             error_msg = str(e)
             logger.error(f"AI Service error: {error_msg}")
             
-            # Intelligent error response
             if "unsupported operand type" in error_msg:
                 return "I ran into a technical calculation error. I'm still learning how to handle precise currency values, but I've logged this for my developers to fix!"
             
@@ -393,32 +383,26 @@ class ReasoningAIService:
         trace = []
         trace.append("🧠 Initializing Jambo AI reasoning core...")
         
-        # Step 1: Classify intent with confidence scoring
         trace.append(f"🔍 Analyzing user intent: '{query[:50]}...'")
         intent, confidence = self._classify_intent(query)
         trace.append(f"✅ Classified as **{intent.value}** (Confidence: {confidence:.2f})")
         
-        # Step 2: Extract entities
         trace.append("🧬 Extracting entities (zones, times, vehicles)...")
         entities = self._extract_entities(query)
         if entities:
             trace.append(f"📍 Entities found: {', '.join([str(k.value) for k in entities.keys()])}")
         
-        # Step 3: Analyze Sentiment
         sentiment = self._perform_sentiment_analysis(query)
         trace.append(f"🎭 Sentiment analysis: **{sentiment}**")
         
-        # Step 4: Gather context
         trace.append("📚 Retrieving user context and history...")
         context = self._gather_context(user, intent, entities)
         context['sentiment'] = sentiment
         context['query'] = query
         
-        # Step 5: Apply reasoning
         trace.append(f"⚙️ Applying logic for {intent.value}...")
         reasoning_result = self._apply_reasoning(user, intent, entities, context, lat, lon)
         
-        # Merge sub-reasoning justifications into trace
         if 'justification' in reasoning_result:
             for j in reasoning_result['justification']:
                 trace.append(f"🧠 {j}")
@@ -431,20 +415,16 @@ class ReasoningAIService:
         reasoning_result['sentiment'] = sentiment
         reasoning_result['trace'] = trace
         
-        # Step 6: Generate response
         trace.append("✍️ Synthesizing professional response...")
         response = self._generate_response(intent, reasoning_result, user, query)
         
-        # Step 6.5: Apply Sentiment Personality Adjustment
         adjustment = self.sentiment_manager.get_adjustment_phrase(sentiment)
         response = f"{adjustment}{response}"
         
-        # Step 6.8: Append the Brain (Reasoning Trace)
         trace.append("🏁 Reasoning complete.")
         thinking_block = "\n\n---\n**🧠 Jambo AI Reasoning Trace:**\n" + "\n".join([f"> {step}" for step in trace])
         response = f"{response}{thinking_block}"
         
-        # Step 7: Update context memory and log trace
         self._update_context(user, intent, entities, response, reasoning_result)
         self._log_reasoning_trace(user, {
             'query': query,
@@ -465,7 +445,6 @@ class ReasoningAIService:
         for intent, patterns in self.intent_patterns.items():
             for pattern in patterns:
                 if re.search(pattern, query_lower, re.IGNORECASE):
-                    # Calculate confidence based on pattern match quality
                     match_length = len(re.search(pattern, query_lower).group())
                     confidence = min(match_length / len(query), 1.0)
                     
@@ -473,7 +452,6 @@ class ReasoningAIService:
                         best_score = confidence
                         best_intent = intent
                         
-                    # Boost confidence for exact matches
                     if match_length > len(query) * 0.7:
                         best_score = max(best_score, 0.9)
                         
@@ -488,15 +466,12 @@ class ReasoningAIService:
             matches = re.findall(pattern, query_lower, re.IGNORECASE)
             if matches:
                 if entity_type == EntityType.AMOUNT:
-                    # Extract amount and normalize
                     amount = matches[0][0] if isinstance(matches[0], tuple) else matches[0]
                     entities[entity_type] = int(re.sub(r'\D', '', str(amount)))
                 elif entity_type == EntityType.ZONE:
-                    # Find matching zone from cache
                     zone_match = matches[0] if isinstance(matches[0], str) else matches[0][-1]
                     entities[entity_type] = self._find_closest_zone(zone_match.strip())
                 elif entity_type == EntityType.DURATION:
-                    # Parse duration into minutes
                     match = matches[0]
                     value = int(match[0])
                     unit = match[1].lower()
@@ -522,7 +497,6 @@ class ReasoningAIService:
         }
         
         if user.is_authenticated:
-            # Get user's recent history
             recent_sessions = ParkingSession.objects.filter(
                 vehicle__user=user
             ).order_by('-created_at')[:5]
@@ -535,13 +509,11 @@ class ReasoningAIService:
                 } for s in recent_sessions
             ]
             
-            # Get user's preferred zones
             preferred_zones = set()
             for session in recent_sessions:
                 preferred_zones.add(session.zone.name)
             context['user_history']['preferred_zones'] = list(preferred_zones)
             
-            # Get balance status
             context['user_history']['balance'] = float(user.wallet_balance)
             
         return context
@@ -578,7 +550,6 @@ class ReasoningAIService:
             reasoning_result = self._reason_comparison(user, entities, context)
             
         elif intent == IntentType.RECOMMENDATION:
-            # Use Optimization Engine for Pro recommendations
             optimized = self.optimizer.get_optimized_recommendation(lat, lon, {})
             reasoning_result = self._reason_recommendation(user, entities, context, lat, lon)
             reasoning_result['optimized_pick'] = optimized
@@ -608,17 +579,16 @@ class ReasoningAIService:
         }
         
         if user.is_authenticated:
-            # Check if balance is sufficient for typical parking
             avg_rate = Zone.objects.aggregate(Avg('hourly_rate'))['hourly_rate__avg'] or 1000
             avg_cost = float(avg_rate)
-            typical_session_cost = avg_cost * 2.0  # Assume 2-hour session
+            typical_session_cost = avg_cost * 2.0  
             
             result['justification'].append(f"Currency audit: Current balance {result['balance']:,.0f} UGX.")
             result['justification'].append(f"Threshold check: Average zone rate is {avg_cost:,.0f} UGX/hr.")
             
             if result['balance'] < typical_session_cost:
                 result['suggestion'] = "Your balance is low for a typical parking session."
-                result['recommended_topup'] = int(typical_session_cost * 1.5)  # Recommend 50% more
+                result['recommended_topup'] = int(typical_session_cost * 1.5)  
                 result['can_park'] = False
                 result['justification'].append(f"Inference: Balance is below 2-hour safety threshold ({typical_session_cost:,.0f} UGX).")
             else:
@@ -662,8 +632,7 @@ class ReasoningAIService:
                     'estimated_total': active.estimated_cost
                 }
                 
-                # Generate suggestions based on time
-                if remaining.total_seconds() < 900:  # Less than 15 minutes
+                if remaining.total_seconds() < 900:  
                     result['suggestion'] = "Your session is ending soon. Would you like to extend?"
                     result['justification'].append("Temporal alert: Less than 15 minutes remaining.")
                 else:
@@ -681,7 +650,7 @@ class ReasoningAIService:
             'can_start': False,
             'issues': [],
             'alternatives': [],
-            'duration_minutes': entities.get(EntityType.DURATION, 60),  # Default to 1 hour
+            'duration_minutes': entities.get(EntityType.DURATION, 60),  
             'requires_confirmation': False
         }
         
@@ -689,18 +658,15 @@ class ReasoningAIService:
             result['issues'].append("Please log in to start parking")
             return result
             
-        # Check for vehicle
         vehicle = user.vehicles.filter(is_active=True).first()
         if not vehicle:
             result['issues'].append("No active vehicle found")
         else:
             result['vehicle'] = vehicle
             
-        # Check for existing session
         if ParkingSession.objects.filter(vehicle__user=user, status='active').exists():
             result['issues'].append("You already have an active session")
             
-        # Determine zone
         zone = entities.get(EntityType.ZONE)
         if not zone and lat and lon:
             zone = self._find_nearest_zone(lat, lon)
@@ -714,14 +680,12 @@ class ReasoningAIService:
                     result['requires_confirmation'] = True
                 else:
                     result['issues'].append(f"{zone_obj.name} is full")
-                    # Find alternatives
                     result['alternatives'] = self._find_alternative_zones(zone_obj, lat, lon)
             else:
                 result['issues'].append(f"Zone '{zone}' not found")
         else:
             result['issues'].append("Please specify a parking zone")
             
-        # Check balance
         hourly_rate = float(zone_obj.hourly_rate) if zone_obj else 1000.0
         if float(user.wallet_balance) < hourly_rate:
             result['issues'].append("Insufficient balance")
@@ -733,7 +697,6 @@ class ReasoningAIService:
         query_lower = query.lower()
         result = {'policy_found': False, 'answer': None, 'related_topic': None, 'justification': []}
         
-        # Priority 1: Check Encyclopedia Section (Deep Reasoning)
         sections = ['FINES', 'LOYALTY', 'PAYMENTS', 'SAFETY', 'CORPORATE']
         for section in sections:
             if section.lower() in query_lower:
@@ -743,7 +706,6 @@ class ReasoningAIService:
                 result['justification'].append(f"Located detailed policy in **Encyclopedia Section: {section}**.")
                 return result
 
-        # Priority 2: Check Common Questions
         for key, answer in self.knowledge_base['common_questions'].items():
             if key.replace('_', ' ') in query_lower:
                 result['policy_found'] = True
@@ -752,7 +714,6 @@ class ReasoningAIService:
                 result['justification'].append(f"Matched inquiry with **FAQ record: {key}**.")
                 return result
                 
-        # Heuristic for policy types
         if 'fine' in query_lower or 'pay' in query_lower:
             result['answer'] = f"Standard fine for overdue parking is {self.knowledge_base['fine_structure']['overdue_parking']} UGX. Fines can be paid via the app wallet."
             result['policy_found'] = True
@@ -766,7 +727,6 @@ class ReasoningAIService:
 
     def _reason_parking_info(self, user, entities: Dict, context: Dict, lat: float, lon: float) -> Dict:
         """Reason about parking information and availability with safety scoring"""
-        # Check for policy question first
         policy_result = self._reason_policy(context.get('query', ''))
         if policy_result['policy_found']:
             return {'type': 'policy', 'data': policy_result}
@@ -785,7 +745,7 @@ class ReasoningAIService:
             for zone in zones:
                 if zone.latitude and zone.longitude:
                     dist = self._haversine(lat, lon, float(zone.latitude), float(zone.longitude))
-                    if dist < 5:  # Within 5km
+                    if dist < 5:  
                         zone_meta = {
                             'amenities': getattr(zone, 'amenities', ['Lighting', 'Security'])
                         }
@@ -803,11 +763,9 @@ class ReasoningAIService:
                             'security': risk_data
                         })
             
-            # Sort by score
             zones_with_dist.sort(key=lambda x: x['score'], reverse=True)
             result['nearby_zones'] = zones_with_dist[:5]
             
-            # Generate summary based on brain reasoning
             if zones_with_dist:
                 best = zones_with_dist[0]
                 result['summary'] = f"Success! I've located {len(zones_with_dist)} zones near you. **{best['zone'].name}** is my top recommendation based on a performance score of {best['score']:.1f}."
@@ -834,7 +792,6 @@ class ReasoningAIService:
             result['min_rate'] = min(rates)
             result['max_rate'] = max(rates)
             
-            # Group by price range
             result['zones'] = [
                 {
                     'name': z.name,
@@ -855,11 +812,10 @@ class ReasoningAIService:
             'best_location': None
         }
         
-        zones = Zone.objects.filter(is_active=True)[:3]  # Compare up to 3 zones
+        zones = Zone.objects.filter(is_active=True)[:3]  
         
         if len(zones) >= 2:
             for zone in zones:
-                # Calculate value score (price vs popularity)
                 popularity = self._calculate_zone_popularity(zone)
                 rate_float = float(zone.hourly_rate)
                 value_score = popularity / (rate_float / 1000.0) if rate_float > 0 else 0
@@ -872,7 +828,6 @@ class ReasoningAIService:
                     'value_score': value_score
                 })
             
-            # Find best value
             result['best_value'] = max(result['comparisons'], key=lambda x: x['value_score'])['zone']
             
         return result
@@ -892,16 +847,14 @@ class ReasoningAIService:
                 if zone.latitude and zone.longitude:
                     dist = self._haversine(lat, lon, float(zone.latitude), float(zone.longitude))
                     
-                    # Calculate recommendation score
                     score = 0
-                    score += (5 - min(dist, 5)) * 2  # Distance factor (0-10)
-                    score += min(zone.available_slots, 10) * 0.5  # Availability factor (0-5)
-                    score += (1 - (float(zone.hourly_rate) / 5000)) * 5  # Price factor (0-5)
+                    score += (5 - min(dist, 5)) * 2  
+                    score += min(zone.available_slots, 10) * 0.5  
+                    score += (1 - (float(zone.hourly_rate) / 5000)) * 5  
                     
-                    # Personalization based on user history
                     if user.is_authenticated and context['user_history'].get('preferred_zones'):
                         if zone.name in context['user_history']['preferred_zones']:
-                            score += 3  # Boost for previously used zones
+                            score += 3  
                     
                     recommendations.append({
                         'zone': zone,
@@ -910,7 +863,6 @@ class ReasoningAIService:
                         'reason': self._generate_recommendation_reason(zone, dist, score)
                     })
             
-            # Sort by score
             recommendations.sort(key=lambda x: x['score'], reverse=True)
             result['recommendations'] = recommendations[:3]
             
@@ -933,7 +885,6 @@ class ReasoningAIService:
                 now = timezone.now()
                 hour = now.hour
                 
-                # Simple prediction based on time
                 if 8 <= hour <= 10 or 17 <= hour <= 19:
                     trend = "busy (peak hours)"
                     prediction = "Expect high occupancy during these times."
@@ -1027,7 +978,6 @@ class ReasoningAIService:
                 benefits=data['benefits']
             )
             
-            # Add specific guidance for points
             if data['points'] > 5000:
                 response += "\n\n💡 You have enough points to redeem for 5,000 UGX wallet credit!"
             elif data['next_tier_points'] < 200:
@@ -1039,7 +989,6 @@ class ReasoningAIService:
             return random.choice(self.response_templates['emergency'])
 
         elif intent == IntentType.APP_HELP:
-            # Check for keyword in query to give specific help
             query_lower = query.lower()
             if 'towing' in query_lower or 'impound' in query_lower:
                 proc = self.knowledge_base['towing_procedures']
@@ -1105,7 +1054,7 @@ class ReasoningAIService:
                 return f"I couldn't find a zone named '{zone_name}'. Try checking the map for active locations!"
             
             status = "Ready to park" if zone_data['available'] > 0 else "Currently full"
-            peak = "7 AM - 10 AM, 5 PM - 8 PM" # Simulated
+            peak = "7 AM - 10 AM, 5 PM - 8 PM" 
             
             return random.choice(self.response_templates['zone_info']).format(
                 name=zone_data['name'],
@@ -1137,7 +1086,6 @@ class ReasoningAIService:
             if reasoning_result['recommendations']:
                 response = "As your professional assistant, I've analyzed the nearby zones and recommend:\n\n"
                 
-                # Check for optimized pick
                 if 'optimized_pick' in reasoning_result:
                     opt = reasoning_result['optimized_pick']['zone']
                     score = reasoning_result['optimized_pick']['score']
@@ -1204,7 +1152,6 @@ class ReasoningAIService:
 
     def _split_complex_query(self, query: str) -> List[str]:
         """Split complex queries into atomic intents"""
-        # Check for conjunctions
         conjunctions = [r'\s+(?:and|also|plus|then|&)\s+', r',\s*']
         
         for conj in conjunctions:
@@ -1228,19 +1175,15 @@ class ReasoningAIService:
 
     def _handle_missing_input(self, user, context: Dict, query: str) -> str:
         """Handle missing input collection"""
-        # Check for cancellation
         if any(w in query.lower() for w in ['cancel', 'stop', 'nevermind']):
             self._clear_context(user)
             return "Action cancelled. What would you like to do instead?"
             
-        # Process based on missing field
         missing_field = context.get('action_data', {}).get('missing_field')
         
         if missing_field == 'zone':
-            # Try to find zone from input
             zone = self._find_closest_zone(query)
             if zone:
-                # Found zone, proceed with action
                 new_query = f"Start parking at {zone}"
                 self._clear_context(user)
                 return self._process_single_intent(user, new_query, None, None)
@@ -1278,23 +1221,18 @@ class ReasoningAIService:
             vehicle = user.vehicles.get(id=data['vehicle_id'])
             zone = Zone.objects.get(id=data['zone_id'])
             
-            # Check for existing session
             if ParkingSession.objects.filter(vehicle=vehicle, status='active').exists():
                 return "You already have an active parking session!"
                 
-            # Calculate costs based on duration
             duration_mins = data.get('duration_minutes', 60)
             planned_end = timezone.now() + timedelta(minutes=duration_mins)
             
-            # hourly_rate * (duration / 60)
             hourly_rate = float(zone.hourly_rate)
             estimated_cost = hourly_rate * (duration_mins / 60.0)
             
-            # Check balance
             if user.wallet_balance < estimated_cost:
                 return f"Insufficient balance ({user.wallet_balance:,.0f} UGX). You need {estimated_cost:,.0f} UGX."
                 
-            # Process payment
             user.wallet_balance -= estimated_cost
             user.save()
             
@@ -1306,7 +1244,6 @@ class ReasoningAIService:
                 description=f'Parking at {zone.name}'
             )
             
-            # Create session
             session = ParkingSession.objects.create(
                 vehicle=vehicle,
                 zone=zone,
@@ -1333,10 +1270,8 @@ class ReasoningAIService:
                 status='active'
             )
             
-            # End session
             session.end_session()
             
-            # Calculate refund if applicable
             refund = 0
             if session.estimated_cost and session.final_cost:
                 refund = max(0, session.estimated_cost - session.final_cost)
@@ -1605,7 +1540,7 @@ class ReasoningAIService:
             result['points'] = account.balance
             result['tier'] = account.tier
             
-            # Simple tier logic
+
             tiers = {
                 'Bronze': ('Silver', 1000, 'Earn 1 point per 1,000 UGX spent.'),
                 'Silver': ('Gold', 5000, 'Earn 1.5 points per 1,000 UGX spent.'),
@@ -1648,7 +1583,7 @@ class ReasoningAIService:
             actions.append({'label': 'Check Balance', 'action': 'CHECK_BALANCE'})
             actions.append({'label': 'Find Parking', 'action': 'NAVIGATE_MAP'})
 
-        return actions[:3]  # Limit to 3 suggestions
+        return actions[:3]  
 
     def _generate_fallback_response(self, query: str) -> str:
         """Generate intelligent fallback response"""
@@ -1712,7 +1647,6 @@ class ReasoningAIService:
 
     def _reason_towing_status(self, plate: str) -> Dict:
         """Heuristic check for possible towing status (simulated logic)"""
-        # In a real app, this would query an enforcement database
         return {
             'is_likely_towed': False,
             'reason': 'No active towing record found for this plate.',
@@ -1733,8 +1667,6 @@ class ReasoningAIService:
         if settings.DEBUG:
             logger.debug(f"AI Reasoning Trace for {user.email}: {json.dumps(trace_data)}")
         
-        # Optionally save to a model
-        # AIChatContext.objects.create(user=user, metadata={'trace': trace_data})
 
     def _calculate_peak_pricing_adjustment(self, zone_obj) -> Tuple[float, str]:
         """Reason about dynamic pricing adjustments during peak hours"""
@@ -1743,7 +1675,7 @@ class ReasoningAIService:
         
         for name, (start, end) in kb_peaks.items():
             if start <= now <= end:
-                # 20% peak increase logic
+                
                 return 1.2, f"Standard rate + 20% {name.replace('_', ' ')} adjustment."
         return 1.0, "Standard hourly rate."
 
@@ -1757,7 +1689,7 @@ class ReasoningAIService:
         aug_context = context.copy()
         now = timezone.now()
         
-        # Add weather simulation (real app would use weather API)
+     
         aug_context['weather'] = random.choice(['Sunny', 'Rainy', 'Cloudy'])
         aug_context['is_holiday'] = False # Real app check calendar
         

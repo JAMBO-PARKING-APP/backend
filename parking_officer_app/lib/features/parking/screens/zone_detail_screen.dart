@@ -4,6 +4,7 @@ import 'package:parking_officer_app/features/parking/providers/zone_provider.dar
 import 'package:parking_officer_app/features/parking/models/zone_model.dart';
 import 'package:parking_officer_app/features/parking/screens/scanner_screen.dart';
 import 'package:parking_officer_app/features/violations/screens/violation_form_screen.dart';
+import 'package:parking_officer_app/features/parking/screens/session_detail_screen.dart';
 import 'package:parking_officer_app/core/app_theme.dart';
 
 class ZoneDetailScreen extends StatefulWidget {
@@ -81,9 +82,13 @@ class _ZoneDetailScreenState extends State<ZoneDetailScreen> {
                             ),
                             trailing: const Icon(Icons.chevron_right),
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Session details coming soon'),
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => SessionDetailScreen(
+                                    session: session,
+                                    zoneId: zone.id,
+                                  ),
                                 ),
                               );
                             },

@@ -1,0 +1,29 @@
+{% load i18n %}
+
+<footer class="footer mt-auto py-3 bg-white border-top">
+    <div class="container-fluid px-4">
+        <div class="row align-items-center justify-content-between">
+            <div class="col-md-6 text-center text-md-start mb-2 mb-md-0">
+                <span class="text-muted small">
+                    JAMBO PARK &copy; 2024-{% now "Y" %} &bull;
+                    {% trans "Professional Parking Management Solution" %}
+                </span>
+            </div>
+            <div class="col-md-6 text-center text-md-end">
+                <ul class="list-inline mb-0 small">
+                    <li class="list-inline-item me-3">
+                        <a href="#" class="text-muted text-decoration-none">{% trans "Support" %}</a>
+                    </li>
+                    <li class="list-inline-item me-3">
+                        <a href="#" class="text-muted text-decoration-none">{% trans "Privacy Policy" %}</a>
+                    </li>
+                    <li class="list-inline-item">
+                        <span class="badge bg-success-soft text-success px-2 py-1" style="font-size: 0.65rem;">
+                            <i class="bi bi-patch-check-fill me-1"></i>{% trans "System Online" %}
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</footer>

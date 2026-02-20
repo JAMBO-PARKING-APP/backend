@@ -84,7 +84,7 @@ class LocationService {
         data: {
           'latitude': position.latitude,
           'longitude': position.longitude,
-          'is_driver_app': true, // or false depending on app
+          'is_driver_app': true,
         },
       );
       debugPrint(

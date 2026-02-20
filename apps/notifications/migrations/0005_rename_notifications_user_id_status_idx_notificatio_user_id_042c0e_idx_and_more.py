@@ -47,14 +47,5 @@ class Migration(migrations.Migration):
             name='assigned_agent',
             field=models.ForeignKey(blank=True, limit_choices_to={'role': 'support_agent'}, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='assigned_conversations', to=settings.AUTH_USER_MODEL),
         ),
-        migrations.AlterField(
-            model_name='chatconversation',
-            name='id',
-            field=models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False),
-        ),
-        migrations.AlterField(
-            model_name='chatmessage',
-            name='id',
-            field=models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False),
-        ),
+        # Removed AlterField for id as it's now handled in 0003_chat_models
     ]

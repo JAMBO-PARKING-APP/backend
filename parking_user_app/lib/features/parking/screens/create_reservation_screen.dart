@@ -129,24 +129,56 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
           builder: (dialogContext) => PaymentSelectionDialog(
             amount: cost,
             walletBalance: walletBalance,
-            onWalletSelected: () {
-              Navigator.pop(dialogContext);
-              if (mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Reservation Created! Wallet payment for reservations coming soon.',
+            onWalletSelected: () async {
+              Navigator.pop(dialogContext); // Close payment selection dialog
+              if (!mounted) return;
+
+              // Show loading
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (c) =>
+                    const Center(child: CircularProgressIndicator()),
+              );
+
+              try {
+                final success = await context
+                    .read<ReservationProvider>()
+                    .confirmReservationWallet(reservation.id);
+
+                if (mounted) Navigator.pop(context); // Hide loading
+
+                if (success && mounted) {
+                  Navigator.pop(context); // Close CreateReservationScreen
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Reservation confirmed with Wallet!'),
                     ),
-                  ),
-                );
+                  );
+                } else if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Wallet payment failed. Please check balance.',
+                      ),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) Navigator.pop(context); // Hide loading on error
+                if (mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                }
               }
             },
             onPesapalSelected: () async {
               Navigator.pop(dialogContext); // Close payment selection dialog
 
-              // Show loading
               if (!mounted) return;
+
+              // Show loading
               showDialog(
                 context: context,
                 barrierDismissible: false,
@@ -164,18 +196,21 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
                   reservationId: reservation.id,
                 );
 
-                // Hide loading
                 if (mounted) {
-                  Navigator.pop(context);
+                  Navigator.pop(context); // Hide loading
                 }
 
                 if (result['success'] == true && mounted) {
-                  Navigator.pop(context); // Close CreateReservationScreen
-
                   final url = result['redirect_url'];
                   if (url != null) {
                     final uri = Uri.parse(url);
                     if (await canLaunchUrl(uri)) {
+                      // Navigate back first before launching URL to avoid black screen
+                      // or stuck state if the app is put in background
+                      if (mounted) {
+                        Navigator.pop(context); // Close CreateReservationScreen
+                      }
+
                       await launchUrl(
                         uri,
                         mode: LaunchMode.externalApplication,

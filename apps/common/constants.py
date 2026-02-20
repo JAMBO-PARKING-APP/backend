@@ -42,7 +42,6 @@ class Currency(models.TextChoices):
     KES = 'KES', _('Kenya Shilling (Ksh)')
     GHS = 'GHS', _('Ghana Cedi (₵)')
 
-# Currency symbols mapping
 CURRENCY_SYMBOLS = {
     'USD': '$',
     'EUR': '€',
@@ -55,5 +54,5 @@ CURRENCY_SYMBOLS = {
 
 }
 
-# Default system currency
+
 DEFAULT_CURRENCY = 'UGX'

@@ -4,6 +4,7 @@ from .models import User, Vehicle, OTPCode
 from apps.parking.models import ParkingSession, Zone, Reservation
 from apps.enforcement.models import Violation
 from apps.payments.models import Transaction, PaymentMethod
+from drf_spectacular.utils import extend_schema_field
 
 class VehicleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,13 +23,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
                   'role', 'profile_photo', 'is_verified', 'created_at', 'vehicles', 'wallet_balance']
         read_only_fields = ['id', 'role', 'is_verified', 'created_at', 'wallet_balance']
     
+    @extend_schema_field(serializers.URLField(allow_null=True))
     def get_profile_photo(self, obj):
         """Return absolute URL for profile photo"""
         if obj.profile_photo:
             request = self.context.get('request')
             if request:
                 return request.build_absolute_uri(obj.profile_photo.url)
-            # Fallback: construct URL manually if no request context
             from django.conf import settings
             return f"{settings.SITE_URL}{obj.profile_photo.url}" if hasattr(settings, 'SITE_URL') else obj.profile_photo.url
         return None
@@ -102,9 +103,8 @@ class UserLocationSerializer(serializers.ModelSerializer):
         model = UserLocation
         fields = ['latitude', 'longitude', 'is_driver_app', 'timestamp']
         read_only_fields = ['timestamp']
-    
+
     def to_internal_value(self, data):
-        # Round coordinates to 6 decimal places to match model constraints
         if 'latitude' in data:
             try:
                 data['latitude'] = round(float(data['latitude']), 6)
@@ -116,19 +116,18 @@ class UserLocationSerializer(serializers.ModelSerializer):
             except (ValueError, TypeError):
                 pass
         return super().to_internal_value(data)
-    
+
     def create(self, validated_data):
         from .models import UserLocation
         from apps.common.utils import get_country_from_coords
         
-        # Ensure we have the user from context if not passed
         user = validated_data.pop('user', None)
         if not user and 'view' in self.context:
             user = self.context['view'].request.user
-        
-        # Automatic Country Transition
+            
         lat = validated_data.get('latitude')
         lng = validated_data.get('longitude')
+        
         if lat and lng and user:
             new_country = get_country_from_coords(lat, lng)
             if new_country and user.country != new_country:
@@ -138,16 +137,6 @@ class UserLocationSerializer(serializers.ModelSerializer):
                     user.country = new_country
                     user.save(update_fields=['country'])
                     
-                    # Log transition for debugging/audit
-                    from apps.enforcement.models import OfficerLog
-                    if user.role == 'officer':
-                        OfficerLog.objects.create(
-                            officer=user,
-                            action='country_transition',
-                            details=f"Transitioned from {old_country_name} to {new_country.name} based on GPS."
-                        )
-                    
-                    # Trigger notification about country switch
                     from apps.notifications.notification_triggers import notify_custom
                     notify_custom(
                         user, 
@@ -158,3 +147,6 @@ class UserLocationSerializer(serializers.ModelSerializer):
                     )
         
         return UserLocation.objects.create(user=user, **validated_data)
+
+class ResendOTPSerializer(serializers.Serializer):
+    phone = serializers.CharField(required=True)

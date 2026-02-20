@@ -42,6 +42,7 @@ class HomeScreen extends StatefulWidget {
 
 class HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  bool _hasRedirectedToActiveSession = false;
 
   @override
   void initState() {
@@ -58,13 +59,41 @@ class HomeScreenState extends State<HomeScreen> {
 
       // Start Location Tracking
       LocationService().startTracking();
+
+      // Auto-navigation to active session on startup
+      _checkForActiveSession();
     });
   }
+
+  Future<void> _checkForActiveSession() async {
+    if (_hasRedirectedToActiveSession) return;
+
+    final parkingProvider = context.read<ParkingProvider>();
+    // Wait for sessions to be fetched if they haven't been already
+    if (parkingProvider.isLoading) {
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
+
+    if (parkingProvider.activeSessions.isNotEmpty && mounted) {
+      final session = parkingProvider.activeSessions.first;
+      _hasRedirectedToActiveSession = true;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ActiveSessionScreen(session: session),
+        ),
+      );
+    }
+  }
+
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
-      const HomeDashboard(), // 0: Home
+      HomeDashboard(
+        onMenuPressed: () => _scaffoldKey.currentState?.openDrawer(),
+      ), // 0: Home
       const ZoneListScreen(), // 1: Zones
       const ParkingHistoryScreen(), // 2: History
       const AIChatScreen(), // 3: Live Chat (AI)
@@ -75,6 +104,7 @@ class HomeScreenState extends State<HomeScreen> {
     ];
 
     return Scaffold(
+      key: _scaffoldKey,
       drawer: SidebarNavigation(
         currentIndex: _currentIndex,
         onTabChanged: (index) => setState(() => _currentIndex = index),
@@ -91,7 +121,8 @@ class HomeScreenState extends State<HomeScreen> {
 }
 
 class HomeDashboard extends StatefulWidget {
-  const HomeDashboard({super.key});
+  final VoidCallback? onMenuPressed;
+  const HomeDashboard({super.key, this.onMenuPressed});
 
   @override
   State<HomeDashboard> createState() => _HomeDashboardState();
@@ -199,8 +230,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
                             backgroundColor: AppTheme.primaryColor,
                             leading: IconButton(
                               icon: const Icon(Icons.menu, color: Colors.white),
-                              onPressed: () =>
-                                  Scaffold.of(context).openDrawer(),
+                              onPressed:
+                                  widget.onMenuPressed ??
+                                  () => Scaffold.of(context).openDrawer(),
                             ),
                             flexibleSpace: FlexibleSpaceBar(
                               titlePadding: const EdgeInsets.symmetric(

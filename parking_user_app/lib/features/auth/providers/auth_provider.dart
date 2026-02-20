@@ -23,8 +23,12 @@ class AuthProvider with ChangeNotifier {
   String get currencySymbol => user?.countryDetails?.currencySymbol ?? 'UGX';
 
   Future<void> checkAuth() async {
-    _status = AuthStatus.authenticating;
-    notifyListeners();
+    // Only show global loading if we are NOT already authenticated
+    if (_status != AuthStatus.authenticated &&
+        _status != AuthStatus.authenticating) {
+      _status = AuthStatus.authenticating;
+      notifyListeners();
+    }
 
     final storage = StorageManager();
     _hasRequestedPermissions = await storage.hasRequestedPermissions();

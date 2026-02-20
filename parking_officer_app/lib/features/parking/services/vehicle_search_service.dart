@@ -45,14 +45,14 @@ class ActiveSessionData {
   final String zone;
   final DateTime startedAt;
   final DateTime plannedEnd;
-  final double estimatedCost;
+  final double amountDue;
 
   ActiveSessionData({
     required this.id,
     required this.zone,
     required this.startedAt,
     required this.plannedEnd,
-    required this.estimatedCost,
+    required this.amountDue,
   });
 
   factory ActiveSessionData.fromJson(Map<String, dynamic> json) {
@@ -61,7 +61,7 @@ class ActiveSessionData {
       zone: json['zone'],
       startedAt: DateTime.parse(json['started_at']),
       plannedEnd: DateTime.parse(json['planned_end']),
-      estimatedCost: (json['estimated_cost'] as num).toDouble(),
+      amountDue: (json['estimated_cost'] as num).toDouble(),
     );
   }
 }
@@ -83,10 +83,7 @@ class VehicleSearchService {
         };
       }
     } catch (e) {
-      return {
-        'success': false,
-        'message': 'Vehicle not found',
-      };
+      return {'success': false, 'message': 'Vehicle not found'};
     }
     return {'success': false, 'message': 'Unknown error'};
   }

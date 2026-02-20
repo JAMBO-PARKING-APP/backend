@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:parking_user_app/features/parking/models/parking_session_model.dart';
@@ -6,6 +7,7 @@ import 'package:parking_user_app/features/parking/providers/parking_provider.dar
 import 'package:parking_user_app/features/parking/screens/qr_code_view_screen.dart';
 import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/core/dialog_service.dart';
+import 'package:parking_user_app/core/services/local_notification_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -19,19 +21,115 @@ class ActiveSessionScreen extends StatefulWidget {
   State<ActiveSessionScreen> createState() => _ActiveSessionScreenState();
 }
 
-class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
+class _ActiveSessionScreenState extends State<ActiveSessionScreen>
+    with SingleTickerProviderStateMixin {
   late Timer _timer;
   Duration _remaining = Duration.zero;
   Duration _totalDuration = Duration.zero;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
     super.initState();
-    _calculateTotalDuration();
-    _calculateRemaining();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    try {
+      _calculateTotalDuration();
       _calculateRemaining();
+    } catch (e) {
+      debugPrint('Error calculating durations: $e');
+    }
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        _calculateRemaining();
+        _updateDistance();
+      }
     });
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    );
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    try {
+      _scheduleLocalNotifications();
+    } catch (e) {
+      debugPrint('Error scheduling notifications: $e');
+    }
+
+    try {
+      _loadSavedData();
+    } catch (e) {
+      debugPrint('Error loading saved data: $e');
+    }
+  }
+
+  String? _localPhotoPath;
+  double? _distance;
+  double? _savedLat;
+  double? _savedLng;
+
+  Future<void> _loadSavedData() async {
+    final info = await context.read<ParkingProvider>().getSavedSpot(
+      widget.session.id,
+    );
+    setState(() {
+      _savedLat = info['lat'];
+      _savedLng = info['lng'];
+      _localPhotoPath = info['photo_path'];
+    });
+  }
+
+  Future<void> _updateDistance() async {
+    if (_savedLat == null || _savedLng == null) return;
+    try {
+      Position current = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.low,
+        ),
+      );
+      double dist = Geolocator.distanceBetween(
+        current.latitude,
+        current.longitude,
+        _savedLat!,
+        _savedLng!,
+      );
+      if (mounted) setState(() => _distance = dist);
+    } catch (_) {}
+  }
+
+  void _scheduleLocalNotifications() {
+    if (widget.session.endTime == null) return;
+    LocalNotificationService.cancelAll();
+
+    final end = widget.session.endTime!;
+    _schedule(
+      end.subtract(const Duration(minutes: 15)),
+      "15 Minutes Left",
+      "Your parking at ${widget.session.zoneName} expires in 15 minutes.",
+    );
+    _schedule(
+      end.subtract(const Duration(minutes: 5)),
+      "5 Minutes Left",
+      "Your parking at ${widget.session.zoneName} expires in 5 minutes. Act now!",
+    );
+    _schedule(
+      end.subtract(const Duration(minutes: 1)),
+      "Expiring Now",
+      "Your parking session is about to end. Avoid violations!",
+    );
+  }
+
+  void _schedule(DateTime time, String title, String body) {
+    LocalNotificationService.scheduleReminder(
+      id: time.hashCode,
+      title: title,
+      body: body,
+      scheduledDate: time,
+    );
   }
 
   void _calculateTotalDuration() {
@@ -48,6 +146,18 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
     setState(() {
       _remaining = diff.isNegative ? Duration.zero : diff;
     });
+
+    // Start pulsing if less than 15 minutes left
+    if (_remaining.inMinutes < 15 && _remaining.inSeconds > 0) {
+      if (!_pulseController.isAnimating) {
+        _pulseController.repeat(reverse: true);
+      }
+    } else {
+      if (_pulseController.isAnimating) {
+        _pulseController.stop();
+        _pulseController.reset();
+      }
+    }
   }
 
   @override
@@ -62,6 +172,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
   @override
   void dispose() {
     _timer.cancel();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -293,44 +404,129 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                'Vehicle: ${widget.session.vehiclePlate}',
-                style: const TextStyle(fontSize: 18, color: Colors.grey),
-              ),
-              const SizedBox(height: 60),
-              // Timer Circle
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(
-                    width: 240,
-                    height: 240,
-                    child: CircularProgressIndicator(
-                      value: _totalDuration.inSeconds > 0
-                          ? _remaining.inSeconds / _totalDuration.inSeconds
-                          : 0.0,
-                      strokeWidth: 12,
-                      backgroundColor: Colors.grey.shade200,
-                    ),
+              if (_distance != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
                   ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
-                        'TIME LEFT',
-                        style: TextStyle(letterSpacing: 2, color: Colors.grey),
+                      const Icon(
+                        Icons.directions_walk,
+                        size: 14,
+                        color: AppTheme.primaryColor,
                       ),
+                      const SizedBox(width: 4),
                       Text(
-                        _formatDuration(_remaining),
+                        '${_distance!.toStringAsFixed(0)}m to vehicle',
                         style: const TextStyle(
-                          fontSize: 48,
+                          color: AppTheme.primaryColor,
                           fontWeight: FontWeight.bold,
-                          fontFeatures: [FontFeature.tabularFigures()],
+                          fontSize: 12,
                         ),
                       ),
                     ],
                   ),
-                ],
+                ),
+              const SizedBox(height: 8),
+              Text(
+                'Vehicle: ${widget.session.vehiclePlate}',
+                style: const TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+              const SizedBox(height: 30),
+              if (_localPhotoPath != null)
+                Column(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.file(
+                        File(_localPhotoPath!),
+                        height: 100,
+                        width: 150,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Saved Spot Photo',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              const SizedBox(height: 30),
+              // Timer Circle
+              ScaleTransition(
+                scale: _remaining.inMinutes < 15
+                    ? _pulseAnimation
+                    : const AlwaysStoppedAnimation(1.0),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 240,
+                      height: 240,
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween<double>(
+                          begin: 0.0,
+                          end: _totalDuration.inSeconds > 0
+                              ? _remaining.inSeconds / _totalDuration.inSeconds
+                              : 0.0,
+                        ),
+                        duration: const Duration(milliseconds: 500),
+                        builder: (context, value, child) =>
+                            CircularProgressIndicator(
+                              value: value,
+                              strokeWidth: 12,
+                              strokeCap: StrokeCap.round,
+                              backgroundColor: Colors.grey.shade200,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                _remaining.inMinutes < 15
+                                    ? Colors.red
+                                    : AppTheme.primaryColor,
+                              ),
+                            ),
+                      ),
+                    ),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _remaining.inMinutes < 15 ? 'HURRY UP!' : 'TIME LEFT',
+                          style: TextStyle(
+                            letterSpacing: 2,
+                            color: _remaining.inMinutes < 15
+                                ? Colors.red
+                                : Colors.grey,
+                            fontWeight: _remaining.inMinutes < 15
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          transitionBuilder: (child, animation) =>
+                              FadeTransition(opacity: animation, child: child),
+                          child: Text(
+                            _formatDuration(_remaining),
+                            key: ValueKey(_remaining.inSeconds),
+                            style: const TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                              fontFeatures: [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 40),
 

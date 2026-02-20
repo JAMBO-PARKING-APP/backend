@@ -26,11 +26,7 @@ class PesapalInitPaymentView(APIView):
 
         if not amount:
             return Response({'error': 'Amount is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Generate unique merchant reference
         merchant_reference = str(uuid.uuid4())
-
-        # Optional: Link to parking session or reservation
         parking_session = None
         reservation = None
         
@@ -46,8 +42,6 @@ class PesapalInitPaymentView(APIView):
                 reservation = Reservation.objects.get(id=reservation_id)
             except Reservation.DoesNotExist:
                 pass
-
-        # Create Transaction record
         transaction = Transaction.objects.create(
             user=request.user,
             amount=Decimal(amount),
@@ -55,7 +49,7 @@ class PesapalInitPaymentView(APIView):
             status=TransactionStatus.PENDING,
             parking_session=parking_session,
             reservation=reservation,
-            idempotency_key=merchant_reference # Using merchant_ref as idempotency key
+            idempotency_key=merchant_reference
         )
 
         pesapal = PesapalService()
@@ -68,7 +62,6 @@ class PesapalInitPaymentView(APIView):
         )
 
         if response and response.get('redirect_url'):
-            # API 3.0 returns 'redirect_url', 'order_tracking_id', 'merchant_reference'
             transaction.pesapal_order_tracking_id = response.get('order_tracking_id')
             transaction.processor_response = response
             transaction.save()
@@ -99,7 +92,6 @@ class PesapalCallbackView(APIView):
         if not status_response:
             return Response({'error': 'Could not verify payment status'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Update transaction status
         try:
             transaction = Transaction.objects.get(pesapal_merchant_reference=merchant_reference)
             
@@ -108,14 +100,11 @@ class PesapalCallbackView(APIView):
             if payment_status == "Completed":
                 transaction.status = TransactionStatus.COMPLETED
                 if transaction.parking_session:
-                    # Activate the parking session
                     session = transaction.parking_session
-                    if session.status == 'pending_payment': # Use string if constant not imported, or import it
+                    if session.status == 'pending_payment':
                         session.status = 'active'
-                        # Refresh planned_end_time? Optional, but let's keep original for now.
                         session.save()
                         
-                        # Send notifications
                         from apps.notifications.notification_triggers import notify_parking_started, notify_payment_success
                         notify_payment_success(transaction)
                         notify_parking_started(session)
@@ -126,9 +115,6 @@ class PesapalCallbackView(APIView):
             transaction.processor_response = status_response
             transaction.save()
 
-            # For a mobile app callback, we usually want to show a success/failure page
-            # or redirect to a custom scheme.
-            # providing a simple HTML response for now.
             return Response({
                 'status': 'success',
                 'payment_status': payment_status, 
@@ -164,7 +150,6 @@ class PesapalIPNView(APIView):
         status_response = pesapal.get_transaction_status(order_tracking_id)
         
         if not status_response:
-             # If we can't verify, we should probably return 500 so Pesapal retries
              return Response({'error': 'Verification failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         try:
@@ -174,13 +159,11 @@ class PesapalIPNView(APIView):
             if payment_status == "Completed":
                 transaction.status = TransactionStatus.COMPLETED
                 if transaction.parking_session:
-                    # Activate the parking session
                     session = transaction.parking_session
                     if session.status == 'pending_payment':
                         session.status = 'active'
                         session.save()
                         
-                        # Send notifications
                         from apps.notifications.notification_triggers import notify_parking_started, notify_payment_success
                         notify_payment_success(transaction)
                         notify_parking_started(session)
@@ -191,7 +174,6 @@ class PesapalIPNView(APIView):
             transaction.processor_response = status_response
             transaction.save()
             
-            # Respond to Pesapal as required
             response_data = {
                 "orderNotificationType": notification_type,
                 "orderTrackingId": order_tracking_id,

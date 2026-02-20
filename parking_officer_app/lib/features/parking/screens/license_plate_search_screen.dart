@@ -254,8 +254,8 @@ class _LicensePlateSearchScreenState extends State<LicensePlateSearchScreen> {
                   ),
                   const SizedBox(height: 12),
                   _buildDetailRow(
-                    'Estimated Cost',
-                    'UGX ${vehicle.activeSession!.estimatedCost.toStringAsFixed(2)}',
+                    'Amount Due',
+                    'UGX ${vehicle.activeSession!.amountDue.toStringAsFixed(2)}',
                   ),
                 ],
               ],

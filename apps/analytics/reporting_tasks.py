@@ -24,8 +24,6 @@ def send_weekly_admin_report():
     start_date = today - timedelta(days=7)
     
     logger.info(f"Generating weekly report for period: {start_date} to {today}")
-    
-    # 1. Aggregate Weekly Revenue & Activity (from RevenueRecord)
     weekly_stats = RevenueRecord.objects.filter(
         date__gte=start_date,
         date__lt=today
@@ -38,18 +36,12 @@ def send_weekly_admin_report():
     revenue = weekly_stats['total_revenue'] or 0
     sessions = weekly_stats['total_sessions'] or 0
     violations = weekly_stats['total_violations'] or 0
-    
-    # 2. New Users
     new_users = User.objects.filter(
         created_at__gte=start_date,
         created_at__lt=today
     ).count()
-    
-    # 3. Active Zones & Officers (Snapshot)
     active_zones = Zone.objects.filter(is_active=True).count()
     active_officers = User.objects.filter(role='officer', is_active=True).count()
-    
-    # 4. Construct Email Content
     subject = f"[Weekly Report] Jambo Park Metrics ({start_date} - {today})"
     
     html_message = f"""
@@ -89,11 +81,8 @@ def send_weekly_admin_report():
     </body>
     </html>
     """
-    
-    # 5. Get Admin Emails
     admin_emails = list(User.objects.filter(is_superuser=True).values_list('email', flat=True))
     if not admin_emails:
-        # Fallback to clear fallback if no superusers found
         admin_emails = [settings.DEFAULT_FROM_EMAIL]
         
     try:

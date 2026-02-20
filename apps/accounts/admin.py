@@ -31,8 +31,6 @@ class UserAdmin(RegionalAdminMixin, BaseUserAdmin):
     def top_up_wallet(self, request, queryset):
         from django.contrib import messages
         from decimal import Decimal
-        
-        # Simple top-up of 10000 UGX for selected users
         amount = Decimal('10000.00')
         count = 0
         
@@ -40,8 +38,6 @@ class UserAdmin(RegionalAdminMixin, BaseUserAdmin):
             user.wallet_balance += amount
             user.save()
             count += 1
-            
-            # Log the transaction
             from apps.payments.models import WalletTransaction
             WalletTransaction.objects.create(
                 user=user,

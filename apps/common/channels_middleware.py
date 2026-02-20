@@ -9,14 +9,9 @@ User = get_user_model()
 @database_sync_to_async
 def get_user(token_key):
     try:
-        # Validate token
         access_token = AccessToken(token_key)
         user_id = access_token['user_id']
-        
-        # Get user
         user = User.objects.get(id=user_id)
-        
-        # Check single session token if implemented
         token_jti = access_token.get('jti')
         if token_jti:
             current_session_token = getattr(user, 'current_session_token', None)
@@ -35,8 +30,6 @@ class JWTAuthMiddleware:
         self.inner = inner
 
     async def __call__(self, scope, receive, send):
-        # Close old connections
-        # Extract token from query string
         query_string = parse_qs(scope['query_string'].decode())
         token = query_string.get('token')
 

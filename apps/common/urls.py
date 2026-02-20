@@ -48,4 +48,5 @@ urlpatterns = [
     path('ajax/drivepath/update/', views.DrivePathUpdateAjaxView.as_view(), name='drivepath-update-ajax'),
     path('ajax/drivepath/delete/', views.DrivePathDeleteAjaxView.as_view(), name='drivepath-delete-ajax'),
     path('ajax/zones/<uuid:zone_id>/live-status/', views.ZoneLiveStatusAjaxView.as_view(), name='zone-live-status-ajax'),
+    path('ajax/sessions/<uuid:session_id>/terminate/', views.TerminateSessionAjaxView.as_view(), name='terminate-session-ajax'),
 ]

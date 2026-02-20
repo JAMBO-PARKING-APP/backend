@@ -6,9 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:parking_user_app/features/parking/models/parking_session_model.dart';
 import 'package:parking_user_app/features/parking/models/zone_model.dart';
 import 'package:parking_user_app/features/parking/services/parking_service.dart';
-import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_user_app/features/parking/providers/zone_provider.dart';
 import 'package:parking_user_app/core/websocket_service.dart';
+import 'package:parking_user_app/core/notification_dialog_service.dart';
 import 'package:provider/provider.dart';
 // Removed: flutter_overlay_window
 
@@ -34,12 +34,16 @@ class ParkingProvider with ChangeNotifier {
     // Listen to WebSocket updates
     WebSocketService().updates.listen((update) {
       if (update['type'] == 'parking_update') {
-        debugPrint(
-          '[ParkingProvider] Received WebSocket update: ${update['data']}',
-        );
-        fetchSessions();
-        // Also refresh zones if occupancy changed significantly
-        fetchZones();
+        final data = update['data'] as Map<String, dynamic>;
+        debugPrint('[ParkingProvider] Received WebSocket update: $data');
+
+        fetchSessions(showLoader: false);
+        fetchZones(showLoader: false);
+
+        // Show in-app dialog if flag is set
+        if (data['show_dialog'] == 'true' || data['show_dialog'] == true) {
+          NotificationDialogService().showNotificationDialog(data);
+        }
       }
     });
   }
@@ -51,7 +55,7 @@ class ParkingProvider with ChangeNotifier {
         final session = activeSessions.first;
         // Every 60 seconds, refresh from API as fallback (Scalability Optimization)
         if (timer.tick % 60 == 0) {
-          await fetchSessions();
+          await fetchSessions(showLoader: false);
         }
         // Every second, update the local notifications
         await updateNotifications(session);
@@ -68,20 +72,32 @@ class ParkingProvider with ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> fetchSessions() async {
-    _isLoading = true;
-    notifyListeners();
+  Future<void> fetchSessions({bool showLoader = true}) async {
+    if (showLoader) {
+      _isLoading = true;
+      notifyListeners();
+    }
     _sessions = await _parkingService.getSessions();
-    _isLoading = false;
-    notifyListeners();
+    if (showLoader) {
+      _isLoading = false;
+      notifyListeners();
+    } else {
+      notifyListeners(); // Always notify for data change
+    }
   }
 
-  Future<void> fetchZones() async {
-    _isLoading = true;
-    notifyListeners();
+  Future<void> fetchZones({bool showLoader = true}) async {
+    if (showLoader) {
+      _isLoading = true;
+      notifyListeners();
+    }
     _zones = await _parkingService.getZones();
-    _isLoading = false;
-    notifyListeners();
+    if (showLoader) {
+      _isLoading = false;
+      notifyListeners();
+    } else {
+      notifyListeners();
+    }
   }
 
   Future<ParkingSession?> startParking({
@@ -98,19 +114,15 @@ class ParkingProvider with ChangeNotifier {
       paymentMethod: paymentMethod,
     );
     if (session != null) {
-      await fetchSessions();
-      // Track recent zone Phase 7
-      if (context.mounted) {
-        await context.read<ZoneProvider>().addToRecent(zoneId);
-      }
-      // Refresh wallet balance in AuthProvider
+      // Fire and forget background refreshes to avoid UI hangs
+      fetchSessions(showLoader: false);
 
       if (context.mounted) {
-        await Provider.of<AuthProvider>(context, listen: false).checkAuth();
+        context.read<ZoneProvider>().addToRecent(zoneId);
       }
 
-      // Proactively trigger notification update
-      await updateNotifications(session);
+      // Proactively trigger notification update (also background)
+      updateNotifications(session);
     }
     return session;
   }
@@ -151,7 +163,7 @@ class ParkingProvider with ChangeNotifier {
     return {
       'lat': storage.getDouble('parked_lat_$sessionId'),
       'lng': storage.getDouble('parked_lng_$sessionId'),
-      'photo': storage.getString('parked_photo_$sessionId'),
+      'photo_path': storage.getString('parked_photo_$sessionId'),
     };
   }
 
@@ -248,6 +260,3 @@ class ParkingProvider with ChangeNotifier {
 
   // Removed floating timer toggle code
 }
-
-// Global explorer key might be needed for context-less calls if any
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();

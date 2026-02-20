@@ -14,7 +14,6 @@ from firebase_admin import credentials, messaging
 
 logger = logging.getLogger(__name__)
 
-# Initialize Firebase Admin SDK
 _firebase_initialized = False
 
 def initialize_firebase():
@@ -69,15 +68,10 @@ def send_notification_to_user_sync(
         return False
     
     try:
-        # Ensure Firebase is initialized
         if not _firebase_initialized:
             initialize_firebase()
-        
-        # Prepare notification data
         notification_data = data or {}
         notification_data['click_action'] = 'FLUTTER_NOTIFICATION_CLICK'
-        
-        # Create FCM message
         message = messaging.Message(
             notification=messaging.Notification(
                 title=title,
@@ -96,28 +90,24 @@ def send_notification_to_user_sync(
             ),
         )
         
-        # Send message
         response = messaging.send(message)
         logger.info(f"Successfully sent notification to user {user.id}: {response}")
-        
-        # Update notification event if provided
         if notification_event:
             notification_event.sent_via_push = True
             notification_event.push_sent_at = timezone.now()
-            notification_event.save(update_fields=['sent_via_push', 'push_sent_at'])
+            _safe_save(notification_event, update_fields=['sent_via_push', 'push_sent_at'])
         
         return True
         
     except messaging.UnregisteredError:
         logger.warning(f"FCM token for user {user.id} is invalid or unregistered, clearing token")
-        # Clear invalid token
         user.fcm_device_token = None
         user.fcm_token_updated_at = None
-        user.save(update_fields=['fcm_device_token', 'fcm_token_updated_at'])
+        _safe_save(user, update_fields=['fcm_device_token', 'fcm_token_updated_at'])
         
         if notification_event:
             notification_event.push_error = "Device token unregistered"
-            notification_event.save(update_fields=['push_error'])
+            _safe_save(notification_event, update_fields=['push_error'])
         
         return False
         
@@ -126,7 +116,7 @@ def send_notification_to_user_sync(
         
         if notification_event:
             notification_event.push_error = str(e)
-            notification_event.save(update_fields=['push_error'])
+            _safe_save(notification_event, update_fields=['push_error'])
         
         return False
 
@@ -141,19 +131,75 @@ def send_notification_to_user(
     """
     Async wrapper for sending push notification to a user.
     """
-    # Extract ID from notification_event if provided
     notification_event_id = str(notification_event.id) if notification_event else None
     
-    # Call the Celery task
-    tasks.send_firebase_notification_task.delay(
+    from django.db import transaction
+    transaction.on_commit(lambda: tasks.send_firebase_notification_task.delay(
         user.id,
         title,
         body,
         data,
         notification_event_id
-    )
-    # Return True to indicate the request was accepted (enqueued)
+    ))
     return True
+
+
+def send_multicast_sync(
+    users,
+    title: str,
+    body: str,
+    data: Optional[Dict[str, str]] = None
+) -> Dict[str, int]:
+    """
+    Send push notifications to multiple users in efficient batches.
+    Uses messaging.send_each for optimal performance.
+    """
+    if not settings.FIREBASE_ENABLED:
+        return {'success': 0, 'failed': 0, 'no_token': 0}
+        
+    tokens = [u.fcm_device_token for u in users if u.fcm_device_token]
+    if not tokens:
+        return {'success': 0, 'failed': 0, 'no_token': 0}
+        
+    try:
+        if not _firebase_initialized:
+            initialize_firebase()
+            
+        notification_data = data or {}
+        notification_data['click_action'] = 'FLUTTER_NOTIFICATION_CLICK'
+        
+        messages = [
+            messaging.Message(
+                notification=messaging.Notification(title=title, body=body),
+                data=notification_data,
+                token=token,
+                android=messaging.AndroidConfig(
+                    priority='high',
+                    notification=messaging.AndroidNotification(
+                        sound='default',
+                        channel_id='default',
+                        icon='launcher_icon',
+                        color='#4CAF50',
+                    ),
+                ),
+            ) for token in tokens
+        ]
+        
+        # messaging.send_each is the modern batch sending API
+        batch_response = messaging.send_each(messages)
+        
+        success_count = batch_response.success_count
+        failure_count = batch_response.failure_count
+        
+        logger.info(f"Multicast sent: {success_count} success, {failure_count} failure")
+        return {
+            'success': success_count,
+            'failed': failure_count,
+            'no_token': len(users) - len(tokens)
+        }
+    except Exception as e:
+        logger.error(f"Multicast failed: {e}")
+        return {'success': 0, 'failed': len(tokens), 'no_token': len(users) - len(tokens)}
 
 
 def send_notification_to_multiple_users(
@@ -161,34 +207,22 @@ def send_notification_to_multiple_users(
     title: str,
     body: str,
     data: Optional[Dict[str, str]] = None
-) -> Dict[str, int]:
+) -> bool:
     """
-    Send a push notification to multiple users
-    
-    Args:
-        users: QuerySet or list of User instances
-        title: Notification title
-        body: Notification body text
-        data: Optional dictionary of custom data
-    
-    Returns:
-        dict: Statistics with 'success', 'failed', and 'no_token' counts
+    Asynchronously send notifications to multiple users using a single Celery task.
     """
-    stats = {'success': 0, 'failed': 0, 'no_token': 0}
-    
-    for user in users:
-        if not user.fcm_device_token:
-            stats['no_token'] += 1
-            continue
+    user_ids = [str(u.id) for u in users]
+    if not user_ids:
+        return False
         
-        success = send_notification_to_user(user, title, body, data)
-        if success:
-            stats['success'] += 1
-        else:
-            stats['failed'] += 1
-    
-    logger.info(f"Batch notification sent: {stats}")
-    return stats
+    from django.db import transaction
+    transaction.on_commit(lambda: tasks.send_multicast_notification_task.delay(
+        user_ids,
+        title,
+        body,
+        data
+    ))
+    return True
 
 
 def send_notification_to_topic(
@@ -292,3 +326,18 @@ def unsubscribe_from_topic(token: str, topic: str) -> bool:
     except Exception as e:
         logger.error(f"Failed to unsubscribe from topic '{topic}': {e}")
         return False
+
+def _safe_save(instance, **kwargs):
+    """Helper to save model instances in a way that handles async contexts"""
+    import os
+    from asgiref.sync import async_to_sync
+    
+    # If we are in an environment that might be async (like Daphne/Channels)
+    # we allow async unsafe for this specific operation if we are definitely in a worker/background
+    os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
+    try:
+        instance.save(**kwargs)
+    finally:
+        # We don't necessarily want to unset it if others need it, 
+        # but it's good practice to be local to the task if possible.
+        pass

@@ -58,4 +58,15 @@ class ReservationService {
       return false;
     }
   }
+
+  Future<bool> confirmReservationWallet(String reservationId) async {
+    try {
+      final response = await _apiClient.post(
+        'reservations/$reservationId/confirm-wallet/',
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
 }

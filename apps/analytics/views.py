@@ -21,8 +21,6 @@ class RevenueReportView(LoginRequiredMixin, AdminRequiredMixin, TemplateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
-        # Date Filter
         today = timezone.now().date()
         start_date_str = self.request.GET.get('start_date')
         end_date_str = self.request.GET.get('end_date')
@@ -30,7 +28,7 @@ class RevenueReportView(LoginRequiredMixin, AdminRequiredMixin, TemplateView):
         if start_date_str:
             start_date = timezone.datetime.strptime(start_date_str, '%Y-%m-%d').date()
         else:
-            start_date = today - timedelta(days=30) # Default 30 days
+            start_date = today - timedelta(days=30) 
             
         if end_date_str:
             end_date = timezone.datetime.strptime(end_date_str, '%Y-%m-%d').date()
@@ -40,12 +38,10 @@ class RevenueReportView(LoginRequiredMixin, AdminRequiredMixin, TemplateView):
         context['start_date'] = start_date
         context['end_date'] = end_date
         
-        # Query Records
         records = RevenueRecord.objects.filter(
             date__range=[start_date, end_date]
         ).order_by('date')
         
-        # Totals
         aggregates = records.aggregate(
             total_rev=Sum('total_revenue'),
             total_sess=Sum('total_sessions'),
@@ -56,8 +52,6 @@ class RevenueReportView(LoginRequiredMixin, AdminRequiredMixin, TemplateView):
         context['total_sessions'] = aggregates['total_sess'] or 0
         context['total_violations'] = aggregates['total_viol'] or 0
         
-        # Chart Data Preparation (Daily Trends)
-        # We need to aggregate by date across all zones
         daily_stats = records.values('date').annotate(
             rev=Sum('total_revenue'),
             sess=Sum('total_sessions')
@@ -71,7 +65,6 @@ class RevenueReportView(LoginRequiredMixin, AdminRequiredMixin, TemplateView):
         context['chart_revenue'] = json.dumps(chart_revenue)
         context['chart_sessions'] = json.dumps(chart_sessions)
         
-        # Top Zones by Revenue
         top_zones = records.values('zone__name').annotate(
             zone_rev=Sum('total_revenue')
         ).order_by('-zone_rev')[:5]
@@ -86,7 +79,6 @@ class SystemHealthView(LoginRequiredMixin, AdminRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Call the health check task function synchronously
         health_status = check_system_health()
         
         context['health'] = health_status

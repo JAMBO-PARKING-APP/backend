@@ -3,8 +3,6 @@ from .base import *
 DEBUG = False
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='backend-zvwt.onrender.com', cast=lambda v: [s.strip() for s in v.split(',')])
-
-# Security settings
 SECURE_SSL_REDIRECT = True
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
@@ -13,8 +11,6 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_BROWSER_XSS_FILTER = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
-
-# Database
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -22,11 +18,8 @@ DATABASES = {
     }
 }
 
-# Static files
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
-# Logging
-# Logging
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

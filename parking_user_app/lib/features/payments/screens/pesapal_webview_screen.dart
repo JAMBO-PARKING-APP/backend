@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -18,6 +19,9 @@ class PesapalWebViewScreen extends StatefulWidget {
 class _PesapalWebViewScreenState extends State<PesapalWebViewScreen> {
   late final WebViewController _controller;
   bool _isLoading = true;
+  bool _hasError = false;
+  String _errorMessage = '';
+  Timer? _timeoutTimer;
 
   @override
   void initState() {
@@ -29,9 +33,11 @@ class _PesapalWebViewScreenState extends State<PesapalWebViewScreen> {
           onPageStarted: (String url) {
             setState(() {
               _isLoading = true;
+              _hasError = false;
             });
           },
           onPageFinished: (String url) {
+            _timeoutTimer?.cancel();
             setState(() {
               _isLoading = false;
             });
@@ -41,11 +47,33 @@ class _PesapalWebViewScreenState extends State<PesapalWebViewScreen> {
             }
           },
           onWebResourceError: (WebResourceError error) {
-            debugPrint('Web resource error: ${error.description}');
+            _timeoutTimer?.cancel();
+            setState(() {
+              _isLoading = false;
+              _hasError = true;
+              _errorMessage = error.description;
+            });
           },
         ),
       )
       ..loadRequest(Uri.parse(widget.url));
+
+    // 20-second timeout for first page load
+    _timeoutTimer = Timer(const Duration(seconds: 20), () {
+      if (_isLoading && mounted) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+          _errorMessage = 'Connection timed out. Please try again.';
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timeoutTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -62,6 +90,33 @@ class _PesapalWebViewScreenState extends State<PesapalWebViewScreen> {
         children: [
           WebViewWidget(controller: _controller),
           if (_isLoading) const Center(child: CircularProgressIndicator()),
+          if (_hasError)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.red,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      _errorMessage,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Go Back'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );

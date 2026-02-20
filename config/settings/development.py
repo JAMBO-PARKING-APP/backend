@@ -13,24 +13,19 @@ CSRF_TRUSTED_ORIGINS = [
     'https://curtis-unmobilized-clarence.ngrok-free.dev',
 ]
 
-# Support for Ngrok/Proxy
+
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Development database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
 
-# CORS settings for development
+# DATABASES moved to base.py and configured via .env for PostgreSQL migration
+
+
 CORS_ALLOW_ALL_ORIGINS = True
 
-# Email backend for development
+
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-# Logging
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
