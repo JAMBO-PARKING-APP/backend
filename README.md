@@ -35,6 +35,7 @@ For detailed specifications, refer to the documents in the `docs/` directory:
 | � **[CI: Django](.github/workflows/django.yml)** | 🐍 | Automated backend testing and linting configuration. |
 | 🤖 **[CI: Flutter](.github/workflows/flutter.yml)** | 📱 | Automated mobile app analysis and testing configuration. |
 | 📖 **[API Documentation](http://localhost:8000/api/docs/)** | 📑 | Interactive Swagger UI for all system endpoints. |
+| 📖 **[Detailed API Documentation](http://localhost:8000/api/redoc/)** | 📑 | Interactive Swagger UI for all system endpoints. |
 
 ---
 
