@@ -1,0 +1,84 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:dio/dio.dart';
+import 'package:parking_officer_app/core/api_client.dart';
+
+class EnforcementService {
+  final ApiClient _apiClient = ApiClient();
+
+  Future<bool> issueViolation({
+    String? vehicleId,
+    String? vehiclePlate,
+    String? zoneId,
+    required String type,
+    required String description,
+    required double fineAmount,
+    required double lat,
+    required double lng,
+    List<File>? evidence,
+    String? sessionId,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'vehicle': vehicleId,
+        'vehicle_plate': vehiclePlate,
+        'zone': zoneId,
+        'violation_type': type,
+        'description': description,
+        'fine_amount': fineAmount,
+        'latitude': lat,
+        'longitude': lng,
+        'parking_session': sessionId,
+      });
+
+      // Handle multiple evidence photos
+      if (evidence != null && evidence.isNotEmpty) {
+        for (int i = 0; i < evidence.length; i++) {
+          formData.files.add(
+            MapEntry(
+              'evidence',
+              await MultipartFile.fromFile(
+                evidence[i].path,
+                filename: 'evidence_$i.jpg',
+              ),
+            ),
+          );
+        }
+      }
+
+      final response = await _apiClient.post(
+        'officer/violations/create/',
+        data: formData,
+      );
+      if (response.statusCode != 201) {
+        debugPrint(
+          'Violation creation failed: ${response.statusCode} - ${response.data}',
+        );
+      }
+      return response.statusCode == 201;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<void> logAction({
+    required String action,
+    Map<String, dynamic>? details,
+    double? lat,
+    double? lng,
+  }) async {
+    try {
+      await _apiClient.post(
+        'officer/logs/create/',
+        data: {
+          'action': action,
+          'details': details ?? {},
+          'latitude': lat,
+          'longitude': lng,
+        },
+      );
+    } catch (e) {
+      // Background logging failure shouldn't block the UI
+    }
+  }
+}

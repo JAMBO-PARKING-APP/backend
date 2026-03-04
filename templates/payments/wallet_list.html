@@ -1,0 +1,82 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Wallet Transactions" %} | {% trans "Smart Parking" %}{% endblock %}
+{% block page_title %}{% trans "Wallet Transactions" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h5 class="mb-1">{% trans "Virtual Wallet Management" %}</h5>
+                    <p class="text-muted mb-0">{% trans "Monitor all user credits, refunds, and parking payments." %}
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <button class="btn btn-primary">
+                        <i class="bi bi-download me-2"></i>{% trans "Export CSV" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">{% trans "Recent Transactions" %}</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-modern mb-0">
+                    <thead>
+                        <tr>
+                            <th>{% trans "User" %}</th>
+                            <th>{% trans "Type" %}</th>
+                            <th>{% trans "Amount" %}</th>
+                            <th>{% trans "Description" %}</th>
+                            <th>{% trans "Status" %}</th>
+                            <th>{% trans "Date" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tx in transactions %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ tx.user.full_name }}</div>
+                                <small class="text-muted">{{ tx.user.phone }}</small>
+                            </td>
+                            <td>
+                                <span class="text-uppercase small fw-bold">{{ tx.get_transaction_type_display }}</span>
+                            </td>
+                            <td>
+                                <span
+                                    class="fw-bold {% if tx.amount > 0 and tx.transaction_type != 'payment' %}text-success{% else %}text-danger{% endif %}">
+                                    {% if tx.amount > 0 and tx.transaction_type != 'payment' %}+{% endif %}{{
+                                    currency_symbol }}{{ tx.amount }}
+                                </span>
+                            </td>
+                            <td>{{ tx.description }}</td>
+                            <td>
+                                <span
+                                    class="badge {% if tx.status == 'completed' %}bg-success-soft{% else %}bg-warning-soft{% endif %}">
+                                    {{ tx.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ tx.created_at|date:"M d, Y H:i" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">{% trans "No transactions recorded yet."
+                                %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

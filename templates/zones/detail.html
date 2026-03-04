@@ -1,0 +1,431 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+
+{% block title %}{{ zone.name }} - {% trans "Zone Details" %}{% endblock %}
+{% block page_title %}{% trans "Zone Details" %}: {{ zone.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center">
+        <a href="{% url 'zone-list' %}" class="btn btn-outline-secondary me-3">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <h3 class="mb-0">{{ zone.name }}</h3>
+            <span class="badge {% if zone.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                {% if zone.is_active %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}
+            </span>
+        </div>
+    </div>
+    <div class="btn-group">
+        <a href="{% url 'zone-edit' zone.pk %}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-2"></i>{% trans "Edit Zone" %}
+        </a>
+        <a href="{% url 'zone-diagram' zone.pk %}" class="btn btn-outline-info">
+            <i class="bi bi-grid-3x3-gap me-2"></i>{% trans "Manage Slots" %}
+        </a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <!-- Occupancy Card -->
+    <div class="col-md-3">
+        <div class="card stat-card border-start border-4 border-primary">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">{% trans "Current Occupancy" %}</h6>
+                <div class="d-flex align-items-center justify-content-between">
+                    <h3 class="mb-0" id="occupiedText">{{ occupied_count }}/{{ total_slots_count }}</h3>
+                    <div class="occupancy-percentage h4 mb-0 text-primary" id="occupancyText">{{
+                        occupancy_rate|floatformat:1 }}%</div>
+                </div>
+                <div class="progress mt-3" style="height: 8px;">
+                    <div class="progress-bar" id="occupancyBar" role="progressbar" style="width: {{ occupancy_rate }}%"
+                        aria-valuenow="{{ occupancy_rate }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Available Slots -->
+    <div class="col-md-3">
+        <div class="card stat-card border-start border-4 border-success">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">{% trans "Available Slots" %}</h6>
+                <div class="d-flex align-items-center justify-content-between">
+                    <h3 class="mb-0 text-success" id="availableText">{{ available_count }}</h3>
+                    <i class="bi bi-check-circle display-6 opacity-25"></i>
+                </div>
+                <small class="text-muted">{% trans "Ready for parking" %}</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Sessions -->
+    <div class="col-md-3">
+        <div class="card stat-card border-start border-4 border-info">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">{% trans "Active Sessions" %}</h6>
+                <div class="d-flex align-items-center justify-content-between">
+                    <h3 class="mb-0 text-info" id="activeSessionsText">{{ active_sessions.count }}</h3>
+                    <i class="bi bi-car-front display-6 opacity-25"></i>
+                </div>
+                <small class="text-muted">{% trans "In progress" %}</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Revenue -->
+    <div class="col-md-3">
+        <div class="card stat-card border-start border-4 border-warning">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">{% trans "Today's Revenue" %}</h6>
+                <div class="d-flex align-items-center justify-content-between">
+                    <h3 class="mb-0">{{ currency_symbol }}{{ today_revenue|floatformat:2 }}</h3>
+                    <i class="bi bi-currency-dollar display-6 opacity-25"></i>
+                </div>
+                <small class="text-muted">{% trans "From sessions in this zone" %}</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Main Content: Slot Map and Sessions -->
+    <div class="col-lg-8">
+        <!-- Live Slot Grid -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{% trans "Parking Slots Status" %}</h5>
+                <div class="d-flex align-items-center">
+                    <small class="text-muted">{% trans "Updates every 5s" %}</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="slot-grid-container" id="slotGrid">
+                    <!-- Slots will be updated via AJAX -->
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2 text-muted">{% trans "Loading live status..." %}</p>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex flex-wrap gap-4 pt-3 border-top">
+                    <div class="d-flex align-items-center">
+                        <div class="slot-legend available me-2"></div>
+                        <small>{% trans "Available" %}</small>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="slot-legend occupied me-2"></div>
+                        <small>{% trans "Occupied" %}</small>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="slot-legend reserved me-2"></div>
+                        <small>{% trans "Reserved" %}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Sessions Table -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "Current Active Sessions" %}</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-modern mb-0" id="activeSessionsTable">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Vehicle" %}</th>
+                                <th>{% trans "Slot" %}</th>
+                                <th>{% trans "Started" %}</th>
+                                <th>{% trans "Duration" %}</th>
+                                <th>{% trans "Actions" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for session in active_sessions %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">{{ session.vehicle.license_plate }}</div>
+                                    <small class="text-muted">{{ session.vehicle.user.full_name }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark">
+                                        {{ session.parking_slot.slot_code|default:"--" }}
+                                    </span>
+                                </td>
+                                <td>{{ session.start_time|date:"H:i" }}</td>
+                                <td>{{ session.start_time|timesince }}</td>
+                                <td>
+                                    <a href="{% url 'vehicle-detail' session.vehicle.pk %}"
+                                        class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">{% trans "No active sessions in this
+                                    zone" %}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar: Zone Info and Recent Activity -->
+    <div class="col-lg-4">
+        <!-- Zone Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">{% trans "Zone Information" %}</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="text-muted small d-block">{% trans "Hourly Rate" %}</label>
+                    <div class="fw-bold h5 text-success">{{ currency_symbol }}{{ zone.hourly_rate }}/{% trans "hr" %}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="text-muted small d-block">{% trans "Max Duration" %}</label>
+                    <div class="fw-bold">{{ zone.max_duration_hours }} {% trans "hours" %}</div>
+                </div>
+                <div class="mb-3">
+                    <label class="text-muted small d-block">{% trans "Location" %}</label>
+                    <div>
+                        <i class="bi bi-geo-alt text-primary"></i>
+                        {{ zone.latitude|floatformat:4 }}, {{ zone.longitude|floatformat:4 }}
+                    </div>
+                </div>
+                {% if zone.description %}
+                <div class="mb-0">
+                    <label class="text-muted small d-block">{% trans "Description" %}</label>
+                    <p class="mb-0 small">{{ zone.description }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Violations -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{% trans "Recent Violations" %}</h5>
+                <a href="{% url 'violation-list' %}?zone={{ zone.pk }}" class="small">{% trans "View All" %}</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for violation in recent_violations %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-bold">{{ violation.vehicle.license_plate }}</div>
+                                <small class="text-muted">{{ violation.get_violation_type_display }}</small>
+                            </div>
+                            <span
+                                class="badge {% if violation.is_paid %}bg-success{% else %}bg-danger{% endif %} small">
+                                {% if violation.is_paid %}{% trans "Paid" %}{% else %}{% trans "Unpaid" %}{% endif %}
+                            </span>
+                        </div>
+                        <div class="small text-muted mt-1">
+                            {{ violation.created_at|timesince }} {% trans "ago" %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-4 text-muted small">{% trans "No recent violations" %}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Zone Image -->
+        {% if zone.zone_image %}
+        <div class="card overflow-hidden">
+            <img src="{{ zone.zone_image.url }}" class="card-img-top" alt="{{ zone.name }}"
+                style="max-height: 200px; object-fit: cover;">
+            <div class="card-body p-2 text-center">
+                <small class="text-muted">{% trans "Zone Reference Image" %}</small>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const zoneId = "{{ zone.id }}";
+    let liveInterval;
+
+    function updateLiveStatus() {
+        fetch(`/ajax/zones/${zoneId}/live-status/`)
+            .then(response => response.json())
+            .then(data => {
+                // Update stats
+                document.getElementById('occupiedText').textContent = `${data.occupied_slots}/${data.total_slots}`;
+                const occupancyRate = (data.occupied_slots / data.total_slots * 100).toFixed(1);
+                document.getElementById('occupancyText').textContent = `${occupancyRate}%`;
+
+                const occupancyBar = document.getElementById('occupancyBar');
+                occupancyBar.style.width = `${occupancyRate}%`;
+                occupancyBar.className = `progress-bar ${occupancyRate > 80 ? 'bg-danger' : occupancyRate > 60 ? 'bg-warning' : 'bg-primary'}`;
+
+                document.getElementById('availableText').textContent = data.total_slots - data.occupied_slots;
+                document.getElementById('activeSessionsText').textContent = data.active_sessions;
+
+                // Update Slot Grid
+                const grid = document.getElementById('slotGrid');
+                grid.innerHTML = `
+                    <div class="row g-2 justify-content-start">
+                        ${data.slots.map(slot => `
+                            <div class="col-auto">
+                                <div class="slot-box ${slot.status}" title="Slot ${slot.id}${slot.vehicle ? ' - ' + slot.vehicle : ''}" 
+                                     data-bs-toggle="tooltip" data-bs-placement="top">
+                                    ${slot.id}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+                // Re-initialize tooltips
+                const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+
+                // Update Sessions Table if possible (minimal update to avoid flash)
+                if (data.active_sessions_list) {
+                    const tbody = document.querySelector('#activeSessionsTable tbody');
+                    if (data.active_sessions_list.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">{% trans "No active sessions in this zone" %}</td></tr>';
+                    } else {
+                        // We only update if length changed or we want full fresh. 
+                        // For simplicity, we keep the table as rendered by Django unless we want full dynamic.
+                        // Let's rely on the grid for live changes and the table for initial load / refresh.
+                    }
+                }
+            })
+            .catch(error => console.error('Error updating live status:', error));
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        updateLiveStatus();
+        liveInterval = setInterval(updateLiveStatus, 5000);
+    });
+
+    // Cleanup
+    window.addEventListener('beforeunload', () => {
+        if (liveInterval) clearInterval(liveInterval);
+    });
+</script>
+
+<style>
+    .stat-card {
+        transition: transform 0.2s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .slot-grid-container {
+        max-height: 400px;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+
+    .slot-box {
+        width: 45px;
+        height: 60px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+    }
+
+    .slot-box.available {
+        background-color: #d1e7dd;
+        color: #0f5132;
+        border-color: #badbcc;
+    }
+
+    .slot-box.occupied {
+        background-color: #f8d7da;
+        color: #842029;
+        border-color: #f5c2c7;
+        position: relative;
+    }
+
+    .slot-box.occupied::after {
+        content: "";
+        position: absolute;
+        bottom: 5px;
+        width: 25px;
+        height: 12px;
+        background-color: #842029;
+        border-radius: 2px;
+        opacity: 0.3;
+    }
+
+    .slot-box.reserved {
+        background-color: #fff3cd;
+        color: #664d03;
+        border-color: #ffecb5;
+    }
+
+    .slot-box:hover {
+        transform: scale(1.1);
+        z-index: 10;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .slot-legend {
+        width: 15px;
+        height: 15px;
+        border-radius: 2px;
+    }
+
+    .slot-legend.available {
+        background-color: #d1e7dd;
+        border: 1px solid #badbcc;
+    }
+
+    .slot-legend.occupied {
+        background-color: #f8d7da;
+        border: 1px solid #f5c2c7;
+    }
+
+    .slot-legend.reserved {
+        background-color: #fff3cd;
+        border: 1px solid #ffecb5;
+    }
+
+    .live-indicator {
+        animation: blink 2s infinite;
+        font-size: 0.7rem;
+    }
+
+    @keyframes blink {
+        0% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.5;
+        }
+
+        100% {
+            opacity: 1;
+        }
+    }
+</style>
+{% endblock %}

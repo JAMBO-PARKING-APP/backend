@@ -1,0 +1,121 @@
+{% load i18n %}
+{% load static %}
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="d-flex align-items-center px-4 py-3">
+            <img src="{% static 'JAMBO.png' %}" alt="JAMBO Logo" class="sidebar-logo me-2"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <div style="display:none;" class="sidebar-logo-fallback">
+                <i class="bi bi-car-front-fill text-primary" style="font-size: 1.5rem;"></i>
+            </div>
+            <span class="fs-5 fw-bold text-dark logo-text">JAMBO PARK</span>
+        </div>
+        <button class="btn btn-sm sidebar-close-btn d-lg-none" onclick="toggleSidebar()">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+
+    <div class="sidebar-content h-100 py-3">
+        <div class="nav-section mb-2 px-3">
+            <small class="text-uppercase text-muted fw-bold" style="font-size: 0.65rem; letter-spacing: 1px;">{% trans
+                "MAIN" %}</small>
+        </div>
+        <ul class="nav flex-column mb-4 px-2">
+            <li class="nav-item mb-1">
+                <a class="nav-link d-flex align-items-center {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+                    href="{% url 'dashboard' %}">
+                    <i class="bi bi-speedometer2"></i>
+                    <span class="ms-3 nav-text">{% trans "Dashboard" %}</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="nav-section mb-2 px-3">
+            <small class="text-uppercase text-muted fw-bold" style="font-size: 0.65rem; letter-spacing: 1px;">{% trans
+                "MANAGEMENT" %}</small>
+        </div>
+        <ul class="nav flex-column mb-4 px-2">
+            <li class="nav-item mb-1">
+                <a class="nav-link d-flex align-items-center {% if 'zone' in request.path %}active{% endif %}"
+                    href="{% url 'zone-list' %}">
+                    <i class="bi bi-geo-alt"></i>
+                    <span class="ms-3 nav-text">{% trans "Parking Zones" %}</span>
+                </a>
+            </li>
+            <li class="nav-item mb-1">
+                <a class="nav-link d-flex align-items-center {% if 'user' in request.path %}active{% endif %}"
+                    href="{% url 'user-list' %}">
+                    <i class="bi bi-people"></i>
+                    <span class="ms-3 nav-text">{% trans "User Directory" %}</span>
+                </a>
+            </li>
+            <li class="nav-item mb-1">
+                <a class="nav-link d-flex align-items-center {% if 'vehicle' in request.path %}active{% endif %}"
+                    href="{% url 'vehicle-list' %}">
+                    <i class="bi bi-car-front"></i>
+                    <span class="ms-3 nav-text">{% trans "Vehicle Registry" %}</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="nav-section mb-2 px-3">
+            <small class="text-uppercase text-muted fw-bold" style="font-size: 0.65rem; letter-spacing: 1px;">{% trans
+                "OPERATIONS" %}</small>
+        </div>
+        <ul class="nav flex-column mb-4 px-2">
+            <li class="nav-item mb-1">
+                <a class="nav-link d-flex align-items-center {% if 'session' in request.path %}active{% endif %}"
+                    href="{% url 'session-list' %}">
+                    <i class="bi bi-clock-history"></i>
+                    <span class="ms-3 nav-text">{% trans "Parking Sessions" %}</span>
+                </a>
+            </li>
+            <li class="nav-item mb-1">
+                <a class="nav-link d-flex align-items-center {% if 'reservation' in request.path %}active{% endif %}"
+                    href="{% url 'reservation-list' %}">
+                    <i class="bi bi-calendar-check"></i>
+                    <span class="ms-3 nav-text">{% trans "Reservations" %}</span>
+                </a>
+            </li>
+            <li class="nav-item mb-1">
+                <a class="nav-link d-flex align-items-center {% if 'payment' in request.path %}active{% endif %}"
+                    href="{% url 'payment-list' %}">
+                    <i class="bi bi-wallet2"></i>
+                    <span class="ms-3 nav-text">{% trans "Payments & Revenue" %}</span>
+                </a>
+            </li>
+            <li class="nav-item mb-1">
+                <a class="nav-link d-flex align-items-center {% if 'violation' in request.path %}active{% endif %}"
+                    href="{% url 'violation-list' %}">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <span class="ms-3 nav-text">{% trans "Enforcement" %}</span>
+                </a>
+            </li>
+        </ul>
+
+        {% if user.role == 'admin' %}
+        <div class="nav-section mb-2 px-3">
+            <small class="text-uppercase text-muted fw-bold" style="font-size: 0.65rem; letter-spacing: 1px;">{% trans
+                "SYSTEM" %}</small>
+        </div>
+        <ul class="nav flex-column mb-4 px-2">
+            <li class="nav-item mb-1">
+                <a class="nav-link d-flex align-items-center {% if 'settings' in request.path %}active{% endif %}"
+                    href="{% url 'system-settings' %}">
+                    <i class="bi bi-gear-wide-connected"></i>
+                    <span class="ms-3 nav-text">{% trans "Configuration" %}</span>
+                </a>
+            </li>
+            <li class="nav-item mb-1">
+                <a class="nav-link d-flex align-items-center {% if 'notification' in request.path %}active{% endif %}"
+                    href="{% url 'notification-list' %}">
+                    <i class="bi bi-bell"></i>
+                    <span class="ms-3 nav-text">{% trans "Notification Log" %}</span>
+                </a>
+            </li>
+        </ul>
+        {% endif %}
+    </div>
+</aside>

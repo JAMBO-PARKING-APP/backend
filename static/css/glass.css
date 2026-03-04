@@ -1,0 +1,98 @@
+/* Professional Theme - Clean & Muted */
+:root {
+    /* Core Palette - Professional */
+    --primary: #0b4a6f; /* deep blue */
+    --primary-contrast: #ffffff;
+    --secondary: #1f6f8b; /* teal-blue */
+    --accent: #ffb74d; /* warm amber */
+    --muted: #6b7280; /* gray-muted */
+    --text-dark: #0f1724;
+    --text-light: #ffffff;
+
+    /* Backgrounds and surfaces */
+    --bg-page: #f6f8fa;
+    --bg-surface: #ffffff;
+    --surface-border: rgba(15, 23, 36, 0.06);
+
+    /* Elevation */
+    --elevation-1: 0 1px 3px rgba(15,23,36,0.06);
+    --elevation-2: 0 6px 18px rgba(15,23,36,0.08);
+
+    /* Shared radius */
+    --radius-lg: 12px;
+}
+
+body {
+    background: var(--bg-page);
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: var(--text-dark);
+}
+
+/* Panels / Cards */
+.glass-panel,
+.card {
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--surface-border) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--elevation-1) !important;
+}
+
+.card:hover { box-shadow: var(--elevation-2) !important; transform: none !important; }
+
+/* Sidebar */
+.sidebar {
+    background: linear-gradient(180deg, var(--bg-surface), var(--bg-surface));
+    border-right: 1px solid var(--surface-border) !important;
+}
+
+.sidebar .nav-link {
+    color: var(--muted);
+    padding: 10px 14px;
+    border-radius: 8px;
+    transition: background 160ms ease, color 160ms ease;
+}
+
+.sidebar .nav-link:hover { background: rgba(11,74,111,0.05); color: var(--text-dark); }
+
+.sidebar .nav-link.active { background: var(--primary); color: var(--primary-contrast) !important; }
+
+/* Topbar */
+.topbar { background: transparent; border-bottom: 1px solid var(--surface-border); }
+
+/* Buttons */
+.btn-primary {
+    background: var(--primary) !important;
+    color: var(--primary-contrast) !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+.btn-primary:hover { filter: brightness(0.95); }
+
+.btn-secondary { background: var(--secondary); color: var(--text-light); border: none; }
+
+/* Inputs */
+.form-control, .form-select {
+    background: #fff !important;
+    border: 1px solid var(--surface-border) !important;
+    border-radius: 8px !important;
+    padding: 8px 12px;
+}
+.form-control:focus, .form-select:focus { box-shadow: 0 0 0 4px rgba(31,111,139,0.06) !important; border-color: var(--secondary) !important; }
+
+/* Tables */
+.table-modern thead th { background: transparent !important; color: var(--muted); border-bottom: 1px solid var(--surface-border) !important; }
+.table-modern tbody td { border-bottom: 1px solid rgba(15,23,36,0.03) !important; }
+
+/* Utility */
+.text-muted { color: var(--muted) !important; }
+
+/* Small badges */
+.badge { background: rgba(11,74,111,0.08); color: var(--primary); border-radius: 8px; padding: 4px 8px; }
+
+/* Make links clearer */
+a { color: var(--primary); }
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .sidebar { display: none; }
+}

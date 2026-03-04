@@ -1,0 +1,413 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+{% load cache %}
+
+{% block title %}{% trans "Dashboard Overview" %}{% endblock %}
+{% block page_title %}{% trans "Dashboard Overview" %}{% endblock %}
+{% block breadcrumb %}{% trans "Real-time Metrics" %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::after {
+        content: "";
+        position: absolute;
+        bottom: -20px;
+        right: -20px;
+        width: 100px;
+        height: 100px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+    }
+
+    .activity-row:hover {
+        background-color: var(--primary-soft);
+        cursor: pointer;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+
+    .quick-action-card {
+        transition: transform 0.2s;
+        border: 1px solid var(--border-color);
+    }
+
+    .quick-action-card:hover {
+        transform: translateY(-5px);
+        border-color: var(--primary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Metrics Grid -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card bg-primary text-white border-0">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="text-white-50 mb-1 small text-uppercase fw-bold">{% trans "Active Sessions" %}</p>
+                        <h2 class="mb-0 fw-bold">{{ active_sessions }}</h2>
+                    </div>
+                    <div class="bg-white-20 p-3 rounded-circle" style="background: rgba(255,255,255,0.2);">
+                        <i class="bi bi-car-front fs-3"></i>
+                    </div>
+                </div>
+                <div class="mt-3 small">
+                    <span class="text-white-50"><i class="bi bi-arrow-up me-1"></i>12% </span>
+                    <span>{% trans "since last hour" %}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card bg-success text-white border-0">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="text-white-50 mb-1 small text-uppercase fw-bold">{% trans "Today's Revenue" %}</p>
+                        <h2 class="mb-0 fw-bold">{{ currency_symbol }}{{ today_revenue|floatformat:0 }}</h2>
+                    </div>
+                    <div class="bg-white-20 p-3 rounded-circle" style="background: rgba(255,255,255,0.2);">
+                        <i class="bi bi-wallet2 fs-3"></i>
+                    </div>
+                </div>
+                <div class="mt-3 small">
+                    <span class="text-white-50"><i class="bi bi-arrow-up me-1"></i>5.4% </span>
+                    <span>{% trans "vs yesterday" %}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card bg-warning text-white border-0">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="text-white-50 mb-1 small text-uppercase fw-bold">{% trans "Zone Occupancy" %}</p>
+                        <h2 class="mb-0 fw-bold">84%</h2>
+                    </div>
+                    <div class="bg-white-20 p-3 rounded-circle" style="background: rgba(255,255,255,0.2);">
+                        <i class="bi bi-geo-alt fs-3"></i>
+                    </div>
+                </div>
+                <div class="mt-3 small">
+                    <span class="text-white-50">{% trans "Peak demand reached" %}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card bg-danger text-white border-0">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="text-white-50 mb-1 small text-uppercase fw-bold">{% trans "Violation Alerts" %}</p>
+                        <h2 class="mb-0 fw-bold">{{ total_violations }}</h2>
+                    </div>
+                    <div class="bg-white-20 p-3 rounded-circle" style="background: rgba(255,255,255,0.2);">
+                        <i class="bi bi-shield-exclamation fs-3"></i>
+                    </div>
+                </div>
+                <div class="mt-3 small">
+                    <span class="text-white-50">{% trans "Requires immediate attention" %}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">{% trans "Revenue Performance" %}</h6>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-light border" data-bs-toggle="dropdown">
+                        {% trans "Last 7 Days" %} <i class="bi bi-chevron-down ms-1"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#">{% trans "Last 24 Hours" %}</a></li>
+                        <li><a class="dropdown-item" href="#">{% trans "Last Month" %}</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="mb-0 fw-bold">{% trans "Occupancy Distribution" %}</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 250px;">
+                    <canvas id="occupancyChart"></canvas>
+                </div>
+                <div class="mt-4">
+                    {% for label, count in occupancy_stats %}
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="d-flex align-items-center small">
+                            <span class="p-1 rounded-circle me-2" style="background-color: var(--primary);"></span>
+                            <span>{{ label }}</span>
+                        </div>
+                        <span class="fw-bold small">{{ count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Link Row -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <a href="{% url 'zone-list' %}" class="card quick-action-card text-decoration-none p-3 text-center">
+            <i class="bi bi-plus-square text-primary fs-3 mb-2"></i>
+            <span class="fw-bold text-dark small">{% trans "Create Session" %}</span>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{% url 'user-list' %}" class="card quick-action-card text-decoration-none p-3 text-center">
+            <i class="bi bi-person-plus text-success fs-3 mb-2"></i>
+            <span class="fw-bold text-dark small">{% trans "Add Driver" %}</span>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="#" onclick="showCheckPlateModal()" class="card quick-action-card text-decoration-none p-3 text-center">
+            <i class="bi bi-search text-warning fs-3 mb-2"></i>
+            <span class="fw-bold text-dark small">{% trans "Inspect Plate" %}</span>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="{% url 'violation-create' %}" class="card quick-action-card text-decoration-none p-3 text-center">
+            <i class="bi bi-file-earmark-plus text-danger fs-3 mb-2"></i>
+            <span class="fw-bold text-dark small">{% trans "Issue Ticket" %}</span>
+        </a>
+    </div>
+</div>
+
+<!-- Lists Row -->
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">{% trans "Live Parking Sessions" %}</h6>
+                <a href="{% url 'session-list' %}" class="btn btn-sm btn-link text-decoration-none">{% trans "Manage
+                    All" %}</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-3 border-0 small text-uppercase text-muted">{% trans "Vehicle" %}</th>
+                            <th class="border-0 small text-uppercase text-muted">{% trans "Zone" %}</th>
+                            <th class="border-0 small text-uppercase text-muted">{% trans "Duration" %}</th>
+                            <th class="border-0 small text-uppercase text-muted">{% trans "Status" %}</th>
+                            <th class="pe-3 border-0"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for session in recent_sessions %}
+                        <tr class="activity-row">
+                            <td class="ps-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-light text-primary rounded me-2 d-flex align-items-center justify-content-center fw-bold"
+                                        style="width: 32px; height: 32px;">
+                                        {{ session.vehicle.license_plate|first }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold small">{{ session.vehicle.license_plate }}</div>
+                                        <div class="text-muted" style="font-size: 0.7rem;">{{ session.vehicle.make }} {{
+                                            session.vehicle.model }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="small">{{ session.zone.name }}</span></td>
+                            <td><span class="small text-muted">{{ session.created_at|timesince }}</span></td>
+                            <td>
+                                <span
+                                    class="badge bg-{% if session.status == 'active' %}success{% elif session.status == 'overdue' %}danger{% else %}secondary{% endif %}-soft px-2 py-1">
+                                    {{ session.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="pe-3 text-end">
+                                <button class="btn btn-sm btn-icon border-0 bg-light"
+                                    onclick="terminateSession('{{ session.id }}', '{{ session.vehicle.license_plate }}')">
+                                    <i class="bi bi-stop-circle text-danger"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted small">{% trans "No active sessions
+                                found" %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">{% trans "High-Priority Violations" %}</h6>
+                <a href="{% url 'violation-list' %}" class="btn btn-sm btn-link text-decoration-none">{% trans "View
+                    Logs" %}</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-3 border-0 small text-uppercase text-muted">{% trans "Plate" %}</th>
+                            <th class="border-0 small text-uppercase text-muted">{% trans "Reason" %}</th>
+                            <th class="border-0 small text-uppercase text-muted">{% trans "Fine" %}</th>
+                            <th class="border-0 small text-uppercase text-muted">{% trans "Time" %}</th>
+                            <th class="pe-3 border-0"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for v in recent_violations %}
+                        <tr class="activity-row">
+                            <td class="ps-3"><span class="fw-bold small">{{ v.vehicle.license_plate }}</span></td>
+                            <td><span class="small badge bg-danger-soft">{{ v.get_violation_type_display }}</span></td>
+                            <td class="fw-bold small">{{ currency_symbol }}{{ v.fine_amount }}</td>
+                            <td><span class="small text-muted">{{ v.created_at|timesince }}</span></td>
+                            <td class="pe-3 text-end">
+                                <button class="btn btn-sm btn-icon border-0 bg-light">
+                                    <i class="bi bi-eye text-primary"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted small">{% trans "No violations detected
+                                today" %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+    $(document).ready(function () {
+        // --- CHARTS ---
+        const ctxRevenue = document.getElementById('revenueChart');
+        if (ctxRevenue) {
+            new Chart(ctxRevenue, {
+                type: 'line',
+                data: {
+                    labels: {{ revenue_labels | safe }
+    },
+        datasets: [{
+            label: '{% trans "Revenue" %}',
+            data: {{ revenue_data | safe }},
+        fill: true,
+        borderColor: '#1890ff',
+        backgroundColor: 'rgba(24, 144, 255, 0.05)',
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 5
+                    }]
+                },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+            y: {
+                beginAtZero: true,
+                grid: { color: '#f0f0f0' },
+                ticks: {
+                    font: { size: 11 },
+                    callback: value => '{{ currency_symbol }}' + value
+                }
+            }
+        }
+    }
+            });
+        }
+
+    const ctxOccupancy = document.getElementById('occupancyChart');
+    if (ctxOccupancy) {
+        new Chart(ctxOccupancy, {
+            type: 'doughnut',
+            data: {
+                labels: {{ occupancy_labels| safe }},
+    datasets: [{
+        data: {{ occupancy_data| safe }},
+        backgroundColor: ['#1890ff', '#52c41a', '#faad14', '#ff4d4f', '#722ed1'],
+        borderWidth: 0,
+        hoverOffset: 10
+                    }]
+                },
+    options: {
+        responsive: true,
+            maintainAspectRatio: false,
+                cutout: '75%',
+                    plugins: { legend: { display: false } }
+    }
+            });
+        }
+
+    // --- DASHBOARD ACTIONS ---
+    window.terminateSession = function (id, plate) {
+        confirmAction({
+            title: '{% trans "Terminate Session?" %}',
+            text: '{% trans "Stop current parking for plate" %} ' + plate,
+            type: 'danger',
+            confirmText: '{% trans "End Session Now" %}',
+            onConfirm: function () {
+                $.ajax({
+                    url: '/ajax/sessions/' + id + '/terminate/',
+                    type: 'POST',
+                    success: function (res) {
+                        showToast('{% trans "Session ended successfully" %}');
+                        setTimeout(() => location.reload(), 1000);
+                    },
+                    error: function () {
+                        showAlert('{% trans "Error" %}', '{% trans "Failed to terminate session. Please try again." %}', 'error');
+                    }
+                });
+            }
+        });
+    };
+
+    // Auto Refresh logic
+    setInterval(() => {
+        if (document.visibilityState === 'visible') {
+            // Refresh data via AJAX would be better here for full "live" experience
+            // But full page reload is safe for now until we have dedicated dashboard API
+            location.reload();
+        }
+    }, 60000);
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,388 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Parking Zones - Smart Parking System" %}{% endblock %}
+{% block page_title %}{% trans "Parking Zones" %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="mb-1">{% trans "Parking Zones" %}</h3>
+        <p class="text-muted mb-0">{% trans "Manage parking zones and monitor occupancy" %}</p>
+    </div>
+    <a href="{% url 'zone-create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>{% trans "Add Zone" %}
+    </a>
+</div>
+
+<!-- Zones Table -->
+<div class="card table-modern position-relative">
+    <div class="loading-overlay d-none" id="tableLoader">
+        <div class="spinner-lg"></div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-modern mb-0">
+            <thead>
+                <tr>
+                    <th>{% trans "Zone" %}</th>
+                    <th>{% trans "Location" %}</th>
+                    <th>{% trans "Occupancy" %}</th>
+                    <th>{% trans "Rate" %}</th>
+                    <th>{% trans "Status" %}</th>
+                    <th>{% trans "Actions" %}</th>
+                </tr>
+            </thead>
+            <tbody id="zoneTableBody">
+                {% for zone in zones %}
+                <tr data-zone-id="{{ zone.id }}">
+                    <td>
+                        <div class="d-flex align-items-center">
+                            {% if zone.zone_image %}
+                            <img src="{{ zone.zone_image.url }}" class="rounded me-3" width="50" height="50"
+                                style="object-fit: cover;">
+                            {% else %}
+                            <div class="bg-light rounded me-3 d-flex align-items-center justify-content-center"
+                                style="width: 50px; height: 50px;">
+                                <i class="bi bi-geo-alt text-muted"></i>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <div class="fw-medium">{{ zone.name }}</div>
+                                <small class="text-muted">{{ zone.description|truncatechars:40 }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div>
+                            <i class="bi bi-geo-alt text-primary me-1"></i>
+                            <span class="fw-medium text-dark">{{ zone.latitude|floatformat:4 }}</span>,
+                            <span class="fw-medium text-dark">{{ zone.longitude|floatformat:4 }}</span>
+                            <br>
+                            <small class="text-muted">{{ zone.radius_meters }}{% trans "m radius" %}</small>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="occupancy-info" data-zone-id="{{ zone.id }}">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="fw-medium occupancy-text text-dark">
+                                    {{ zone.active_sessions_count|default:0 }}/{{ zone.total_capacity|default:0 }}
+                                </small>
+                                <small class="occupancy-percent text-dark">
+                                    {{ zone.calculated_occupancy_rate|default:0 }}%
+                                </small>
+                            </div>
+                            <div class="progress" style="height: 6px;">
+                                <div class="progress-bar occupancy-bar {% if zone.calculated_occupancy_rate > 80 %}bg-danger{% elif zone.calculated_occupancy_rate > 60 %}bg-warning{% else %}bg-success{% endif %}"
+                                    style="width: {{ zone.calculated_occupancy_rate|default:0 }}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="fw-bold text-success">${{ zone.hourly_rate }}/{% trans "hr" %}</div>
+                        <small class="text-muted">{% trans "Max" %} {{ zone.max_duration_hours }}{% trans "h" %}</small>
+                    </td>
+                    <td>
+                        <span
+                            class="badge badge-status {% if zone.is_active %}badge-active{% else %}badge-inactive{% endif %}">
+                            {% if zone.is_active %}{% trans "Active" %}{% else %}{% trans "Inactive" %}{% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-info" onclick="viewZoneDetails('{{ zone.id }}')"
+                                data-bs-toggle="tooltip" title="{% trans 'View Details' %}">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn btn-outline-primary" onclick="editZone('{{ zone.id }}')"
+                                data-bs-toggle="tooltip" title="{% trans 'Edit' %}">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5">
+                        <div class="text-muted">
+                            <i class="bi bi-geo-alt display-4 d-block mb-3 opacity-50"></i>
+                            <h5>{% trans "No parking zones found" %}</h5>
+                            <p>{% trans "Create your first parking zone to get started." %}</p>
+                            <a href="{% url 'zone-create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-2"></i>{% trans "Add Zone" %}
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Live Status Modal -->
+<div class="modal fade" id="liveStatusModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-broadcast me-2 text-success"></i>
+                    <span id="liveZoneName">{% trans "Live Zone Status" %}</span>
+                    <span class="badge bg-success ms-2" id="liveIndicator">{% trans "LIVE" %}</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="liveStatusContent">
+                <div class="text-center py-5">
+                    <div class="spinner-lg"></div>
+                    <p class="mt-3 text-muted">{% trans "Loading live status..." %}</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <small class="text-muted me-auto">{% trans "Last updated:" %} <span id="lastUpdated">--</span></small>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Close" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let liveUpdateInterval;
+    let currentLiveZoneId;
+
+    function viewZoneDetails(zoneId) {
+        window.location.href = `/zones/${zoneId}/`;
+    }
+
+    function viewLiveStatus(zoneId) {
+        currentLiveZoneId = zoneId;
+        const modal = new bootstrap.Modal(document.getElementById('liveStatusModal'));
+        modal.show();
+
+        // Start live updates
+        updateLiveStatus(zoneId);
+        liveUpdateInterval = setInterval(() => updateLiveStatus(zoneId), 5000);
+
+        // Stop updates when modal is closed
+        document.getElementById('liveStatusModal').addEventListener('hidden.bs.modal', function () {
+            if (liveUpdateInterval) {
+                clearInterval(liveUpdateInterval);
+                liveUpdateInterval = null;
+            }
+        });
+    }
+
+    function updateLiveStatus(zoneId) {
+        showTopLoader();
+
+        // Fetch actual zone data
+        fetch(`/ajax/zones/${zoneId}/live-status/`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('liveZoneName').textContent = data.zone_name;
+                document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+
+                const occupancyRate = (data.occupied_slots / data.total_slots * 100).toFixed(1);
+
+                document.getElementById('liveStatusContent').innerHTML = `
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card stat-card">
+                            <div class="card-body text-center">
+                                <h4 class="mb-0">${data.total_slots - data.occupied_slots}</h4>
+                                <small>{% trans "Available Slots" %}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card">
+                            <div class="card-body text-center">
+                                <h4 class="mb-0">${data.occupied_slots}</h4>
+                                <small>{% trans "Occupied Slots" %}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card">
+                            <div class="card-body text-center">
+                                <h4 class="mb-0">${occupancyRate}%</h4>
+                                <small>{% trans "Occupancy Rate" %}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card">
+                            <div class="card-body text-center">
+                                <h4 class="mb-0">${data.active_sessions}</h4>
+                                <small>{% trans "Active Sessions" %}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">{% trans "Parking Slots Status" %}</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            ${data.slots.map(slot => `
+                                <div class="col-2 col-md-1">
+                                    <div class="slot-indicator ${slot.status}" title="Slot ${slot.id}${slot.vehicle ? ' - ' + slot.vehicle : ''}">
+                                        ${slot.id}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="mt-3 d-flex gap-3">
+                            <div class="d-flex align-items-center">
+                                <div class="slot-indicator available me-2" style="width: 20px; height: 20px; font-size: 10px;"></div>
+                                <small>{% trans "Available" %}</small>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <div class="slot-indicator occupied me-2" style="width: 20px; height: 20px; font-size: 10px;"></div>
+                                <small>{% trans "Occupied" %}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                ${data.active_sessions_list && data.active_sessions_list.length > 0 ? `
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">{% trans "Active Parking Sessions" %}</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>{% trans "Vehicle" %}</th>
+                                        <th>{% trans "Slot" %}</th>
+                                        <th>{% trans "Started" %}</th>
+                                        <th>{% trans "Duration" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.active_sessions_list.map(session => `
+                                        <tr>
+                                            <td><code style="cursor: pointer;" onclick="viewVehicleByPlate('${session.vehicle}')" title="{% trans 'Click to view vehicle details' %}">${session.vehicle}</code></td>
+                                            <td>{% trans "Slot" %} ${session.slot}</td>
+                                            <td>${session.start_time}</td>
+                                            <td>${session.duration}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                ` : '<div class="alert alert-info mt-3">{% trans "No active parking sessions" %}</div>'}
+            `;
+
+                // Update table occupancy info
+                const occupancyInfo = document.querySelector(`[data-zone-id="${zoneId}"] .occupancy-info`);
+                if (occupancyInfo) {
+                    occupancyInfo.querySelector('.occupancy-text').textContent = `${data.occupied_slots}/${data.total_slots}`;
+                    occupancyInfo.querySelector('.occupancy-percent').textContent = `${occupancyRate}%`;
+                    const progressBar = occupancyInfo.querySelector('.occupancy-bar');
+                    progressBar.style.width = `${occupancyRate}%`;
+                    progressBar.className = `progress-bar occupancy-bar ${occupancyRate > 80 ? 'bg-danger' : occupancyRate > 60 ? 'bg-warning' : 'bg-success'}`;
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching live status:', error);
+                document.getElementById('liveStatusContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-circle me-2"></i>
+                    {% trans "Error loading live status. Please try again." %}
+                </div>
+            `;
+            })
+            .finally(() => {
+                hideTopLoader();
+            });
+    }
+
+    function editZone(zoneId) {
+        window.location.href = `/zones/${zoneId}/edit/`;
+    }
+
+    function viewVehicleByPlate(licensePlate) {
+        // Find vehicle by license plate and redirect to details
+        fetch(`/ajax/vehicle-by-plate/?plate=${encodeURIComponent(licensePlate)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.vehicle_id) {
+                    window.location.href = `/vehicles/${data.vehicle_id}/`;
+                } else {
+                    alert('Vehicle not found');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error loading vehicle details');
+            });
+    }
+
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function () {
+        const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        tooltips.forEach(tooltip => {
+            new bootstrap.Tooltip(tooltip);
+        });
+    });
+</script>
+
+<style>
+    .slot-indicator {
+        width: 40px;
+        height: 40px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .slot-indicator.available {
+        background-color: #d4edda;
+        color: #155724;
+        border: 2px solid #c3e6cb;
+    }
+
+    .slot-indicator.occupied {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 2px solid #f5c6cb;
+    }
+
+    .slot-indicator:hover {
+        transform: scale(1.1);
+    }
+
+    .live-btn {
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+        }
+
+        70% {
+            box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+        }
+    }
+</style>
+{% endblock %}

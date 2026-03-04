@@ -1,0 +1,18 @@
+﻿Analyzing parking_user_app...                                   
+
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\auth\screens\profile_screen.dart:81:29 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\auth\screens\profile_screen.dart:83:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\auth\screens\vehicle_list_screen.dart:71:31 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\auth\screens\vehicle_list_screen.dart:72:38 - use_build_context_synchronously
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\features\auth\services\auth_service.dart:88:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\features\auth\services\auth_service.dart:89:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\features\auth\services\auth_service.dart:90:11 - use_null_aware_elements
+warning - The '!' will have no effect because the receiver can't be null - lib\features\home\screens\sidebar_navigation.dart:48:49 - unnecessary_non_null_assertion
+   info - Unnecessary use of 'toList' in a spread - lib\features\notifications\screens\chat_screen.dart:252:20 - unnecessary_to_list_in_spreads
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\parking\screens\active_session_screen.dart:144:35 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\parking\screens\active_session_screen.dart:145:42 - use_build_context_synchronously
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\features\parking\screens\create_reservation_screen.dart:99:19 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\features\parking\screens\create_reservation_screen.dart:128:19 - deprecated_member_use
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\features\payments\services\payment_service.dart:47:11 - use_null_aware_elements
+   info - Use the null-aware marker '?' rather than a null check via an 'if' - lib\features\payments\services\payment_service.dart:48:11 - use_null_aware_elements
+

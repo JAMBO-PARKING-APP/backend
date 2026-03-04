@@ -1,0 +1,129 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:parking_officer_app/core/app_theme.dart';
+import 'package:parking_officer_app/core/fcm_service.dart';
+import 'package:parking_officer_app/features/auth/providers/auth_provider.dart';
+import 'package:parking_officer_app/features/auth/screens/login_screen.dart';
+import 'package:parking_officer_app/features/parking/providers/zone_provider.dart';
+import 'package:parking_officer_app/features/parking/providers/vehicle_search_provider.dart';
+import 'package:parking_officer_app/features/parking/screens/dashboard_screen.dart';
+import 'package:parking_officer_app/features/enforcement/providers/officer_provider.dart';
+import 'package:parking_officer_app/features/violations/providers/enforcement_provider.dart';
+import 'package:parking_officer_app/features/chat/providers/chat_provider.dart';
+import 'package:parking_officer_app/core/settings_provider.dart';
+import 'package:parking_officer_app/core/localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+
+void main() async {
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    debugPrint('[Main] WidgetsFlutterBinding initialized');
+
+    // Initialize Firebase first (mandatory for Firebase services)
+    await Firebase.initializeApp().timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        debugPrint('[Main] Firebase initialization timed out');
+        throw Exception('Firebase initialization timed out');
+      },
+    );
+
+    // Initialize FCM without blocking UI if registration is slow
+    unawaited(
+      FCMService().initialize().catchError((e) {
+        debugPrint('[Main] Error initializing FCM: $e');
+      }),
+    );
+
+    runApp(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProvider(create: (_) => ZoneProvider()),
+          ChangeNotifierProvider(create: (_) => OfficerProvider()),
+          ChangeNotifierProvider(create: (_) => VehicleSearchProvider()),
+          ChangeNotifierProvider(create: (_) => EnforcementProvider()),
+          ChangeNotifierProvider(create: (_) => ChatProvider()),
+          ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ],
+        child: const SpaceOfficerApp(),
+      ),
+    );
+  } catch (e, stack) {
+    debugPrint('[Main] FATAL ERROR: $e');
+    debugPrint(stack.toString());
+    // Fallback if something fails before runApp
+    runApp(
+      MaterialApp(
+        home: Scaffold(body: Center(child: Text('Error starting app: $e'))),
+      ),
+    );
+  }
+}
+
+// Helper to make unawaited calls explicit
+void unawaited(Future<void> future) {}
+
+class SpaceOfficerApp extends StatelessWidget {
+  const SpaceOfficerApp({super.key});
+
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<SettingsProvider>(
+      builder: (context, settings, _) {
+        return MaterialApp(
+          navigatorKey: navigatorKey,
+          title: 'Space Officer',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.officerTheme,
+          locale: settings.currentLocale,
+          supportedLocales: settings.supportedLocales,
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: const AuthWrapper(),
+        );
+      },
+    );
+  }
+}
+
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AuthProvider>().checkAuth();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
+    if (auth.status == AuthStatus.initial ||
+        auth.status == AuthStatus.authenticating) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (auth.status == AuthStatus.authenticated) {
+      return const DashboardScreen();
+    }
+
+    return const LoginScreen();
+  }
+}

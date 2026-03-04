@@ -1,0 +1,57 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Support Chats" %} | {% trans "Smart Parking" %}{% endblock %}
+{% block page_title %}{% trans "Customer Support" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">{% trans "Active Conversations" %}</h5>
+            <span class="badge bg-primary">{{ conversations.count }} {% trans "Total" %}</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-modern mb-0">
+                    <thead>
+                        <tr>
+                            <th>{% trans "User" %}</th>
+                            <th>{% trans "Subject" %}</th>
+                            <th>{% trans "Status" %}</th>
+                            <th>{% trans "Agent" %}</th>
+                            <th>{% trans "Last Update" %}</th>
+                            <th>{% trans "Actions" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for chat in conversations %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ chat.user.full_name }}</div>
+                                <small class="text-muted">{{ chat.user.phone }}</small>
+                            </td>
+                            <td>{{ chat.subject }} <br><span class="small text-muted">#{{ chat.id }}</span></td>
+                            <td>
+                                <span
+                                    class="badge {% if chat.status == 'open' %}bg-primary-soft{% elif chat.status == 'resolved' %}bg-success-soft{% else %}bg-warning-soft{% endif %} font-weight-bold">
+                                    {{ chat.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ chat.assigned_agent|default:"Unassigned" }}</td>
+                            <td>{{ chat.updated_at|timesince }} {% trans "ago" %}</td>
+                            <td>
+                                <a href="#" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-chat-text me-1"></i>{% trans "Open" %}
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

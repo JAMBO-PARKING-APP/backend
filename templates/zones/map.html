@@ -1,0 +1,336 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Zone Map - Smart Parking System" %}{% endblock %}
+{% block page_title %}{% trans "Zone Map" %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #map {
+        height: 70vh;
+        border-radius: 12px;
+    }
+
+    .zone-popup {
+        min-width: 250px;
+    }
+
+    .zone-marker {
+        background: #f39c12;
+        /* Default orange */
+        border: 3px solid white;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .zone-marker.high-occupancy {
+        background: #dc3545;
+    }
+
+    .zone-marker.medium-occupancy {
+        background: #ffc107;
+    }
+
+    .zone-marker.low-occupancy {
+        background: #28a745;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="mb-1">{% trans "Parking Zone Map" %}</h3>
+        <p class="text-muted mb-0">{% trans "Interactive map showing all parking zones and their live status" %}</p>
+    </div>
+    <div class="btn-group">
+        <button class="btn btn-outline-primary" onclick="refreshMap()">
+            <i class="bi bi-arrow-clockwise me-2"></i>{% trans "Refresh" %}
+        </button>
+        <a href="{% url 'zone-list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-list me-2"></i>{% trans "Table View" %}
+        </a>
+    </div>
+</div>
+
+<!-- Map Container -->
+<div class="card">
+    <div class="card-body p-0">
+        <div id="map"></div>
+    </div>
+</div>
+
+<!-- Legend -->
+<div class="card mt-3">
+    <div class="card-body">
+        <h6 class="card-title">{% trans "Legend" %}</h6>
+        <div class="row">
+            <div class="col-md-3">
+                <div class="d-flex align-items-center">
+                    <div class="zone-marker low-occupancy me-2" style="width: 20px; height: 20px; font-size: 10px;">✓
+                    </div>
+                    <small>{% trans "Low Occupancy (0-60%)" %}</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="d-flex align-items-center">
+                    <div class="zone-marker medium-occupancy me-2" style="width: 20px; height: 20px; font-size: 10px;">!
+                    </div>
+                    <small>{% trans "Medium Occupancy (61-80%)" %}</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="d-flex align-items-center">
+                    <div class="zone-marker high-occupancy me-2" style="width: 20px; height: 20px; font-size: 10px;">×
+                    </div>
+                    <small>{% trans "High Occupancy (81-100%)" %}</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="d-flex align-items-center">
+                    <div class="zone-marker me-2"
+                        style="width: 20px; height: 20px; font-size: 10px; background: #6c757d;">○</div>
+                    <small>{% trans "Inactive Zone" %}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Zone Details Modal -->
+<div class="modal fade" id="zoneDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-geo-alt me-2"></i>
+                    <span id="modalZoneName">{% trans "Zone Details" %}</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="zoneDetailsContent">
+                <div class="text-center py-3">
+                    <div class="spinner-lg"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    let map;
+    let zoneMarkers = [];
+    let updateInterval;
+
+    // Initialize map
+    document.addEventListener('DOMContentLoaded', function () {
+        initMap();
+        loadZones();
+
+        // Auto-refresh every 30 seconds
+        updateInterval = setInterval(loadZones, 30000);
+    });
+
+    function initMap() {
+        try {
+            // Default center (Kampala, Uganda region as a better default than NYC)
+            map = L.map('map').setView([0.3476, 32.5825], 13);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap contributors © CARTO',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+        } catch (error) {
+            console.error('Map initialization error:', error);
+        }
+    }
+
+    function loadZones() {
+        try {
+            showTopLoader();
+
+            // Use actual zones data from Django context
+            const zonesData = JSON.parse('{{ zones_data|escapejs }}');
+            updateZoneMarkers(zonesData);
+            hideTopLoader();
+        } catch (error) {
+            console.error('Error loading zones:', error);
+            hideTopLoader();
+        }
+    }
+
+    function updateZoneMarkers(zones) {
+        try {
+            // Clear existing markers
+            zoneMarkers.forEach(marker => map.removeLayer(marker));
+            zoneMarkers = [];
+
+            if (!zones || zones.length === 0) {
+                console.log('No zones to display');
+                return;
+            }
+
+            console.log(`Updating markers for ${zones.length} zones`);
+            zones.forEach(zone => {
+                console.log(`Processing zone: ${zone.name} at ${zone.latitude}, ${zone.longitude}`);
+                const occupancyRate = (zone.occupied_slots / zone.total_slots) * 100;
+                const availableSlots = zone.total_slots - zone.occupied_slots;
+
+                // Use CircleMarker for foolproof visibility (doesn't depend on external icon images)
+                const marker = L.circleMarker([zone.latitude, zone.longitude], {
+                    radius: 10,
+                    fillColor: occupancyRate > 80 ? "#dc3545" : occupancyRate > 60 ? "#ffc107" : "#28a745",
+                    color: "#000",
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map);
+
+                // Create popup content
+                // Using trans tag inside JS template literals might fail if not careful with quotes and newlines.
+                // But here we are just constructing a string.
+                const popupContent = `
+            <div class="zone-popup">
+                <h6 class="mb-2">${zone.name}</h6>
+                <div class="row mb-2">
+                    <div class="col-6">
+                        <small class="text-muted">Available</small>
+                        <div class="fw-bold text-success">${availableSlots}</div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Total</small>
+                        <div class="fw-bold">${zone.total_slots}</div>
+                    </div>
+                </div>
+                <div class="progress mb-2" style="height: 6px;">
+                    <div class="progress-bar ${occupancyRate > 80 ? 'bg-danger' : occupancyRate > 60 ? 'bg-warning' : 'bg-success'}" 
+                         style="width: ${occupancyRate}%"></div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <small>Occupancy: ${occupancyRate.toFixed(1)}%</small>
+                    <small class="text-success">$${zone.hourly_rate}/hr</small>
+                </div>
+                <button class="btn btn-primary btn-sm w-100" onclick="showZoneDetails('${zone.id}')">
+                    <i class="bi bi-eye me-1"></i>View Details
+                </button>
+            </div>
+        `;
+
+                marker.bindPopup(popupContent);
+                zoneMarkers.push(marker);
+            });
+
+            // Fit map to show all markers
+            if (zoneMarkers.length > 0) {
+                const group = new L.featureGroup(zoneMarkers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        } catch (error) {
+            console.error('Error updating markers:', error);
+        }
+    }
+
+    function showZoneDetails(zoneId) {
+        const modal = new bootstrap.Modal(document.getElementById('zoneDetailsModal'));
+        modal.show();
+
+        document.getElementById('zoneDetailsContent').innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">{% trans "Fetching zone details..." %}</p>
+            </div>
+        `;
+
+        fetch(`/ajax/zones/${zoneId}/live-status/`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('modalZoneName').textContent = `${data.zone_name} {% trans "Details" %}`;
+                document.getElementById('zoneDetailsContent').innerHTML = `
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="card stat-card">
+                            <div class="card-body text-center">
+                                <h4 class="mb-0 text-success">${data.total_slots - data.occupied_slots}</h4>
+                                <small>{% trans "Available Slots" %}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card stat-card">
+                            <div class="card-body text-center">
+                                <h4 class="mb-0 text-info">${data.active_sessions}</h4>
+                                <small>{% trans "Active Sessions" %}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">{% trans "Current Status" %}</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>{% trans "Occupancy" %}</span>
+                            <span class="fw-bold">${(data.occupied_slots / data.total_slots * 100).toFixed(1)}%</span>
+                        </div>
+                        <div class="progress mb-3" style="height: 10px;">
+                            <div class="progress-bar ${(data.occupied_slots / data.total_slots * 100) > 80 ? 'bg-danger' : (data.occupied_slots / data.total_slots * 100) > 60 ? 'bg-warning' : 'bg-success'}" 
+                                 style="width: ${(data.occupied_slots / data.total_slots * 100)}%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3 d-flex gap-2">
+                    <a href="/zones/${zoneId}/" class="btn btn-success flex-grow-1">
+                        <i class="bi bi-eye me-1"></i>{% trans "View Full Details" %}
+                    </a>
+                </div>
+            `;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('zoneDetailsContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-circle me-2"></i>
+                        {% trans "Error loading zone details." %}
+                    </div>
+                `;
+            });
+    }
+
+    function viewLiveStatusByRedirect(zoneId) {
+        window.location.href = `/zones/${zoneId}/`;
+    }
+
+    function viewLiveStatus(zoneId) {
+        // Close current modal and redirect to zones page with live status
+        bootstrap.Modal.getInstance(document.getElementById('zoneDetailsModal')).hide();
+        window.location.href = `/zones/?live=${zoneId}`;
+    }
+
+    function refreshMap() {
+        loadZones();
+    }
+
+    // Cleanup interval on page unload
+    window.addEventListener('beforeunload', function () {
+        if (updateInterval) {
+            clearInterval(updateInterval);
+        }
+    });
+</script>
+{% endblock %}

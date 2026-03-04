@@ -1,0 +1,49 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Point Transactions" %} | {% trans "Smart Parking" %}{% endblock %}
+{% block page_title %}{% trans "Loyalty Points History" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">{% trans "Rewards Ledger" %}</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-modern mb-0">
+                    <thead>
+                        <tr>
+                            <th>{% trans "Member" %}</th>
+                            <th>{% trans "Type" %}</th>
+                            <th>{% trans "Points" %}</th>
+                            <th>{% trans "Description" %}</th>
+                            <th>{% trans "Date" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tx in transactions %}
+                        <tr>
+                            <td>{{ tx.account.user.full_name }}</td>
+                            <td>
+                                <span
+                                    class="badge {% if tx.transaction_type == 'earned' or tx.transaction_type == 'bonus' %}bg-success-soft{% else %}bg-secondary-soft{% endif %}">
+                                    {{ tx.get_transaction_type_display }}
+                                </span>
+                            </td>
+                            <td class="fw-bold {% if tx.amount > 0 %}text-success{% else %}text-danger{% endif %}">
+                                {% if tx.amount > 0 %}+{% endif %}{{ tx.amount }}
+                            </td>
+                            <td>{{ tx.description }}</td>
+                            <td>{{ tx.created_at|date:"M d, Y H:i" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

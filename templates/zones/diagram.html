@@ -1,0 +1,471 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+
+{% block title %}{{ zone.name }} - {% trans "Zone Diagram Editor" %}{% endblock %}
+{% block page_title %}{% trans "Zone Diagram Editor" %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .diagram-container {
+        position: relative;
+        border: 2px solid #dee2e6;
+        background: #f8f9fa;
+        overflow: hidden;
+        cursor: crosshair;
+    }
+
+    .grid-cell {
+        position: absolute;
+        width: 50px;
+        height: 50px;
+        border: 1px solid #e0e0e0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .grid-cell.empty {
+        background: #f8f9fa;
+        color: #6c757d;
+    }
+
+    .grid-cell.slot {
+        background: #e3f2fd;
+        border: 2px solid #007bff;
+        color: #0056b3;
+    }
+
+    .grid-cell.occupied {
+        background: #ffebee;
+        border: 2px solid #f44336;
+        color: #c62828;
+    }
+
+    .grid-cell.route {
+        background: #fff3e0;
+        border: 2px solid #ff9800;
+        color: #f57c00;
+    }
+
+    .grid-cell:hover {
+        transform: scale(1.05);
+        z-index: 10;
+    }
+
+    .toolbar {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .tool-btn {
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .tool-btn.active {
+        background-color: #007bff;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="mb-1">{{ zone.name }} - {% trans "Grid Editor" %}</h3>
+        <p class="text-muted mb-0">{% trans "150x150 grid system - Click cells to toggle between slot/route" %}</p>
+    </div>
+    <div>
+        <button class="btn btn-success me-2" onclick="saveGrid()">
+            <i class="bi bi-save me-2"></i>{% trans "Save Changes" %}
+        </button>
+        <a href="{% url 'zone-list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>{% trans "Back to Zones" %}
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-9">
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="mb-2">{% trans "Tools" %}</h6>
+                    <button class="btn btn-outline-primary tool-btn active" data-mode="slot" onclick="setMode('slot')">
+                        <i class="bi bi-square"></i> {% trans "Add Slot" %}
+                    </button>
+                    <button class="btn btn-outline-warning tool-btn" data-mode="route" onclick="setMode('route')">
+                        <i class="bi bi-arrow-right"></i> {% trans "Mark Route" %}
+                    </button>
+                    <button class="btn btn-outline-secondary tool-btn" data-mode="empty" onclick="setMode('empty')">
+                        <i class="bi bi-eraser"></i> {% trans "Clear Cell" %}
+                    </button>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="mb-2">{% trans "Actions" %}</h6>
+                    <button class="btn btn-outline-danger" onclick="clearAll()">
+                        <i class="bi bi-trash"></i> {% trans "Clear All" %}
+                    </button>
+                    <button class="btn btn-outline-info" onclick="autoFill()">
+                        <i class="bi bi-grid-3x3"></i> {% trans "Auto Fill" %}
+                    </button>
+                </div>
+            </div>
+
+            <div class="alert alert-info mt-2 mb-0">
+                <small>
+                    <strong>{% trans "Current Mode:" %}</strong> <span id="currentMode">{% trans "Add Slot" %}</span> -
+                    {% trans "Click grid cells to apply" %}
+                </small>
+            </div>
+        </div>
+
+        <!-- Grid Canvas -->
+        <div class="diagram-container" id="gridCanvas" style="width: 1000px; height: 500px; position: relative;">
+            <div class="text-center p-4" id="loadingMessage">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">{% trans "Loading..." %}</span>
+                </div>
+                <p class="mt-2">{% trans "Initializing grid..." %}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <!-- Stats Panel -->
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title">{% trans "Grid Statistics" %}</h6>
+                <div class="row text-center">
+                    <div class="col-6 mb-2">
+                        <div class="h5 mb-0 text-primary" id="slotCount">0</div>
+                        <small>{% trans "Slots" %}</small>
+                    </div>
+                    <div class="col-6 mb-2">
+                        <div class="h5 mb-0 text-warning" id="routeCount">0</div>
+                        <small>{% trans "Routes" %}</small>
+                    </div>
+                </div>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="h5 mb-0 text-success" id="availableSlots">{{ available_count }}</div>
+                        <small>{% trans "Available" %}</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h5 mb-0 text-danger" id="occupiedSlots">{{ occupied_count }}</div>
+                        <small>{% trans "Occupied" %}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="card mt-3">
+            <div class="card-body">
+                <h6 class="card-title">{% trans "Legend" %}</h6>
+                <div class="mb-2">
+                    <div class="d-flex align-items-center">
+                        <div class="grid-cell slot me-2"
+                            style="width: 30px; height: 30px; position: static; font-size: 10px;">S</div>
+                        <span>{% trans "Parking Slot" %}</span>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <div class="d-flex align-items-center">
+                        <div class="grid-cell route me-2"
+                            style="width: 30px; height: 30px; position: static; font-size: 10px;">R</div>
+                        <span>{% trans "Drive Route" %}</span>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <div class="d-flex align-items-center">
+                        <div class="grid-cell occupied me-2"
+                            style="width: 30px; height: 30px; position: static; font-size: 10px;">O</div>
+                        <span>{% trans "Occupied Slot" %}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentMode = 'slot';
+    let gridData = {};
+    const gridWidth = 20;
+    const gridHeight = 10;
+    const zoneId = '{{ zone.id }}';
+    const csrfToken = '{{ csrf_token }}';
+
+    function initGrid() {
+        console.log('Initializing grid...');
+        const canvas = document.getElementById('gridCanvas');
+        if (!canvas) {
+            console.error('Grid canvas not found!');
+            return;
+        }
+
+        // Clear loading message
+        const loadingMessage = document.getElementById('loadingMessage');
+        if (loadingMessage) {
+            loadingMessage.remove();
+        }
+
+        canvas.innerHTML = '';
+
+        // Load existing slots from database
+        {% if slots %}
+        const existingSlots = [
+            {% for slot in slots %}
+            {
+                id: '{{ slot.id }}',
+                code: '{{ slot.slot_code }}',
+                x: {{ slot.diagram_x }},
+                y: {{ slot.diagram_y }},
+                status: '{{ slot.status }}'
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ];
+
+        // Mark existing slots in grid
+        existingSlots.forEach(slot => {
+            const row = Math.floor(slot.y / 50);
+            const col = Math.floor(slot.x / 50);
+            const key = row + '-' + col;
+            gridData[key] = slot.status === 'occupied' ? 'occupied' : 'slot';
+        });
+        {% endif %}
+
+    for (let row = 0; row < gridHeight; row++) {
+        for (let col = 0; col < gridWidth; col++) {
+            const cell = document.createElement('div');
+            const key = row + '-' + col;
+            const cellType = gridData[key] || 'empty';
+
+            cell.className = 'grid-cell ' + cellType;
+            cell.style.left = (col * 50) + 'px';
+            cell.style.top = (row * 50) + 'px';
+            cell.dataset.row = row;
+            cell.dataset.col = col;
+
+            if (cellType === 'slot') {
+                cell.textContent = 'S' + row + col;
+            } else if (cellType === 'route') {
+                cell.textContent = '→';
+            } else {
+                cell.textContent = row + '-' + col;
+            }
+
+            cell.addEventListener('click', function () {
+                toggleCell(row, col);
+            });
+
+            canvas.appendChild(cell);
+
+            if (!gridData[key]) {
+                gridData[key] = 'empty';
+            }
+        }
+    }
+
+    console.log('Grid initialized with', Object.keys(gridData).length, 'cells');
+    updateStats();
+}
+
+    function setMode(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.tool-btn').forEach(function (btn) {
+            btn.classList.remove('active');
+        });
+
+        const activeBtn = document.querySelector('[data-mode="' + mode + '"]');
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+        }
+
+        const modeNames = {
+            'slot': "{% trans 'Add Slot' %}",
+            'route': "{% trans 'Mark Route' %}",
+            'empty': "{% trans 'Clear Cell' %}"
+        };
+
+        const modeElement = document.getElementById('currentMode');
+        if (modeElement) {
+            modeElement.textContent = modeNames[mode] || mode;
+        }
+    }
+
+    function toggleCell(row, col) {
+        const key = row + '-' + col;
+        const currentType = gridData[key];
+
+        if (currentType === 'occupied') {
+            alert("{% trans 'This slot is currently occupied and cannot be modified.' %}");
+            return;
+        }
+
+        let newType = currentMode;
+        if (currentType === currentMode) {
+            newType = 'empty';
+        }
+
+        setCellType(row, col, newType);
+        updateStats();
+    }
+
+    function setCellType(row, col, type) {
+        const key = row + '-' + col;
+        const cell = document.querySelector('[data-row="' + row + '"][data-col="' + col + '"]');
+
+        if (!cell) return;
+
+        cell.classList.remove('empty', 'slot', 'route', 'occupied');
+        cell.classList.add(type);
+
+        gridData[key] = type;
+
+        if (type === 'slot') {
+            cell.textContent = 'S' + row + col;
+        } else if (type === 'route') {
+            cell.textContent = '→';
+        } else {
+            cell.textContent = row + '-' + col;
+        }
+    }
+
+    function updateStats() {
+        let slotCount = 0;
+        let routeCount = 0;
+
+        for (const key in gridData) {
+            const type = gridData[key];
+            if (type === 'slot' || type === 'occupied') slotCount++;
+            if (type === 'route') routeCount++;
+        }
+
+        const slotElement = document.getElementById('slotCount');
+        const routeElement = document.getElementById('routeCount');
+
+        if (slotElement) slotElement.textContent = slotCount;
+        if (routeElement) routeElement.textContent = routeCount;
+    }
+
+    function clearAll() {
+        if (confirm("{% trans 'Clear all slots and routes? This will delete all parking slots from the database!' %}")) {
+            for (let row = 0; row < gridHeight; row++) {
+                for (let col = 0; col < gridWidth; col++) {
+                    const key = row + '-' + col;
+                    if (gridData[key] !== 'occupied') {
+                        setCellType(row, col, 'empty');
+                    }
+                }
+            }
+            updateStats();
+        }
+    }
+
+    function autoFill() {
+        for (let row = 0; row < gridHeight; row++) {
+            for (let col = 0; col < gridWidth; col++) {
+                const key = row + '-' + col;
+                if (gridData[key] === 'occupied') continue;
+
+                if (col === 9 || col === 10) {
+                    setCellType(row, col, 'route');
+                } else {
+                    setCellType(row, col, 'slot');
+                }
+            }
+        }
+        updateStats();
+    }
+
+    function saveGrid() {
+        const saveBtn = event.target;
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>{% trans "Saving..." %}';
+
+        // Collect all slots to save
+        const slotsToSave = [];
+
+        for (const key in gridData) {
+            const type = gridData[key];
+            if (type === 'slot' || type === 'occupied') {
+                const [row, col] = key.split('-').map(Number);
+                slotsToSave.push({
+                    slot_code: 'S' + row + col,
+                    x: col * 50,
+                    y: row * 50,
+                    slot_type: 'regular'
+                });
+            }
+        }
+
+        // First, delete all existing slots (except occupied ones)
+        fetch('/ajax/slot/delete-all/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken
+            },
+            body: 'zone_id=' + zoneId
+        })
+            .then(response => response.json())
+            .then(data => {
+                // Now create all new slots
+                const promises = slotsToSave.map(slot => {
+                    return fetch('/ajax/slot/create/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': csrfToken
+                        },
+                        body: new URLSearchParams({
+                            zone_id: zoneId,
+                            slot_code: slot.slot_code,
+                            x: slot.x,
+                            y: slot.y,
+                            slot_type: slot.slot_type,
+                            rotation: 0
+                        })
+                    });
+                });
+
+                return Promise.all(promises);
+            })
+            .then(responses => {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="bi bi-check me-2"></i>{% trans "Saved!" %}';
+
+                setTimeout(() => {
+                    saveBtn.innerHTML = '<i class="bi bi-save me-2"></i>{% trans "Save Changes" %}';
+                }, 2000);
+
+                // Note: Using interpolation for variable content in alert
+                const msg = "{% trans 'Grid layout saved successfully! PLACEHOLDER slots created.' %}";
+                alert(msg.replace('PLACEHOLDER', slotsToSave.length));
+            })
+            .catch(error => {
+                console.error('Error saving grid:', error);
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="bi bi-save me-2"></i>{% trans "Save Changes" %}';
+                alert("{% trans 'Error saving grid layout. Please try again.' %}");
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('DOM loaded, initializing grid...');
+        initGrid();
+    });
+</script>
+{% endblock %}

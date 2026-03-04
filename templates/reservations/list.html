@@ -1,0 +1,96 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Reservations" %} | {% trans "Smart Parking" %}{% endblock %}
+{% block page_title %}{% trans "Parking Reservations" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">{% trans "All Reservations" %}</h5>
+            <div class="d-flex gap-2">
+                <form method="get" class="d-flex gap-2">
+                    <input type="text" name="search" class="form-control form-control-sm"
+                        placeholder="{% trans 'Search plate or ref...' %}" value="{{ request.GET.search }}">
+                    <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="">{% trans "All Statuses" %}</option>
+                        <option value="pending_payment" {% if request.GET.status=='pending_payment' %}selected{% endif
+                            %}>{% trans "Pending Payment" %}</option>
+                        <option value="confirmed" {% if request.GET.status=='confirmed' %}selected{% endif %}>{% trans
+                            "Confirmed" %}</option>
+                        <option value="cancelled" {% if request.GET.status=='cancelled' %}selected{% endif %}>{% trans
+                            "Cancelled" %}</option>
+                        <option value="completed" {% if request.GET.status=='completed' %}selected{% endif %}>{% trans
+                            "Completed" %}</option>
+                        <option value="expired" {% if request.GET.status=='expired' %}selected{% endif %}>{% trans
+                            "Expired" %}</option>
+                    </select>
+                </form>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-modern mb-0">
+                    <thead>
+                        <tr>
+                            <th>{% trans "Vehicle" %}</th>
+                            <th>{% trans "Zone" %}</th>
+                            <th>{% trans "Slot" %}</th>
+                            <th>{% trans "Duration" %}</th>
+                            <th>{% trans "Cost" %}</th>
+                            <th>{% trans "Status" %}</th>
+                            <th>{% trans "Reserved On" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reservation in reservations %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ reservation.vehicle.license_plate }}</div>
+                                <small class="text-muted">{{ reservation.vehicle.user.full_name }}</small>
+                            </td>
+                            <td>{{ reservation.zone.name }}</td>
+                            <td>{{ reservation.parking_slot.slot_code|default:"-" }}</td>
+                            <td>
+                                <div class="small">
+                                    {{ reservation.reserved_from|date:"SHORT_DATETIME_FORMAT" }}
+                                    <i class="bi bi-arrow-right mx-1"></i>
+                                    {{ reservation.reserved_until|date:"SHORT_DATETIME_FORMAT" }}
+                                </div>
+                            </td>
+                            <td>{{ currency_symbol|default:"$" }}{{ reservation.cost }}</td>
+                            <td>
+                                {% if reservation.status == 'confirmed' %}
+                                <span class="badge bg-success-soft">{% trans "Confirmed" %}</span>
+                                {% elif reservation.status == 'pending_payment' %}
+                                <span class="badge bg-warning-soft">{% trans "Pending" %}</span>
+                                {% elif reservation.status == 'cancelled' %}
+                                <span class="badge bg-danger-soft">{% trans "Cancelled" %}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{% trans reservation.status|title %}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ reservation.created_at|date:"M d, H:i" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <i class="bi bi-calendar-x display-4 text-muted mb-3 d-block"></i>
+                                <p class="text-muted">{% trans "No reservations found" %}</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% if is_paginated %}
+        <div class="card-footer">
+            {% include 'includes/pagination.html' %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

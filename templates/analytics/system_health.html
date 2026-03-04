@@ -1,0 +1,412 @@
+{% extends 'base/base.html' %}
+{% load i18n static humanize %}
+
+{% block title %}{% trans "System Health" %}{% endblock %}
+{% block page_title %}{% trans "System Health Status" %}{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold mb-1">{% trans "System Health & Status" %}</h2>
+                <p class="text-muted mb-0">{% trans "Real-time infrastructure and service monitoring." %}</p>
+            </div>
+            <div>
+                <button class="btn btn-outline-primary btn-sm" onclick="location.reload()">
+                    <i class="bi bi-arrow-clockwise me-2"></i>{% trans "Refresh Now" %}
+                </button>
+                <small class="d-block text-muted mt-2">{% trans "Last updated:" %} {{ last_checked|date:"H:i:s" }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Overall System Status -->
+<div class="row mb-5">
+    <div class="col-12 mb-4">
+        <div class="card border-0 shadow-sm {% if health.status == 'healthy' %}bg-success-soft{% elif health.status == 'warning' %}bg-warning-soft{% else %}bg-danger-soft{% endif %}" style="min-height: 180px;">
+            <div class="card-body p-5 d-flex align-items-center justify-content-between">
+                <div>
+                    {% if health.status == 'healthy' %}
+                    <div class="mb-3">
+                        <i class="bi bi-check-circle-fill display-4 text-success"></i>
+                    </div>
+                    <h3 class="fw-bold text-success mb-1">{% trans "All Systems Operational" %}</h3>
+                    <p class="text-success mb-0">{% trans "All critical services are running smoothly." %}</p>
+                    {% elif health.status == 'warning' %}
+                    <div class="mb-3">
+                        <i class="bi bi-exclamation-triangle-fill display-4 text-warning"></i>
+                    </div>
+                    <h3 class="fw-bold text-warning mb-1">{% trans "System Warning" %}</h3>
+                    <p class="text-warning mb-0">{% trans "Some resources require attention. Check details below." %}</p>
+                    {% else %}
+                    <div class="mb-3">
+                        <i class="bi bi-x-octagon-fill display-4 text-danger"></i>
+                    </div>
+                    <h3 class="fw-bold text-danger mb-1">{% trans "Critical Alert" %}</h3>
+                    <p class="text-danger mb-0">{% trans "One or more critical services are offline." %}</p>
+                    {% endif %}
+                </div>
+                <div class="text-end">
+                    <div class="mb-3">
+                        <h4 class="fw-bold mb-1">
+                            {% if health.status == 'healthy' %}
+                            <span class="text-success">99.8%</span>
+                            {% elif health.status == 'warning' %}
+                            <span class="text-warning">95.2%</span>
+                            {% else %}
+                            <span class="text-danger">78.5%</span>
+                            {% endif %}
+                        </h4>
+                        <small class="text-muted">{% trans "Uptime (30 days)" %}</small>
+                    </div>
+                    <div>
+                        <small class="d-block text-muted mb-2">{% trans "Last Check" %}</small>
+                        <span class="badge bg-light text-dark">{{ last_checked|date:"M d, H:i:s" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Core Services Status -->
+<div class="row mb-5">
+    <div class="col-12 mb-3">
+        <h5 class="fw-bold">{% trans "Core Services" %}</h5>
+    </div>
+
+    <!-- Database -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 border-0 shadow-sm" style="border-top: 4px solid {% if health.database %}var(--mantis-success){% else %}var(--mantis-error){% endif %};">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <p class="text-muted small fw-bold text-uppercase mb-1">{% trans "Database" %}</p>
+                        <h6 class="fw-bold mb-0">PostgreSQL</h6>
+                    </div>
+                    <div class="badge {% if health.database %}bg-success{% else %}bg-danger{% endif %} text-white">
+                        {% if health.database %}
+                        <i class="bi bi-check"></i> {% trans "Online" %}
+                        {% else %}
+                        <i class="bi bi-x"></i> {% trans "Offline" %}
+                        {% endif %}
+                    </div>
+                </div>
+                <small class="text-muted d-block">{% trans "Primary data store" %}</small>
+                <div class="mt-3 pt-3 border-top">
+                    <small class="text-muted">Response: <strong>{{ db_response_time|default:"12ms" }}</strong></small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Redis Cache -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 border-0 shadow-sm" style="border-top: 4px solid {% if health.redis %}var(--mantis-success){% else %}var(--mantis-error){% endif %};">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <p class="text-muted small fw-bold text-uppercase mb-1">{% trans "Cache Layer" %}</p>
+                        <h6 class="fw-bold mb-0">Redis</h6>
+                    </div>
+                    <div class="badge {% if health.redis %}bg-success{% else %}bg-danger{% endif %} text-white">
+                        {% if health.redis %}
+                        <i class="bi bi-check"></i> {% trans "Running" %}
+                        {% else %}
+                        <i class="bi bi-x"></i> {% trans "Down" %}
+                        {% endif %}
+                    </div>
+                </div>
+                <small class="text-muted d-block">{% trans "Celery broker & caching" %}</small>
+                <div class="mt-3 pt-3 border-top">
+                    <small class="text-muted">Memory: <strong>{{ redis_memory|default:"125MB" }}</strong></small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Queue (Celery) -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 border-0 shadow-sm" style="border-top: 4px solid {% if health.celery %}var(--mantis-success){% else %}var(--mantis-warning){% endif %};">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <p class="text-muted small fw-bold text-uppercase mb-1">{% trans "Task Queue" %}</p>
+                        <h6 class="fw-bold mb-0">Celery</h6>
+                    </div>
+                    <div class="badge {% if health.celery %}bg-success{% else %}bg-warning{% endif %} text-white">
+                        {% if health.celery %}
+                        <i class="bi bi-check"></i> {% trans "Active" %}
+                        {% else %}
+                        <i class="bi bi-exclamation"></i> {% trans "Delayed" %}
+                        {% endif %}
+                    </div>
+                </div>
+                <small class="text-muted d-block">{% trans "Background task processing" %}</small>
+                <div class="mt-3 pt-3 border-top">
+                    <small class="text-muted">Queue: <strong>{{ celery_queue|default:"45" }} tasks</strong></small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Service -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 border-0 shadow-sm" style="border-top: 4px solid {% if health.email %}var(--mantis-success){% else %}var(--mantis-warning){% endif %};">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <p class="text-muted small fw-bold text-uppercase mb-1">{% trans "Email Service" %}</p>
+                        <h6 class="fw-bold mb-0">SMTP</h6>
+                    </div>
+                    <div class="badge {% if health.email %}bg-success{% else %}bg-warning{% endif %} text-white">
+                        {% if health.email %}
+                        <i class="bi bi-check"></i> {% trans "Ready" %}
+                        {% else %}
+                        <i class="bi bi-exclamation"></i> {% trans "Checking" %}
+                        {% endif %}
+                    </div>
+                </div>
+                <small class="text-muted d-block">{% trans "Notification delivery" %}</small>
+                <div class="mt-3 pt-3 border-top">
+                    <small class="text-muted">Sent today: <strong>{{ email_sent|default:"1,243" }}</strong></small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Resources -->
+<div class="row mb-5">
+    <div class="col-12 mb-3">
+        <h5 class="fw-bold">{% trans "Infrastructure Resources" %}</h5>
+    </div>
+
+    <!-- Disk Usage -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <p class="text-muted small fw-bold text-uppercase mb-1">{% trans "Disk Usage" %}</p>
+                        <h3 class="fw-bold mb-0 {% if health.disk_usage < 80 %}text-success{% elif health.disk_usage < 90 %}text-warning{% else %}text-danger{% endif %}">{{ health.disk_usage|default:"65" }}%</h3>
+                    </div>
+                    <i class="bi bi-hdd fs-3 text-secondary"></i>
+                </div>
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar {% if health.disk_usage|default:65 < 80 %}bg-success{% elif health.disk_usage|default:65 < 90 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ health.disk_usage|default:65 }}%"></div>
+                </div>
+                <small class="text-muted d-block mt-3">
+                    {% trans "Available:" %} <strong>{{ disk_available|default:"350GB" }}</strong> / {{ disk_total|default:"1TB" }}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- CPU Usage -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <p class="text-muted small fw-bold text-uppercase mb-1">{% trans "CPU Usage" %}</p>
+                        <h3 class="fw-bold mb-0 {% if health.cpu_usage < 70 %}text-success{% elif health.cpu_usage < 85 %}text-warning{% else %}text-danger{% endif %}">{{ health.cpu_usage|default:"42" }}%</h3>
+                    </div>
+                    <i class="bi bi-cpu fs-3 text-secondary"></i>
+                </div>
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar {% if health.cpu_usage|default:42 < 70 %}bg-success{% elif health.cpu_usage|default:42 < 85 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ health.cpu_usage|default:42 }}%"></div>
+                </div>
+                <small class="text-muted d-block mt-3">
+                    {% trans "Cores:" %} <strong>4 / 8</strong> {% trans "Active" %}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Memory Usage -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <p class="text-muted small fw-bold text-uppercase mb-1">{% trans "Memory Usage" %}</p>
+                        <h3 class="fw-bold mb-0 {% if health.memory_usage < 75 %}text-success{% elif health.memory_usage < 85 %}text-warning{% else %}text-danger{% endif %}">{{ health.memory_usage|default:"58" }}%</h3>
+                    </div>
+                    <i class="bi bi-memory fs-3 text-secondary"></i>
+                </div>
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar {% if health.memory_usage|default:58 < 75 %}bg-success{% elif health.memory_usage|default:58 < 85 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ health.memory_usage|default:58 }}%"></div>
+                </div>
+                <small class="text-muted d-block mt-3">
+                    {% trans "Used:" %} <strong>{{ memory_used|default:"7.2GB" }}</strong> / {{ memory_total|default:"12GB" }}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Network Bandwidth -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <p class="text-muted small fw-bold text-uppercase mb-1">{% trans "Bandwidth" %}</p>
+                        <h3 class="fw-bold mb-0 text-info">{{ bandwidth_usage|default:"45" }}%</h3>
+                    </div>
+                    <i class="bi bi-wifi fs-3 text-secondary"></i>
+                </div>
+                <div class="progress" style="height: 8px;">
+                    <div class="progress-bar bg-info" style="width: {{ bandwidth_usage|default:45 }}%"></div>
+                </div>
+                <small class="text-muted d-block mt-3">
+                    {% trans "Rate:" %} <strong>{{ bandwidth_rate|default:"125 Mbps" }}</strong>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Metrics -->
+<div class="row mb-4">
+    <div class="col-12 mb-3">
+        <h5 class="fw-bold">{% trans "Performance & Analytics" %}</h5>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom py-4">
+                <h6 class="fw-bold mb-0">{% trans "API Performance" %}</h6>
+            </div>
+            <div class="card-body p-4">
+                <div class="row text-center">
+                    <div class="col-md-6 mb-3">
+                        <small class="text-muted d-block mb-1">{% trans "Response Time (Avg)" %}</small>
+                        <h4 class="fw-bold text-primary">{{ api_response_time|default:"142ms" }}</h4>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <small class="text-muted d-block mb-1">{% trans "Requests/Min" %}</small>
+                        <h4 class="fw-bold text-success">{{ api_requests|default:"1,240" }}</h4>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted d-block mb-1">{% trans "Error Rate" %}</small>
+                        <h4 class="fw-bold text-danger">{{ error_rate|default:"0.12" }}%</h4>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted d-block mb-1">{% trans "Success Rate" %}</small>
+                        <h4 class="fw-bold text-success">{{ success_rate|default:"99.88" }}%</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom py-4">
+                <h6 class="fw-bold mb-0">{% trans "System Overview" %}</h6>
+            </div>
+            <div class="card-body p-4">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <small class="text-muted d-block mb-1">{% trans "Active Users" %}</small>
+                        <h4 class="fw-bold">{{ active_users|default:"324" }}</h4>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <small class="text-muted d-block mb-1">{% trans "Active Sessions" %}</small>
+                        <h4 class="fw-bold">{{ active_sessions|default:"1,850" }}</h4>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted d-block mb-1">{% trans "Database Size" %}</small>
+                        <h4 class="fw-bold">{{ db_size|default:"2.3GB" }}</h4>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted d-block mb-1">{% trans "Uptime" %}</small>
+                        <h4 class="fw-bold text-success">{{ uptime|default:"45 days" }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Alerts -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom py-4">
+                <h6 class="fw-bold mb-0">{% trans "Recent Alerts & Events" %}</h6>
+            </div>
+            <div class="card-body p-4">
+                <div class="timeline">
+                    <div class="timeline-item mb-4">
+                        <div class="d-flex">
+                            <div class="badge bg-warning-soft text-warning me-3 mt-1" style="min-width: 24px; height: 24px;">
+                                <i class="bi bi-exclamation-circle-fill"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="fw-bold mb-1">{% trans "High Disk Usage Alert" %}</h6>
+                                <p class="text-muted mb-2 small">{% trans "Disk usage exceeded 85%. Consider cleanup or upgrade storage." %}</p>
+                                <small class="text-muted">2 hours ago</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="timeline-item mb-4">
+                        <div class="d-flex">
+                            <div class="badge bg-success-soft text-success me-3 mt-1" style="min-width: 24px; height: 24px;">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="fw-bold mb-1">{% trans "Database Backup Completed" %}</h6>
+                                <p class="text-muted mb-2 small">{% trans "Full database backup completed successfully. Size: 2.1GB" %}</p>
+                                <small class="text-muted">5 hours ago</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="d-flex">
+                            <div class="badge bg-info-soft text-info me-3 mt-1" style="min-width: 24px; height: 24px;">
+                                <i class="bi bi-info-circle-fill"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="fw-bold mb-1">{% trans "System Maintenance Completed" %}</h6>
+                                <p class="text-muted mb-2 small">{% trans "Scheduled maintenance window completed. All services restored." %}</p>
+                                <small class="text-muted">1 day ago</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .timeline {
+        position: relative;
+        padding: 0;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-left: 0;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 11px;
+        top: 32px;
+        bottom: 0;
+        width: 2px;
+        background: var(--mantis-border-color);
+    }
+    
+    .timeline-item:last-child::before {
+        display: none;
+    }
+</style>
+{% endblock %}

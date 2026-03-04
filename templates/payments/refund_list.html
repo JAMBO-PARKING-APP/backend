@@ -1,0 +1,53 @@
+{% extends 'base/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Refunds" %} | {% trans "Smart Parking" %}{% endblock %}
+{% block page_title %}{% trans "Revenue Refunds" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">{% trans "Refund Processing Logs" %}</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-modern mb-0">
+                    <thead>
+                        <tr>
+                            <th>{% trans "Transaction" %}</th>
+                            <th>{% trans "User" %}</th>
+                            <th>{% trans "Amount" %}</th>
+                            <th>{% trans "Reason" %}</th>
+                            <th>{% trans "Status" %}</th>
+                            <th>{% trans "Created" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for refund in refunds %}
+                        <tr>
+                            <td>#{{ refund.original_transaction.id|truncatechars:10 }}</td>
+                            <td>{{ refund.original_transaction.user.phone }}</td>
+                            <td class="fw-bold text-danger">{{ currency_symbol }}{{ refund.amount }}</td>
+                            <td>{{ refund.reason }}</td>
+                            <td>
+                                <span
+                                    class="badge {% if refund.status == 'completed' %}bg-success-soft{% else %}bg-warning-soft{% endif %}">
+                                    {{ refund.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ refund.created_at|date:"M d, Y" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">{% trans "No refunds found." %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
