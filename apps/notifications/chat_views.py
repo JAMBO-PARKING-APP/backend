@@ -28,15 +28,43 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
-        if user.role in ['support_agent', 'officer', 'admin']:
-            from django.db.models import Q
+        if user.role in ['support_agent', 'admin']:
+            return ChatConversation.objects.all().order_by('-created_at')
+        
+        if user.role == 'officer':
+            from apps.parking.models import ParkingSession
+            from apps.common.constants import ParkingStatus
+            
+            # Get users with active sessions in officer's assigned zones
+            assigned_zones = user.assigned_zones.all()
+            active_users_in_zones = ParkingSession.objects.filter(
+                zone__in=assigned_zones,
+                status=ParkingStatus.ACTIVE
+            ).values_list('vehicle__user_id', flat=True)
+            
             return ChatConversation.objects.filter(
-                Q(assigned_agent=user) | Q(assigned_agent__isnull=True)
-            ).order_by('-created_at')
+                Q(assigned_agent=user) | 
+                Q(assigned_agent__isnull=True, user_id__in=active_users_in_zones)
+            ).distinct().order_by('-created_at')
+
         return ChatConversation.objects.filter(user=user).order_by('-created_at')
     
     def create(self, request, *args, **kwargs):
         """Create new support conversation"""
+        if request.user.role == 'driver':
+            from apps.parking.models import ParkingSession
+            from apps.common.constants import ParkingStatus
+            has_active_session = ParkingSession.objects.filter(
+                vehicle__user=request.user,
+                status=ParkingStatus.ACTIVE
+            ).exists()
+            
+            if not has_active_session:
+                return Response(
+                    {'error': 'You must have an active parking session to initiate a chat.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user)
@@ -65,14 +93,36 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
     def messages(self, request, pk=None):
         """Get all messages in a conversation"""
         conversation = self.get_object()
+        user = request.user
         if user.role not in ['support_agent', 'officer', 'admin']:
             if conversation.user != user:
                 return Response(
                     {'error': 'You do not have permission to view this conversation'},
                     status=status.HTTP_403_FORBIDDEN
                 )
+        elif user.role == 'officer':
+             # For officers, check if they are either assigned or the user is in their zone with active session
+             if conversation.assigned_agent and conversation.assigned_agent != user:
+                 return Response(
+                     {'error': 'This conversation is assigned to another agent'},
+                     status=status.HTTP_403_FORBIDDEN
+                 )
+             
+             from apps.parking.models import ParkingSession
+             from apps.common.constants import ParkingStatus
+             has_active_session_in_zone = ParkingSession.objects.filter(
+                 vehicle__user=conversation.user,
+                 zone__in=user.assigned_zones.all(),
+                 status=ParkingStatus.ACTIVE
+             ).exists()
+             
+             if not has_active_session_in_zone and conversation.assigned_agent != user:
+                 return Response(
+                     {'error': 'User must have an active session in your assigned zones to view chat.'},
+                     status=status.HTTP_403_FORBIDDEN
+                 )
         elif conversation.assigned_agent and conversation.assigned_agent != user:
-             if user.role != 'admin' and conversation.assigned_agent != user:
+             if user.role != 'admin':
                 return Response(
                     {'error': 'This conversation is assigned to another agent'},
                     status=status.HTTP_403_FORBIDDEN
@@ -91,14 +141,43 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
     def send_message(self, request, pk=None):
         """Send a message in a conversation"""
         conversation = self.get_object()
+        user = request.user
         if user.role not in ['support_agent', 'officer', 'admin']:
             if conversation.user != user:
                 return Response(
                     {'error': 'You do not have permission to message in this conversation'},
                     status=status.HTTP_403_FORBIDDEN
                 )
+            
+            # Also ensure driver still has active session to continue chatting? 
+            # The requirement said "users can only initiate a chat when they have an active session".
+            # Usually, once started, they can finish it, but let's stick to strict if needed.
+            # "initiate" implies create. So continue is fine? Let's keep it lenient for continue.
+            
+        elif user.role == 'officer':
+             from apps.parking.models import ParkingSession
+             from apps.common.constants import ParkingStatus
+             
+             # Restricted to users with active sessions in officer's zone
+             is_valid_chat = ParkingSession.objects.filter(
+                 vehicle__user=conversation.user,
+                 zone__in=user.assigned_zones.all(),
+                 status=ParkingStatus.ACTIVE
+             ).exists()
+             
+             if not is_valid_chat and conversation.assigned_agent != user:
+                 return Response(
+                     {'error': 'You can only message users with active sessions in your assigned zones.'},
+                     status=status.HTTP_403_FORBIDDEN
+                 )
+             
+             if conversation.assigned_agent and conversation.assigned_agent != user:
+                 return Response(
+                     {'error': 'This conversation is assigned to another agent'},
+                     status=status.HTTP_403_FORBIDDEN
+                 )
         elif conversation.assigned_agent and conversation.assigned_agent != user:
-             if user.role != 'admin' and conversation.assigned_agent != user:
+             if user.role != 'admin':
                 return Response(
                     {'error': 'This conversation is assigned to another agent'},
                     status=status.HTTP_403_FORBIDDEN

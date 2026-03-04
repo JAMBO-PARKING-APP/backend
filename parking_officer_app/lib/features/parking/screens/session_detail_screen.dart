@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:parking_officer_app/features/parking/models/parking_session_model.dart';
 import 'package:parking_officer_app/features/violations/screens/violation_form_screen.dart';
 import 'package:parking_officer_app/core/app_theme.dart';
+import 'package:parking_officer_app/features/chat/providers/chat_provider.dart';
+import 'package:parking_officer_app/features/chat/screens/chat_detail_screen.dart';
 
-class SessionDetailScreen extends StatelessWidget {
+class SessionDetailScreen extends StatefulWidget {
   final ParkingSession session;
   final String zoneId;
 
@@ -15,10 +18,52 @@ class SessionDetailScreen extends StatelessWidget {
   });
 
   @override
+  State<SessionDetailScreen> createState() => _SessionDetailScreenState();
+}
+
+class _SessionDetailScreenState extends State<SessionDetailScreen> {
+  bool _isChatLoading = false;
+
+  Future<void> _handleChatWithDriver() async {
+    setState(() => _isChatLoading = true);
+    try {
+      final chatProvider = context.read<ChatProvider>();
+      final conversation = await chatProvider.createConversation(
+        subject: 'Query regarding session ${widget.session.vehiclePlate}',
+        category: 'parking',
+        priority: 'medium',
+      );
+
+      if (mounted) {
+        if (conversation != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  ChatDetailScreen(conversation: conversation),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Failed to initiate chat. User might not have an active session.',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isChatLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final isExpired = session.plannedEndTime.isBefore(now);
-    final remaining = session.plannedEndTime.difference(now);
+    final isExpired = widget.session.plannedEndTime.isBefore(now);
+    final remaining = widget.session.plannedEndTime.difference(now);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Session Details')),
@@ -31,31 +76,58 @@ class SessionDetailScreen extends StatelessWidget {
             const SizedBox(height: 24),
             _buildInfoCard(context, isExpired, remaining),
             const SizedBox(height: 24),
-            _buildDetailRow('Zone', session.zoneName ?? 'N/A'),
-            _buildDetailRow('Slot', session.slotCode ?? 'N/A'),
+            _buildDetailRow('Zone', widget.session.zoneName ?? 'N/A'),
+            _buildDetailRow('Slot', widget.session.slotCode ?? 'N/A'),
             _buildDetailRow(
               'Start Time',
-              DateFormat('MMM d, h:mm a').format(session.startTime),
+              DateFormat('MMM d, h:mm a').format(widget.session.startTime),
             ),
             _buildDetailRow(
               'Planned End',
-              DateFormat('MMM d, h:mm a').format(session.plannedEndTime),
+              DateFormat('MMM d, h:mm a').format(widget.session.plannedEndTime),
             ),
-            _buildDetailRow('Duration', '${session.durationMinutes} minutes'),
+            _buildDetailRow(
+              'Duration',
+              '${widget.session.durationMinutes} minutes',
+            ),
             _buildDetailRow(
               'Amount Due',
-              'UGX ${session.amountDue.toStringAsFixed(0)}',
+              'UGX ${widget.session.amountDue.toStringAsFixed(0)}',
             ),
             const SizedBox(height: 40),
+
+            // Chat with Driver Button
+            if (!isExpired)
+              ElevatedButton.icon(
+                onPressed: _isChatLoading ? null : _handleChatWithDriver,
+                icon: _isChatLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.chat_outlined),
+                label: const Text('CHAT WITH DRIVER'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade700,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            if (!isExpired) const SizedBox(height: 16),
+
             ElevatedButton(
               onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => ViolationFormScreen(
-                      vehiclePlate: session.vehiclePlate,
-                      zoneId: zoneId,
-                      sessionId: session.id,
+                      vehiclePlate: widget.session.vehiclePlate,
+                      zoneId: widget.zoneId,
+                      sessionId: widget.session.id,
                     ),
                   ),
                 );
@@ -94,7 +166,7 @@ class SessionDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            session.vehiclePlate,
+            widget.session.vehiclePlate,
             style: const TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
@@ -142,7 +214,7 @@ class SessionDetailScreen extends StatelessWidget {
                 ),
                 Text(
                   isExpired
-                      ? 'Expired ${DateFormat('h:mm a').format(session.plannedEndTime)}'
+                      ? 'Expired ${DateFormat('h:mm a').format(widget.session.plannedEndTime)}'
                       : '${remaining.inMinutes} minutes remaining',
                   style: TextStyle(
                     color: isExpired

@@ -1,6 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
@@ -119,10 +118,12 @@ class FCMService {
       debugPrint('Foreground message received: ${message.notification?.title}');
       _showLocalNotification(message);
 
-      // Auto-refresh data if it's a session event
+      // Auto-refresh data and show UI feedback if it's a pertinent event
       final type = message.data['type'];
-      if (type == 'session_ended' || type == 'session_extended') {
-        _refreshAppData();
+      if (type == 'session_ended' ||
+          type == 'session_extended' ||
+          type == 'violation_reported') {
+        _refreshAppData(message);
       }
     });
 
@@ -219,12 +220,50 @@ class FCMService {
     }
   }
 
-  void _refreshAppData() {
+  void _refreshAppData(RemoteMessage message) {
     final context = SpaceOfficerApp.navigatorKey.currentContext;
     if (context != null) {
       debugPrint('Refreshing app data from FCM trigger');
       context.read<OfficerProvider>().refreshAllData();
       context.read<ZoneProvider>().fetchZones();
+
+      // Show immediate feedback for foreground users
+      final notification = message.notification;
+      if (notification != null) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.info_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        notification.title ?? 'System Update',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        notification.body ?? 'Data has been refreshed.',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.blue.shade700,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
     }
   }
 }

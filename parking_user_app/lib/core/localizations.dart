@@ -118,7 +118,6 @@ abstract class AppLocalizations {
   String get quickActions;
   String get myVehicles;
   String get reservations;
-  String get aiHelp;
   String get recentActivity;
   String get viewAll;
   String get noRecentSessions;
@@ -269,8 +268,6 @@ class _EnglishLocalizations extends AppLocalizations {
   String get myVehicles => 'My Vehicles';
   @override
   String get reservations => 'Reservations';
-  @override
-  String get aiHelp => 'AI Help';
   @override
   String get recentActivity => 'Recent Activity';
   @override
@@ -426,8 +423,6 @@ class _SwahiliLocalizations extends AppLocalizations {
   String get myVehicles => 'Magari Yangu';
   @override
   String get reservations => 'Uhifadhi';
-  @override
-  String get aiHelp => 'Msaada wa AI';
   @override
   String get recentActivity => 'Shughuli za Hivi Karibuni';
   @override
@@ -585,8 +580,6 @@ class _FrenchLocalizations extends AppLocalizations {
   @override
   String get reservations => 'Réservations';
   @override
-  String get aiHelp => 'Aide IA';
-  @override
   String get recentActivity => 'Activité Récente';
   @override
   String get viewAll => 'Voir Tout';
@@ -742,8 +735,6 @@ class _SpanishLocalizations extends AppLocalizations {
   @override
   String get reservations => 'Reservaciones';
   @override
-  String get aiHelp => 'Ayuda IA';
-  @override
   String get recentActivity => 'Actividad Reciente';
   @override
   String get viewAll => 'Ver Todo';
@@ -897,8 +888,6 @@ class _GermanLocalizations extends AppLocalizations {
   @override
   String get reservations => 'Reservierungen';
   @override
-  String get aiHelp => 'KI-Hilfe';
-  @override
   String get recentActivity => 'Letzte Aktivitäten';
   @override
   String get viewAll => 'Alle ansehen';
@@ -1051,8 +1040,6 @@ class _ArabicLocalizations extends AppLocalizations {
   String get myVehicles => 'مركباتي';
   @override
   String get reservations => 'الحجوزات';
-  @override
-  String get aiHelp => 'مساعدة الذكاء الاصطناعي';
   @override
   String get recentActivity => 'النشاط الأخير';
   @override

@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:parking_officer_app/features/parking/providers/zone_provider.dart';
 import 'package:parking_officer_app/features/enforcement/providers/officer_provider.dart';
 import 'package:parking_officer_app/core/app_theme.dart';
-import 'package:parking_officer_app/features/parking/models/zone_model.dart';
 import 'package:parking_officer_app/features/parking/screens/zone_detail_screen.dart';
 import 'package:parking_officer_app/features/enforcement/screens/activity_history_screen.dart';
 import 'package:parking_officer_app/features/auth/screens/profile_screen.dart';
@@ -299,7 +298,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           return const SizedBox.shrink();
         }
 
-        final zone = zoneProvider.zones.first; // Mocking focus on primary zone
+        final zone = zoneProvider.zones.first; 
 
         return Container(
           padding: const EdgeInsets.all(20),

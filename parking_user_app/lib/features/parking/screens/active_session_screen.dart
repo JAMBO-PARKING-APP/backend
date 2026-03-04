@@ -14,6 +14,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import 'package:parking_user_app/widgets/base_scaffold.dart';
 import 'package:parking_user_app/features/home/screens/home_screen.dart';
+import 'package:parking_user_app/features/notifications/services/chat_service.dart';
+import 'package:parking_user_app/features/notifications/screens/chat_screen.dart';
 
 class ActiveSessionScreen extends StatefulWidget {
   final ParkingSession session;
@@ -389,6 +391,43 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen>
     }
   }
 
+  void _handleChatWithOfficer() async {
+    final chatService = ChatService();
+    setState(() => isLoading = true);
+    try {
+      // Create or find an existing conversation for this session
+      final result = await chatService.createConversation(
+        subject:
+            'Chat about session ${widget.session.vehiclePlate} at ${widget.session.zoneName}',
+        category: 'parking',
+        priority: 'medium',
+      );
+
+      if (mounted) {
+        if (result['success']) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  ChatDetailScreen(conversation: result['data']),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'Failed to start chat'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  bool isLoading = false;
+
   @override
   Widget build(BuildContext context) {
     return BaseScaffold(
@@ -582,6 +621,26 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen>
                 label: const Text('SHOW QR PASS'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.accentColor,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 56),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: isLoading ? null : _handleChatWithOfficer,
+                icon: isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.chat_outlined),
+                label: const Text('CHAT WITH OFFICER'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade700,
                   foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 56),
                 ),

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:parking_officer_app/core/api_client.dart';
 import 'package:parking_officer_app/features/chat/models/chat_model.dart';
 
@@ -19,6 +20,26 @@ class ChatService {
       return [];
     }
     return [];
+  }
+
+  Future<ChatConversation?> createConversation({
+    required String subject,
+    required String category,
+    String priority = 'medium',
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        'notifications/chat/conversations/',
+        data: {'subject': subject, 'category': category, 'priority': priority},
+      );
+
+      if (response.statusCode == 201) {
+        return ChatConversation.fromJson(response.data);
+      }
+    } catch (e) {
+      debugPrint('[ChatService] Error creating conversation: $e');
+    }
+    return null;
   }
 
   Future<List<ChatMessage>> getMessages(String conversationId) async {

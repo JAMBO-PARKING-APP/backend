@@ -21,6 +21,23 @@ class ChatProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<ChatConversation?> createConversation({
+    required String subject,
+    required String category,
+    String priority = 'medium',
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+    final conversation = await _chatService.createConversation(
+      subject: subject,
+      category: category,
+      priority: priority,
+    );
+    _isLoading = false;
+    notifyListeners();
+    return conversation;
+  }
+
   Future<void> fetchMessages(String conversationId) async {
     _isLoading = true;
     notifyListeners();

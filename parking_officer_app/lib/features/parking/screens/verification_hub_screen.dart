@@ -35,74 +35,61 @@ class _VerificationHubScreenState extends State<VerificationHubScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'VERIFICATION HUB',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 28,
-                  color: AppTheme.primaryColor,
-                  letterSpacing: -0.5,
-                ),
+      appBar: AppBar(title: const Text('VERIFICATION HUB')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Verify vehicles and enforce parking policies.',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Verify vehicles and enforce parking policies.',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 32),
+            ),
+            const SizedBox(height: 32),
 
-              // Action Cards Row
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildActionCard(
-                      'SCAN QR',
-                      Icons.qr_code_scanner_rounded,
-                      AppTheme.primaryColor,
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ScannerScreen(),
-                        ),
-                      ),
+            // Action Cards Row
+            Row(
+              children: [
+                Expanded(
+                  child: _buildActionCard(
+                    'SCAN QR',
+                    Icons.qr_code_scanner_rounded,
+                    AppTheme.primaryColor,
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ScannerScreen()),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildActionCard(
-                      'PLATE SEARCH',
-                      Icons.search_rounded,
-                      AppTheme.accentColor,
-                      () => _showPlateSearchDialog(),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 32),
-              const Text(
-                'QUICK ENFORCEMENT',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12,
-                  color: AppTheme.primaryColor,
-                  letterSpacing: 1.5,
                 ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildActionCard(
+                    'PLATE SEARCH',
+                    Icons.search_rounded,
+                    AppTheme.accentColor,
+                    () => _showPlateSearchDialog(),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 32),
+            const Text(
+              'QUICK ENFORCEMENT',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
+                color: AppTheme.primaryColor,
+                letterSpacing: 1.5,
               ),
-              const SizedBox(height: 16),
-              _buildPlateInputCard(),
-            ],
-          ),
+            ),
+            const SizedBox(height: 16),
+            _buildPlateInputCard(),
+          ],
         ),
       ),
     );

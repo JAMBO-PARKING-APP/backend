@@ -23,7 +23,6 @@ import 'package:parking_user_app/features/payments/screens/wallet_screen.dart';
 import 'package:parking_user_app/features/auth/screens/vehicle_list_screen.dart';
 import 'package:parking_user_app/features/parking/screens/create_reservation_screen.dart';
 import 'package:parking_user_app/features/notifications/screens/notification_screen.dart';
-import 'package:parking_user_app/features/support/ai_chat_screen.dart';
 import 'package:parking_user_app/features/home/screens/sidebar_navigation.dart';
 import 'package:parking_user_app/features/settings/screens/settings_screen.dart';
 import 'package:parking_user_app/core/app_theme.dart';
@@ -94,7 +93,7 @@ class HomeScreenState extends State<HomeScreen> {
       HomeDashboard(onMenuPressed: () => _openDrawer()), // 0: Home
       const ZoneListScreen(), // 1: Zones
       const ParkingHistoryScreen(), // 2: History
-      const AIChatScreen(), // 3: Live Chat (AI)
+      const Scaffold(body: Center(child: Text('Support Page'))), // 3: Support
       const NotificationScreen(), // 4: Notifications
       const WalletScreen(), // 5: Wallet
       const ProfileScreen(), // 6: Profile
@@ -397,14 +396,18 @@ class _HomeDashboardState extends State<HomeDashboard> {
                                       ),
                                       _buildQuickActionItem(
                                         context,
-                                        AppLocalizations.of(context).aiHelp,
-                                        Icons.chat_bubble_outline_rounded,
+                                        AppLocalizations.of(context).support,
+                                        Icons.help_outline_rounded,
                                         AppTheme.accentColor,
                                         () => Navigator.push(
                                           context,
                                           MaterialPageRoute(
                                             builder: (context) =>
-                                                const AIChatScreen(),
+                                                const Scaffold(
+                                                  body: Center(
+                                                    child: Text('Support Page'),
+                                                  ),
+                                                ),
                                           ),
                                         ),
                                       ),
