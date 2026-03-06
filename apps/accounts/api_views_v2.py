@@ -359,3 +359,11 @@ class UserLocationAPIView(generics.CreateAPIView):
     
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+from rest_framework.permissions import IsAdminUser
+
+class AdminUserListAPIView(generics.ListAPIView):
+    """List all users for admin view"""
+    queryset = User.objects.all().order_by('-created_at')
+    serializer_class = UserProfileSerializer
+    permission_classes = [IsAdminUser]

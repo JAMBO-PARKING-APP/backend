@@ -10,7 +10,6 @@ def truncate_coord(coord):
     if coord is None:
         return None
     try:
-        # Format to 6 decimal places as a string first to ensure consistency
         formatted = "{:.6f}".format(float(coord))
         return Decimal(formatted)
     except (ValueError, TypeError, Exception):

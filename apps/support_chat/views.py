@@ -12,7 +12,6 @@ class AskAIView(APIView):
         if not query:
             return Response({'error': 'Query is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Optional location data
         latitude = request.data.get('latitude')
         longitude = request.data.get('longitude')
 

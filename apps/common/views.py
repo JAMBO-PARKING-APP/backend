@@ -646,7 +646,6 @@ class TerminateSessionAjaxView(AdminRequiredMixin, View):
             if session.status != ParkingStatus.ACTIVE:
                 return JsonResponse({'error': _('Session is not active')}, status=400)
             
-            # Explicitly end the session using the model method
             session.end_session()
             
             return JsonResponse({

@@ -113,7 +113,6 @@ def cancel_overdue_reservations():
             reservation.parking_slot.save()
         reservation.save()
         
-        # Notify user
         from apps.notifications.notification_triggers import notify_reservation_cancelled
         notify_reservation_cancelled(reservation)
         
@@ -135,7 +134,6 @@ def expire_reservation_task(reservation_id):
             reservation.save()
             logger.info(f"Reservation {reservation_id} expired automatically.")
             
-            # Notify user
             from apps.notifications.notification_triggers import notify_reservation_cancelled
             notify_reservation_cancelled(reservation)
             return f"Reservation {reservation_id} expired."
@@ -150,7 +148,6 @@ def validate_active_session_location():
     Check if users with active sessions are too far from the parking zone.
     Optimized to avoid N+1 queries.
     """
-    # 1. Get all active sessions with related data
     active_sessions = ParkingSession.objects.filter(status=ParkingStatus.ACTIVE).select_related('vehicle__user', 'zone')
     
     if not active_sessions.exists():
@@ -300,8 +297,6 @@ def cleanup_slot_statuses():
     Autonomy task: A self-healing watchdog that resets 'stuck' slots.
     If a slot is RESERVED/OCCUPIED but has no active session/reservation, reset it.
     """
-    # 1. Fix stuck RESERVED slots (more than 20 mins without a session start)
-    # Reservations expire in 15 mins, so 20 mins is a safe buffer.
     cutoff = timezone.now() - timedelta(minutes=20)
     stuck_reserved = ParkingSlot.objects.filter(
         status=SlotStatus.RESERVED,
@@ -310,7 +305,6 @@ def cleanup_slot_statuses():
     
     reset_count = 0
     for slot in stuck_reserved:
-        # Check if there's an active reservation for this slot
         if not Reservation.objects.filter(
             parking_slot=slot, 
             status__in=['pending_payment', 'confirmed'],
@@ -320,7 +314,6 @@ def cleanup_slot_statuses():
             slot.save()
             reset_count += 1
             
-    # 2. Fix stuck OCCUPIED slots (no active session)
     stuck_occupied = ParkingSlot.objects.filter(status=SlotStatus.OCCUPIED)
     for slot in stuck_occupied:
         if not ParkingSession.objects.filter(

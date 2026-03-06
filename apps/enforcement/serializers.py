@@ -99,7 +99,6 @@ class ViolationSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'officer', 'created_at', 'vehicle')
 
     def to_internal_value(self, data):
-        # We need a mutable copy to truncate coordinates before validation
         if hasattr(data, 'copy'):
             data = data.copy()
         
@@ -127,12 +126,9 @@ class ViolationSerializer(serializers.ModelSerializer):
         session = attrs.get('parking_session')
         zone = attrs.get('zone')
 
-        # Infer zone from session if missing
         if not zone and session:
             attrs['zone'] = session.zone
             zone = attrs['zone']
-
-        # Infer zone from officer status if still missing
         if not zone:
             request = self.context.get('request')
             if request and request.user.is_authenticated:

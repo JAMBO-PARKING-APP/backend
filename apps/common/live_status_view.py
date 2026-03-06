@@ -15,17 +15,11 @@ class ZoneLiveStatusAjaxView(AdminRequiredMixin, View):
     def get(self, request, zone_id):
         try:
             zone = Zone.objects.get(pk=zone_id)
-            
-            # Get active sessions for this zone
             active_sessions = ParkingSession.objects.filter(
                 zone=zone,
                 status=ParkingStatus.ACTIVE
             ).select_related('vehicle', 'parking_slot')
-            
-            # Get all slots for this zone
             all_slots = zone.slots.all()
-            
-            # Create slot status data
             slots_data = []
             occupied_slots = {session.parking_slot_id: session for session in active_sessions if session.parking_slot_id}
             
@@ -44,9 +38,7 @@ class ZoneLiveStatusAjaxView(AdminRequiredMixin, View):
                         'vehicle': None
                     })
             
-            # If no slots defined, create mock slots based on active sessions
             if not all_slots.exists():
-                # Limit to 100 slots for performance
                 total_slots = min(100, max(50, active_sessions.count() * 2))
                 slots_data = []
                 
@@ -65,7 +57,6 @@ class ZoneLiveStatusAjaxView(AdminRequiredMixin, View):
                             'vehicle': None
                         })
             
-            # Prepare active sessions list
             active_sessions_list = []
             for session in active_sessions:
                 duration = timezone.now() - session.start_time

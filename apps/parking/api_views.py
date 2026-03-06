@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from apps.common.constants import ParkingStatus, SlotStatus
 from .models import Zone, ParkingSlot, ParkingSession, Reservation
-from .serializers import ZoneSerializer, ParkingSessionSerializer, ReservationSerializer
+from .serializers import ZoneSerializer, ParkingSessionSerializer, ReservationSerializer, ParkingSlotSerializer
 
 class ZoneListView(generics.ListAPIView):
     queryset = Zone.objects.filter(is_active=True)
@@ -145,3 +145,40 @@ class ReservationListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         return Reservation.objects.filter(vehicle__user=self.request.user, is_active=True)
+
+from rest_framework.permissions import IsAdminUser
+
+class AdminActiveSessionsAPIView(generics.ListAPIView):
+    """List all active parking sessions for admin view"""
+    queryset = ParkingSession.objects.filter(status=ParkingStatus.ACTIVE).order_by('-start_time')
+    serializer_class = ParkingSessionSerializer
+    permission_classes = [IsAdminUser]
+
+class AdminParkingSessionListView(generics.ListAPIView):
+    """List all parking sessions with filtering for admin view"""
+    serializer_class = ParkingSessionSerializer
+    permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+        queryset = ParkingSession.objects.all().order_by('-start_time')
+        session_type = self.request.query_params.get('type')
+        if session_type == 'completed':
+            queryset = queryset.filter(status=ParkingStatus.COMPLETED)
+        elif session_type == 'active':
+            queryset = queryset.filter(status=ParkingStatus.ACTIVE)
+        return queryset
+
+class AdminZoneSlotListView(generics.ListAPIView):
+    """List all slots for a specific zone for admin mapping"""
+    serializer_class = ParkingSlotSerializer
+    permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+        zone_id = self.kwargs.get('zone_id')
+        return ParkingSlot.objects.filter(zone_id=zone_id).order_by('slot_code')
+
+class AdminSlotUpdateView(generics.UpdateAPIView):
+    """Update slot status (e.g. maintenance, block)"""
+    queryset = ParkingSlot.objects.all()
+    serializer_class = ParkingSlotSerializer
+    permission_classes = [IsAdminUser]

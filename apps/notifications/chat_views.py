@@ -34,8 +34,7 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
         if user.role == 'officer':
             from apps.parking.models import ParkingSession
             from apps.common.constants import ParkingStatus
-            
-            # Get users with active sessions in officer's assigned zones
+
             assigned_zones = user.assigned_zones.all()
             active_users_in_zones = ParkingSession.objects.filter(
                 zone__in=assigned_zones,
@@ -101,7 +100,6 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_403_FORBIDDEN
                 )
         elif user.role == 'officer':
-             # For officers, check if they are either assigned or the user is in their zone with active session
              if conversation.assigned_agent and conversation.assigned_agent != user:
                  return Response(
                      {'error': 'This conversation is assigned to another agent'},
@@ -149,16 +147,10 @@ class ChatConversationViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_403_FORBIDDEN
                 )
             
-            # Also ensure driver still has active session to continue chatting? 
-            # The requirement said "users can only initiate a chat when they have an active session".
-            # Usually, once started, they can finish it, but let's stick to strict if needed.
-            # "initiate" implies create. So continue is fine? Let's keep it lenient for continue.
-            
         elif user.role == 'officer':
              from apps.parking.models import ParkingSession
              from apps.common.constants import ParkingStatus
              
-             # Restricted to users with active sessions in officer's zone
              is_valid_chat = ParkingSession.objects.filter(
                  vehicle__user=conversation.user,
                  zone__in=user.assigned_zones.all(),

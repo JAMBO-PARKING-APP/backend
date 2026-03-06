@@ -234,12 +234,10 @@ class StartSessionByOfficerAPIView(APIView):
             vehicle = Vehicle.objects.get(id=vehicle_id, is_active=True)
             zone = Zone.objects.get(id=zone_id, is_active=True)
             
-            # Check for existing active session
             active_session = ParkingSession.objects.filter(vehicle=vehicle, status=ParkingStatus.ACTIVE).first()
             if active_session:
                 return Response({'error': 'Vehicle already has an active session'}, status=status.HTTP_400_BAD_REQUEST)
                 
-            # Find available slot
             parking_slot = zone.slots.filter(status=SlotStatus.AVAILABLE).first()
             if not parking_slot:
                 return Response({'error': 'No available slots in this zone'}, status=status.HTTP_400_BAD_REQUEST)
@@ -260,14 +258,12 @@ class StartSessionByOfficerAPIView(APIView):
                 status=ParkingStatus.ACTIVE
             )
             
-            # Trigger notification
             try:
                 from apps.notifications.notification_triggers import notify_parking_started
                 notify_parking_started(session)
             except Exception as e:
                 logger.error(f"Failed to send parking session notification: {e}")
             
-            # Create a log entry
             OfficerLog.objects.create(
                 officer=request.user,
                 action='manual_session_start',
@@ -412,3 +408,23 @@ class OfficerQRScansAPIView(generics.ListAPIView):
     
     def get_queryset(self):
         return QRCodeScan.objects.filter(officer=self.request.user).order_by('-created_at')
+
+from rest_framework.permissions import IsAdminUser
+
+class AdminViolationListAPIView(generics.ListAPIView):
+    """List all violations for admin view"""
+    queryset = Violation.objects.all().order_by('-created_at')
+    serializer_class = ViolationListSerializer
+    permission_classes = [IsAdminUser]
+
+class AdminOfficerStatusListAPIView(generics.ListAPIView):
+    """List all officers and their current status"""
+    queryset = OfficerStatus.objects.all().order_by('-updated_at')
+    serializer_class = OfficerStatusSerializer
+    permission_classes = [IsAdminUser]
+
+class AdminGlobalOfficerLogListAPIView(generics.ListAPIView):
+    """List all officer logs (global) for admin monitor"""
+    queryset = OfficerLog.objects.all().order_by('-created_at')
+    serializer_class = OfficerActionLogV2Serializer
+    permission_classes = [IsAdminUser]

@@ -129,7 +129,6 @@ class CreateViolationView(generics.CreateAPIView):
         officer = self.request.user
         violation = serializer.save(officer=officer)
         
-        # Trigger notification
         try:
             from apps.notifications.notification_triggers import notify_violation_issued
             notify_violation_issued(violation)

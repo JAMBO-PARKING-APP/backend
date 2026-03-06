@@ -64,7 +64,6 @@ def escalate_unpaid_violations():
     
     for violation in unpaid_violations:
         old_fine = violation.fine_amount
-        # 10% increase
         increase = (old_fine * Decimal('0.10')).quantize(Decimal('0.01'))
         violation.fine_amount += increase
         violation.save()
@@ -72,7 +71,6 @@ def escalate_unpaid_violations():
         total_increase += increase
         count += 1
         
-        # Notify user (optional but recommended)
         from apps.notifications.notification_triggers import notify_violation_escalation
         notify_violation_escalation(violation, increase)
         
