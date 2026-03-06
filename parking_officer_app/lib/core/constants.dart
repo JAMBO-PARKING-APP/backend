@@ -2,8 +2,7 @@ import 'dart:io' show Platform;
 
 class AppConstants {
   static bool useNgrok = true;
-  static const String ngrokBase =
-      'https://curtis-unmobilized-clarence.ngrok-free.dev/api/';
+  static const String ngrokBase = 'http://159.65.62.219/api/';
 
   static String get baseUrl {
     if (useNgrok) return ngrokBase;
