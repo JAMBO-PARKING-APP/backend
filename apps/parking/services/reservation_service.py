@@ -101,11 +101,18 @@ class ReservationService:
             raise ValueError("Reservation is not pending payment")
 
         user = reservation.vehicle.user
-        
+        country = user.country
+
         if payment_method == 'wallet':
             from django.db.models import F
-            user.wallet_balance = F('wallet_balance') - reservation.cost
-            user.save(update_fields=['wallet_balance'])
+            if country:
+                from apps.accounts.models import Wallet
+                wallet, _ = Wallet.objects.get_or_create(user=user, country=country)
+                wallet.balance = F('balance') - reservation.cost
+                wallet.save(update_fields=['balance'])
+            else:
+                user.wallet_balance_legacy = F('wallet_balance_legacy') - reservation.cost
+                user.save(update_fields=['wallet_balance_legacy'])
             
             WalletTransaction.objects.create(
                 user=user,
@@ -132,14 +139,21 @@ class ReservationService:
             return
 
         user = reservation.vehicle.user
+        country = user.country
 
         if reservation.status == 'confirmed':
              refund_amount = reservation.cost
              
              if refund_amount > 0:
                  from django.db.models import F
-                 user.wallet_balance = F('wallet_balance') + refund_amount
-                 user.save(update_fields=['wallet_balance'])
+                 if country:
+                     from apps.accounts.models import Wallet
+                     wallet, _ = Wallet.objects.get_or_create(user=user, country=country)
+                     wallet.balance = F('balance') + refund_amount
+                     wallet.save(update_fields=['balance'])
+                 else:
+                     user.wallet_balance_legacy = F('wallet_balance_legacy') + refund_amount
+                     user.save(update_fields=['wallet_balance_legacy'])
                  
                  WalletTransaction.objects.create(
                     user=user,
@@ -152,6 +166,10 @@ class ReservationService:
                         'original_cost': float(reservation.cost)
                     }
                 )
+
+        if reservation.parking_slot:
+            reservation.parking_slot.status = SlotStatus.AVAILABLE
+            reservation.parking_slot.save()
 
         reservation.status = 'cancelled'
         reservation.is_active = False

@@ -428,3 +428,44 @@ class AdminGlobalOfficerLogListAPIView(generics.ListAPIView):
     queryset = OfficerLog.objects.all().order_by('-created_at')
     serializer_class = OfficerActionLogV2Serializer
     permission_classes = [IsAdminUser]
+
+
+class AdminOfficerReassignAPIView(APIView):
+    """Reassign an officer to a specific parking zone"""
+    permission_classes = [IsAdminUser]
+
+    @transaction.atomic
+    def post(self, request, pk):
+        from apps.parking.models import Zone
+        from apps.accounts.models import User
+        
+        try:
+            officer = User.objects.get(id=pk, role=UserRole.OFFICER)
+            zone_id = request.data.get('zone_id')
+            
+            if not zone_id:
+                # If zone_id is empty, unassign
+                status_obj, created = OfficerStatus.objects.get_or_create(officer=officer)
+                status_obj.current_zone = None
+                status_obj.save()
+                return Response({'message': 'Officer unassigned successfully'}, status=status.HTTP_200_OK)
+
+            zone = Zone.objects.get(id=zone_id, is_active=True)
+            status_obj, created = OfficerStatus.objects.get_or_create(officer=officer)
+            status_obj.current_zone = zone
+            status_obj.save()
+
+            OfficerLog.objects.create(
+                officer=officer,
+                action='reassigned_by_admin',
+                details={'new_zone': zone.name, 'zone_id': str(zone.id)}
+            )
+
+            return Response({
+                'message': f'Officer assigned to {zone.name} successfully',
+                'officer': officer.full_name,
+                'zone': zone.name
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

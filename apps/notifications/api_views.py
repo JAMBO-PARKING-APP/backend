@@ -1,16 +1,17 @@
 """
 API Views for Notifications
 """
-from rest_framework import status, permissions, serializers
+from rest_framework import status, permissions, serializers, generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, UpdateAPIView
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from django.db.models import Q
-from apps.notifications.models import NotificationEvent, UserPreferences
+from apps.notifications.models import NotificationEvent, UserPreferences, ChatConversation, ChatMessage
 from apps.notifications.serializers import (
     NotificationSerializer, NotificationListSerializer, NotificationSummarySerializer,
-    UserPreferencesSerializer, MarkNotificationAsReadSerializer
+    UserPreferencesSerializer, MarkNotificationAsReadSerializer,
+    ChatConversationSerializer, ChatMessageSerializer
 )
 
 
@@ -225,8 +226,13 @@ class BulkCreateNotificationsAPIView(APIView):
         
         if user_filter == 'all':
             users = User.objects.all()
-        elif user_filter == 'active':
-            users = User.objects.filter(is_active=True)
+        elif user_filter == 'operational':
+            from apps.parking.models import ParkingSession
+            from apps.common.constants import ParkingStatus
+            active_session_user_ids = ParkingSession.objects.filter(status=ParkingStatus.ACTIVE).values_list('vehicle__user_id', flat=True)
+            users = User.objects.filter(id__in=active_session_user_ids)
+        elif user_filter == 'officers':
+            users = User.objects.filter(role='officer', is_active=True)
         else:
             users = User.objects.filter(is_active=True)
         
@@ -392,3 +398,42 @@ class SendCustomNotificationAPIView(APIView):
             'sent_count': sent_count,
             'message': f'Sent {sent_count} notifications'
         }, status=status.HTTP_200_OK)
+
+
+class AdminNotificationEventAPIView(ListAPIView):
+    """List all global notifications (broadcast history) for admin view"""
+    queryset = NotificationEvent.objects.all().order_by('-created_at')
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+
+class AdminChatConversationListAPIView(ListAPIView):
+    """List all chat conversations for support/admin view"""
+    queryset = ChatConversation.objects.exclude(status='closed').order_by('-updated_at')
+    serializer_class = ChatConversationSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+
+class AdminChatMessageListAPIView(generics.ListCreateAPIView):
+    """List all messages for a specific conversation and send replies in admin view"""
+    serializer_class = ChatMessageSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+    def get_queryset(self):
+        conversation_id = self.kwargs.get('conversation_id')
+        return ChatMessage.objects.filter(conversation_id=conversation_id).order_by('created_at')
+
+    def perform_create(self, serializer):
+        conversation_id = self.kwargs.get('conversation_id')
+        try:
+            conversation = ChatConversation.objects.get(id=conversation_id)
+            serializer.save(
+                conversation=conversation,
+                sender=self.request.user,
+                is_read=False
+            )
+            # Update conversation timestamp
+            conversation.save() # Triggers auto_now updated_at
+        except ChatConversation.DoesNotExist:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError("Conversation does not exist")

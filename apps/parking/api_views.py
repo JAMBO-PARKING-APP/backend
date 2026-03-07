@@ -3,7 +3,7 @@ from django.utils import timezone
 from django.db import transaction
 from rest_framework import status, generics
 from rest_framework.decorators import api_view
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from apps.common.constants import ParkingStatus, SlotStatus
@@ -14,6 +14,18 @@ class ZoneListView(generics.ListAPIView):
     queryset = Zone.objects.filter(is_active=True)
     serializer_class = ZoneSerializer
     permission_classes = [IsAuthenticated]
+
+class AdminZoneListCreateAPIView(generics.ListCreateAPIView):
+    """List and create zones for admin management"""
+    queryset = Zone.objects.all().order_by('name')
+    serializer_class = ZoneSerializer
+    permission_classes = [IsAdminUser]
+
+class AdminZoneDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, update, or delete a zone for admin management"""
+    queryset = Zone.objects.all()
+    serializer_class = ZoneSerializer
+    permission_classes = [IsAdminUser]
 
 class ZoneAvailabilityView(APIView):
     permission_classes = [IsAuthenticated]

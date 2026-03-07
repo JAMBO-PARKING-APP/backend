@@ -5,15 +5,18 @@ class ParkingSlotSerializer(serializers.ModelSerializer):
     class Meta:
         model = ParkingSlot
         fields = ('id', 'slot_code', 'status')
+        read_only_fields = ('id', 'slot_code')
 
 class ZoneSerializer(serializers.ModelSerializer):
     available_slots_count = serializers.ReadOnlyField()
     slots = ParkingSlotSerializer(many=True, read_only=True)
+    country_name = serializers.CharField(source='country.name', read_only=True)
 
     class Meta:
         model = Zone
-        fields = ('id', 'name', 'description', 'hourly_rate', 'max_duration_hours', 
-                 'available_slots_count', 'slots')
+        fields = ('id', 'name', 'code', 'description', 'hourly_rate', 'max_duration_hours', 
+                 'total_slots', 'is_active', 'latitude', 'longitude', 'radius_meters',
+                 'country', 'country_name', 'available_slots_count', 'slots')
 
 class ParkingSessionSerializer(serializers.ModelSerializer):
     zone_name = serializers.CharField(source='zone.name', read_only=True)
