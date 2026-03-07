@@ -14,7 +14,7 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     last_name = models.CharField(max_length=30, verbose_name=_("Last Name"))
     role = models.CharField(max_length=20, choices=UserRole.choices, default=UserRole.DRIVER, verbose_name=_("Role"))
     profile_photo = models.ImageField(upload_to='profiles/', null=True, blank=True, verbose_name=_("Profile Photo"))
-    wallet_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, verbose_name=_("Wallet Balance"))
+    wallet_balance_legacy = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, verbose_name=_("Legacy Wallet Balance"), db_column='wallet_balance')
     is_active = models.BooleanField(default=True, verbose_name=_("Active"))
     is_staff = models.BooleanField(default=False, verbose_name=_("Staff Status"))
     is_verified = models.BooleanField(default=False, verbose_name=_("Verified"))
@@ -58,6 +58,14 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
         return str(self.phone)
 
     @property
+    def wallet_balance(self):
+        """Returns the wallet balance for the user's current country."""
+        if not self.country:
+            return self.wallet_balance_legacy
+        wallet, _ = Wallet.objects.get_or_create(user=self, country=self.country)
+        return wallet.balance
+
+    @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
 
@@ -91,6 +99,19 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
             self.deletion_planned_at = None
 
         super().save(*args, **kwargs)
+
+class Wallet(BaseModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='wallets')
+    country = models.ForeignKey('common.Country', on_delete=models.CASCADE, related_name='wallets')
+    balance = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, verbose_name=_("Balance"))
+
+    class Meta:
+        unique_together = ('user', 'country')
+        verbose_name = _("Wallet")
+        verbose_name_plural = _("Wallets")
+
+    def __str__(self):
+        return f"{self.user.phone} - {self.country.iso_code}: {self.balance}"
 
 class Vehicle(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='vehicles')

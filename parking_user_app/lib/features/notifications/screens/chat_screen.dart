@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../../../core/constants.dart';
+import '../../../core/storage_manager.dart';
 import '../services/chat_service.dart';
 
 class ChatConversationListScreen extends StatefulWidget {
@@ -240,11 +241,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final baseUrl = AppConstants.wsUrl;
     final convId = widget.conversation['id'];
 
-    // We don't have JWT auth in WS yet, but we'll connect
+    // We connect with JWT auth via query string
     try {
-      _channel = IOWebSocketChannel.connect(
-        Uri.parse('$baseUrl/chat/$convId/'),
-      );
+      final token = await StorageManager().getAccessToken();
+      final wsUrl =
+          '$baseUrl/chat/$convId/${token != null ? "?token=$token" : ""}';
+
+      _channel = IOWebSocketChannel.connect(Uri.parse(wsUrl));
 
       _channel!.stream.listen((data) {
         final message = jsonDecode(data);

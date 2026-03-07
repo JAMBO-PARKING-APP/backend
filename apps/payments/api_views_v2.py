@@ -251,9 +251,18 @@ class WalletBalanceAPIView(APIView):
     
     def get(self, request):
         country = getattr(request.user, 'country', None)
+        if not country:
+            return Response({
+                'balance': float(request.user.wallet_balance_legacy),
+                'currency': 'UGX'
+            }, status=status.HTTP_200_OK)
+            
+        from apps.accounts.models import Wallet
+        wallet, _ = Wallet.objects.get_or_create(user=request.user, country=country)
+        
         return Response({
-            'balance': float(request.user.wallet_balance),
-            'currency': country.currency if country else 'UGX'
+            'balance': float(wallet.balance),
+            'currency': country.currency
         }, status=status.HTTP_200_OK)
 
 class WalletTransactionsListAPIView(generics.ListAPIView):
@@ -379,10 +388,18 @@ class PesapalUserCallbackView(APIView):
                 is_wallet_topup = trans.processor_response.get('is_wallet_topup', False) if trans.processor_response else False
                 if is_wallet_topup:
                     with transaction.atomic():
-                        from django.db.models import F
                         user = trans.user
-                        user.wallet_balance = F('wallet_balance') + trans.amount
-                        user.save(update_fields=['wallet_balance'])
+                        country = getattr(user, 'country', None)
+                        if country:
+                            from apps.accounts.models import Wallet
+                            from django.db.models import F
+                            wallet, _ = Wallet.objects.get_or_create(user=user, country=country)
+                            wallet.balance = F('balance') + trans.amount
+                            wallet.save(update_fields=['balance'])
+                        else:
+                            from django.db.models import F
+                            user.wallet_balance_legacy = F('wallet_balance_legacy') + trans.amount
+                            user.save(update_fields=['wallet_balance_legacy'])
                         
                         from django.utils.translation import gettext as _
                         WalletTransaction.objects.create(
@@ -465,10 +482,18 @@ class PesapalIPNAPIView(APIView):
                 is_wallet_topup = trans.processor_response.get('is_wallet_topup', False) if trans.processor_response else False
                 if is_wallet_topup:
                     with transaction.atomic():
-                        from django.db.models import F
                         user = trans.user
-                        user.wallet_balance = F('wallet_balance') + trans.amount
-                        user.save(update_fields=['wallet_balance'])
+                        country = getattr(user, 'country', None)
+                        if country:
+                            from apps.accounts.models import Wallet
+                            from django.db.models import F
+                            wallet, _ = Wallet.objects.get_or_create(user=user, country=country)
+                            wallet.balance = F('balance') + trans.amount
+                            wallet.save(update_fields=['balance'])
+                        else:
+                            from django.db.models import F
+                            user.wallet_balance_legacy = F('wallet_balance_legacy') + trans.amount
+                            user.save(update_fields=['wallet_balance_legacy'])
                         
                         from django.utils.translation import gettext as _
                         WalletTransaction.objects.create(

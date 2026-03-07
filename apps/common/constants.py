@@ -49,7 +49,7 @@ CURRENCY_SYMBOLS = {
     'CAD': 'C$',
     'AUD': 'A$',
     'UGX': 'UGX',
-    'KES': 'Ksh',
+    'KES': 'KSh',
     'GHS': '₵',
 
 }

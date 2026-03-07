@@ -53,7 +53,7 @@ class NotificationAdmin(admin.ModelAdmin):
             success = send_notification_to_user(
                 user=notification.user,
                 title=notification.title,
-                body=notification.body if hasattr(notification, 'body') else notification.message,
+                body=notification.message,
                 data=data,
                 notification_event=notification
             )

@@ -17,6 +17,7 @@ import 'package:parking_user_app/features/notifications/providers/notification_p
 import 'package:parking_user_app/features/auth/screens/permissions_screen.dart';
 import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:parking_user_app/core/fcm_service.dart';
 import 'package:parking_user_app/core/notification_dialog_service.dart';
 import 'package:parking_user_app/core/dialog_service.dart';
@@ -30,6 +31,9 @@ void main() async {
 
   // Initialize Firebase
   await Firebase.initializeApp();
+
+  // Set up background message handler as early as possible
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   // Initialize FCM Service (Non-blocking)
   FCMService().initialize();

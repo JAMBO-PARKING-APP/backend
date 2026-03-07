@@ -17,7 +17,7 @@ import 'notification_dialog_service.dart';
 
 /// Background message handler - must be top-level function
 @pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   if (kDebugMode) {
     print('Handling background message: ${message.messageId}');
@@ -174,8 +174,7 @@ class FCMService {
       }
     });
 
-    // Set background message handler
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    // Background message handler registration is moved to main.dart
   }
 
   /// Show local notification for foreground messages

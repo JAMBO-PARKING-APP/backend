@@ -37,6 +37,11 @@ class Command(BaseCommand):
                     currency_code = list(currencies.keys())[0]
                     currency_symbol = currencies[currency_code].get('symbol', '$')
                 
+                # Override with our defined symbols if available
+                from apps.common.constants import CURRENCY_SYMBOLS
+                if currency_code in CURRENCY_SYMBOLS:
+                    currency_symbol = CURRENCY_SYMBOLS[currency_code]
+                
                 # Extract Phone Code
                 idd = data.get('idd', {})
                 root = idd.get('root', '')

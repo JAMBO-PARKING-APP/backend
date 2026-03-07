@@ -13,9 +13,50 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
     async def receive(self, text_data):
-        pass
+        """Handle incoming messages from WebSocket"""
+        from apps.notifications.models import ChatConversation, ChatMessage
+        import json
+        
+        data = json.loads(text_data)
+        message_content = data.get('message', '').strip()
+        
+        if not message_content:
+            return
+            
+        user = self.scope.get('user')
+        if not user or not user.is_authenticated:
+            return
+
+        try:
+            conversation = await ChatConversation.objects.aget(id=self.conversation_id)
+            
+            # Save message to database
+            message = await ChatMessage.objects.acreate(
+                conversation=conversation,
+                sender=user,
+                content=message_content,
+                message_type='text'
+            )
+            
+            # Broadcast to group
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'chat_message',
+                    'message': {
+                        'id': str(message.id),
+                        'content': message.content,
+                        'sender_id': str(user.id),
+                        'sender_name': user.full_name,
+                        'created_at': message.created_at.iso_with_ms() if hasattr(message.created_at, 'iso_with_ms') else message.created_at.isoformat(),
+                    }
+                }
+            )
+        except Exception as e:
+            print(f"Error in ChatConsumer receive: {e}")
 
     async def chat_message(self, event):
+        """Send message to WebSocket"""
         await self.send(text_data=json.dumps(event['message']))
 
 class ParkingConsumer(AsyncWebsocketConsumer):
