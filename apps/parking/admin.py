@@ -2,11 +2,18 @@ from django.contrib import admin
 from apps.common.admin_mixins import RegionalAdminMixin
 from .models import Zone, ParkingSlot, ParkingSession, Reservation
 
+class ParkingSlotInline(admin.TabularInline):
+    model = ParkingSlot
+    extra = 0
+    fields = ('slot_code', 'status', 'slot_type')
+    readonly_fields = ('status',)
+
 @admin.register(Zone)
 class ZoneAdmin(RegionalAdminMixin, admin.ModelAdmin):
-    list_display = ('name', 'hourly_rate', 'available_slots_count', 'is_active', 'country')
+    list_display = ('name', 'hourly_rate', 'total_slots', 'available_slots_count', 'is_active', 'country')
     list_filter = ('country', 'is_active')
-    search_fields = ('name',)
+    search_fields = ('name', 'code')
+    inlines = [ParkingSlotInline]
 
 @admin.register(ParkingSlot)
 class ParkingSlotAdmin(admin.ModelAdmin):

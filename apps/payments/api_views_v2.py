@@ -385,6 +385,46 @@ class PesapalUserCallbackView(APIView):
                 if trans.reservation:
                     from apps.parking.services.reservation_service import ReservationService
                     ReservationService.confirm_reservation(trans.reservation, payment_method='pesapal')
+                
+                # Handle Parking Session Intent
+                parking_intent = trans.processor_response.get('parking_intent')
+                if parking_intent and not trans.parking_session:
+                    try:
+                        from apps.parking.models import ParkingSession, Zone, ParkingSlot, Vehicle
+                        from apps.common.constants import ParkingStatus, SlotStatus
+                        from apps.notifications.notification_triggers import notify_parking_started
+                        from datetime import timedelta
+                        
+                        vehicle_id = parking_intent.get('vehicle_id')
+                        zone_id = parking_intent.get('zone_id')
+                        slot_id = parking_intent.get('slot_id')
+                        duration_hours = parking_intent.get('duration_hours', 1)
+                        
+                        vehicle = Vehicle.objects.get(id=vehicle_id)
+                        zone = Zone.objects.get(id=zone_id)
+                        parking_slot = ParkingSlot.objects.filter(id=slot_id).first() if slot_id else None
+                        
+                        planned_end = trans.created_at + timedelta(hours=float(duration_hours))
+                        
+                        # Create session
+                        session = ParkingSession.objects.create(
+                            vehicle=vehicle,
+                            zone=zone,
+                            parking_slot=parking_slot,
+                            planned_end_time=planned_end,
+                            estimated_cost=trans.amount,
+                            status=ParkingStatus.ACTIVE
+                        )
+                        trans.parking_session = session
+                        
+                        if parking_slot:
+                            parking_slot.status = SlotStatus.OCCUPIED
+                            parking_slot.save()
+                            
+                        notify_parking_started(session)
+                    except Exception as e:
+                        import logging
+                        logging.getLogger(__name__).error(f"Failed to create parking session from intent: {str(e)}")
                 is_wallet_topup = trans.processor_response.get('is_wallet_topup', False) if trans.processor_response else False
                 if is_wallet_topup:
                     with transaction.atomic():

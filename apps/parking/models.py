@@ -23,6 +23,32 @@ class Zone(RegionalModel, BaseModel):
                                      help_text=_("Parking layout diagram (like airplane seat map)"))
     diagram_width = models.IntegerField(default=800, help_text=_("Diagram width in pixels"))
     diagram_height = models.IntegerField(default=600, help_text=_("Diagram height in pixels"))
+    
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+        
+        # After saving, handle automatic slot creation
+        if self.total_slots > 0:
+            current_slots = self.slots.count()
+            if current_slots < self.total_slots:
+                # Create missing slots
+                new_slots = []
+                for i in range(current_slots + 1, self.total_slots + 1):
+                    # Use Zone code or name as prefix
+                    prefix = self.code or self.name[:3].upper()
+                    slot_code = f"{prefix}-{i:03d}"
+                    
+                    # Double check if slot code already exists to avoid integrity errors
+                    if not ParkingSlot.objects.filter(zone=self, slot_code=slot_code).exists():
+                        new_slots.append(ParkingSlot(
+                            zone=self,
+                            slot_code=slot_code,
+                            status=SlotStatus.AVAILABLE
+                        ))
+                
+                if new_slots:
+                    ParkingSlot.objects.bulk_create(new_slots)
 
     def __str__(self):
         return self.name

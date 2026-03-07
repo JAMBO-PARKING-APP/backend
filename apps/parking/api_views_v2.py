@@ -172,47 +172,103 @@ class StartParkingAPIView(APIView):
                          request.user.id, vehicle.id, zone.id, duration_hours, planned_end.isoformat(), str(estimated_cost))
             
             payment_method = serializer.validated_data.get('payment_method', 'wallet')
-            initial_status = ParkingStatus.ACTIVE
             
             if payment_method == 'wallet':
                 if request.user.wallet_balance < estimated_cost:
                     return Response({
-                        'error': f'Insufficient wallet balance. Required: UGX {estimated_cost}, Available: UGX {request.user.wallet_balance}'
+                        'error': f'Insufficient wallet balance. Required: {estimated_cost}, Available: {request.user.wallet_balance}'
                     }, status=status.HTTP_400_BAD_REQUEST)
     
-                request.user.wallet_balance -= estimated_cost
-                request.user.save()
+                with transaction.atomic():
+                    request.user.wallet_balance -= estimated_cost
+                    request.user.save()
+                    
+                    wallet_tx = WalletTransaction.objects.create(
+                        user=request.user,
+                        amount=estimated_cost,
+                        transaction_type='payment',
+                        status='completed',
+                        description=f'Parking payment for zone {zone.name}'
+                    )
+                    
+                    # Mark slot as occupied
+                    parking_slot.status = SlotStatus.OCCUPIED
+                    parking_slot.save()
+                    
+                    session = ParkingSession.objects.create(
+                        vehicle=vehicle,
+                        zone=zone,
+                        parking_slot=parking_slot,
+                        planned_end_time=planned_end,
+                        estimated_cost=estimated_cost,
+                        status=ParkingStatus.ACTIVE
+                    )
+                    
+                    from apps.notifications.notification_triggers import notify_payment_success, notify_parking_started
+                    notify_payment_success(wallet_tx)
+                    notify_parking_started(session)
                 
-                wallet_tx = WalletTransaction.objects.create(
+                return Response({
+                    'message': 'Parking session started successfully',
+                    'session': ParkingSessionSerializer(session).data
+                }, status=status.HTTP_201_CREATED)
+
+            elif payment_method == 'pesapal':
+                # Initiate Pesapal payment but don't create session yet
+                from apps.payments.services.pesapal_service import PesapalService
+                from apps.payments.models import Transaction as PaymentTransaction
+                import uuid
+                
+                merchant_reference = str(uuid.uuid4())
+                country = getattr(request.user, 'country', None)
+                pesapal = PesapalService(config_obj=PesapalService.get_config_for_country(country))
+                
+                # Store intent in processor_response
+                processor_response = {
+                    'parking_intent': {
+                        'vehicle_id': str(vehicle.id),
+                        'zone_id': str(zone.id),
+                        'slot_id': str(parking_slot.id) if parking_slot else None,
+                        'duration_hours': float(duration_hours),
+                        'amount': str(estimated_cost)
+                    }
+                }
+                
+                trans = PaymentTransaction.objects.create(
                     user=request.user,
                     amount=estimated_cost,
-                    transaction_type='payment',
-                    status='completed',
-                    description=f'Parking payment for zone {zone.name}'
+                    idempotency_key=merchant_reference,
+                    pesapal_merchant_reference=merchant_reference,
+                    status='pending',
+                    processor_response=processor_response
                 )
                 
-                from apps.notifications.notification_triggers import notify_payment_success
-                notify_payment_success(wallet_tx)
+                payment_response = pesapal.create_payment(
+                    amount=estimated_cost,
+                    merchant_reference=merchant_reference,
+                    description=f"Parking at {zone.name}",
+                    user=request.user,
+                    currency=country.currency if country else "UGX"
+                )
+                
+                if not payment_response or 'order_tracking_id' not in payment_response:
+                    trans.status = 'failed'
+                    trans.save()
+                    return Response({'error': 'Failed to initiate payment gateway'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                trans.pesapal_order_tracking_id = payment_response['order_tracking_id']
+                trans.save()
+                
+                return Response({
+                    'message': 'Payment required to start session',
+                    'payment_required': True,
+                    'redirect_url': payment_response['redirect_url'],
+                    'order_tracking_id': payment_response['order_tracking_id'],
+                    'merchant_reference': merchant_reference
+                }, status=status.HTTP_200_OK)
+            
             else:
-                initial_status = ParkingStatus.PENDING_PAYMENT
-
-            session = ParkingSession.objects.create(
-                vehicle=vehicle,
-                zone=zone,
-                parking_slot=parking_slot,
-                planned_end_time=planned_end,
-                estimated_cost=estimated_cost,
-                status=initial_status
-            )
-            
-            if initial_status == ParkingStatus.ACTIVE:
-                from apps.notifications.notification_triggers import notify_parking_started
-                notify_parking_started(session)
-            
-            return Response({
-                'message': 'Parking session created' if initial_status == ParkingStatus.PENDING_PAYMENT else 'Parking session started successfully',
-                'session': ParkingSessionSerializer(session).data
-            }, status=status.HTTP_201_CREATED)
+                return Response({'error': f'Unsupported payment method: {payment_method}'}, status=status.HTTP_400_BAD_REQUEST)
             
         except Exception as e:
             logger = logging.getLogger(__name__)
