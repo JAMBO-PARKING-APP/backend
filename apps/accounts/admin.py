@@ -11,6 +11,8 @@ class UserAdmin(RegionalAdminMixin, BaseUserAdmin):
     ordering = ('-created_at',)
     actions = ['top_up_wallet']
     
+    readonly_fields = ('wallet_balance',)
+    
     fieldsets = (
         (None, {'fields': ('phone', 'password')}),
         ('Personal info', {'fields': ('first_name', 'last_name', 'email', 'country', 'profile_photo')}),
@@ -31,25 +33,36 @@ class UserAdmin(RegionalAdminMixin, BaseUserAdmin):
     def top_up_wallet(self, request, queryset):
         from django.contrib import messages
         from decimal import Decimal
+        from django.db import transaction as db_transaction
+        from .models import Wallet
+        
         amount = Decimal('10000.00')
         count = 0
         
-        for user in queryset:
-            user.wallet_balance += amount
-            user.save()
-            count += 1
-            from apps.payments.models import WalletTransaction
-            WalletTransaction.objects.create(
-                user=user,
-                amount=amount,
-                transaction_type='topup',
-                status='completed',
-                description=f'Admin top-up by {request.user.phone}'
-            )
+        with db_transaction.atomic():
+            for user in queryset:
+                # Use common logic for top-up based on country
+                if user.country:
+                    wallet, _ = Wallet.objects.get_or_create(user=user, country=user.country)
+                    wallet.balance += amount
+                    wallet.save()
+                else:
+                    user.wallet_balance_legacy += amount
+                    user.save(update_fields=['wallet_balance_legacy'])
+                
+                count += 1
+                from apps.payments.models import WalletTransaction
+                WalletTransaction.objects.create(
+                    user=user,
+                    amount=amount,
+                    transaction_type='topup',
+                    status='completed',
+                    description=f'Admin top-up by {request.user.phone}'
+                )
         
         self.message_user(
             request,
-            f'Successfully topped up {count} user(s) with UGX {amount}',
+            f'Successfully topped up {count} user(s) with local currency equivalent of {amount}',
             messages.SUCCESS
         )
     
