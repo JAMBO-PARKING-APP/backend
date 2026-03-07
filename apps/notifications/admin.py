@@ -1,8 +1,21 @@
 from django.contrib import admin
+from django import forms
 from .models import NotificationEvent, ChatConversation, ChatMessage
+
+class NotificationEventForm(forms.ModelForm):
+    send_push = forms.BooleanField(
+        required=False, 
+        initial=True, 
+        help_text="Send push notification (FCM) to the user immediately upon saving."
+    )
+
+    class Meta:
+        model = NotificationEvent
+        fields = '__all__'
 
 @admin.register(NotificationEvent)
 class NotificationAdmin(admin.ModelAdmin):
+    form = NotificationEventForm
     list_display = ('user', 'title', 'type', 'priority', 'is_read', 'sent_via_push', 'created_at')
     list_filter = ('type', 'category', 'priority', 'is_read', 'is_promotional', 'sent_via_push', 'created_at')
     search_fields = ('user__phone', 'user__first_name', 'user__last_name', 'title', 'message')
@@ -12,10 +25,48 @@ class NotificationAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {'fields': ('user', 'title', 'message')}),
         ('Details', {'fields': ('type', 'category', 'priority', 'is_read', 'metadata')}),
-        ('Admin Options', {'fields': ('show_as_dialog', 'is_promotional')}),
+        ('Admin Options', {'fields': ('show_as_dialog', 'is_promotional', 'send_push')}),
         ('Push Notification', {'fields': ('sent_via_push', 'push_sent_at', 'push_error')}),
         ('Timestamps', {'fields': ('created_at', 'updated_at')}),
     )
+
+    def save_model(self, request, obj, form, change):
+        # Always save the model first
+        super().save_model(request, obj, form, change)
+        
+        # If it's a new notification and send_push is checked, or if explicitly requested via form
+        if form.cleaned_data.get('send_push'):
+            from apps.notifications.firebase_service import send_notification_to_user
+            from apps.notifications.notification_triggers import broadcast_parking_update
+            
+            data = {
+                'type': obj.type,
+                'title': obj.title,
+                'body': obj.message,
+                'priority': obj.priority,
+            }
+            
+            if obj.show_as_dialog:
+                data['show_dialog'] = 'true'
+            if obj.metadata:
+                data.update(obj.metadata)
+            
+            # Send Push
+            send_notification_to_user(
+                user=obj.user,
+                title=obj.title,
+                body=obj.message,
+                data=data,
+                notification_event=obj
+            )
+            
+            # Also notify via WebSocket
+            broadcast_parking_update(obj.user, {
+                'event': 'admin_notification',
+                'title': obj.title,
+                'message': obj.message,
+                **data
+            })
     
     actions = ['mark_as_read', 'mark_as_unread', 'send_push_notification']
     

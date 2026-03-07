@@ -169,7 +169,30 @@ class CreateNotificationAPIView(APIView):
         
         serializer = NotificationSerializer(data=data)
         if serializer.is_valid():
-            serializer.save(user=user)
+            notification = serializer.save(user=user)
+            from apps.notifications.firebase_service import send_notification_to_user
+            from apps.notifications.notification_triggers import broadcast_parking_update
+            
+            # Send Push
+            send_notification_to_user(
+                user=user,
+                title=notification.title,
+                body=notification.message,
+                data={
+                    'type': notification.type,
+                    'show_dialog': 'true' if notification.show_as_dialog else 'false',
+                    **(notification.metadata or {})
+                },
+                notification_event=notification
+            )
+            
+            # WebSocket Update
+            broadcast_parking_update(user, {
+                'event': 'admin_notification',
+                'title': notification.title,
+                'message': notification.message,
+                'type': notification.type
+            })
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -208,14 +231,9 @@ class BulkCreateNotificationsAPIView(APIView):
             users = User.objects.filter(is_active=True)
         
         created_count = 0
+        from apps.notifications.notification_triggers import notify_custom
         for user in users:
-            NotificationEvent.objects.create(
-                user=user,
-                title=title,
-                message=message,
-                type=notification_type,
-                category=category,
-            )
+            notify_custom(user, title, message, category)
             created_count += 1
         
         return Response({
