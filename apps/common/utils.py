@@ -62,3 +62,28 @@ def get_country_from_coords(latitude, longitude):
         logger.error(f"Error in get_country_from_coords: {str(e)}")
         
     return None
+def get_user_local_time(user, dt):
+    """
+    Convert a datetime object (dt) to the user's local timezone.
+    Falls back to settings.TIME_ZONE if user timezone cannot be determined.
+    """
+    import pytz
+    from django.utils import timezone
+    
+    # Ensure dt is timezone-aware and in UTC
+    if timezone.is_naive(dt):
+        dt = timezone.make_aware(dt, pytz.UTC)
+    else:
+        dt = dt.astimezone(pytz.UTC)
+        
+    user_tz_name = settings.TIME_ZONE
+    
+    if user and hasattr(user, 'country') and user.country:
+        user_tz_name = user.country.timezone
+        
+    try:
+        user_tz = pytz.timezone(user_tz_name)
+        return dt.astimezone(user_tz)
+    except Exception as e:
+        logger.error(f"Error converting to user local time ({user_tz_name}): {str(e)}")
+        return dt.astimezone(pytz.timezone(settings.TIME_ZONE))

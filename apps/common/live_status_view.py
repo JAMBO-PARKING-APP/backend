@@ -6,6 +6,7 @@ from django.utils.translation import gettext as _
 from apps.common.permissions import AdminRequiredMixin
 from apps.common.constants import ParkingStatus
 from apps.parking.models import Zone, ParkingSession
+from apps.common.utils import get_user_local_time
 
 class ZoneLiveStatusAjaxView(AdminRequiredMixin, View):
     """
@@ -63,10 +64,12 @@ class ZoneLiveStatusAjaxView(AdminRequiredMixin, View):
                 hours, remainder = divmod(duration.total_seconds(), 3600)
                 minutes, _ = divmod(remainder, 60)
                 
+                local_start = get_user_local_time(session.vehicle.user, session.start_time)
+                
                 active_sessions_list.append({
                     'vehicle': session.vehicle.license_plate,
                     'slot': session.parking_slot.slot_code if session.parking_slot else 'N/A',
-                    'start_time': session.start_time.strftime('%H:%M'),
+                    'start_time': local_start.strftime('%H:%M'),
                     'duration': f"{int(hours)}h {int(minutes)}m" if hours > 0 else f"{int(minutes)}m"
                 })
             

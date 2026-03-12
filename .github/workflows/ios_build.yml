@@ -1,0 +1,38 @@
+name: iOS Build (Unsigned)
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  workflow_dispatch:
+
+jobs:
+  build_ios:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+        flutter-version: '3.10.x' # Aligning with Dart 3.10 mentioned in logs
+
+    - name: Install dependencies
+      working-directory: ./parking_user_app
+      run: flutter pub get
+
+    - name: Build iOS (Unsigned)
+      working-directory: ./parking_user_app
+      run: flutter build ios --no-codesign --release
+
+    - name: Compress Build Output
+      run: |
+        cd parking_user_app/build/ios/iphoneos
+        zip -r ../../../parking_user_app_ios_unsigned.zip Runner.app
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: parking-user-app-ios-unsigned
+        path: parking_user_app_ios_unsigned.zip

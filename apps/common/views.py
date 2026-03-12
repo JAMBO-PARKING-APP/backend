@@ -16,7 +16,8 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 import json
 from apps.common.constants import UserRole, CURRENCY_SYMBOLS, DEFAULT_CURRENCY, ParkingStatus, TransactionStatus
-from apps.common.models import Country, CountryConfig, SystemConfiguration
+from apps.common.utils import truncate_coord, get_user_local_time
+from .models import Country, SystemConfiguration, RegionalModel
 from apps.accounts.models import User, Vehicle
 from apps.parking.models import Zone, ParkingSlot, ParkingSession, Reservation
 from apps.payments.models import Transaction, PaymentMethod, Refund, Invoice, WalletTransaction, PaymentGatewayConfig
@@ -695,10 +696,13 @@ class CheckPlateAjaxView(AdminRequiredMixin, View):
             
             if active_session:
                 is_expired = timezone.now() > active_session.planned_end_time
+                local_start = get_user_local_time(vehicle.user, active_session.start_time)
+                local_end = get_user_local_time(vehicle.user, active_session.planned_end_time)
+                
                 data['active_session'] = {
                     'zone': active_session.zone.name,
-                    'start_time': active_session.start_time.strftime('%Y-%m-%d %H:%M'),
-                    'planned_end': active_session.planned_end_time.strftime('%Y-%m-%d %H:%M'),
+                    'start_time': local_start.strftime('%Y-%m-%d %H:%M'),
+                    'planned_end': local_end.strftime('%Y-%m-%d %H:%M'),
                     'is_expired': is_expired,
                     'duration_minutes': active_session.duration_minutes
                 }
@@ -781,10 +785,12 @@ class ZoneLiveStatusAjaxView(AdminRequiredMixin, View):
                 hours, remainder = divmod(duration.total_seconds(), 3600)
                 minutes, _ = divmod(remainder, 60)
                 
+                local_start = get_user_local_time(session.vehicle.user, session.start_time)
+                
                 active_sessions_list.append({
                     'vehicle': session.vehicle.license_plate,
                     'slot': session.parking_slot.slot_code if session.parking_slot else 'N/A',
-                    'start_time': session.start_time.strftime('%H:%M'),
+                    'start_time': local_start.strftime('%H:%M'),
                     'duration': f"{int(hours)}h {int(minutes)}m" if hours > 0 else f"{int(minutes)}m"
                 })
             

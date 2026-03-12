@@ -346,9 +346,13 @@ class ParkingSession(RegionalModel, BaseModel):
     @property
     def qr_code_data(self):
         """Generate a detailed verification string for QR code"""
+        from apps.common.utils import get_user_local_time
         driver = self.vehicle.user
-        start = self.start_time.strftime("%Y-%m-%d %H:%M")
-        expiry = self.planned_end_time.strftime("%Y-%m-%d %H:%M")
+        local_start = get_user_local_time(driver, self.start_time)
+        local_expiry = get_user_local_time(driver, self.planned_end_time)
+        
+        start = local_start.strftime("%Y-%m-%d %H:%M")
+        expiry = local_expiry.strftime("%Y-%m-%d %H:%M")
         
         data = [
             "JAMBO PARK VERIFIED PASS",

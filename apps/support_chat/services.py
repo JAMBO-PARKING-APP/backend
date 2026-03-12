@@ -11,6 +11,7 @@ from apps.payments.models import WalletTransaction, Transaction
 from apps.support_chat.models import AIChatContext
 from apps.enforcement.models import Violation
 from apps.rewards.models import LoyaltyAccount
+from apps.common.utils import get_user_local_time
 from decimal import Decimal
 from django.db.models import Q, Sum, Avg, Count
 from datetime import timedelta, datetime
@@ -1252,10 +1253,12 @@ class ReasoningAIService:
                 status='active'
             )
             
+            local_planned_end = get_user_local_time(user, planned_end)
+            
             return f"✅ Parking started successfully!\n\n" + \
                    f"📍 **Zone**: {zone.name}\n" + \
                    f"🚗 **Vehicle**: {vehicle.license_plate}\n" + \
-                   f"⏱️ **Ends at**: {planned_end.strftime('%H:%M')}\n" + \
+                   f"⏱️ **Ends at**: {local_planned_end.strftime('%H:%M')}\n" + \
                    f"💰 **Charged**: {estimated_cost:,.0f} UGX\n\n" + \
                    f"Your session ID: {session.id}"
                    

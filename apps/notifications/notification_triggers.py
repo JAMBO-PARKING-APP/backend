@@ -12,6 +12,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from .models import NotificationEvent
 from .firebase_service import send_notification_to_user
+from apps.common.utils import get_user_local_time
 
 logger = logging.getLogger(__name__)
 
@@ -45,9 +46,10 @@ def notify_parking_started(session):
         session: ParkingSession instance
     """
     user = session.vehicle.user
+    local_end_time = get_user_local_time(user, session.planned_end_time)
     
     title = "Parking Session Started"
-    message = f"Your parking at {session.zone.name} has started. Session ends at {session.planned_end_time.strftime('%I:%M %p')}"
+    message = f"Your parking at {session.zone.name} has started. Session ends at {local_end_time.strftime('%I:%M %p')}"
     
     notification = _safe_orm_operation(NotificationEvent.objects.create,
         user=user,
@@ -96,9 +98,10 @@ def notify_parking_extended(session, additional_hours, cost):
     """
     user = session.vehicle.user
     symbol = getattr(user.country, 'currency_symbol', 'UGX') if hasattr(user, 'country') else 'UGX'
+    local_end_time = get_user_local_time(user, session.planned_end_time)
     
     title = "Parking Extended"
-    message = f"Your parking at {session.zone.name} was extended by {additional_hours} hours. Cost: {symbol} {cost}. New end time: {session.planned_end_time.strftime('%I:%M %p')}"
+    message = f"Your parking at {session.zone.name} was extended by {additional_hours} hours. Cost: {symbol} {cost}. New end time: {local_end_time.strftime('%I:%M %p')}"
     
     notification = _safe_orm_operation(NotificationEvent.objects.create,
         user=user,
@@ -789,10 +792,11 @@ def notify_reservation_confirmed(reservation):
     Args: reservation: Reservation instance
     """
     user = reservation.vehicle.user
-    start_time = reservation.reserved_from.strftime('%b %d, %I:%M %p')
+    local_start_time = get_user_local_time(user, reservation.reserved_from)
+    start_time_str = local_start_time.strftime('%b %d, %I:%M %p')
     
     title = "Reservation Confirmed"
-    message = f"Your parking reservation at {reservation.zone.name} is confirmed for {start_time}."
+    message = f"Your parking reservation at {reservation.zone.name} is confirmed for {start_time_str}."
     
     notification = _safe_orm_operation(NotificationEvent.objects.create,
         user=user,
