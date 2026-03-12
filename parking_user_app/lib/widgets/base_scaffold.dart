@@ -23,7 +23,7 @@ class BaseScaffold extends StatelessWidget {
     this.floatingActionButton,
     this.currentIndex = 0,
     this.onTabChanged,
-    this.showDrawer = true,
+    this.showDrawer = false,
     this.backgroundColor,
     this.appBarBackgroundColor,
     this.appBarForegroundColor,

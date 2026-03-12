@@ -12,8 +12,8 @@ class ApiClient {
     dio = Dio(
       BaseOptions(
         baseUrl: AppConstants.baseUrl,
-        connectTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 15),
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
       ),
     );
 
@@ -55,14 +55,15 @@ class ApiClient {
         },
         onError: (DioException e, handler) async {
           // Check for internet connection errors
-          if (e.type == DioExceptionType.connectionTimeout ||
-              e.type == DioExceptionType.receiveTimeout ||
-              e.type == DioExceptionType.sendTimeout ||
-              e.type == DioExceptionType.connectionError ||
+          if (e.type == DioExceptionType.connectionError ||
               (e.type == DioExceptionType.unknown &&
                   e.message?.contains('SocketException') == true)) {
-            // Show No Internet Dialog
+            // Show No Internet Dialog (Only if it's a hard connection error)
             DialogService.showNoInternetDialog();
+          } else if (e.type == DioExceptionType.connectionTimeout ||
+              e.type == DioExceptionType.receiveTimeout) {
+             debugPrint('[ApiClient] Timeout error: ${e.message}');
+             // Don't show blocking dialog for timeouts, just log it.
           }
 
           if (e.response?.statusCode == 401) {

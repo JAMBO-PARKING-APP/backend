@@ -4,15 +4,13 @@ class DialogService {
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
 
+  static bool _noInternetDialogVisible = false;
+
   static void showNoInternetDialog() {
     final context = navigatorKey.currentContext;
-    if (context == null) return;
+    if (context == null || _noInternetDialogVisible) return;
 
-    // Check if dialog is already open to avoid stacking
-    // This is a simple check; for production, you might want a more robust state
-    // But since we can't easily check active dialogs without context traversing,
-    // we'll rely on the user dismissing it or a simple flag if needed.
-
+    _noInternetDialogVisible = true;
     showDialog(
       context: context,
       barrierDismissible: false, // User must acknowledge
@@ -30,7 +28,10 @@ class DialogService {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              _noInternetDialogVisible = false;
+              Navigator.of(context).pop();
+            },
             child: const Text('OK'),
           ),
         ],

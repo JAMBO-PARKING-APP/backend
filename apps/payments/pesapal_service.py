@@ -133,7 +133,11 @@ class PesapalService:
             logger.error(f"Pesapal: Cache get error: {str(e)}")
         
         if not ipn_id:
-            logger.info("Pesapal: IPN ID not in cache, registering new one...")
+            logger.info("Pesapal: IPN ID not in cache, checking settings fallback...")
+            ipn_id = getattr(settings, 'PESAPAL_IPN_ID', None)
+            
+        if not ipn_id:
+            logger.info("Pesapal: IPN ID not in settings, registering new one...")
             ipn_id = self.register_ipn(token)
             if ipn_id:
                 try:
@@ -141,12 +145,14 @@ class PesapalService:
                     logger.info(f"Pesapal: Registered and cached IPN ID: {ipn_id}")
                 except Exception as e:
                     logger.error(f"Pesapal: Cache set error: {str(e)}")
+            else:
+                logger.error("Pesapal: Failed to register IPN ID via API (check for 401/credentials)")
         else:
-            logger.info(f"Pesapal: Using cached IPN ID: {ipn_id}")
+            logger.info(f"Pesapal: Using IPN ID: {ipn_id}")
                 
         if not ipn_id:
             logger.error("Pesapal: Failed to register/get IPN ID")
-            return {'error': 'Failed to register IPN URL. Check PESAPAL_CALLBACK_URL configuraton.'}
+            return {'error': 'Failed to register IPN URL. Please ensure PESAPAL_IPN_ID is set in environment or API registration is working.'}
         formatted_amount = round(float(amount), 2)
         phone = str(user.phone) if user.phone else "0000000000"
         if phone.startswith('+'):

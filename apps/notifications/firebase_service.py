@@ -72,6 +72,7 @@ def send_notification_to_user_sync(
             initialize_firebase()
         notification_data = data or {}
         notification_data['click_action'] = 'FLUTTER_NOTIFICATION_CLICK'
+        
         message = messaging.Message(
             notification=messaging.Notification(
                 title=title,
@@ -87,6 +88,18 @@ def send_notification_to_user_sync(
                     icon='launcher_icon',
                     color='#4CAF50',
                 ),
+            ),
+            apns=messaging.APNSConfig(
+                payload=messaging.APNSPayload(
+                    aps=messaging.Aps(
+                        sound='default',
+                        badge=1,
+                        content_available=True,
+                    ),
+                ),
+                headers={
+                    'apns-priority': '10',
+                },
             ),
         )
         
@@ -182,6 +195,18 @@ def send_multicast_sync(
                         color='#4CAF50',
                     ),
                 ),
+                apns=messaging.APNSConfig(
+                    payload=messaging.APNSPayload(
+                        aps=messaging.Aps(
+                            sound='default',
+                            badge=1,
+                            content_available=True,
+                        ),
+                    ),
+                    headers={
+                        'apns-priority': '10',
+                    },
+                ),
             ) for token in tokens
         ]
         
@@ -266,6 +291,18 @@ def send_notification_to_topic(
                     icon='launcher_icon',
                     color='#4CAF50',
                 ),
+            ),
+            apns=messaging.APNSConfig(
+                payload=messaging.APNSPayload(
+                    aps=messaging.Aps(
+                        sound='default',
+                        badge=1,
+                        content_available=True,
+                    ),
+                ),
+                headers={
+                    'apns-priority': '10',
+                },
             ),
         )
         

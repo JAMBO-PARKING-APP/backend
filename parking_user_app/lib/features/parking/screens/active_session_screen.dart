@@ -8,7 +8,6 @@ import 'package:parking_user_app/core/dialog_service.dart';
 import 'package:parking_user_app/features/parking/screens/qr_code_view_screen.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 
 class ActiveSessionScreen extends StatefulWidget {
@@ -96,6 +95,11 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
     String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
     String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
     return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
+  }
+
+  String _formatTime(DateTime dateTime) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    return "${twoDigits(dateTime.hour)}:${twoDigits(dateTime.minute)}";
   }
 
   void _handleEndParking() async {
@@ -384,95 +388,92 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                     
                     const SizedBox(height: 50),
                     
-                    // Countdown Section
-                    Text(
-                      'REMAINING TIME',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        fontSize: 13,
-                        letterSpacing: 3,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      _formatDuration(_remaining),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 72,
-                        fontWeight: FontWeight.w900,
-                        fontFeatures: [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 40),
-                    
-                    // Progress Bar
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        height: 10,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.05),
-                        ),
-                        child: FractionallySizedBox(
-                          alignment: Alignment.centerLeft,
-                          widthFactor: progress,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: isLowTime ? Colors.white : AppTheme.accentColor,
-                              boxShadow: [
-                                if (!isLowTime)
-                                  BoxShadow(
-                                    color: AppTheme.accentColor.withValues(alpha: 0.5),
-                                    blurRadius: 10,
-                                  ),
-                              ],
+                    // Clock-Style Timer Section
+                    SizedBox(
+                      height: 280,
+                      width: 280,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Circular Progress Track
+                          SizedBox(
+                            height: 260,
+                            width: 260,
+                            child: CircularProgressIndicator(
+                              value: progress,
+                              strokeWidth: 12,
+                              backgroundColor: Colors.white.withValues(alpha: 0.1),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                isLowTime ? Colors.white : AppTheme.accentColor,
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 40),
-                    
-                    // Inline QR Code
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
+                          // Hour marks or decorative ring could go here
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'REMAINING',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.5),
+                                  fontSize: 12,
+                                  letterSpacing: 2,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _formatDuration(_remaining),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.w900,
+                                  fontFeatures: [FontFeature.tabularFigures()],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: (isLowTime ? Colors.white : AppTheme.accentColor).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  'Until ${widget.session.endTime != null ? _formatTime(widget.session.endTime!) : '--:--'}',
+                                  style: TextStyle(
+                                    color: isLowTime ? Colors.white : AppTheme.accentColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                      child: QrImageView(
-                        data: widget.session.id,
-                        version: QrVersions.auto,
-                        size: 180.0,
-                        gapless: false,
-                        eyeStyle: const QrEyeStyle(
-                          eyeShape: QrEyeShape.square,
-                          color: AppTheme.primaryDark,
-                        ),
-                        dataModuleStyle: const QrDataModuleStyle(
-                          dataModuleShape: QrDataModuleShape.square,
-                          color: AppTheme.primaryDark,
-                        ),
-                      ),
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Scan to Verify',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        fontSize: 12,
-                        letterSpacing: 2,
+                    
+                    const SizedBox(height: 40),
+                    
+                    const SizedBox(height: 40),
+                    
+                    const SizedBox(height: 40),
+                    
+                    // Centered Verification Button
+                    ElevatedButton.icon(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => QRCodeViewScreen(session: widget.session)),
+                      ),
+                      icon: const Icon(Icons.qr_code_scanner_rounded),
+                      label: const Text('VIEW VERIFICATION QR'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white.withValues(alpha: 0.1),
+                        foregroundColor: Colors.white,
+                        side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                        elevation: 0,
                       ),
                     ),
 
@@ -483,12 +484,11 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         _buildActionIcon(
-                          icon: Icons.qr_code_2_rounded,
-                          label: 'QR Code',
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => QRCodeViewScreen(session: widget.session)),
-                          ),
+                          icon: Icons.history_rounded,
+                          label: 'History',
+                          onTap: () {
+                            // Navigation to history if needed
+                          },
                         ),
                         _buildActionIcon(
                           icon: Icons.my_location_rounded,
