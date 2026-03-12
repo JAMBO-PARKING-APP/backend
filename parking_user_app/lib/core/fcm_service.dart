@@ -15,7 +15,6 @@ import 'package:parking_user_app/features/parking/screens/active_session_screen.
 import 'api_client.dart';
 import 'notification_dialog_service.dart';
 
-/// Background message handler - must be top-level function
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
@@ -36,10 +35,9 @@ class FCMService {
   String? _fcmToken;
   String? get fcmToken => _fcmToken;
 
-  /// Initialize Firebase Cloud Messaging
   Future<void> initialize() async {
     try {
-      // Request notification permissions
+      
       NotificationSettings settings = await _firebaseMessaging
           .requestPermission(
             alert: true,
@@ -54,31 +52,30 @@ class FCMService {
 
       if (settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional) {
-        // Initialize local notifications for foreground messages
+        
         await _initializeLocalNotifications();
 
-        // Get FCM token
+        
         _fcmToken = await _firebaseMessaging.getToken();
         if (kDebugMode) {
           print('FCM Token: $_fcmToken');
         }
 
-        // Save token locally
+        
         if (_fcmToken != null) {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('fcm_token', _fcmToken!);
         }
 
-        // Set up message handlers
         _setupMessageHandlers();
 
-        // Listen for token refresh
+        
         _firebaseMessaging.onTokenRefresh.listen((newToken) {
           _fcmToken = newToken;
           if (kDebugMode) {
             print('FCM Token refreshed: $newToken');
           }
-          // Register new token with backend
+          
           _registerTokenWithBackend(newToken);
         });
       }
@@ -89,7 +86,7 @@ class FCMService {
     }
   }
 
-  /// Initialize local notifications for foreground messages
+  
   Future<void> _initializeLocalNotifications() async {
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/launcher_icon',
@@ -110,12 +107,11 @@ class FCMService {
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
-    // Create notification channel for Android
     if (Platform.isAndroid) {
       const androidChannel = AndroidNotificationChannel(
-        'default', // id
-        'Default Notifications', // name
-        description: 'Default notification channel for Jambo Space',
+        'default',
+        'Default Notifications',
+        description: 'Default notification channel for Spave Park',
         importance: Importance.high,
         playSound: true,
       );
@@ -128,35 +124,31 @@ class FCMService {
     }
   }
 
-  /// Set up FCM message handlers
   void _setupMessageHandlers() {
-    // Handle foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       if (kDebugMode) {
         print('Foreground message received: ${message.messageId}');
       }
       _showLocalNotification(message);
 
-      // Show in-app dialog if flag is set
-      if (message.data['show_dialog'] == 'true') {
-        NotificationDialogService().showNotificationDialog(message.data);
-      }
+      NotificationDialogService().showNotificationDialog({
+        'title': message.notification?.title ?? 'Notification',
+        'body': message.notification?.body ?? '',
+        ...message.data,
+      });
     });
 
-    // Handle notification tap when app is in background
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       if (kDebugMode) {
         print('Notification tapped (background): ${message.messageId}');
       }
       _handleNotificationTap(message.data);
 
-      // Show in-app dialog if flag is set
       if (message.data['show_dialog'] == 'true') {
         NotificationDialogService().showNotificationDialog(message.data);
       }
     });
 
-    // Handle notification tap when app was terminated
     _firebaseMessaging.getInitialMessage().then((RemoteMessage? message) {
       if (message != null) {
         if (kDebugMode) {
@@ -164,20 +156,15 @@ class FCMService {
         }
         _handleNotificationTap(message.data);
 
-        // Show in-app dialog if flag is set
         if (message.data['show_dialog'] == 'true') {
-          // Delay to ensure UI is ready
           Future.delayed(const Duration(milliseconds: 500), () {
             NotificationDialogService().showNotificationDialog(message.data);
           });
         }
       }
     });
-
-    // Background message handler registration is moved to main.dart
   }
 
-  /// Show local notification for foreground messages
   Future<void> _showLocalNotification(RemoteMessage message) async {
     final notification = message.notification;
     if (notification == null) return;
@@ -185,7 +172,7 @@ class FCMService {
     const androidDetails = AndroidNotificationDetails(
       'default',
       'Default Notifications',
-      channelDescription: 'Default notification channel for Jambo Space',
+      channelDescription: 'Default notification channel for Spave Park',
       importance: Importance.high,
       priority: Priority.high,
       playSound: true,
@@ -211,7 +198,7 @@ class FCMService {
     );
   }
 
-  /// Handle notification tap
+  
   void _onNotificationTapped(NotificationResponse response) {
     if (kDebugMode) {
       print('Notification tapped: ${response.payload}');
@@ -229,7 +216,6 @@ class FCMService {
     }
   }
 
-  /// Handle notification tap with data
   void _handleNotificationTap(Map<String, dynamic> data) {
     if (kDebugMode) {
       print('Handling notification tap with data: $data');
@@ -243,7 +229,6 @@ class FCMService {
       case 'parking_started':
       case 'parking_expiring':
       case 'parking_ended':
-        // Refresh sessions and navigate to active session screen
         final parkingProvider = context.read<ParkingProvider>();
         parkingProvider.fetchSessions().then((_) {
           if (parkingProvider.activeSessions.isNotEmpty) {
@@ -258,20 +243,15 @@ class FCMService {
         break;
       case 'payment_success':
       case 'payment_failed':
-        // Navigate to payments (stretch goal or future update)
         break;
       case 'violation_issued':
-        // Navigate to violations (stretch goal or future update)
         break;
       default:
-        // Default behavior
         break;
     }
   }
 
-  /// Register FCM token with backend
   Future<bool> registerToken() async {
-    // If token is not available, try to get it first
     if (_fcmToken == null) {
       if (kDebugMode) {
         print('FCM token not available, attempting to retrieve...');
@@ -341,7 +321,6 @@ class FCMService {
     }
   }
 
-  /// Unregister FCM token from backend (on logout)
   Future<bool> unregisterToken() async {
     try {
       final apiClient = ApiClient();
@@ -356,7 +335,7 @@ class FCMService {
         );
       }
 
-      // Clear local token
+      
       _fcmToken = null;
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('fcm_token');
@@ -370,7 +349,7 @@ class FCMService {
     }
   }
 
-  /// Delete FCM token (complete cleanup)
+ 
   Future<void> deleteToken() async {
     try {
       await _firebaseMessaging.deleteToken();

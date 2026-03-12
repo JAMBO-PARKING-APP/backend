@@ -27,12 +27,9 @@
             <div class="col-md-3">
                 <select name="role" class="form-select form-select-sm" onchange="this.form.submit()">
                     <option value="">{% trans "All Roles" %}</option>
-                    <option value="driver" {% if request.GET.role == 'driver' %}selected{% endif %}>{% trans "Driver" %}
-                    </option>
-                    <option value="officer" {% if request.GET.role == 'officer' %}selected{% endif %}>{% trans "Officer"
-                        %}</option>
-                    <option value="admin" {% if request.GET.role == 'admin' %}selected{% endif %}>{% trans "Admin" %}
-                    </option>
+                    <option value="driver" {% if request.GET.role == 'driver' %}selected{% endif %}>{% trans "Driver" %}</option>
+                    <option value="officer" {% if request.GET.role == 'officer' %}selected{% endif %}>{% trans "Officer" %}</option>
+                    <option value="admin" {% if request.GET.role == 'admin' %}selected{% endif %}>{% trans "Admin" %}</option>
                 </select>
             </div>
             <div class="col-md-3">
@@ -96,6 +93,9 @@
                             {% endif %}
                         </td>
                         <td>
+                            <span class="fw-bold">{{ currency_symbol }}{{ user.wallet_balance|floatformat:2 }}</span>
+                        </td>
+                        <td>
                             <small class="text-muted">{{ user.created_at|date:"M d, Y" }}</small>
                         </td>
                         <td>
@@ -133,13 +133,10 @@
     <ul class="pagination justify-content-center">
         {% if page_obj.has_previous %}
         <li class="page-item">
-            <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{%
-                trans "First" %}</a>
+            <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{% trans "First" %}</a>
         </li>
         <li class="page-item">
-            <a class="page-link"
-                href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{%
-                trans "Previous" %}</a>
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{% trans "Previous" %}</a>
         </li>
         {% endif %}
 
@@ -149,14 +146,10 @@
 
         {% if page_obj.has_next %}
         <li class="page-item">
-            <a class="page-link"
-                href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{%
-                trans "Next" %}</a>
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{% trans "Next" %}</a>
         </li>
         <li class="page-item">
-            <a class="page-link"
-                href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{%
-                trans "Last" %}</a>
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{% trans "Last" %}</a>
         </li>
         {% endif %}
     </ul>

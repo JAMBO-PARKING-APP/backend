@@ -377,3 +377,11 @@ class Reservation(BaseModel):
 
     def __str__(self):
         return f"{self.vehicle.license_plate} - {self.zone.name} ({self.status})"
+
+    def save(self, *args, **kwargs):
+        # Automatically release the slot if reservation is ended/cancelled
+        if self.status in ['cancelled', 'expired', 'completed']:
+            if self.parking_slot and self.parking_slot.status != SlotStatus.AVAILABLE:
+                self.parking_slot.status = SlotStatus.AVAILABLE
+                self.parking_slot.save(update_fields=['status'])
+        super().save(*args, **kwargs)

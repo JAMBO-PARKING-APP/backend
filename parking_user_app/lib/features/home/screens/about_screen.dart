@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parking_user_app/core/app_theme.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -6,7 +7,7 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('About Space')),
+      appBar: AppBar(title: const Text('About Space Park')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -15,10 +16,14 @@ class AboutScreen extends StatelessWidget {
             Center(
               child: Column(
                 children: [
-                  const Icon(Icons.local_parking, size: 80, color: Colors.blue),
+                  Icon(
+                    Icons.directions_car_filled_rounded,
+                    size: 80,
+                    color: AppTheme.primaryColor,
+                  ),
                   const SizedBox(height: 16),
                   const Text(
-                    'Space',
+                    'Space Park',
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                   ),
                   Text(
@@ -35,7 +40,7 @@ class AboutScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             const Text(
-              'Space is designed to make urban parking seamless, efficient, and stress-free. We connect drivers with available parking spaces in real-time, reducing congestion and saving you valuable time.',
+              'Welcome to Space Park, the smartest way to find, book, and pay for parking in your city. Space Park is designed to make urban parking seamless, efficient, and stress-free. We connect drivers with available parking spaces in real-time, reducing congestion and saving you valuable time.',
               style: TextStyle(fontSize: 16, height: 1.5),
             ),
             const SizedBox(height: 32),

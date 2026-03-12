@@ -412,7 +412,7 @@
         }
 
         // First, delete all existing slots (except occupied ones)
-        fetch('/ajax/slot/delete-all/', {
+        fetch('{% url "slot-delete-all-ajax" %}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -424,7 +424,7 @@
             .then(data => {
                 // Now create all new slots
                 const promises = slotsToSave.map(slot => {
-                    return fetch('/ajax/slot/create/', {
+                    return fetch('{% url "slot-create-ajax" %}', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',

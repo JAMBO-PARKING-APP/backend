@@ -1,11 +1,12 @@
 import 'dart:io' show Platform;
 
 class AppConstants {
-  static bool useNgrok = true;
-  static const String ngrokBase = 'http://159.65.62.219/api/';
+  // Set to true to use production URL, false for local development
+  static bool useProduction = true;
+  static const String prodBase = 'https://backend.p-space.ai/api/';
 
   static String get baseUrl {
-    if (useNgrok) return ngrokBase;
+    if (useProduction) return prodBase;
     final host = Platform.isAndroid ? '10.0.2.2' : '127.0.0.1';
     return 'http://$host:8000/api/';
   }

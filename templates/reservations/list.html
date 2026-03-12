@@ -16,16 +16,11 @@
                         placeholder="{% trans 'Search plate or ref...' %}" value="{{ request.GET.search }}">
                     <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
                         <option value="">{% trans "All Statuses" %}</option>
-                        <option value="pending_payment" {% if request.GET.status=='pending_payment' %}selected{% endif
-                            %}>{% trans "Pending Payment" %}</option>
-                        <option value="confirmed" {% if request.GET.status=='confirmed' %}selected{% endif %}>{% trans
-                            "Confirmed" %}</option>
-                        <option value="cancelled" {% if request.GET.status=='cancelled' %}selected{% endif %}>{% trans
-                            "Cancelled" %}</option>
-                        <option value="completed" {% if request.GET.status=='completed' %}selected{% endif %}>{% trans
-                            "Completed" %}</option>
-                        <option value="expired" {% if request.GET.status=='expired' %}selected{% endif %}>{% trans
-                            "Expired" %}</option>
+                        <option value="pending_payment" {% if request.GET.status == 'pending_payment' %}selected{% endif %}>{% trans "Pending Payment" %}</option>
+                        <option value="confirmed" {% if request.GET.status == 'confirmed' %}selected{% endif %}>{% trans "Confirmed" %}</option>
+                        <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>{% trans "Cancelled" %}</option>
+                        <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>{% trans "Completed" %}</option>
+                        <option value="expired" {% if request.GET.status == 'expired' %}selected{% endif %}>{% trans "Expired" %}</option>
                     </select>
                 </form>
             </div>

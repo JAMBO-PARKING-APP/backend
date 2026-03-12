@@ -1,5 +1,5 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
-from django.db import models
+from django.db import models, transaction
 from phonenumber_field.modelfields import PhoneNumberField
 from apps.common.models import BaseModel
 from apps.common.constants import UserRole
@@ -71,6 +71,26 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
 
     def get_full_name(self):
         return self.full_name
+
+    @transaction.atomic
+    def adjust_wallet_balance(self, amount, country=None):
+        """
+        Adjusts the user's wallet balance.
+        Positive amount for deposits/refunds, negative for payments.
+        """
+        from django.db.models import F
+        target_country = country or self.country
+        
+        if target_country:
+            wallet, _ = Wallet.objects.get_or_create(user=self, country=target_country)
+            wallet.balance = F('balance') + amount
+            wallet.save(update_fields=['balance'])
+            # Ensure the instance is updated too if we access it later
+            wallet.refresh_from_db()
+        else:
+            self.wallet_balance_legacy = F('wallet_balance_legacy') + amount
+            self.save(update_fields=['wallet_balance_legacy'])
+            self.refresh_from_db()
 
     def save(self, *args, **kwargs):
         if not self.country and self.phone:

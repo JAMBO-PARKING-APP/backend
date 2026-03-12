@@ -21,7 +21,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 
     <!-- Custom Glassmorphism CSS -->
-    <link href="{% static 'css/glass.css' %}" rel="stylesheet">
+    <link href="{% static 'css/glass.css' %}?v={% now 'U' %}" rel="stylesheet">
 
     <style>
         :root {
@@ -249,24 +249,31 @@
         /* =========================================
            MAIN LAYOUT
            ========================================= */
-        .main-content {
+        .page-container {
+            display: flex;
+            width: 100%;
+        }
+
+        .main-wrapper {
+            flex: 1;
             margin-left: var(--sidebar-width);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             transition: margin-left 0.3s cubic-bezier(0.2, 0, 0, 1);
+            width: calc(100% - var(--sidebar-width));
         }
 
         /* HEADER */
         .topbar {
             height: var(--header-height);
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(8px);
             border-bottom: 1px solid var(--mantis-border-color);
             padding: 0 24px;
             position: sticky;
             top: 0;
-            z-index: 990;
+            z-index: 900;
             display: flex;
             align-items: center;
             justify-content: space-between;

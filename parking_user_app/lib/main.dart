@@ -11,7 +11,8 @@ import 'package:parking_user_app/features/payments/providers/payment_provider.da
 import 'package:parking_user_app/features/auth/providers/vehicle_provider.dart';
 import 'package:parking_user_app/features/parking/providers/violation_provider.dart';
 import 'package:parking_user_app/features/parking/providers/reservation_provider.dart';
-import 'package:parking_user_app/features/auth/screens/login_screen.dart';
+import 'package:parking_user_app/features/auth/screens/welcome_screen.dart';
+import 'package:parking_user_app/features/auth/screens/splash_screen.dart';
 import 'package:parking_user_app/features/home/screens/home_screen.dart';
 import 'package:parking_user_app/features/notifications/providers/notification_provider.dart';
 import 'package:parking_user_app/features/auth/screens/permissions_screen.dart';
@@ -24,12 +25,10 @@ import 'package:parking_user_app/core/dialog_service.dart';
 import 'package:parking_user_app/features/rewards/providers/rewards_provider.dart';
 import 'package:parking_user_app/core/api_client.dart';
 import 'package:parking_user_app/core/services/local_notification_service.dart';
-// Removed: overlay_timer.dart
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
   await Firebase.initializeApp();
 
   // Set up background message handler as early as possible
@@ -74,7 +73,7 @@ class MyApp extends StatelessWidget {
 
         return MaterialApp(
           navigatorKey: DialogService.navigatorKey,
-          title: 'Jambo Space',
+          title: 'Spave Park',
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: settings.themeMode,
@@ -96,11 +95,10 @@ class MyApp extends StatelessWidget {
                   if (!auth.hasRequestedPermissions) {
                     return const PermissionsScreen();
                   }
-                  return const LoginScreen();
-                default:
-                  return const Scaffold(
-                    body: Center(child: CircularProgressIndicator()),
-                  );
+                  return const WelcomeScreen();
+                case AuthStatus.initial:
+                case AuthStatus.authenticating:
+                  return const SplashScreen();
               }
             },
           ),

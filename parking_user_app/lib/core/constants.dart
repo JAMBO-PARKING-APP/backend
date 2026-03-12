@@ -1,12 +1,12 @@
 import 'dart:io' show Platform;
 
 class AppConstants {
-  // Use localhost by default. Set useNgrok = true to test with external ngrok URL.
-  static bool useNgrok = true;
-  static const String ngrokBase = 'http://159.65.62.219/api/user/';
+  // Set to true to use production URL, false for local development
+  static bool useProduction = true;
+  static const String prodBase = 'https://backend.p-space.ai/api/user/';
 
   static String get baseUrl {
-    if (useNgrok) return ngrokBase;
+    if (useProduction) return prodBase;
     final host = Platform.isAndroid ? '10.0.2.2' : '127.0.0.1';
     return 'http://$host:8000/api/user/';
   }
@@ -23,7 +23,7 @@ class AppConstants {
         .replaceFirst('/api/user', '/ws');
   }
 
-  static const String appName = 'Space';
+  static const String appName = 'Space Park';
 }
 
 class CountryCode {

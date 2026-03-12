@@ -131,7 +131,7 @@ class SettingsScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'About Space',
+                        'About Spave Park',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -164,7 +164,7 @@ class SettingsScreen extends StatelessWidget {
                       title: const Text('Help Center'),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () async {
-                        final uri = Uri.parse('https://spacepark.com/help');
+                        final uri = Uri.parse('https://spavepark.com/help');
                         if (await canLaunchUrl(uri)) {
                           await launchUrl(uri);
                         }
@@ -176,7 +176,7 @@ class SettingsScreen extends StatelessWidget {
                       title: const Text('Privacy Policy'),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () async {
-                        final uri = Uri.parse('https://spacepark.com/privacy');
+                        final uri = Uri.parse('https://spavepark.com/privacy');
                         if (await canLaunchUrl(uri)) {
                           await launchUrl(uri);
                         }
@@ -188,7 +188,7 @@ class SettingsScreen extends StatelessWidget {
                       title: const Text('Terms of Service'),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () async {
-                        final uri = Uri.parse('https://spacepark.com/terms');
+                        final uri = Uri.parse('https://spavepark.com/terms');
                         if (await canLaunchUrl(uri)) {
                           await launchUrl(uri);
                         }

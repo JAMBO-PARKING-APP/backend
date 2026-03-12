@@ -108,9 +108,7 @@ def cancel_overdue_reservations():
     count = overdue_reservations.count()
     for reservation in overdue_reservations:
         reservation.status = 'cancelled'
-        if reservation.parking_slot:
-            reservation.parking_slot.status = SlotStatus.AVAILABLE
-            reservation.parking_slot.save()
+        # Slot release handled by model save()
         reservation.save()
         
         from apps.notifications.notification_triggers import notify_reservation_cancelled
@@ -128,9 +126,7 @@ def expire_reservation_task(reservation_id):
         reservation = Reservation.objects.get(id=reservation_id)
         if reservation.status == 'pending_payment':
             reservation.status = 'expired'
-            if reservation.parking_slot:
-                reservation.parking_slot.status = SlotStatus.AVAILABLE
-                reservation.parking_slot.save()
+            # Slot release handled by model save()
             reservation.save()
             logger.info(f"Reservation {reservation_id} expired automatically.")
             

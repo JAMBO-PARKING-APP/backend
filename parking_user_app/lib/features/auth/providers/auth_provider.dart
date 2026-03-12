@@ -198,6 +198,17 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<bool> resendOtp(String phoneNumber) async {
+    _errorMessage = null;
+    notifyListeners();
+    final success = await _authService.resendOtp(phoneNumber);
+    if (!success) {
+      _errorMessage = 'Failed to resend OTP. Please try again.';
+    }
+    notifyListeners();
+    return success;
+  }
+
   Future<void> logout() async {
     // Unregister FCM token before logout
     await FCMService().unregisterToken();

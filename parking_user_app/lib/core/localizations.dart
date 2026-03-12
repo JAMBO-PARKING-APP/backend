@@ -130,9 +130,9 @@ class _EnglishLocalizations extends AppLocalizations {
   _EnglishLocalizations();
 
   @override
-  String get appTitle => 'Space';
+  String get appTitle => 'Spave Park';
   @override
-  String get welcome => 'Welcome to Space';
+  String get welcome => 'Welcome to Spave Park';
   @override
   String get login => 'Login';
   @override
@@ -285,9 +285,9 @@ class _SwahiliLocalizations extends AppLocalizations {
   _SwahiliLocalizations();
 
   @override
-  String get appTitle => 'Space';
+  String get appTitle => 'Spave Park';
   @override
-  String get welcome => 'Karibu kwenye Space';
+  String get welcome => 'Karibu kwenye Spave Park';
   @override
   String get login => 'Ingia';
   @override
@@ -440,9 +440,9 @@ class _FrenchLocalizations extends AppLocalizations {
   _FrenchLocalizations();
 
   @override
-  String get appTitle => 'Space';
+  String get appTitle => 'Spave Park';
   @override
-  String get welcome => 'Bienvenue à Space';
+  String get welcome => 'Bienvenue à Spave Park';
   @override
   String get login => 'Connexion';
   @override
@@ -596,9 +596,9 @@ class _SpanishLocalizations extends AppLocalizations {
   _SpanishLocalizations();
 
   @override
-  String get appTitle => 'Space';
+  String get appTitle => 'Spave Park';
   @override
-  String get welcome => 'Bienvenido a Space';
+  String get welcome => 'Bienvenido a Spave Park';
   @override
   String get login => 'Iniciar Sesión';
   @override
@@ -751,9 +751,9 @@ class _GermanLocalizations extends AppLocalizations {
   _GermanLocalizations();
 
   @override
-  String get appTitle => 'Space';
+  String get appTitle => 'Spave Park';
   @override
-  String get welcome => 'Willkommen bei Space';
+  String get welcome => 'Willkommen bei Spave Park';
   @override
   String get login => 'Anmelden';
   @override

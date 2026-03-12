@@ -167,9 +167,7 @@ class ReservationService:
                     }
                 )
 
-        if reservation.parking_slot:
-            reservation.parking_slot.status = SlotStatus.AVAILABLE
-            reservation.parking_slot.save()
+        # Slot release is now handled automatically by Reservation.save() logic if status is 'cancelled'
 
         reservation.status = 'cancelled'
         reservation.is_active = False

@@ -9,6 +9,7 @@ import 'package:parking_user_app/features/auth/models/vehicle_model.dart';
 import 'package:parking_user_app/widgets/payment_selection_dialog.dart';
 import 'package:parking_user_app/features/parking/screens/parking_map_screen.dart';
 import 'package:parking_user_app/features/payments/services/payment_service.dart';
+import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/core/dialog_service.dart';
 import 'package:parking_user_app/features/payments/screens/pesapal_webview_screen.dart';
 import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
@@ -483,17 +484,43 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
           if (zoneProvider.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
+          final zones = zoneProvider.zones;
+          if (zones.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.directions_car_filled_rounded,
+                    size: 64,
+                    color: Colors.grey.shade400,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No parking zones found nearby',
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () => zoneProvider.fetchZones(),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
           return ListView.builder(
-            itemCount: zoneProvider.zones.length,
+            itemCount: zones.length,
             padding: const EdgeInsets.all(16),
             itemBuilder: (context, index) {
-              final zone = zoneProvider.zones[index];
+              final zone = zones[index];
               return Card(
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: const EdgeInsets.only(bottom: 16, left: 4, right: 4),
                 child: InkWell(
                   onTap: () => _showStartParkingDialog(context, zone),
+                  borderRadius: BorderRadius.circular(24),
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(20.0),
                     child: Column(
                       children: [
                         Row(
@@ -511,20 +538,68 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                                   ),
                                   const SizedBox(height: 8),
                                   Consumer<SettingsProvider>(
-                                    builder: (context, settings, _) => Text(
-                                      'Rate: ${CurrencyFormatter.formatCurrency(zone.hourlyRate, settings.countryConfig)}/hr',
+                                    builder: (context, settings, _) => Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        'Rate: ${CurrencyFormatter.formatCurrency(zone.hourlyRate, settings.countryConfig)}/hr',
+                                        style: const TextStyle(
+                                          color: AppTheme.primaryColor,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${zone.code} - ${zone.availableSlots}/${zone.totalSlots} slots',
-                                    style: const TextStyle(color: Colors.grey),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.local_parking_rounded, size: 16, color: AppTheme.textSecondary),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${zone.code} • ${zone.availableSlots}/${zone.totalSlots} slots',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w500,
+                                          color: AppTheme.textSecondary,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
                             ),
+                            if (zone.imageUrl != null)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16.0),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Image.network(
+                                    zone.imageUrl!,
+                                    width: 80,
+                                    height: 80,
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            Container(
+                                              width: 80,
+                                              height: 80,
+                                              color: Colors.grey.shade200,
+                                              child: const Icon(
+                                                Icons.image_not_supported,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                  ),
+                                ),
+                              ),
                             IconButton(
-                              icon: const Icon(Icons.map, color: Colors.blue),
+                              icon: Icon(
+                                Icons.directions_car_filled_rounded,
+                                color: AppTheme.primaryColor,
+                              ),
                               onPressed: () {
                                 Navigator.push(
                                   context,
@@ -538,15 +613,33 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                             ),
                           ],
                         ),
-                        const Divider(),
-                        TextButton.icon(
-                          onPressed: () =>
-                              _launchMaps(zone.latitude, zone.longitude),
-                          icon: const Icon(Icons.directions),
-                          label: const Text('Get Directions'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Theme.of(context).primaryColor,
-                          ),
+                        const SizedBox(height: 16),
+                        const Divider(height: 1, thickness: 1),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            TextButton.icon(
+                              onPressed: () =>
+                                  _launchMaps(zone.latitude, zone.longitude),
+                              icon: const Icon(Icons.directions_outlined, size: 20),
+                              label: const Text('Get Directions'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppTheme.textSecondary,
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                              ),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => _showStartParkingDialog(context, zone),
+                              style: ElevatedButton.styleFrom(
+                                elevation: 0,
+                                minimumSize: const Size(120, 40),
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                              ),
+                              child: const Text('Book Now'),
+                            ),
+                          ],
                         ),
                       ],
                     ),

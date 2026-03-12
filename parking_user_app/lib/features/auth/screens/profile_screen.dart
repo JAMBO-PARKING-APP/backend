@@ -8,11 +8,10 @@ import 'package:parking_user_app/features/auth/screens/vehicle_list_screen.dart'
 import 'package:parking_user_app/features/payments/screens/wallet_screen.dart';
 import 'package:parking_user_app/features/parking/screens/reservation_list_screen.dart';
 import 'package:parking_user_app/features/notifications/screens/notification_screen.dart';
+import 'package:parking_user_app/features/parking/screens/parking_history_screen.dart';
 import 'package:parking_user_app/features/home/screens/about_screen.dart';
 import 'package:parking_user_app/features/auth/screens/help_center_screen.dart';
-import 'package:parking_user_app/features/rewards/screens/rewards_screen.dart';
-import 'package:parking_user_app/widgets/base_scaffold.dart';
-import 'package:parking_user_app/features/home/screens/home_screen.dart';
+import 'package:parking_user_app/core/app_theme.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -25,15 +24,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ImagePicker _picker = ImagePicker();
 
   Future<void> _requestPermissions() async {
-    // Request location
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
-
-    // Request Photo Gallery
     await [Permission.photos, Permission.camera].request();
-
     if (mounted) {
       ScaffoldMessenger.of(
         context,
@@ -47,13 +42,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Uploading photo...')));
-      if (!mounted) return;
       final success = await context.read<AuthProvider>().updateProfilePhoto(
         image.path,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(success ? 'Photo updated' : 'Upload failed')),
+          SnackBar(
+            content: Text(success ? 'Photo updated' : 'Upload failed'),
+            backgroundColor: success
+                ? AppTheme.successColor
+                : AppTheme.errorColor,
+          ),
         );
       }
     }
@@ -74,7 +73,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
             child: const Text('Delete'),
           ),
         ],
@@ -97,34 +96,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
 
-    return BaseScaffold(
-      title: 'My Profile',
-      currentIndex: 6,
-      onTabChanged: (index) {
-        final homeState = context.findAncestorStateOfType<HomeScreenState>();
-        if (homeState != null) homeState.navigateToTab(index);
-      },
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       body: SingleChildScrollView(
         child: Column(
           children: [
-            const SizedBox(height: 20),
-            // User Info Header
+            // Header with Gradient
             Container(
-              padding: const EdgeInsets.all(20),
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [AppTheme.primaryColor, Color(0xFF38A169)],
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(40),
+                  bottomRight: Radius.circular(40),
+                ),
               ),
-              child: Row(
+              child: Column(
                 children: [
-                  GestureDetector(
-                    onTap: _pickImage,
-                    child: Stack(
-                      children: [
-                        CircleAvatar(
-                          radius: 40,
-                          backgroundColor: Theme.of(context).primaryColor,
+                  Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.white24,
+                          shape: BoxShape.circle,
+                        ),
+                        child: CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Colors.white,
                           backgroundImage: user?.profilePhoto != null
                               ? NetworkImage(user!.profilePhoto!)
                               : null,
@@ -135,77 +140,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           .toUpperCase() ??
                                       'U',
                                   style: const TextStyle(
-                                    fontSize: 32,
-                                    color: Colors.white,
+                                    fontSize: 40,
+                                    color: AppTheme.primaryColor,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 )
                               : null,
                         ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).primaryColor,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                            child: const Icon(
-                              Icons.camera_alt,
-                              size: 14,
-                              color: Colors.white,
-                            ),
+                      ),
+                      GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 10,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt,
+                            size: 16,
+                            color: AppTheme.primaryColor,
                           ),
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    user?.fullName ?? 'User Name',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          user?.fullName ?? 'User Name',
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          user?.phone ?? '',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                        if (user?.email != null)
-                          Text(
-                            user!.email!,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                      ],
+                  Text(
+                    user?.phone ?? '',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withValues(alpha: 0.8),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: () {},
-                    icon: const Icon(Icons.edit_outlined),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 30),
+
+            const SizedBox(height: 32),
 
             // Profile Options
             _ProfileOptionGroup(
-              title: 'Account Management',
+              title: 'ACCOUNT',
               options: [
+                _ProfileOption(
+                  icon: Icons.history,
+                  title: 'Parking History',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ParkingHistoryScreen(),
+                    ),
+                  ),
+                ),
                 _ProfileOption(
                   icon: Icons.directions_car_outlined,
                   title: 'My Vehicles',
@@ -213,16 +214,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => const VehicleListScreen(),
-                    ),
-                  ),
-                ),
-                _ProfileOption(
-                  icon: Icons.card_giftcard,
-                  title: 'My Rewards',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const RewardsScreen(),
                     ),
                   ),
                 ),
@@ -250,7 +241,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
 
             _ProfileOptionGroup(
-              title: 'Preferences & Support',
+              title: 'PREFERENCES',
               options: [
                 _ProfileOption(
                   icon: Icons.notifications_none,
@@ -263,6 +254,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 _ProfileOption(
+                  icon: Icons.location_on_outlined,
+                  title: 'App Permissions',
+                  onTap: _requestPermissions,
+                ),
+              ],
+            ),
+
+            _ProfileOptionGroup(
+              title: 'SUPPORT',
+              options: [
+                _ProfileOption(
                   icon: Icons.help_outline,
                   title: 'Help Center',
                   onTap: () => Navigator.push(
@@ -273,13 +275,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 _ProfileOption(
-                  icon: Icons.location_on_outlined,
-                  title: 'Location & Photo Permissions',
-                  onTap: _requestPermissions,
-                ),
-                _ProfileOption(
                   icon: Icons.info_outline,
-                  title: 'About Space',
+                  title: 'About Space Park',
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -290,17 +287,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
+
             // Logout Button
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: ElevatedButton(
-                onPressed: () {
-                  context.read<AuthProvider>().logout();
-                },
+                onPressed: () => context.read<AuthProvider>().logout(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.shade50,
-                  foregroundColor: Colors.red,
+                  backgroundColor: AppTheme.errorColor.withValues(alpha: 0.1),
+                  foregroundColor: AppTheme.errorColor,
                   elevation: 0,
                   minimumSize: const Size(double.infinity, 56),
                   shape: RoundedRectangleBorder(
@@ -309,26 +305,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 child: const Text(
                   'LOGOUT',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
                 ),
               ),
             ),
 
-            const SizedBox(height: 16),
-
-            // Delete Account Button
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextButton(
-                onPressed: () => _confirmDeleteAccount(context),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.grey,
-                  minimumSize: const Size(double.infinity, 48),
-                ),
-                child: const Text('Delete Account'),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => _confirmDeleteAccount(context),
+              child: Text(
+                'Delete Account',
+                style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 48),
           ],
         ),
       ),
@@ -348,30 +341,36 @@ class _ProfileOptionGroup extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
           child: Text(
             title,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade500,
-              letterSpacing: 1.2,
+              color: Colors.grey.shade400,
+              letterSpacing: 1.5,
             ),
           ),
         ),
-        Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Colors.grey.shade200),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             children: [
               for (var i = 0; i < options.length; i++) ...[
                 options[i],
                 if (i < options.length - 1)
-                  Divider(height: 1, indent: 56, color: Colors.grey.shade100),
+                  Divider(height: 1, indent: 60, color: Colors.grey.shade50),
               ],
             ],
           ),
@@ -396,11 +395,29 @@ class _ProfileOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: Theme.of(context).primaryColor),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-      trailing: const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryColor.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: AppTheme.primaryColor, size: 20),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+          color: AppTheme.textPrimary,
+        ),
+      ),
+      trailing: Icon(
+        Icons.chevron_right,
+        size: 18,
+        color: Colors.grey.shade300,
+      ),
       onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     );
   }
 }

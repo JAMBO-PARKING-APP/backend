@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:provider/provider.dart';
 import 'package:parking_officer_app/features/parking/providers/zone_provider.dart';
 import 'package:parking_officer_app/features/enforcement/providers/officer_provider.dart';
@@ -36,56 +37,99 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _buildBody(),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
+      extendBody: true,
+      body: Stack(
+        children: [
+          _buildBody(),
+          Positioned(
+            left: 24,
+            right: 24,
+            bottom: 32, // Floating padding
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(32),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(32),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: BottomNavigationBar(
+                    currentIndex: _currentIndex,
+                    onTap: (index) => setState(() => _currentIndex = index),
+                    type: BottomNavigationBarType.fixed,
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    selectedItemColor: AppTheme.accentColor,
+                    unselectedItemColor: const Color(0xFF64748B),
+                    showUnselectedLabels: false,
+                    selectedLabelStyle: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11,
+                    ),
+                    items: const [
+                      BottomNavigationBarItem(
+                        icon: Padding(
+                          padding: EdgeInsets.only(bottom: 4),
+                          child: Icon(Icons.map_outlined),
+                        ),
+                        activeIcon: Padding(
+                          padding: EdgeInsets.only(bottom: 4),
+                          child: Icon(Icons.map_rounded),
+                        ),
+                        label: 'Patrol',
+                      ),
+                      BottomNavigationBarItem(
+                        icon: Padding(
+                          padding: EdgeInsets.only(bottom: 4),
+                          child: Icon(Icons.verified_user_outlined),
+                        ),
+                        activeIcon: Padding(
+                          padding: EdgeInsets.only(bottom: 4),
+                          child: Icon(Icons.verified_user_rounded),
+                        ),
+                        label: 'Verify',
+                      ),
+                      BottomNavigationBarItem(
+                        icon: Padding(
+                          padding: EdgeInsets.only(bottom: 4),
+                          child: Icon(Icons.history_rounded),
+                        ),
+                        activeIcon: Padding(
+                          padding: EdgeInsets.only(bottom: 4),
+                          child: Icon(Icons.history_rounded),
+                        ),
+                        label: 'Activity',
+                      ),
+                      BottomNavigationBarItem(
+                        icon: Padding(
+                          padding: EdgeInsets.only(bottom: 4),
+                          child: Icon(Icons.person_outline_rounded),
+                        ),
+                        activeIcon: Padding(
+                          padding: EdgeInsets.only(bottom: 4),
+                          child: Icon(Icons.person_rounded),
+                        ),
+                        label: 'Account',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: AppTheme.accentColor,
-          unselectedItemColor: const Color(0xFF64748B),
-          showUnselectedLabels: true,
-          selectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 12,
           ),
-          unselectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
-          ),
-          items: [
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.map_outlined),
-              activeIcon: const Icon(Icons.map_rounded),
-              label: 'Patrol',
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.verified_user_outlined),
-              activeIcon: const Icon(Icons.verified_user_rounded),
-              label: 'Verify',
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.history_rounded),
-              label: 'Activity',
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.person_outline_rounded),
-              activeIcon: const Icon(Icons.person_rounded),
-              label: 'Account',
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -116,7 +160,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         // Bottom Layer: Zone Stats Overlay
         Positioned(
-          bottom: 20,
+          bottom: 120, // Moved up to clear the new floating nav bar
           left: 20,
           right: 20,
           child: _buildZoneSummaryOverlay(),
@@ -300,20 +344,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         final zone = zoneProvider.zones.first; 
 
-        return Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.8),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Column(
+              child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Row(
@@ -373,6 +425,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ],
+          ),
+            ),
           ),
         );
       },

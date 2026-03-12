@@ -180,8 +180,7 @@ class StartParkingAPIView(APIView):
                     }, status=status.HTTP_400_BAD_REQUEST)
     
                 with transaction.atomic():
-                    request.user.wallet_balance -= estimated_cost
-                    request.user.save()
+                    request.user.adjust_wallet_balance(-estimated_cost)
                     
                     wallet_tx = WalletTransaction.objects.create(
                         user=request.user,
@@ -390,8 +389,7 @@ class CancelParkingSessionAPIView(APIView):
             
             if refund_amount > 0:
                 user = request.user
-                user.wallet_balance += refund_amount
-                user.save()
+                user.adjust_wallet_balance(refund_amount)
                 
                 WalletTransaction.objects.create(
                     user=user,

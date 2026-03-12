@@ -284,7 +284,9 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
                 .confirmReservationWallet(reservation.id);
 
             if (!context.mounted) return;
-            Navigator.pop(context); // Hide loading
+            if (context.mounted) {
+              Navigator.of(context, rootNavigator: true).pop(); // Hide loading
+            }
 
             if (success) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -329,7 +331,9 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
             );
 
             if (!context.mounted) return;
-            Navigator.pop(context);
+            if (context.mounted) {
+              Navigator.of(context, rootNavigator: true).pop();
+            }
 
             if (result['success'] == true && mounted) {
               final url = result['redirect_url'];

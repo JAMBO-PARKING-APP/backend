@@ -27,7 +27,7 @@ class QRCodeViewScreen extends StatelessWidget {
         children: [
           const SizedBox(height: 20),
           Text(
-            "Parking Pass",
+            "Spave Park Pass",
             style: GoogleFonts.outfit(
               color: Colors.white,
               fontSize: 28,

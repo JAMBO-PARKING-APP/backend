@@ -13,11 +13,15 @@ class ZoneProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
 
   Future<void> fetchZones() async {
+    if (_isLoading) return;
     _isLoading = true;
     notifyListeners();
-    _zones = await _zoneService.getZones();
-    _isLoading = false;
-    notifyListeners();
+    try {
+      _zones = await _zoneService.getZones();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   // --- Phase 7: Recent Zones ---

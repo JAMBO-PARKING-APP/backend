@@ -12,7 +12,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildTitle('Privacy Policy for Space'),
+            _buildTitle('Privacy Policy for Spave Park'),
             const SizedBox(height: 8),
             _buildSubtext('Effective Date: February 9, 2026'),
             _buildSubtext('Last Updated: February 9, 2026'),
@@ -85,13 +85,13 @@ class PrivacyPolicyScreen extends StatelessWidget {
             _buildSection(
               '8. Contact Us',
               'For questions regarding this Privacy Policy:\n\n'
-                  'Email: support@spacepark.com\n'
-                  'Phone: +256 XXX XXX XXX',
+                  'Email: support@spavepark.com\n'
+                  'Phone: +256 700 000 000',
             ),
 
             const SizedBox(height: 24),
             const Text(
-              'By using Space, you consent to this Privacy Policy.',
+              'By using Spave Park, you consent to this Privacy Policy.',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),

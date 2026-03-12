@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:parking_user_app/core/app_theme.dart';
+import 'package:parking_user_app/core/widgets/glass_container.dart';
 import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
-import 'package:parking_user_app/features/auth/screens/privacy_policy_screen.dart';
-import 'package:parking_user_app/features/auth/screens/terms_of_service_screen.dart';
 import 'package:parking_user_app/features/auth/screens/register_screen.dart';
+import 'package:parking_user_app/features/auth/screens/terms_of_service_screen.dart';
+import 'package:parking_user_app/features/auth/screens/privacy_policy_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,6 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   String _countryCode = '+256';
   bool _acceptTerms = false;
+  bool _obscurePassword = true;
 
   void _handleLogin() async {
     final phone = _phoneController.text.trim();
@@ -34,12 +37,6 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Basic phone validation (at least 7 digits)
-    if (!RegExp(r'^[0-9]{7,15}$').hasMatch(phone)) {
-      _showError('Please enter a valid phone number');
-      return;
-    }
-
     if (!_acceptTerms) {
       _showError('Please accept the Terms & Privacy Policy');
       return;
@@ -49,7 +46,9 @@ class _LoginScreenState extends State<LoginScreen> {
     final fullPhone = '$_countryCode$phone';
     final success = await authProvider.login(fullPhone, password);
 
-    if (!success && mounted) {
+    if (success && mounted) {
+      Navigator.pop(context);
+    } else if (!success && mounted) {
       _showError(authProvider.errorMessage ?? 'Login failed');
     }
   }
@@ -57,15 +56,10 @@ class _LoginScreenState extends State<LoginScreen> {
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.error_outline, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 4),
+        content: Text(message),
+        backgroundColor: AppTheme.errorColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -73,221 +67,264 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 40),
-              // Logo
-              Center(
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  height: 80,
-                  errorBuilder: (context, error, stackTrace) => const Icon(
-                    Icons.local_parking,
-                    size: 80,
-                    color: Color(0xFF217150),
-                  ),
-                ),
+      body: Stack(
+        children: [
+          // Background Gradient
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppTheme.backgroundColor, AppTheme.dividerColor],
               ),
-              const SizedBox(height: 48),
-              Text(
-                'Welcome to Space',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).primaryColor,
-                ),
-                textAlign: TextAlign.center,
+            ),
+          ),
+          // City Skyline accent at the bottom
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Opacity(
+              opacity: 0.1,
+              child: Image.asset(
+                'assets/images/skyline_splash.png',
+                height: 200,
+                fit: BoxFit.cover,
               ),
-              const SizedBox(height: 12),
-              Text(
-                'Login to your Space account',
-                textAlign: TextAlign.center,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyLarge?.copyWith(color: Colors.grey.shade600),
-              ),
-              const SizedBox(height: 48),
-              // Phone Input
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Consumer<SettingsProvider>(
-                      builder: (context, settings, _) {
-                        return CountryCodePicker(
-                          onChanged: (code) =>
-                              setState(() => _countryCode = code.dialCode!),
-                          initialSelection: settings.isoCountryCode ?? 'UG',
-                          favorite: const ['UG', 'KE', 'TZ'],
-                          showCountryOnly: false,
-                          showOnlyCountryWhenClosed: false,
-                          alignLeft: false,
-                          padding: EdgeInsets.zero,
-                        );
-                      },
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: _phoneController,
-                        decoration: const InputDecoration(
-                          hintText: 'Phone Number',
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                        ),
-                        keyboardType: TextInputType.phone,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Password Input
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: TextField(
-                  controller: _passwordController,
-                  decoration: const InputDecoration(
-                    hintText: 'Password',
-                    prefixIcon: Icon(Icons.lock_outline),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  obscureText: true,
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Terms Checkbox
-              Row(
+            ),
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Checkbox(
-                    value: _acceptTerms,
-                    activeColor: Theme.of(context).primaryColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    onChanged: (val) => setState(() => _acceptTerms = val!),
-                  ),
-                  Expanded(
-                    child: Wrap(
-                      children: [
-                        const Text('I accept the '),
-                        GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const TermsOfServiceScreen(),
-                            ),
-                          ),
-                          child: Text(
-                            'Terms',
-                            style: TextStyle(
-                              color: Theme.of(context).primaryColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          padding: const EdgeInsets.all(12),
                         ),
-                        const Text(' & '),
-                        GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const PrivacyPolicyScreen(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 40),
+                  Text(
+                    'Welcome Back',
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Login to your Space Park account',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 48),
+
+                  // Login Form Card with Glassmorphism
+                  GlassContainer(
+                    padding: const EdgeInsets.all(24),
+                    borderRadius: BorderRadius.circular(24),
+                    child: Column(
+                      children: [
+                        // Phone Input
+                        Row(
+                          children: [
+                            Consumer<SettingsProvider>(
+                              builder: (context, settings, _) {
+                                return CountryCodePicker(
+                                  onChanged: (code) => setState(
+                                    () => _countryCode = code.dialCode!,
+                                  ),
+                                  initialSelection:
+                                      settings.isoCountryCode ?? 'UG',
+                                  favorite: const ['UG', 'KE', 'TZ'],
+                                  showCountryOnly: false,
+                                  showOnlyCountryWhenClosed: false,
+                                  alignLeft: false,
+                                  padding: EdgeInsets.zero,
+                                  textStyle: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                );
+                              },
                             ),
-                          ),
-                          child: Text(
-                            'Privacy Policy',
-                            style: TextStyle(
-                              color: Theme.of(context).primaryColor,
-                              fontWeight: FontWeight.bold,
+                            const VerticalDivider(),
+                            Expanded(
+                              child: TextField(
+                                controller: _phoneController,
+                                keyboardType: TextInputType.phone,
+                                decoration: const InputDecoration(
+                                  hintText: 'Phone Number',
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  filled: false,
+                                ),
+                              ),
                             ),
+                          ],
+                        ),
+                        const Divider(height: 32),
+                        // Password Input
+                        TextField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          decoration: InputDecoration(
+                            hintText: 'Password',
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                size: 20,
+                              ),
+                              onPressed: () => setState(
+                                () => _obscurePassword = !_obscurePassword,
+                              ),
+                            ),
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            filled: false,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 32),
-              // Login Button
-              Consumer<AuthProvider>(
-                builder: (context, auth, _) {
-                  return ElevatedButton(
-                    onPressed: auth.status == AuthStatus.authenticating
-                        ? null
-                        : _handleLogin,
-                    child: auth.status == AuthStatus.authenticating
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text(
-                            'LOGIN',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2,
+
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Password reset functionality coming soon!',
                             ),
                           ),
-                  );
-                },
-              ),
-              const SizedBox(height: 24),
-              // Register Link
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text("Don't have an account? "),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const RegisterScreen(),
+                        );
+                      },
+                      child: const Text('Forgot Password?'),
+                    ),
+                  ),
+
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: _acceptTerms,
+                        activeColor: AppTheme.primaryColor,
+                        onChanged: (val) => setState(() => _acceptTerms = val!),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
                         ),
+                      ),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Text(
+                              'I accept the ',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const TermsOfServiceScreen(),
+                                ),
+                              ),
+                              child: const Text(
+                                'Terms',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppTheme.primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const Text(' & ', style: TextStyle(fontSize: 12)),
+                            GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const PrivacyPolicyScreen(),
+                                ),
+                              ),
+                              child: const Text(
+                                'Privacy Policy',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppTheme.primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  Consumer<AuthProvider>(
+                    builder: (context, auth, _) {
+                      return ElevatedButton(
+                        onPressed: auth.status == AuthStatus.authenticating
+                            ? null
+                            : _handleLogin,
+                        child: auth.status == AuthStatus.authenticating
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Text('Login'),
                       );
                     },
-                    child: Text(
-                      'Register',
-                      style: TextStyle(
-                        color: Theme.of(context).primaryColor,
-                        fontWeight: FontWeight.bold,
+                  ),
+
+                  const SizedBox(height: 48),
+
+                  const SizedBox(height: 40),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Don't have an account? "),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const RegisterScreen(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          'Register',
+                          style: TextStyle(
+                            color: AppTheme.primaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

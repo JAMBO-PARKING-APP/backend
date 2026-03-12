@@ -1,8 +1,7 @@
 {% extends 'base/base.html' %}
 {% load i18n %}
 
-{% block title %}{% if object %}{% trans "Edit Zone" %}{% else %}{% trans "Add Zone" %}{% endif %} - {% trans "Smart
-Parking Admin" %}{% endblock %}
+{% block title %}{% if object %}{% trans "Edit Zone" %}{% else %}{% trans "Add Zone" %}{% endif %} - {% trans "Smart Parking Admin" %}{% endblock %}
 {% block page_title %}{% if object %}{% trans "Edit Zone" %}{% else %}{% trans "Add Zone" %}{% endif %}{% endblock %}
 
 {% block content %}
@@ -12,8 +11,7 @@ Parking Admin" %}{% endblock %}
             <div class="card-header">
                 <h5 class="card-title mb-0">
                     <i class="bi bi-{% if object %}pencil{% else %}geo-alt-fill{% endif %} me-2"></i>
-                    {% if object %}{% trans "Edit Zone" %}: {{ object.name }}{% else %}{% trans "Add New Parking Zone"
-                    %}{% endif %}
+                    {% if object %}{% trans "Edit Zone" %}: {{ object.name }}{% else %}{% trans "Add New Parking Zone" %}{% endif %}
                 </h5>
             </div>
             <div class="card-body">
@@ -75,8 +73,7 @@ Parking Admin" %}{% endblock %}
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label for="id_max_duration_hours" class="form-label">{% trans "Max Duration (Hours) *"
-                                %}</label>
+                            <label for="id_max_duration_hours" class="form-label">{% trans "Max Duration (Hours) *" %}</label>
                             <input type="number" class="form-control" name="max_duration_hours"
                                 id="id_max_duration_hours" min="1" max="168"
                                 value="{{ form.max_duration_hours.value|default:'24' }}" required>
@@ -93,8 +90,7 @@ Parking Admin" %}{% endblock %}
                             max="500" value="{{ form.total_slots.value|default:'50' }}" required>
                         <div class="form-text">
                             <i class="bi bi-info-circle me-1"></i>
-                            {% trans "Number of parking slots to create. Slots will be auto-generated and can be
-                            arranged in the diagram editor." %}
+                            {% trans "Number of parking slots to create. Slots will be auto-generated and can be arranged in the diagram editor." %}
                         </div>
                         {% if form.total_slots.errors %}
                         <div class="text-danger small">{{ form.total_slots.errors.0 }}</div>
@@ -161,12 +157,10 @@ Parking Admin" %}{% endblock %}
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label for="id_diagram_image" class="form-label">{% trans "Parking Layout Diagram"
-                                %}</label>
+                            <label for="id_diagram_image" class="form-label">{% trans "Parking Layout Diagram" %}</label>
                             <input type="file" class="form-control" name="diagram_image" id="id_diagram_image"
                                 accept="image/*">
-                            <div class="form-text">{% trans "Upload a parking layout diagram (optional - can create
-                                interactive diagram later)" %}</div>
+                            <div class="form-text">{% trans "Upload a parking layout diagram (optional - can create interactive diagram later)" %}</div>
                             {% if object.diagram_image %}
                             <div class="mt-2">
                                 <img src="{{ object.diagram_image.url }}" alt="Diagram" class="img-thumbnail"
@@ -205,8 +199,7 @@ Parking Admin" %}{% endblock %}
                     <!-- Status -->
                     <div class="mb-3">
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="is_active" id="id_is_active" {% if
-                                form.is_active.value %}checked{% endif %}>
+                            <input class="form-check-input" type="checkbox" name="is_active" id="id_is_active" {% if form.is_active.value %}checked{% endif %}>
                             <label class="form-check-label" for="id_is_active">
                                 {% trans "Active Zone" %}
                             </label>
@@ -288,8 +281,7 @@ Parking Admin" %}{% endblock %}
 
                 <div class="alert alert-info">
                     <small>
-                        <strong>{% trans "Tip:" %}</strong> {% trans 'You can use GPS coordinates or click "Use Current
-                        Location" to automatically fill in your current position.' %}
+                        <strong>{% trans "Tip:" %}</strong> {% trans 'You can use GPS coordinates or click "Use Current Location" to automatically fill in your current position.' %}
                     </small>
                 </div>
 

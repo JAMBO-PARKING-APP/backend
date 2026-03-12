@@ -7,13 +7,13 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:parking_user_app/features/parking/models/zone_model.dart';
 import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:parking_user_app/core/utils/currency_formatter.dart';
 import 'package:parking_user_app/features/parking/providers/zone_provider.dart';
-import 'package:parking_user_app/features/parking/screens/zone_list_screen.dart';
 import 'package:parking_user_app/core/app_theme.dart';
+import 'package:parking_user_app/core/widgets/glass_container.dart';
+import 'package:parking_user_app/features/home/screens/home_screen.dart';
 
 class ParkingMapScreen extends StatefulWidget {
   final Zone? initialZone;
@@ -179,13 +179,16 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       final bool isFull = zone.availableSlots == 0;
       final Color markerColor = isFull
           ? AppTheme.errorColor
-          : AppTheme.successColor;
+          : (zone.availableSlots < 5
+                ? AppTheme.warningColor
+                : AppTheme.successColor);
 
       markers.add(
         Marker(
           point: LatLng(zone.latitude, zone.longitude),
-          width: 50,
-          height: 60,
+          width: 60,
+          height: 70,
+          alignment: Alignment.topCenter,
           child: GestureDetector(
             onTap: () {
               setState(() {
@@ -195,35 +198,54 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
               _showZoneDetails(zone);
               _fetchRoute(LatLng(zone.latitude, zone.longitude));
             },
-            child: Column(
+            child: Stack(
+              alignment: Alignment.topCenter,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: markerColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white, width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: markerColor.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    '${zone.availableSlots}',
-                    style: const TextStyle(
+                // Main Pin Icon
+                Icon(Icons.location_on, color: markerColor, size: 50),
+                // Inner Car Icon
+                Positioned(
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.directions_car_filled_rounded,
+                      color: markerColor,
+                      size: 16,
                     ),
                   ),
                 ),
-                Icon(Icons.arrow_drop_down, color: markerColor, size: 24),
+                // Available Slots Badge (Floats above or overlaps pin head)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: markerColor, width: 1),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black12, blurRadius: 2),
+                      ],
+                    ),
+                    child: Text(
+                      '${zone.availableSlots}',
+                      style: TextStyle(
+                        color: markerColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -241,223 +263,151 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.4,
-        minChildSize: 0.3,
-        maxChildSize: 0.8,
-        expand: false,
-        builder: (context, scrollController) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 10,
-                offset: const Offset(0, -2),
+      builder: (context) => GlassContainer(
+        borderRadius: BorderRadius.circular(32),
+        blur: 20,
+        opacity: 0.8,
+        padding: EdgeInsets.zero,
+        gradientColors: [
+          Colors.white.withValues(alpha: 0.9),
+          Colors.white.withValues(alpha: 0.8),
+        ],
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Pull Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          zone.name,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          zone.description ?? 'Street Parking',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.navigation,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildStatItemModern(
+                    Icons.directions_car_filled_rounded,
+                    'Available',
+                    '${zone.availableSlots}/${zone.totalSlots}',
+                    AppTheme.primaryColor,
+                  ),
+                  _buildStatItemModern(
+                    Icons.access_time_rounded,
+                    'Hourly Rate',
+                    context.select<SettingsProvider, String>(
+                      (settings) => CurrencyFormatter.formatCurrency(
+                        zone.hourlyRate,
+                        settings.countryConfig,
+                      ),
+                    ),
+                    AppTheme.accentColor,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 40),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  // Start Parking Flow
+                  final homeState = context
+                      .findAncestorStateOfType<HomeScreenState>();
+                  if (homeState != null) {
+                    homeState.navigateToTab(1); // Go to Explore tab
+                    // Future: Trigger the dialog directly if possible, or pass initialZone
+                  } else {
+                    // Fallback to showing dialog locally if not in HomeScreen
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 56),
+                ),
+                child: const Text('Start Parking Session'),
               ),
             ],
-          ),
-          child: SingleChildScrollView(
-            controller: scrollController,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Top Handle
-                Center(
-                  child: Container(
-                    margin: const EdgeInsets.only(top: 12),
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                if (zone.imageUrl != null)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: CachedNetworkImage(
-                        imageUrl: zone.imageUrl!,
-                        height: 180,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          height: 180,
-                          color: Colors.grey[200],
-                          child: const Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          height: 180,
-                          color: Colors.grey[200],
-                          child: const Icon(
-                            Icons.broken_image,
-                            size: 50,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  zone.name,
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.info_outline,
-                                      size: 14,
-                                      color: Colors.grey,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Expanded(
-                                      child: Text(
-                                        zone.description ??
-                                            'No description available',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey[600],
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryColor.withValues(
-                                alpha: 0.1,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Consumer<SettingsProvider>(
-                              builder: (context, settings, _) {
-                                return Text(
-                                  '${CurrencyFormatter.formatCurrency(zone.hourlyRate, settings.countryConfig)}/hr',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.primaryColor,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        children: [
-                          _buildStatItem(
-                            Icons.local_parking,
-                            '${zone.availableSlots}/${zone.totalSlots}',
-                            'Available',
-                          ),
-                          const SizedBox(width: 16),
-                          if (_distanceToTarget != null)
-                            _buildStatItem(
-                              Icons.directions_car,
-                              '${(_distanceToTarget! / 1000).toStringAsFixed(1)} km',
-                              'Distance',
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const ZoneListScreen(),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primaryColor,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            'BOOK THIS SPOT',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildStatItem(IconData icon, String value, String label) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[200]!),
+  Widget _buildStatItemModern(
+    IconData icon,
+    String label,
+    String value,
+    Color color,
+  ) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 24),
         ),
-        child: Column(
-          children: [
-            Icon(icon, size: 20, color: AppTheme.primaryColor),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              label,
-              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-            ),
-          ],
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textPrimary,
+          ),
         ),
-      ),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+        ),
+      ],
     );
   }
 
@@ -532,7 +482,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                       urlTemplate:
                           'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
                       subdomains: const ['a', 'b', 'c', 'd'],
-                      userAgentPackageName: 'com.example.parking_user_app',
+                      userAgentPackageName: 'com.spavepark.app',
                     ),
                     if (_routePoints.isNotEmpty)
                       PolylineLayer(
@@ -555,38 +505,68 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                             ),
                             width: 60,
                             height: 60,
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                Container(
-                                  width: 20,
-                                  height: 20,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.primaryColor.withValues(
-                                      alpha: 0.2,
-                                    ),
-                                    shape: BoxShape.circle,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black26,
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),
                                   ),
-                                ),
-                                Container(
-                                  width: 12,
-                                  height: 12,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.primaryColor,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white,
-                                      width: 2,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.directions_car_filled_rounded,
+                                color: AppTheme.primaryColor,
+                                size: 18,
+                              ),
                             ),
                           ),
                         ],
                       ),
                   ],
                 ),
+
+          // Search Bar Overlay
+          Positioned(
+            top: 60,
+            left: 20,
+            right: 20,
+            child: GlassContainer(
+              borderRadius: BorderRadius.circular(24),
+              blur: 15,
+              opacity: 0.85,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search for parking...',
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: AppTheme.primaryColor,
+                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  filled: false,
+                  suffixIcon: Container(
+                    margin: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: AppTheme.primaryColor,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.tune,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
 
           // Floating Location Button
           Positioned(
@@ -621,13 +601,13 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
               left: 16,
               right: 16,
               child: Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
+                      color: Colors.black.withValues(alpha: 0.08),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -642,7 +622,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
-                        Icons.navigation,
+                        Icons.directions_car,
                         color: AppTheme.primaryColor,
                         size: 20,
                       ),
@@ -673,7 +653,10 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, size: 20),
+                      icon: const Icon(
+                        Icons.directions_car,
+                        color: AppTheme.primaryColor,
+                      ),
                       onPressed: () {
                         setState(() {
                           _selectedZone = null;

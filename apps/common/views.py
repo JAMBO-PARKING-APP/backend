@@ -88,7 +88,17 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         
         config = SystemConfiguration.get_config()
-        currency_symbol = CURRENCY_SYMBOLS.get(config.currency, '$')
+        
+        selected_country_id = self.request.session.get('selected_country_id')
+        if selected_country_id:
+            try:
+                country = Country.objects.get(id=selected_country_id)
+                currency_symbol = country.currency_symbol or country.currency
+            except Country.DoesNotExist:
+                currency_symbol = CURRENCY_SYMBOLS.get(config.currency, '$')
+        else:
+            currency_symbol = CURRENCY_SYMBOLS.get(config.currency, '$')
+        
         today = timezone.now().date()
         today_revenue = Transaction.objects.filter(
             created_at__date=today,
@@ -108,12 +118,21 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         occupancy_labels = []
         occupancy_data = []
         
+        total_slots_across_zones = 0
+        occupied_slots_across_zones = 0
+
         for zone in zones[:5]:  
             total_slots = zone.slots.count()
             if total_slots > 0:
                 occupied = zone.slots.filter(status='occupied').count()
                 occupancy_labels.append(zone.name)
                 occupancy_data.append(occupied)
+
+        for zone in zones:
+            total_slots_across_zones += zone.slots.count()
+            occupied_slots_across_zones += zone.slots.filter(status='occupied').count()
+            
+        average_occupancy = (occupied_slots_across_zones / total_slots_across_zones * 100) if total_slots_across_zones > 0 else 0
         
         context.update({
             'total_users': User.objects.count(),
@@ -121,13 +140,14 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             'total_zones': Zone.objects.filter(is_active=True).count(),
             'total_violations': Violation.objects.filter(is_paid=False).count(),
             'today_revenue': today_revenue,
+            'average_occupancy': average_occupancy,
             'currency_symbol': currency_symbol,
             'recent_sessions': ParkingSession.objects.select_related('vehicle', 'zone').order_by('-created_at')[:5],
             'recent_violations': Violation.objects.select_related('vehicle', 'officer').order_by('-created_at')[:5],
-            'revenue_data': json.dumps(revenue_data),
-            'revenue_labels': json.dumps(revenue_labels),
-            'occupancy_data': json.dumps(occupancy_data),
-            'occupancy_labels': json.dumps(occupancy_labels),
+            'revenue_data': revenue_data,
+            'revenue_labels': revenue_labels,
+            'occupancy_data': occupancy_data,
+            'occupancy_labels': occupancy_labels,
             'occupancy_stats': zip(occupancy_labels, occupancy_data),  # For template iteration
         })
         
@@ -179,6 +199,17 @@ class UserListView(AdminRequiredMixin, ListView):
 
     def get_queryset(self):
         queryset = User.objects.all()
+        
+        # Apply Role Filter
+        role = self.request.GET.get('role')
+        if role:
+            queryset = queryset.filter(role=role)
+            
+        # Apply Country Filter
+        selected_country_id = self.request.session.get('selected_country_id')
+        if selected_country_id:
+            queryset = queryset.filter(country_id=selected_country_id)
+            
         search = self.request.GET.get('search')
         if search:
             queryset = queryset.filter(
@@ -187,6 +218,25 @@ class UserListView(AdminRequiredMixin, ListView):
                 Q(phone__icontains=search)
             )
         return queryset.order_by('-created_at')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Handle Currency Formatting based on filter
+        selected_country_id = self.request.session.get('selected_country_id')
+        if selected_country_id:
+            try:
+                country = Country.objects.get(id=selected_country_id)
+                currency_symbol = country.currency_symbol or country.currency
+            except Country.DoesNotExist:
+                config = SystemConfiguration.get_config()
+                currency_symbol = CURRENCY_SYMBOLS.get(config.currency, '$')
+        else:
+            config = SystemConfiguration.get_config()
+            currency_symbol = CURRENCY_SYMBOLS.get(config.currency, '$')
+            
+        context['currency_symbol'] = currency_symbol
+        return context
 
 class UserCreateView(AdminRequiredMixin, CreateView):
     model = User
@@ -533,6 +583,17 @@ class PaymentListView(AdminRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         config = SystemConfiguration.get_config()
+        
+        selected_country_id = self.request.session.get('selected_country_id')
+        if selected_country_id:
+            try:
+                country = Country.objects.get(id=selected_country_id)
+                currency_symbol = country.currency_symbol or country.currency
+            except Country.DoesNotExist:
+                currency_symbol = CURRENCY_SYMBOLS.get(config.currency, '$')
+        else:
+            currency_symbol = CURRENCY_SYMBOLS.get(config.currency, '$')
+        
         today = timezone.now().date()
         today_revenue = Transaction.objects.filter(
             created_at__date=today,
@@ -558,7 +619,7 @@ class PaymentListView(AdminRequiredMixin, ListView):
             success_percentage = 0
         
         context.update({
-            'currency_symbol': CURRENCY_SYMBOLS.get(config.currency, '$'),
+            'currency_symbol': currency_symbol,
             'today_revenue': today_revenue,
             'today_transactions': today_transactions,
             'pending_refunds': pending_refunds,
@@ -577,6 +638,17 @@ class ViolationListView(AdminRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         config = SystemConfiguration.get_config()
+        
+        selected_country_id = self.request.session.get('selected_country_id')
+        if selected_country_id:
+            try:
+                country = Country.objects.get(id=selected_country_id)
+                currency_symbol = country.currency_symbol or country.currency
+            except Country.DoesNotExist:
+                currency_symbol = CURRENCY_SYMBOLS.get(config.currency, '$')
+        else:
+            currency_symbol = CURRENCY_SYMBOLS.get(config.currency, '$')
+        
         unpaid_violations = Violation.objects.filter(is_paid=False).count()
         paid_today = Violation.objects.filter(
             paid_at__date=timezone.now().date()
@@ -589,7 +661,7 @@ class ViolationListView(AdminRequiredMixin, ListView):
         ).aggregate(total=Sum('fine_amount'))['total'] or 0
         
         context.update({
-            'currency_symbol': CURRENCY_SYMBOLS.get(config.currency, '$'),
+            'currency_symbol': currency_symbol,
             'unpaid_violations': unpaid_violations,
             'paid_today': paid_today,
             'this_month': this_month,
@@ -807,6 +879,30 @@ class SlotCreateAjaxView(AdminRequiredMixin, View):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
+class SlotDeleteAllAjaxView(AdminRequiredMixin, View):
+    def post(self, request):
+        zone_id = request.POST.get('zone_id')
+        if not zone_id:
+            return JsonResponse({'error': _('Zone ID is required')}, status=400)
+            
+        try:
+            zone = Zone.objects.get(pk=zone_id)
+            # Delete all unoccupied slots in this zone
+            # We don't delete occupied slots as they are currently in use
+            deleted_count, _ = ParkingSlot.objects.filter(
+                zone=zone, 
+                status='available'
+            ).delete()
+            
+            return JsonResponse({
+                'success': True,
+                'deleted_count': deleted_count
+            })
+        except Zone.DoesNotExist:
+            return JsonResponse({'error': _('Zone not found')}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
 class ReservationListView(AdminRequiredMixin, ListView):
     model = Reservation
     template_name = 'reservations/list.html'
@@ -814,7 +910,7 @@ class ReservationListView(AdminRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        queryset = Reservation.objects.select_related('user', 'zone', 'parking_slot').all()
+        queryset = Reservation.objects.select_related('vehicle__user', 'zone', 'parking_slot').all()
         search = self.request.GET.get('search')
         if search:
             queryset = queryset.filter(

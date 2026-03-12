@@ -22,8 +22,7 @@
                     <ol class="breadcrumb mb-0" style="font-size: 0.75rem;">
                         <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"
                                 class="text-decoration-none text-muted">{% trans "Home" %}</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">{% block breadcrumb %}{% trans "Overview"
-                            %}{% endblock %}</li>
+                        <li class="breadcrumb-item active" aria-current="page">{% block breadcrumb %}{% trans "Overview" %}{% endblock %}</li>
                     </ol>
                 </nav>
             </div>
@@ -49,8 +48,7 @@
                         onchange="this.form.submit()">
                         <option value="">{% trans "Global / All Regions" %}</option>
                         {% for country in available_countries %}
-                        <option value="{{ country.id }}" {% if
-                            country.id|stringformat:"s"==selected_country_id|stringformat:"s" %}selected{% endif %}>
+                        <option value="{{ country.id }}" {% if country.id|stringformat:"s" == selected_country_id|stringformat:"s" %}selected{% endif %}>
                             {{ country.flag_emoji }} {{ country.name }}
                         </option>
                         {% endfor %}
@@ -78,7 +76,7 @@
                     {% get_available_languages as LANGUAGES %}
                     {% get_language_info_list for LANGUAGES as languages %}
                     {% for language in languages %}
-                    <option value="{{ language.code }}" {% if language.code==LANGUAGE_CODE %}selected{% endif %}>
+                    <option value="{{ language.code }}" {% if language.code == LANGUAGE_CODE %}selected{% endif %}>
                         {{ language.code|upper }}
                     </option>
                     {% endfor %}
@@ -103,10 +101,8 @@
                         <div class="fw-bold fs-6">{{ user.full_name }}</div>
                         <small class="text-muted">{{ user.get_role_display }}</small>
                     </li>
-                    <li><a class="dropdown-item rounded" href="#"><i class="bi bi-person me-2"></i>{% trans "My Profile"
-                            %}</a></li>
-                    <li><a class="dropdown-item rounded" href="#"><i class="bi bi-gear me-2"></i>{% trans "Settings"
-                            %}</a></li>
+                    <li><a class="dropdown-item rounded" href="#"><i class="bi bi-person me-2"></i>{% trans "My Profile" %}</a></li>
+                    <li><a class="dropdown-item rounded" href="#"><i class="bi bi-gear me-2"></i>{% trans "Settings" %}</a></li>
                     <li>
                         <hr class="dropdown-divider">
                     </li>

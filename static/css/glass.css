@@ -31,10 +31,10 @@ body {
 /* Panels / Cards */
 .glass-panel,
 .card {
-    background: var(--bg-surface) !important;
-    border: 1px solid var(--surface-border) !important;
-    border-radius: var(--radius-lg) !important;
-    box-shadow: var(--elevation-1) !important;
+    background: var(--bg-surface);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--elevation-1);
 }
 
 .card:hover { box-shadow: var(--elevation-2) !important; transform: none !important; }

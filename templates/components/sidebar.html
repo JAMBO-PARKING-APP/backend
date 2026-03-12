@@ -6,6 +6,7 @@
     <div class="sidebar-header">
         <div class="d-flex align-items-center px-4 py-3">
             <img src="{% static 'JAMBO.png' %}" alt="JAMBO Logo" class="sidebar-logo me-2"
+                style="height: 40px; width: auto;"
                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
             <div style="display:none;" class="sidebar-logo-fallback">
                 <i class="bi bi-car-front-fill text-primary" style="font-size: 1.5rem;"></i>
@@ -19,8 +20,7 @@
 
     <div class="sidebar-content h-100 py-3">
         <div class="nav-section mb-2 px-3">
-            <small class="text-uppercase text-muted fw-bold" style="font-size: 0.65rem; letter-spacing: 1px;">{% trans
-                "MAIN" %}</small>
+            <small class="text-uppercase text-muted fw-bold" style="font-size: 0.65rem; letter-spacing: 1px;">{% trans "MAIN" %}</small>
         </div>
         <ul class="nav flex-column mb-4 px-2">
             <li class="nav-item mb-1">
@@ -33,8 +33,7 @@
         </ul>
 
         <div class="nav-section mb-2 px-3">
-            <small class="text-uppercase text-muted fw-bold" style="font-size: 0.65rem; letter-spacing: 1px;">{% trans
-                "MANAGEMENT" %}</small>
+            <small class="text-uppercase text-muted fw-bold" style="font-size: 0.65rem; letter-spacing: 1px;">{% trans "MANAGEMENT" %}</small>
         </div>
         <ul class="nav flex-column mb-4 px-2">
             <li class="nav-item mb-1">
@@ -61,8 +60,7 @@
         </ul>
 
         <div class="nav-section mb-2 px-3">
-            <small class="text-uppercase text-muted fw-bold" style="font-size: 0.65rem; letter-spacing: 1px;">{% trans
-                "OPERATIONS" %}</small>
+            <small class="text-uppercase text-muted fw-bold" style="font-size: 0.65rem; letter-spacing: 1px;">{% trans "OPERATIONS" %}</small>
         </div>
         <ul class="nav flex-column mb-4 px-2">
             <li class="nav-item mb-1">
@@ -97,8 +95,7 @@
 
         {% if user.role == 'admin' %}
         <div class="nav-section mb-2 px-3">
-            <small class="text-uppercase text-muted fw-bold" style="font-size: 0.65rem; letter-spacing: 1px;">{% trans
-                "SYSTEM" %}</small>
+            <small class="text-uppercase text-muted fw-bold" style="font-size: 0.65rem; letter-spacing: 1px;">{% trans "SYSTEM" %}</small>
         </div>
         <ul class="nav flex-column mb-4 px-2">
             <li class="nav-item mb-1">
