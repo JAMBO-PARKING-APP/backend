@@ -183,7 +183,7 @@ class ParkingSession(RegionalModel, BaseModel):
     planned_end_time = models.DateTimeField()
     actual_end_time = models.DateTimeField(null=True, blank=True, db_index=True)
     
-    status = models.CharField(max_length=20, choices=ParkingStatus.choices, default=ParkingStatus.ACTIVE)
+    status = models.CharField(max_length=20, choices=ParkingStatus.choices, default=ParkingStatus.ACTIVE, db_index=True)
     estimated_cost = models.DecimalField(max_digits=12, decimal_places=2)
     final_cost = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
@@ -209,7 +209,9 @@ class ParkingSession(RegionalModel, BaseModel):
             models.Index(fields=['vehicle'], name='prk_sess_veh_idx'),
             models.Index(fields=['actual_end_time'], name='prk_sess_end_idx'),
             models.Index(fields=['created_at'], name='prk_sess_created_idx'),
+            models.Index(fields=['status', 'planned_end_time'], name='prk_sess_stat_end_idx'),
             models.Index(fields=['start_time', 'status'], name='prk_sess_start_stat_idx'),
+            models.Index(fields=['planned_end_time'], name='prk_sess_plan_end_idx'),
         ]
 
     def __str__(self):

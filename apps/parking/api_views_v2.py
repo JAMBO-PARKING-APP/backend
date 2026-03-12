@@ -17,6 +17,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.core.cache import caches
 
 from apps.common.constants import ParkingStatus, SlotStatus
 from .models import Zone, ParkingSlot, ParkingSession, Reservation
@@ -33,9 +34,39 @@ class ZoneListAPIView(generics.ListAPIView):
     serializer_class = ZoneListSerializer
     permission_classes = [IsAuthenticated]
     
+    def list(self, request, *args, **kwargs):
+        # Cache-first approach for high-concurrency
+        search = request.query_params.get('search')
+        available_only = request.query_params.get('available_only', 'false').lower() == 'true'
+        
+        # If no specific filters, try to use a global list cache
+        # or assemble from individual zone caches
+        if not search:
+            cache = caches['zones_cache']
+            country_id = getattr(request.user, 'country_id', 'none')
+            is_staff = request.user.is_staff
+            cache_key = f"zone_list_country_{country_id}_staff_{is_staff}_{available_only}"
+            cached_data = cache.get(cache_key)
+            if cached_data:
+                return Response(cached_data)
+
+        # Fallback to DB but with optimization
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            data = serializer.data
+            if not search:
+                cache.set(cache_key, data, timeout=300) # 5 min cache for the list
+            return self.get_paginated_response(data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
     def get_queryset(self):
         from django.db.models import Count, Q, Case, When, F, Value
         
+        # Optimization: pre-calculate sessions and slots to avoid N+1
         queryset = Zone.objects.filter(is_active=True).annotate(
             annotated_active_sessions=Count(
                 'sessions', 
@@ -52,7 +83,7 @@ class ZoneListAPIView(generics.ListAPIView):
                      then=F('annotated_capacity') - F('annotated_active_sessions')),
                 default=Value(0),
             )
-        )
+        ).select_related('country')
         
         if hasattr(self.request.user, 'country') and self.request.user.country:
              if not self.request.user.is_superuser:
@@ -70,7 +101,7 @@ class ZoneListAPIView(generics.ListAPIView):
 
 class ZoneDetailAPIView(generics.RetrieveAPIView):
     """Get detailed information about a specific zone"""
-    queryset = Zone.objects.filter(is_active=True)
+    queryset = Zone.objects.filter(is_active=True).prefetch_related('slots')
     serializer_class = ZoneDetailSerializer
     permission_classes = [IsAuthenticated]
     lookup_field = 'pk'
@@ -435,7 +466,9 @@ class UserParkingSessionsAPIView(generics.ListAPIView):
     serializer_class = ParkingSessionSerializer
     
     def get_queryset(self):
-        queryset = ParkingSession.objects.filter(vehicle__user=self.request.user)
+        queryset = ParkingSession.objects.filter(
+            vehicle__user=self.request.user
+        ).select_related('zone', 'vehicle', 'parking_slot')
         session_type = self.request.query_params.get('type', 'all')
         if session_type == 'active':
             queryset = queryset.filter(status=ParkingStatus.ACTIVE)
@@ -516,7 +549,9 @@ class UserReservationsAPIView(generics.ListAPIView):
     
     def get_queryset(self):
         user_vehicles = self.request.user.vehicles.filter(is_active=True)
-        return Reservation.objects.filter(vehicle__in=user_vehicles).order_by('-created_at')
+        return Reservation.objects.filter(
+            vehicle__in=user_vehicles
+        ).select_related('vehicle', 'zone', 'parking_slot').order_by('-created_at')
 
 class CancelReservationAPIView(APIView):
     """Cancel a reservation"""

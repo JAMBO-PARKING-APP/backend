@@ -64,17 +64,18 @@ def officer_zones(request):
             status=status.HTTP_403_FORBIDDEN
         )
     
-    zones = request.user.assigned_zones.filter(is_active=True).prefetch_related('slots')
+    from django.db.models import Count, Q
+    zones = request.user.assigned_zones.filter(is_active=True).annotate(
+        active_session_count=Count(
+            'sessions',
+            filter=Q(sessions__status=ParkingStatus.ACTIVE)
+        )
+    )
     
     zones_data = []
     for zone in zones:
-        active_sessions = ParkingSession.objects.filter(
-            zone=zone,
-            status=ParkingStatus.ACTIVE
-        ).count()
-        
         zone_data = ZoneSerializer(zone).data
-        zone_data['active_sessions'] = active_sessions
+        zone_data['active_sessions'] = zone.active_session_count
         zones_data.append(zone_data)
     
     return Response({
