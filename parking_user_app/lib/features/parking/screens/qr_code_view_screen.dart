@@ -27,7 +27,7 @@ class QRCodeViewScreen extends StatelessWidget {
         children: [
           const SizedBox(height: 20),
           Text(
-            "Spave Park Pass",
+            "Space Park Pass",
             style: GoogleFonts.outfit(
               color: Colors.white,
               fontSize: 28,
@@ -48,7 +48,7 @@ class QRCodeViewScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
+                    color: Colors.black.withOpacity(0.2),
                     blurRadius: 20,
                     spreadRadius: 5,
                   ),
@@ -97,7 +97,7 @@ class QRCodeViewScreen extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
+              color: Colors.white.withOpacity(0.1),
               borderRadius: BorderRadius.circular(15),
             ),
             child: Row(

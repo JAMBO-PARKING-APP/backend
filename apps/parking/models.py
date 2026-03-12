@@ -256,8 +256,7 @@ class ParkingSession(RegionalModel, BaseModel):
             
             from django.db.models import F
             user = self.vehicle.user
-            user.wallet_balance = F('wallet_balance') + refund_amount
-            user.save(update_fields=['wallet_balance'])
+            user.adjust_wallet_balance(refund_amount)
             
             wallet_tx = WalletTransaction.objects.create(
                 user=user,
@@ -324,6 +323,24 @@ class ParkingSession(RegionalModel, BaseModel):
             self.parking_slot.save()
             
         self.save()
+        
+        if refund_amount > 0:
+            user = self.vehicle.user
+            user.adjust_wallet_balance(refund_amount)
+            
+            from apps.payments.models import WalletTransaction
+            wallet_tx = WalletTransaction.objects.create(
+                user=user,
+                amount=refund_amount,
+                transaction_type='refund',
+                description=f"Refund for cancelled session at {self.zone.name}",
+                parking_session=self,
+                status='completed'
+            )
+            
+            from apps.notifications.notification_triggers import notify_wallet_refund
+            notify_wallet_refund(wallet_tx, self)
+            
         return refund_amount
 
     @property

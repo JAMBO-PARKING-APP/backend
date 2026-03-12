@@ -95,7 +95,7 @@ class _ParkingHistoryScreenState extends State<ParkingHistoryScreen> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
+                        color: Colors.black.withOpacity(0.02),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -106,7 +106,7 @@ class _ParkingHistoryScreenState extends State<ParkingHistoryScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                          color: AppTheme.primaryColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Icon(

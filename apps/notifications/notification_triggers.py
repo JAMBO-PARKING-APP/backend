@@ -90,6 +90,52 @@ def notify_parking_started(session):
         'show_dialog': 'true',
     })
 
+def notify_parking_extended(session, additional_hours, cost):
+    """
+    Notify user that their parking session has been extended
+    """
+    user = session.vehicle.user
+    symbol = getattr(user.country, 'currency_symbol', 'UGX') if hasattr(user, 'country') else 'UGX'
+    
+    title = "Parking Extended"
+    message = f"Your parking at {session.zone.name} was extended by {additional_hours} hours. Cost: {symbol} {cost}. New end time: {session.planned_end_time.strftime('%I:%M %p')}"
+    
+    notification = _safe_orm_operation(NotificationEvent.objects.create,
+        user=user,
+        title=title,
+        message=message,
+        type='parking_started', # Reusing parking_started type for UI tracking if needed
+        category='parking',
+        metadata={
+            'session_id': str(session.id),
+            'additional_hours': additional_hours,
+            'cost': str(cost),
+            'new_end_time': session.planned_end_time.isoformat(),
+        }
+    )
+    
+    send_notification_to_user(
+        user=user,
+        title=title,
+        body=message,
+        data={
+            'type': 'parking_extended',
+            'session_id': str(session.id),
+            'show_dialog': 'true',
+        },
+        notification_event=notification
+    )
+    
+    broadcast_parking_update(user, {
+        'type': 'parking_extended',
+        'event': 'parking_extended',
+        'session_id': str(session.id),
+        'title': title,
+        'message': message,
+    })
+    
+    logger.info(f"Sent parking extended notification to user {user.id}")
+
 
 def notify_parking_expiring_soon(session, minutes_remaining: int):
     """

@@ -18,7 +18,14 @@ class ParkingProvider with ChangeNotifier {
   List<Zone> _zones = [];
   bool _isLoading = false;
   Timer? _timer;
-  // Removed overlay permissions request tracking
+  ParkingSession? _newlyStartedSession;
+
+  ParkingSession? get newlyStartedSession => _newlyStartedSession;
+  
+  void clearNewlyStartedSession() {
+    _newlyStartedSession = null;
+    notifyListeners();
+  }
 
   List<ParkingSession> get sessions => _sessions;
   List<ParkingSession> get activeSessions =>
@@ -51,8 +58,9 @@ class ParkingProvider with ChangeNotifier {
   void _startTimer() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
-      if (activeSessions.isNotEmpty) {
-        final session = activeSessions.first;
+      final active = activeSessions;
+      if (active.isNotEmpty) {
+        final session = active.first;
         // Every 60 seconds, refresh from API as fallback (Scalability Optimization)
         if (timer.tick % 60 == 0) {
           await fetchSessions(showLoader: false);
@@ -62,6 +70,10 @@ class ParkingProvider with ChangeNotifier {
 
         // Notify UI every second for the timer countdown to look smooth
         notifyListeners();
+      } else {
+        // Even if no active session, we might want to notify for other state changes 
+        // but the timer specifically handles active session UI.
+        // notifyListeners(); // Only if needed
       }
     });
   }
@@ -123,7 +135,9 @@ class ParkingProvider with ChangeNotifier {
         }
 
         // Proactively trigger notification update (also background)
+        _newlyStartedSession = session;
         updateNotifications(session);
+        notifyListeners();
       }
       return session;
     } catch (e) {

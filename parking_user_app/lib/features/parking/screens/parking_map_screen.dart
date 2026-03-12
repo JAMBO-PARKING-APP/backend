@@ -269,8 +269,8 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
         opacity: 0.8,
         padding: EdgeInsets.zero,
         gradientColors: [
-          Colors.white.withValues(alpha: 0.9),
-          Colors.white.withValues(alpha: 0.8),
+          Colors.white.withOpacity(0.9),
+          Colors.white.withOpacity(0.8),
         ],
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
@@ -319,7 +319,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                      color: AppTheme.primaryColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Icon(
@@ -389,7 +389,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
+            color: color.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, color: color, size: 24),
@@ -437,7 +437,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
           ),
         ),
         elevation: 0,
-        backgroundColor: Colors.white.withValues(alpha: 0.8),
+        backgroundColor: Colors.white.withOpacity(0.8),
         flexibleSpace: ClipRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -482,7 +482,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                       urlTemplate:
                           'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
                       subdomains: const ['a', 'b', 'c', 'd'],
-                      userAgentPackageName: 'com.spavepark.app',
+                      userAgentPackageName: 'com.spacepark.app',
                     ),
                     if (_routePoints.isNotEmpty)
                       PolylineLayer(
@@ -490,7 +490,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                           Polyline(
                             points: _routePoints,
                             strokeWidth: 5.0,
-                            color: AppTheme.primaryColor.withValues(alpha: 0.7),
+                            color: AppTheme.primaryColor.withOpacity(0.7),
                           ),
                         ],
                       ),
@@ -607,7 +607,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
+                      color: Colors.black.withOpacity(0.08),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -618,7 +618,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                        color: AppTheme.primaryColor.withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(

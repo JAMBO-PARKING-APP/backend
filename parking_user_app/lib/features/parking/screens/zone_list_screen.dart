@@ -15,7 +15,6 @@ import 'package:parking_user_app/features/payments/screens/pesapal_webview_scree
 import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:parking_user_app/core/utils/currency_formatter.dart';
 import 'package:parking_user_app/features/parking/models/parking_session_model.dart';
-import 'package:parking_user_app/features/parking/screens/active_session_screen.dart';
 import 'package:parking_user_app/widgets/base_scaffold.dart';
 import 'package:parking_user_app/features/home/screens/home_screen.dart';
 
@@ -451,16 +450,8 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
       title: 'Parking Started!',
       message: 'Your session in ${zone.name} is now active.',
       onDismiss: () {
-        if (mounted) {
-          if (session != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (pushContext) => ActiveSessionScreen(session: session),
-              ),
-            );
-          }
-        }
+        // Navigation is now handled automatically by HomeScreen's listener
+        // which detects the newlyStartedSession in ParkingProvider.
       },
     );
   }
@@ -541,7 +532,7 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                                     builder: (context, settings, _) => Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                                        color: AppTheme.primaryColor.withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Text(

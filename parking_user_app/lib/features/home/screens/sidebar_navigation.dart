@@ -85,33 +85,31 @@ class SidebarNavigation extends StatelessWidget {
                             Stack(
                               alignment: Alignment.bottomRight,
                               children: [
-                                CircleAvatar(
-                                  radius: 40,
-                                  backgroundColor: Colors.white.withValues(
-                                    alpha: 0.2,
+                                  CircleAvatar(
+                                    radius: 40,
+                                    backgroundColor: Colors.white.withValues(alpha: 0.1),
+                                    backgroundImage:
+                                        (auth.user?.profilePhoto != null)
+                                        ? CachedNetworkImageProvider(
+                                            auth.user!.profilePhoto!,
+                                          )
+                                        : null,
+                                    child: (auth.user?.profilePhoto == null)
+                                        ? Text(
+                                            (auth.user?.firstName.isNotEmpty ??
+                                                    false)
+                                                ? auth.user!.firstName
+                                                      .substring(0, 1)
+                                                      .toUpperCase()
+                                                : 'U',
+                                            style: const TextStyle(
+                                              fontSize: 28,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : null,
                                   ),
-                                  backgroundImage:
-                                      (auth.user?.profilePhoto != null)
-                                      ? CachedNetworkImageProvider(
-                                          auth.user!.profilePhoto!,
-                                        )
-                                      : null,
-                                  child: (auth.user?.profilePhoto == null)
-                                      ? Text(
-                                          (auth.user?.firstName.isNotEmpty ??
-                                                  false)
-                                              ? auth.user!.firstName
-                                                    .substring(0, 1)
-                                                    .toUpperCase()
-                                              : 'U',
-                                          style: const TextStyle(
-                                            fontSize: 28,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : null,
-                                ),
                                 Container(
                                   padding: const EdgeInsets.all(4),
                                   decoration: BoxDecoration(

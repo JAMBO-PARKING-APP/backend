@@ -12,6 +12,7 @@ import 'package:parking_user_app/features/parking/screens/parking_history_screen
 import 'package:parking_user_app/features/home/screens/about_screen.dart';
 import 'package:parking_user_app/features/auth/screens/help_center_screen.dart';
 import 'package:parking_user_app/core/app_theme.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -90,6 +91,106 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }
     }
+  }
+
+  void _showDigitalPass(dynamic user) {
+    if (user == null) return;
+    
+    // Construct data string: Name, Phone, Vehicle
+    final vehiclePlate = user.vehicles.isNotEmpty ? user.vehicles.first.licensePlate : 'No Vehicle';
+    final qrData = 'Name: ${user.fullName}\nPhone: ${user.phone}\nVehicle: $vehiclePlate';
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Your Digital Pass',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Scan this code to verify your identity',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+            ),
+            const SizedBox(height: 32),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+                border: Border.all(color: Colors.grey.shade100),
+              ),
+              child: QrImageView(
+                data: qrData,
+                version: QrVersions.auto,
+                size: 200.0,
+                eyeStyle: const QrEyeStyle(
+                  eyeShape: QrEyeShape.square,
+                  color: AppTheme.primaryColor,
+                ),
+                dataModuleStyle: const QrDataModuleStyle(
+                  dataModuleShape: QrDataModuleShape.square,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            _buildPassInfoRow('Name', user.fullName),
+            _buildPassInfoRow('Phone', user.phone),
+            _buildPassInfoRow('Vehicle', vehiclePlate),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                minimumSize: const Size(double.infinity, 56),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: const Text('CLOSE', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPassInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+        ],
+      ),
+    );
   }
 
   @override
@@ -197,6 +298,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _ProfileOptionGroup(
               title: 'ACCOUNT',
               options: [
+                _ProfileOption(
+                  icon: Icons.qr_code_rounded,
+                  title: 'My Digital Pass',
+                  onTap: () => _showDigitalPass(user),
+                ),
                 _ProfileOption(
                   icon: Icons.history,
                   title: 'Parking History',

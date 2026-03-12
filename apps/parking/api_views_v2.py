@@ -214,7 +214,7 @@ class StartParkingAPIView(APIView):
 
             elif payment_method == 'pesapal':
                 # Initiate Pesapal payment but don't create session yet
-                from apps.payments.services.pesapal_service import PesapalService
+                from apps.payments.pesapal_service import PesapalService
                 from apps.payments.models import Transaction as PaymentTransaction
                 import uuid
                 
@@ -342,11 +342,37 @@ class ExtendParkingAPIView(APIView):
                 status=ParkingStatus.ACTIVE
             )
             
-            session.planned_end_time += timedelta(hours=additional_hours)
-            additional_cost = session.zone.hourly_rate * Decimal(str(additional_hours))
-            session.estimated_cost += additional_cost
+            additional_hours_decimal = Decimal(str(additional_hours))
+            additional_cost = session.zone.hourly_rate * additional_hours_decimal
             
+            user = request.user
+            if user.wallet_balance < additional_cost:
+                return Response({
+                    'error': f'Insufficient balance. Need {additional_cost}, but only have {user.wallet_balance}'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Deduct payment
+            user.adjust_wallet_balance(-additional_cost)
+            
+            # Record transaction
+            from apps.payments.models import WalletTransaction
+            from apps.common.constants import TransactionStatus
+            WalletTransaction.objects.create(
+                user=user,
+                amount=additional_cost,
+                transaction_type='payment',
+                status=TransactionStatus.COMPLETED,
+                description=f"Extension of {additional_hours}h for {session.zone.name}",
+                metadata={'session_id': str(session.id), 'type': 'extension'}
+            )
+
+            session.planned_end_time += timedelta(hours=additional_hours)
+            session.estimated_cost += additional_cost
             session.save()
+            
+            # Notify user
+            from apps.notifications.notification_triggers import notify_parking_extended
+            notify_parking_extended(session, additional_hours, additional_cost)
             
             return Response({
                 'message': 'Parking session extended successfully',
@@ -386,18 +412,6 @@ class CancelParkingSessionAPIView(APIView):
             )
 
             refund_amount = session.cancel_session()
-            
-            if refund_amount > 0:
-                user = request.user
-                user.adjust_wallet_balance(refund_amount)
-                
-                WalletTransaction.objects.create(
-                    user=user,
-                    amount=refund_amount,
-                    transaction_type='refund',
-                    description=f"Refund for cancelled session at {session.zone.name}",
-                    parking_session=session
-                )
             
             return Response({
                 'message': 'Parking session cancelled successfully',

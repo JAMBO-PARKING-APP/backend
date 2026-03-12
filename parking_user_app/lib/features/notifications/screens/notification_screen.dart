@@ -82,7 +82,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           ? Colors.grey.shade100
                           : Theme.of(
                               context,
-                            ).primaryColor.withValues(alpha: 0.2),
+                            ).primaryColor.withOpacity(0.2),
                     ),
                   ),
                   child: ListTile(

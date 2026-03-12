@@ -9,6 +9,10 @@ class ParkingSession {
   final double totalCost;
   final String status;
   final String? qrCodeData;
+  final String? imagePath;
+  final double? latitude;
+  final double? longitude;
+  final double hourlyRate;
 
   ParkingSession({
     required this.id,
@@ -18,7 +22,11 @@ class ParkingSession {
     this.endTime,
     required this.totalCost,
     required this.status,
+    this.hourlyRate = 1000.0,
     this.qrCodeData,
+    this.imagePath,
+    this.latitude,
+    this.longitude,
   });
 
   factory ParkingSession.fromJson(Map<String, dynamic> json) {
@@ -39,7 +47,11 @@ class ParkingSession {
             ) ??
             0.0,
         status: json['status']?.toString() ?? 'unknown',
+        hourlyRate: double.tryParse(json['hourly_rate']?.toString() ?? '1000') ?? 1000.0,
         qrCodeData: json['qr_code_data']?.toString(),
+        imagePath: json['image_path']?.toString(),
+        latitude: double.tryParse(json['latitude']?.toString() ?? ''),
+        longitude: double.tryParse(json['longitude']?.toString() ?? ''),
       );
     } catch (e, stack) {
       debugPrint('ERROR parsing ParkingSession: $e');
