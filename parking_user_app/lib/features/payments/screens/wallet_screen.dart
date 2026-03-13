@@ -81,12 +81,33 @@ class _WalletScreenState extends State<WalletScreen> {
       if (mounted) Navigator.pop(context);
 
       if (result['success'] && mounted) {
+        final url = result['redirect_url'];
+        if (url != null && url.isNotEmpty) {
+           final success = await Navigator.push<bool>(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PesapalWebViewScreen(
+                url: url,
+                orderTrackingId: result['order_tracking_id'],
+              ),
+            ),
+          );
+          if (success == true && mounted) {
+             context.read<PaymentProvider>().fetchWalletData();
+             DialogService.showSuccessDialog(
+              title: 'Top-up Successful!',
+              message: 'Your wallet has been credited.',
+            );
+            _amountController.clear();
+          }
+        } else {
           context.read<PaymentProvider>().fetchWalletData();
           DialogService.showSuccessDialog(
             title: 'Top-up Successful!',
             message: 'Your wallet has been credited via one-click payment.',
           );
           _amountController.clear();
+        }
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

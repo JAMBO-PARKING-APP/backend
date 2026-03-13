@@ -119,9 +119,11 @@ class PesapalService:
             logger.error(f"PesaPal register_ipn error: {str(e)}")
             return None
 
-    def create_payment(self, amount, merchant_reference, description, user, currency="UGX", retry_on_401=True):
+    def create_payment(self, amount, merchant_reference, description, user, currency="UGX", retry_on_401=True, card_token=None):
         """Create a payment request and return redirect URL"""
         logger.info(f"Pesapal: Starting create_payment for user {user.id}, reference {merchant_reference}")
+        if card_token:
+            logger.info("Pesapal: Using saved card token for direct charging")
         
         token = self.get_token()
         if not token:
@@ -183,6 +185,9 @@ class PesapalService:
                 "last_name": (user.last_name or "User")[:30]
             }
         }
+        
+        if card_token:
+            payload["token"] = card_token
 
         headers = {
             "Authorization": f"Bearer {token}",
@@ -200,7 +205,7 @@ class PesapalService:
                 cache.delete(auth_cache_key)
                 cache.delete(cache_key)
                 # Retry once
-                return self.create_payment(amount, merchant_reference, description, user, currency, retry_on_401=False)
+                return self.create_payment(amount, merchant_reference, description, user, currency, retry_on_401=False, card_token=card_token)
 
             logger.info(f"Pesapal: Received response status {response.status_code}")
             response.raise_for_status()

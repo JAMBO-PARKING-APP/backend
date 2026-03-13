@@ -660,7 +660,8 @@ class ExecutePesapalTokenPaymentAPIView(APIView):
                 merchant_reference=merchant_reference,
                 description=description,
                 user=request.user,
-                currency="USD"
+                currency="USD",
+                card_token=payment_method.pesapal_token
             )
             
             if not response or 'order_tracking_id' not in response:
@@ -668,13 +669,22 @@ class ExecutePesapalTokenPaymentAPIView(APIView):
                 trans.save()
                 return Response({'error': 'Failed to initiate token payment'}, status=status.HTTP_400_BAD_REQUEST)
                 
-            trans.pesapal_order_tracking_id = response['order_tracking_id']
+            trans.pesapal_order_tracking_id = response.get('order_tracking_id')
+            
+            # Check for immediate success (some tokenized charges might complete immediately)
+            # In Pesapal V3, this usually shows up as status 200 and a redirect_url.
+            # However, if white-label is enabled, it might return a specific status.
+            p_status = response.get('status')
+            if p_status == '200' and not response.get('redirect_url'):
+                 trans.status = 'completed'
+            
             trans.save()
             
             return Response({
-                'message': 'Token payment initiated',
+                'message': 'Token payment processed',
                 'redirect_url': response.get('redirect_url'),
-                'order_tracking_id': response['order_tracking_id']
+                'order_tracking_id': response.get('order_tracking_id'),
+                'status': trans.status
             }, status=status.HTTP_200_OK)
             
         except PaymentMethod.DoesNotExist:

@@ -308,9 +308,8 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
             DialogService.hideLoading();
 
             if (result['success'] == true && mounted) {
-              // Handle redirection if necessary (some one-click flows still redirect)
               final url = result['redirect_url'];
-              if (url != null) {
+              if (url != null && url.isNotEmpty) {
                  final success = await Navigator.push<bool>(
                     context,
                     MaterialPageRoute(
@@ -321,13 +320,22 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
                     ),
                   );
                   if (success == true && mounted) {
-                    // Success logic
+                    DialogService.showSuccessDialog(
+                      title: 'Payment Successful!',
+                      message: widget.isImmediate 
+                          ? 'Your parking session is starting now.' 
+                          : 'Your spot has been booked.',
+                      onDismiss: () {
+                        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+                      },
+                    );
                   }
               } else {
-                 // Direct success
                  DialogService.showSuccessDialog(
-                    title: 'Payment Successful!',
-                    message: 'Your one-click payment was successful.',
+                    title: 'One-Click Success!',
+                    message: widget.isImmediate 
+                        ? 'Your parking session is starting now.' 
+                        : 'Your spot has been booked.',
                     onDismiss: () {
                       Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
                     },
