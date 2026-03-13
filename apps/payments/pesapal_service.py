@@ -51,17 +51,18 @@ class PesapalService:
             
         return PaymentGatewayConfig.objects.filter(**filter_kwargs).first()
 
-    def get_token(self):
+    def get_token(self, force_refresh=False):
         """Get authentication token from PesaPal V3 with caching"""
-        cache_key = f"pesapal_auth_token_{self.consumer_key[:8]}"
-        token = None
-        try:
-            token = cache.get(cache_key)
-        except Exception as e:
-            logger.error(f"Pesapal: Cache get error: {str(e)}")
-
-        if token:
-            return token
+        env = "sandbox" if self.sandbox else "live"
+        cache_key = f"pesapal_auth_token_{env}_{self.consumer_key[:8]}"
+        
+        if not force_refresh:
+            try:
+                token = cache.get(cache_key)
+                if token:
+                    return token
+            except Exception as e:
+                logger.error(f"Pesapal: Cache get error: {str(e)}")
 
         url = f"{self.base_url}/api/Auth/RequestToken"
         payload = {
@@ -107,14 +108,18 @@ class PesapalService:
         }
         
         try:
+            logger.info(f"Pesapal: Registering IPN URL: {ipn_url}")
             response = _pesapal_session.post(url, json=payload, headers=headers, timeout=30)
+            if response.status_code == 401:
+                logger.error("Pesapal: IPN registration failed with 401 Unauthorized")
+                return None
             response.raise_for_status()
             return response.json().get('ipn_id')
         except Exception as e:
             logger.error(f"PesaPal register_ipn error: {str(e)}")
             return None
 
-    def create_payment(self, amount, merchant_reference, description, user, currency="UGX"):
+    def create_payment(self, amount, merchant_reference, description, user, currency="UGX", retry_on_401=True):
         """Create a payment request and return redirect URL"""
         logger.info(f"Pesapal: Starting create_payment for user {user.id}, reference {merchant_reference}")
         
@@ -125,7 +130,9 @@ class PesapalService:
             
         logger.info("Pesapal: Auth token obtained successfully")
         url = f"{self.base_url}/api/Transactions/SubmitOrderRequest"
-        cache_key = f"pesapal_ipn_id_{(self.consumer_key or '')[:8]}"
+        env = "sandbox" if self.sandbox else "live"
+        cache_key = f"pesapal_ipn_id_{env}_{(self.consumer_key or '')[:8]}"
+        
         ipn_id = None
         try:
             ipn_id = cache.get(cache_key)
@@ -153,6 +160,7 @@ class PesapalService:
         if not ipn_id:
             logger.error("Pesapal: Failed to register/get IPN ID")
             return {'error': 'Failed to register IPN URL. Please ensure PESAPAL_IPN_ID is set in environment or API registration is working.'}
+        
         formatted_amount = round(float(amount), 2)
         phone = str(user.phone) if user.phone else "0000000000"
         if phone.startswith('+'):
@@ -184,8 +192,17 @@ class PesapalService:
         logger.info(f"Pesapal: Sending SubmitOrderRequest to {url}")
         try:
             response = _pesapal_session.post(url, json=payload, headers=headers, timeout=15)
-            logger.info(f"Pesapal: Received response status {response.status_code}")
             
+            if response.status_code == 401 and retry_on_401:
+                logger.warning("Pesapal: SubmitOrderRequest returned 401. Clearing cache and retrying...")
+                # Clear cached token and IPN ID
+                auth_cache_key = f"pesapal_auth_token_{env}_{self.consumer_key[:8]}"
+                cache.delete(auth_cache_key)
+                cache.delete(cache_key)
+                # Retry once
+                return self.create_payment(amount, merchant_reference, description, user, currency, retry_on_401=False)
+
+            logger.info(f"Pesapal: Received response status {response.status_code}")
             response.raise_for_status()
             data = response.json()
             logger.info(f"Pesapal: Order submitted successfully. TrackingID: {data.get('order_tracking_id')}")
