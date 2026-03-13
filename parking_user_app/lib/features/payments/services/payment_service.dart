@@ -97,7 +97,7 @@ class PaymentService {
   }) async {
     try {
       final response = await _apiClient.post(
-        'payments/user/payments/pesapal/token-execute/',
+        'payments/pesapal/token-execute/',
         data: {
           'amount': amount,
           'payment_method_id': paymentMethodId,

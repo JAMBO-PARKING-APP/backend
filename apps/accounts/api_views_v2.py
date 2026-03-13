@@ -63,6 +63,30 @@ class RegisterAPIView(APIView):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+from rest_framework_simplejwt.views import TokenRefreshView
+
+class CustomTokenRefreshAPIView(TokenRefreshView):
+    """
+    Custom Token Refresh View that updates the user's current_session_token
+    to avoid 401 session mismatch errors.
+    """
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            access_token_str = response.data.get('access')
+            if access_token_str:
+                from rest_framework_simplejwt.tokens import AccessToken
+                access_token = AccessToken(access_token_str)
+                token_jti = str(access_token.get('jti', ''))
+                
+                # We need to find the user. Since refresh is unauthenticated, 
+                # we can extract user_id from the new access token.
+                user_id = access_token.get('user_id')
+                if user_id:
+                    User.objects.filter(id=user_id).update(current_session_token=token_jti)
+        
+        return response
+
 class VerifyOTPAPIView(APIView):
     """Verify OTP and get JWT tokens - Single Device Login enforced"""
     permission_classes = [AllowAny]
@@ -203,7 +227,7 @@ class VehicleListCreateAPIView(generics.ListCreateAPIView):
     serializer_class = VehicleSerializer
     
     def get_queryset(self):
-        return self.request.user.vehicles.filter(is_active=True)
+        return self.request.user.vehicles.filter(is_active=True).order_by('-created_at')
     
     def perform_create(self, serializer):
         license_plate = serializer.validated_data.get('license_plate')
@@ -218,7 +242,7 @@ class VehicleDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = VehicleSerializer
     
     def get_queryset(self):
-        return self.request.user.vehicles.filter(is_active=True)
+        return self.request.user.vehicles.filter(is_active=True).order_by('-created_at')
     
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()

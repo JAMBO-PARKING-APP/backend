@@ -9,6 +9,7 @@ Payments API Endpoints for User App
 import uuid
 from decimal import Decimal
 from django.db import transaction
+from django.conf import settings
 from rest_framework import generics, status
 from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
