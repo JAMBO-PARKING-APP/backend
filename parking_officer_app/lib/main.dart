@@ -10,7 +10,6 @@ import 'package:parking_officer_app/features/parking/providers/vehicle_search_pr
 import 'package:parking_officer_app/features/parking/screens/dashboard_screen.dart';
 import 'package:parking_officer_app/features/enforcement/providers/officer_provider.dart';
 import 'package:parking_officer_app/features/violations/providers/enforcement_provider.dart';
-import 'package:parking_officer_app/features/chat/providers/chat_provider.dart';
 import 'package:parking_officer_app/core/settings_provider.dart';
 import 'package:parking_officer_app/core/localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -44,7 +43,6 @@ void main() async {
           ChangeNotifierProvider(create: (_) => OfficerProvider()),
           ChangeNotifierProvider(create: (_) => VehicleSearchProvider()),
           ChangeNotifierProvider(create: (_) => EnforcementProvider()),
-          ChangeNotifierProvider(create: (_) => ChatProvider()),
           ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ],
         child: const SpaceOfficerApp(),

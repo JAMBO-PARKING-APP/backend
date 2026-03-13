@@ -13,6 +13,9 @@ import 'package:parking_user_app/core/utils/currency_formatter.dart';
 import 'package:parking_user_app/features/parking/providers/zone_provider.dart';
 import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/core/widgets/glass_container.dart';
+import 'package:parking_user_app/features/parking/providers/parking_provider.dart';
+import 'package:parking_user_app/features/parking/providers/reservation_provider.dart';
+import 'package:parking_user_app/features/parking/screens/create_reservation_screen.dart';
 import 'package:parking_user_app/features/home/screens/home_screen.dart';
 
 class ParkingMapScreen extends StatefulWidget {
@@ -44,6 +47,23 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     _getCurrentLocation();
     _startLocationUpdates();
     _loadZones();
+
+    // Listen to ParkingProvider updates for marker highlighting
+    context.read<ParkingProvider>().addListener(_onParkingStatusChanged);
+  }
+
+  void _onParkingStatusChanged() {
+    if (mounted) {
+      _updateMarkers();
+    }
+  }
+
+  @override
+  void dispose() {
+    _positionStreamSubscription?.cancel();
+    context.read<ParkingProvider>().removeListener(_onParkingStatusChanged);
+    _mapController.dispose();
+    super.dispose();
   }
 
   void _startLocationUpdates() {
@@ -173,21 +193,28 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
 
   void _updateMarkers() {
     final zones = context.read<ZoneProvider>().zones;
+    final parkingProvider = context.read<ParkingProvider>();
+    final activeZones = parkingProvider.activeSessions
+        .map((s) => s.zoneName)
+        .toSet();
     final markers = <Marker>[];
 
     for (var zone in zones) {
+      final bool isActive = activeZones.contains(zone.name);
       final bool isFull = zone.availableSlots == 0;
-      final Color markerColor = isFull
-          ? AppTheme.errorColor
-          : (zone.availableSlots < 5
-                ? AppTheme.warningColor
-                : AppTheme.successColor);
+      final Color markerColor = isActive
+          ? AppTheme.accentColor
+          : (isFull
+                ? AppTheme.errorColor
+                : (zone.availableSlots < 5
+                      ? AppTheme.warningColor
+                      : AppTheme.successColor));
 
       markers.add(
         Marker(
           point: LatLng(zone.latitude, zone.longitude),
-          width: 60,
-          height: 70,
+          width: isActive ? 80 : 60,
+          height: isActive ? 90 : 70,
           alignment: Alignment.topCenter,
           child: GestureDetector(
             onTap: () {
@@ -201,11 +228,18 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
             child: Stack(
               alignment: Alignment.topCenter,
               children: [
+                // Highlight Pulse for active
+                if (isActive) _ActiveMarkerPulse(color: markerColor),
+
                 // Main Pin Icon
-                Icon(Icons.location_on, color: markerColor, size: 50),
+                Icon(
+                  Icons.location_on,
+                  color: markerColor,
+                  size: isActive ? 60 : 50,
+                ),
                 // Inner Car Icon
                 Positioned(
-                  top: 8,
+                  top: isActive ? 10 : 8,
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: const BoxDecoration(
@@ -213,39 +247,42 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      Icons.directions_car_filled_rounded,
+                      isActive
+                          ? Icons.stars_rounded
+                          : Icons.directions_car_filled_rounded,
                       color: markerColor,
-                      size: 16,
+                      size: isActive ? 20 : 16,
                     ),
                   ),
                 ),
-                // Available Slots Badge (Floats above or overlaps pin head)
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: markerColor, width: 1),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.black12, blurRadius: 2),
-                      ],
-                    ),
-                    child: Text(
-                      '${zone.availableSlots}',
-                      style: TextStyle(
-                        color: markerColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
+                // Available Slots Badge
+                if (!isActive)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: markerColor, width: 1),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black12, blurRadius: 2),
+                        ],
+                      ),
+                      child: Text(
+                        '${zone.availableSlots}',
+                        style: TextStyle(
+                          color: markerColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                        ),
                       ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -269,8 +306,8 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
         opacity: 0.8,
         padding: EdgeInsets.zero,
         gradientColors: [
-          Colors.white.withOpacity(0.9),
-          Colors.white.withOpacity(0.8),
+          Colors.white.withValues(alpha: 0.9),
+          Colors.white.withValues(alpha: 0.8),
         ],
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
@@ -319,7 +356,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      color: AppTheme.primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Icon(
@@ -353,23 +390,53 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                 ],
               ),
               const SizedBox(height: 40),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  // Start Parking Flow
-                  final homeState = context
-                      .findAncestorStateOfType<HomeScreenState>();
-                  if (homeState != null) {
-                    homeState.navigateToTab(1); // Go to Explore tab
-                    // Future: Trigger the dialog directly if possible, or pass initialZone
-                  } else {
-                    // Fallback to showing dialog locally if not in HomeScreen
+              Consumer<ReservationProvider>(
+                builder: (context, resProvider, _) {
+                  final hasActiveReservation = resProvider.reservations.any(
+                    (r) => r.zoneName == zone.name && r.status == 'confirmed',
+                  );
+
+                  if (hasActiveReservation) {
+                    return ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        // Logic to start session from reservation
+                        final homeState = context
+                            .findAncestorStateOfType<HomeScreenState>();
+                        if (homeState != null) {
+                          // Navigate to Home tab which might have start session logic
+                          homeState.navigateToTab(0);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 56),
+                        backgroundColor: AppTheme.successColor,
+                      ),
+                      child: const Text('Start Reserved Session'),
+                    );
                   }
+
+                  return ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // Navigate directly to booking screen for this zone
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (pushContext) =>
+                              CreateReservationScreen(
+                            initialZone: zone,
+                            isImmediate: true,
+                          ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 56),
+                    ),
+                    child: const Text('Start Parking Session'),
+                  );
                 },
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 56),
-                ),
-                child: const Text('Start Parking Session'),
               ),
             ],
           ),
@@ -389,7 +456,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, color: color, size: 24),
@@ -437,7 +504,9 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
           ),
         ),
         elevation: 0,
-        backgroundColor: Colors.white.withOpacity(0.8),
+        backgroundColor: Colors.white.withValues(alpha: 0.8),
+        automaticallyImplyLeading: false,
+        leading: null, // Ensure no drawer icon
         flexibleSpace: ClipRect(
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -490,7 +559,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                           Polyline(
                             points: _routePoints,
                             strokeWidth: 5.0,
-                            color: AppTheme.primaryColor.withOpacity(0.7),
+                            color: AppTheme.primaryColor.withValues(alpha: 0.7),
                           ),
                         ],
                       ),
@@ -607,7 +676,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
+                      color: Colors.black.withValues(alpha: 0.08),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -618,7 +687,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withOpacity(0.1),
+                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -673,11 +742,54 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       ),
     );
   }
+}
+
+class _ActiveMarkerPulse extends StatefulWidget {
+  final Color color;
+  const _ActiveMarkerPulse({required this.color});
+
+  @override
+  State<_ActiveMarkerPulse> createState() => _ActiveMarkerPulseState();
+}
+
+class _ActiveMarkerPulseState extends State<_ActiveMarkerPulse>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+    _animation = Tween<double>(
+      begin: 1.0,
+      end: 2.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+  }
 
   @override
   void dispose() {
-    _positionStreamSubscription?.cancel();
-    _mapController.dispose();
+    _controller.dispose();
     super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Container(
+          width: 50 * _animation.value,
+          height: 50 * _animation.value,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: widget.color.withValues(alpha: 1.0 - _controller.value),
+          ),
+        );
+      },
+    );
   }
 }

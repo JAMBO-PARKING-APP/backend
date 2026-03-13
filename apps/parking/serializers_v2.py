@@ -67,14 +67,17 @@ class ZoneListSerializer(serializers.ModelSerializer):
 
 class ParkingSessionSerializer(serializers.ModelSerializer):
     zone_name = serializers.CharField(source='zone.name', read_only=True)
+    hourly_rate = serializers.DecimalField(source='zone.hourly_rate', max_digits=12, decimal_places=2, read_only=True)
     vehicle_plate = serializers.CharField(source='vehicle.license_plate', read_only=True)
     slot_code = serializers.CharField(source='parking_slot.slot_code', read_only=True)
+    slot_type = serializers.CharField(source='parking_slot.slot_type', read_only=True)
+    duration_minutes = serializers.ReadOnlyField()
     
     class Meta:
         model = ParkingSession
-        fields = ['id', 'vehicle_plate', 'zone_name', 'slot_code', 'start_time',
-                  'planned_end_time', 'actual_end_time', 'status', 'is_overdue', 
-                  'estimated_cost', 'final_cost', 'qr_code_data', 'created_at']
+        fields = ['id', 'vehicle_plate', 'zone_name', 'hourly_rate', 'slot_code', 'slot_type', 
+                  'start_time', 'planned_end_time', 'actual_end_time', 'duration_minutes',
+                  'status', 'is_overdue', 'estimated_cost', 'final_cost', 'qr_code_data', 'created_at']
         read_only_fields = ['id', 'start_time', 'created_at']
 
 class StartParkingSerializer(serializers.Serializer):
@@ -106,6 +109,8 @@ class CreateReservationSerializer(serializers.Serializer):
     end_time = serializers.DateTimeField(required=False)
     reserved_from = serializers.DateTimeField(required=False)
     reserved_until = serializers.DateTimeField(required=False)
+    confirm_immediately = serializers.BooleanField(default=False)
+    payment_method = serializers.ChoiceField(choices=['wallet', 'pesapal'], default='wallet')
     created_at = serializers.DateTimeField(read_only=True)
 
     def validate(self, data):

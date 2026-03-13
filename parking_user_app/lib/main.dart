@@ -31,7 +31,8 @@ void main() async {
 
   await Firebase.initializeApp();
 
-  // Set up background message handler as early as possible
+
+  // Set up background message handler
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   // Initialize FCM Service (Non-blocking)

@@ -35,12 +35,9 @@ class ZoneListAPIView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     
     def list(self, request, *args, **kwargs):
-        # Cache-first approach for high-concurrency
         search = request.query_params.get('search')
         available_only = request.query_params.get('available_only', 'false').lower() == 'true'
         
-        # If no specific filters, try to use a global list cache
-        # or assemble from individual zone caches
         if not search:
             cache = caches['zones_cache']
             country_id = getattr(request.user, 'country_id', 'none')
@@ -50,14 +47,13 @@ class ZoneListAPIView(generics.ListAPIView):
             if cached_data:
                 return Response(cached_data)
 
-        # Fallback to DB but with optimization
         queryset = self.get_queryset()
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             data = serializer.data
             if not search:
-                cache.set(cache_key, data, timeout=300) # 5 min cache for the list
+                cache.set(cache_key, data, timeout=300) 
             return self.get_paginated_response(data)
 
         serializer = self.get_serializer(queryset, many=True)
@@ -66,11 +62,20 @@ class ZoneListAPIView(generics.ListAPIView):
     def get_queryset(self):
         from django.db.models import Count, Q, Case, When, F, Value
         
-        # Optimization: pre-calculate sessions and slots to avoid N+1
+        now = timezone.now()
         queryset = Zone.objects.filter(is_active=True).annotate(
             annotated_active_sessions=Count(
                 'sessions', 
                 filter=Q(sessions__status=ParkingStatus.ACTIVE),
+                distinct=True
+            ),
+            annotated_confirmed_reservations=Count(
+                'reservations',
+                filter=Q(
+                    reservations__status='confirmed',
+                    reservations__reserved_from__lte=now,
+                    reservations__reserved_until__gt=now
+                ),
                 distinct=True
             ),
             annotated_capacity=Case(
@@ -79,8 +84,8 @@ class ZoneListAPIView(generics.ListAPIView):
             )
         ).annotate(
             annotated_available_slots=Case(
-                When(annotated_capacity__gt=F('annotated_active_sessions'), 
-                     then=F('annotated_capacity') - F('annotated_active_sessions')),
+                When(annotated_capacity__gt=(F('annotated_active_sessions') + F('annotated_confirmed_reservations')), 
+                     then=F('annotated_capacity') - (F('annotated_active_sessions') + F('annotated_confirmed_reservations'))),
                 default=Value(0),
             )
         ).select_related('country')
@@ -221,7 +226,6 @@ class StartParkingAPIView(APIView):
                         description=f'Parking payment for zone {zone.name}'
                     )
                     
-                    # Mark slot as occupied
                     parking_slot.status = SlotStatus.OCCUPIED
                     parking_slot.save()
                     
@@ -244,7 +248,6 @@ class StartParkingAPIView(APIView):
                 }, status=status.HTTP_201_CREATED)
 
             elif payment_method == 'pesapal':
-                # Initiate Pesapal payment but don't create session yet
                 from apps.payments.pesapal_service import PesapalService
                 from apps.payments.models import Transaction as PaymentTransaction
                 import uuid
@@ -253,7 +256,6 @@ class StartParkingAPIView(APIView):
                 country = getattr(request.user, 'country', None)
                 pesapal = PesapalService(config_obj=PesapalService.get_config_for_country(country))
                 
-                # Store intent in processor_response
                 processor_response = {
                     'parking_intent': {
                         'vehicle_id': str(vehicle.id),
@@ -382,10 +384,8 @@ class ExtendParkingAPIView(APIView):
                     'error': f'Insufficient balance. Need {additional_cost}, but only have {user.wallet_balance}'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Deduct payment
             user.adjust_wallet_balance(-additional_cost)
             
-            # Record transaction
             from apps.payments.models import WalletTransaction
             from apps.common.constants import TransactionStatus
             WalletTransaction.objects.create(
@@ -401,7 +401,6 @@ class ExtendParkingAPIView(APIView):
             session.estimated_cost += additional_cost
             session.save()
             
-            # Notify user
             from apps.notifications.notification_triggers import notify_parking_extended
             notify_parking_extended(session, additional_hours, additional_cost)
             
@@ -527,7 +526,9 @@ class CreateReservationAPIView(APIView):
                 vehicle=vehicle,
                 zone=zone,
                 start_time=start_time,
-                end_time=end_time
+                end_time=end_time,
+                confirm_immediately=serializer.validated_data.get('confirm_immediately', False),
+                payment_method=serializer.validated_data.get('payment_method', 'wallet')
             )
             
             return Response({

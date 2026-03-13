@@ -85,7 +85,6 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
             wallet, _ = Wallet.objects.get_or_create(user=self, country=target_country)
             wallet.balance = F('balance') + amount
             wallet.save(update_fields=['balance'])
-            # Ensure the instance is updated too if we access it later
             wallet.refresh_from_db()
         else:
             self.wallet_balance_legacy = F('wallet_balance_legacy') + amount

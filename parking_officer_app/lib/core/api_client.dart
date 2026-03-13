@@ -14,7 +14,6 @@ class ApiClient {
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 15),
         validateStatus: (status) {
-          // Don't throw on any status code; we'll handle them manually
           return status != null;
         },
       ),
@@ -44,7 +43,6 @@ class ApiClient {
           if (e.response?.statusCode == 401) {
             debugPrint('[ApiClient] 401 Unauthorized - Token may be invalid');
 
-            // Check if session was invalidated (logged in from another device)
             final sessionInvalidated = e.response?.headers.value(
               'X-Session-Invalidated',
             );
@@ -52,9 +50,7 @@ class ApiClient {
               debugPrint(
                 '[ApiClient] 🚨 Session invalidated - user logged in from another device',
               );
-              // Clear local storage and navigate to login
               await _storageManager.clearAuthData();
-              // The app will handle navigation to login via auth state listener
             }
           }
           return handler.next(e);

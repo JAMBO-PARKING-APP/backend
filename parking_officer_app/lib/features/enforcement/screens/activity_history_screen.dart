@@ -140,7 +140,6 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Timeline indicator
           Column(
             children: [
               Container(
@@ -161,7 +160,6 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen>
             ],
           ),
           const SizedBox(width: 16),
-          // Content
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

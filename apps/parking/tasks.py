@@ -28,13 +28,8 @@ def check_expired_sessions():
     count = 0
     for session in expired_sessions.iterator(chunk_size=100):
         try:
-            # 1. Calculate overdue time and charge extra
             user = session.vehicle.user
             planned_end = session.planned_end_time
-            
-            # Simple overdue check: if it's past planned_end, we use the logic from session_alerts.py
-            # But the model's end_session() already handles cost calculation based on current time.
-            # We just need to ensure the worker processes it.
             
             session.end_session()
             count += 1
@@ -53,7 +48,6 @@ def send_session_alerts():
     from apps.notifications.notification_triggers import notify_parking_expiring_soon
     from apps.notifications.models import NotificationEvent
     
-    # 10 minute alerts
     ten_mins_later = now + timedelta(minutes=10)
     sessions_10 = ParkingSession.objects.filter(
         status=ParkingStatus.ACTIVE,
@@ -62,7 +56,6 @@ def send_session_alerts():
     )
     
     for session in sessions_10:
-        # Avoid duplicate alerts in same minute
         if not NotificationEvent.objects.filter(
             user=session.vehicle.user,
             type='parking_expiring',
@@ -72,7 +65,6 @@ def send_session_alerts():
         ).exists():
             notify_parking_expiring_soon(session, 10)
             
-    # 5 minute alerts
     five_mins_later = now + timedelta(minutes=5)
     sessions_5 = ParkingSession.objects.filter(
         status=ParkingStatus.ACTIVE,
@@ -108,7 +100,6 @@ def cancel_overdue_reservations():
     count = overdue_reservations.count()
     for reservation in overdue_reservations:
         reservation.status = 'cancelled'
-        # Slot release handled by model save()
         reservation.save()
         
         from apps.notifications.notification_triggers import notify_reservation_cancelled
@@ -126,7 +117,6 @@ def expire_reservation_task(reservation_id):
         reservation = Reservation.objects.get(id=reservation_id)
         if reservation.status == 'pending_payment':
             reservation.status = 'expired'
-            # Slot release handled by model save()
             reservation.save()
             logger.info(f"Reservation {reservation_id} expired automatically.")
             

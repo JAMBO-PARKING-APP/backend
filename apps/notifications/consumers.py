@@ -30,7 +30,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             conversation = await ChatConversation.objects.aget(id=self.conversation_id)
             
-            # Save message to database
             message = await ChatMessage.objects.acreate(
                 conversation=conversation,
                 sender=user,
@@ -38,7 +37,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 message_type='text'
             )
             
-            # Broadcast to group
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {

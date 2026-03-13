@@ -25,6 +25,8 @@ class ReservationService {
     required String zoneId,
     required DateTime startTime,
     required DateTime endTime,
+    bool confirmImmediately = false,
+    String paymentMethod = 'wallet',
   }) async {
     try {
       final response = await _apiClient.post(
@@ -34,6 +36,8 @@ class ReservationService {
           'zone_id': zoneId,
           'start_time': startTime.toUtc().toIso8601String(),
           'end_time': endTime.toUtc().toIso8601String(),
+          'confirm_immediately': confirmImmediately,
+          'payment_method': paymentMethod,
         },
       );
 

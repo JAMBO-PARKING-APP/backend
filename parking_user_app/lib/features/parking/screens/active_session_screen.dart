@@ -321,6 +321,10 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
                   const Expanded(
                     child: Text(
                       'ACTIVE SESSION',
@@ -333,7 +337,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  // Removed back button to "pin" user
+                  const SizedBox(width: 48), // Spacer for balance
                 ],
               ),
             ),

@@ -70,7 +70,6 @@ def get_user_local_time(user, dt):
     import pytz
     from django.utils import timezone
     
-    # Ensure dt is timezone-aware and in UTC
     if timezone.is_naive(dt):
         dt = timezone.make_aware(dt, pytz.UTC)
     else:

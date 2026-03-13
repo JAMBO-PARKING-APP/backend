@@ -28,18 +28,14 @@ class Zone(RegionalModel, BaseModel):
         is_new = self._state.adding
         super().save(*args, **kwargs)
         
-        # After saving, handle automatic slot creation
         if self.total_slots > 0:
             current_slots = self.slots.count()
             if current_slots < self.total_slots:
-                # Create missing slots
                 new_slots = []
                 for i in range(current_slots + 1, self.total_slots + 1):
-                    # Use Zone code or name as prefix
                     prefix = self.code or self.name[:3].upper()
                     slot_code = f"{prefix}-{i:03d}"
                     
-                    # Double check if slot code already exists to avoid integrity errors
                     if not ParkingSlot.objects.filter(zone=self, slot_code=slot_code).exists():
                         new_slots.append(ParkingSlot(
                             zone=self,
@@ -64,8 +60,14 @@ class Zone(RegionalModel, BaseModel):
 
     @property
     def available_slots(self):
-        """Calculate available slots based on active sessions and capacity"""
-        return max(0, self.capacity - self.active_sessions_count)
+        """Calculate available slots based on active sessions, confirmed reservations and capacity"""
+        now = timezone.now()
+        confirmed_res = self.reservations.filter(
+            status='confirmed',
+            reserved_from__lte=now,
+            reserved_until__gt=now
+        ).count()
+        return max(0, self.capacity - self.active_sessions_count - confirmed_res)
 
     @property
     def occupied_slots(self):
@@ -402,7 +404,6 @@ class Reservation(BaseModel):
         return f"{self.vehicle.license_plate} - {self.zone.name} ({self.status})"
 
     def save(self, *args, **kwargs):
-        # Automatically release the slot if reservation is ended/cancelled
         if self.status in ['cancelled', 'expired', 'completed']:
             if self.parking_slot and self.parking_slot.status != SlotStatus.AVAILABLE:
                 self.parking_slot.status = SlotStatus.AVAILABLE

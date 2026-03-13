@@ -20,95 +20,69 @@ class TermsOfServiceScreen extends StatelessWidget {
 
             _buildSection(
               '1. Acceptance of Terms',
-              'By creating an account or using Space Park, you agree to be bound by these Terms of Service. If you do not agree, you may not use our Service.',
+              'By creating an account, accessing, or using Space Park, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. These terms constitute a legally binding agreement between you and Space Park Ltd. If you do not agree with any part of these terms, you must immediately cease all use of the Service.',
             ),
 
             _buildSection(
-              '2. Eligibility',
-              '• You must be at least 18 years old\n'
-                  '• You must have legal capacity to enter contracts\n'
-                  '• You agree to provide accurate information',
+              '2. User Eligibility and Responsibilities',
+              '• You must be at least 18 years of age and possess the legal authority to form a binding contract.\n'
+              '• You are responsible for ensuring all information provided (vehicle details, phone number, etc.) is accurate and kept up to date.\n'
+              '• You agree to comply with all local traffic and parking laws of Uganda.\n'
+              '• You are solely responsible for any activity that occurs under your account.',
             ),
 
             _buildSection(
-              '3. Account Security',
-              '• You are responsible for maintaining account confidentiality\n'
-                  '• Single device login for security\n'
-                  '• Notify us immediately of unauthorized use\n'
-                  '• We may suspend accounts for violations',
+              '3. Account Security and Multi-Factor Auth',
+              '• You must safeguard your login credentials and not share them with third parties.\n'
+              '• We reserve the right to suspend or terminate accounts that show suspicious activity or violate our security protocols.\n'
+              '• For enhanced security, certain transactions may require One-Time Passwords (OTP) sent to your registered mobile number.',
             ),
 
             _buildSection(
-              '4. Parking Services',
-              'Space Park provides:\n\n'
-                  '• Real-time parking zone availability\n'
-                  '• Mobile parking session management\n'
-                  '• Digital payment processing\n'
-                  '• Parking reservations and violation notifications\n\n'
-                  'We do not guarantee uninterrupted service and may modify features at any time.',
+              '4. Parking Services and Limitations',
+              'Space Park provides a digital platform for:\n\n'
+              '• Locating parking zones and viewing real-time availability fees.\n'
+              '• Digital payment processing and electronic receipting.\n'
+              '• Managing active parking durations and extensions.\n'
+              '• Reserving specific slots based on availability.\n\n'
+              'Note: Availability data is dynamic and not a guarantee of a spot upon arrival. Space Park is not responsible for any modifications to parking zone accessibility by municipal authorities.',
             ),
 
             _buildSection(
-              '5. Payment Terms',
-              '• Parking rates vary by zone and are displayed in the app\n'
-                  '• We accept wallet balance and mobile money\n'
-                  '• Wallet top-ups are non-refundable except as required by law\n'
-                  '• You authorize us to charge applicable fees\n'
-                  '• Refunds issued only for service errors or duplicate charges',
+              '5. Financial Terms and Wallet Usage',
+              '• All rates are inclusive of applicable taxes unless stated otherwise.\n'
+              '• Wallet balances are denominated in local currency and are strictly non-transferable.\n'
+              '• You authorize Space Park to debit fees automatically upon session start or reservation confirmation.\n'
+              '• For external payments (Mobile Money/Cards via Pesapal), processing fees may apply as determined by the payment gateway providers.\n'
+              '• Refund requests for failed sessions must be submitted within 24 hours via the in-app support channel.',
             ),
 
             _buildSection(
-              '6. Parking Sessions',
-              '• Payment must be completed before starting\n'
-                  '• You must park only in designated slots\n'
-                  '• You must end sessions through the app\n'
-                  '• Overstay may result in additional charges',
+              '6. Data Privacy and Processing',
+              'We collect and process your personal data, including location information and vehicle registration, to provide the Services. Our use of your data is governed by our Privacy Policy, which is aligned with the Data Protection and Privacy Act of Uganda. By using the app, you consent to such processing.',
             ),
 
             _buildSection(
-              '7. Violations and Penalties',
-              'Violations include:\n\n'
-                  '• Parking in unauthorized zones\n'
-                  '• Exceeding paid time without payment\n'
-                  '• Providing false information\n'
-                  '• Blocking other vehicles\n\n'
-                  'Penalties may include fines and account suspension.',
+              '7. Violations, Fines, and Enforcement',
+              'Breach of parking rules (e.g., overstaying, improper parking) may be recorded by on-ground officers using the Space Park Officer App. Violations may lead to:\n\n'
+              '• Automatic fines deducted from your wallet.\n'
+              '• Clamping or towing of the vehicle (handled by municipal authorities).\n'
+              '• Permanent suspension of your Space Park account.',
             ),
 
             _buildSection(
-              '8. User Conduct',
-              'You agree NOT to:\n\n'
-                  '• Use the Service for illegal purposes\n'
-                  '• Violate any laws or regulations\n'
-                  '• Infringe on intellectual property\n'
-                  '• Interfere with or disrupt the Service\n'
-                  '• Harass or harm others',
+              '8. Intellectual Property',
+              'All content, including logos, UI designs, and underlying code, is the exclusive property of Space Park Ltd. Any unauthorized reproduction or reverse engineering is strictly prohibited.',
             ),
 
             _buildSection(
-              '9. Disclaimers',
-              'THE SERVICE IS PROVIDED "AS IS" WITHOUT WARRANTIES. We do not guarantee parking availability or accuracy of real-time data.',
+              '9. Dispute Resolution and Arbitration',
+              'Any disputes arising from these Terms shall first be attempted to be resolved through good-faith mediation. If mediation fails, the dispute shall be settled by binding arbitration in Kampala, Uganda, in accordance with the Arbitration and Conciliation Act.',
             ),
 
             _buildSection(
-              '10. Limitation of Liability',
-              'We are not liable for:\n\n'
-                  '• Indirect or consequential damages\n'
-                  '• Vehicle damage, theft, or loss while parked\n'
-                  '• Third-party service failures\n\n'
-                  'Our total liability shall not exceed amounts you paid in the past 12 months.',
-            ),
-
-            _buildSection(
-              '11. Governing Law',
-              'These Terms are governed by the laws of Uganda. Disputes shall be resolved through arbitration.',
-            ),
-
-            _buildSection(
-              '12. Contact Information',
-              'For questions about these Terms:\n\n'
-                  'Email: support@spacepark.com\n'
-                  'Phone: +256 700 000 000',
+              '10. Disclaimers and Indemnity',
+              'SPACE PARK IS PROVIDED "AS IS" AND "AS AVAILABLE". TO THE MAXIMUM EXTENT PERMITTED BY LAW, SPACE PARK LTD DISCLAIMS ALL WARRANTIES. YOU AGREE TO INDEMNIFY AND HOLD HARMLESS SPACE PARK LTD FROM ANY CLAIMS ARISING FROM YOUR MISUSE OF THE SERVICE OR VIOLATION OF THIRD-PARTY RIGHTS.',
             ),
 
             const SizedBox(height: 24),

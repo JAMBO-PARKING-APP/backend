@@ -1335,7 +1335,6 @@ class ReasoningAIService:
             'timestamp': timezone.now().isoformat()
         }
         
-        # Update context state based on intent
         if intent == IntentType.START_PARKING and reasoning_result and reasoning_result.get('requires_confirmation'):
             zone_id = None
             vehicle_id = None
@@ -1365,12 +1364,10 @@ class ReasoningAIService:
             })
              logger.info(f"Context updated: WAITING_INPUT for user {user.id}")
 
-        # Update in-memory cache
         if user.id not in self.user_contexts:
             self.user_contexts[user.id] = {}
         self.user_contexts[user.id].update(context)
         
-        # Update database
         try:
             db_context, _ = AIChatContext.objects.get_or_create(user=user)
             db_context.last_context = context
@@ -1401,11 +1398,9 @@ class ReasoningAIService:
         """Find closest matching zone from cache"""
         zone_name_lower = zone_name.lower()
         
-        # Direct match
         if zone_name_lower in self.zone_cache:
             return self.zone_cache[zone_name_lower]['name']
             
-        # Partial match
         for cached_name, data in self.zone_cache.items():
             if zone_name_lower in cached_name or cached_name in zone_name_lower:
                 return data['name']
@@ -1431,7 +1426,7 @@ class ReasoningAIService:
                     min_dist = dist
                     nearest = data['name']
                     
-        return nearest if min_dist < 5 else None  # Within 5km
+        return nearest if min_dist < 5 else None
 
     def _find_alternative_zones(self, current_zone, lat: float, lon: float) -> List[str]:
         """Find alternative zones"""
@@ -1443,24 +1438,22 @@ class ReasoningAIService:
             if zone.available_slots > 0:
                 if lat and lon and zone.latitude and zone.longitude:
                     dist = self._haversine(lat, lon, float(zone.latitude), float(zone.longitude))
-                    if dist < 3:  # Within 3km
+                    if dist < 3:
                         alternatives.append(f"{zone.name} ({dist:.1f}km away)")
                 else:
                     alternatives.append(zone.name)
                     
-        return alternatives[:3]  # Return top 3
+        return alternatives[:3]
 
     def _calculate_zone_score(self, zone, distance: float) -> Tuple[float, List[str]]:
         """Calculate overall zone score for recommendations with descriptive factors"""
         score = 100
         justifications = []
         
-        # Distance factor (closer is better) - Weighted @ 40%
         dist_impact = distance * 10
         score -= dist_impact
         justifications.append(f"Proximity analysis: {distance:.2f}km away (-{dist_impact:.1f} score impact).")
         
-        # Availability factor - Weighted @ 30%
         if zone.available_slots > 0:
             avail_bonus = min(zone.available_slots, 10) * 2
             score += avail_bonus
@@ -1469,16 +1462,15 @@ class ReasoningAIService:
             score -= 50
             justifications.append("Capacity warning: Zone is currently full (-50 penalty).")
             
-        # Price factor - Weighted @ 30%
         avg_rate_obj = Zone.objects.aggregate(Avg('hourly_rate'))['hourly_rate__avg'] or 1000
         avg_rate = float(avg_rate_obj)
         hourly_rate = float(zone.hourly_rate)
         
         if hourly_rate < avg_rate * 0.8:
-            score += 20  # Cheaper
+            score += 20
             justifications.append(f"Price analysis: {hourly_rate:,.0f} UGX/hr is below market average (+20 bonus).")
         elif hourly_rate > avg_rate * 1.2:
-            score -= 10  # More expensive
+            score -= 10
             justifications.append(f"Price analysis: {hourly_rate:,.0f} UGX/hr is premium pricing (-10 impact).")
         else:
             justifications.append(f"Price analysis: {hourly_rate:,.0f} UGX/hr is within standard range.")
@@ -1694,7 +1686,7 @@ class ReasoningAIService:
         
      
         aug_context['weather'] = random.choice(['Sunny', 'Rainy', 'Cloudy'])
-        aug_context['is_holiday'] = False # Real app check calendar
+        aug_context['is_holiday'] = False
         
         if aug_context['weather'] == 'Rainy':
             aug_context['recommendation_boost'] = 'Indoor parking'
@@ -1712,7 +1704,7 @@ class ReasoningAIService:
 
     def _haversine(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
         """Calculate distance between two points in kilometers"""
-        R = 6371  # Earth radius in km
+        R = 6371
         d_lat = math.radians(lat2 - lat1)
         d_lon = math.radians(lon2 - lon1)
         a = (math.sin(d_lat / 2) ** 2 + 
@@ -1787,14 +1779,11 @@ class ParkingOptimizationEngine:
         best_score = -1.0
         
         for name, data in self.zones.items():
-            # Distance Weighting (40%)
             dist = self._calculate_dist(user_lat, user_lon, data['latitude'], data['longitude'])
             dist_score = (1 - min(dist / 5.0, 1.0)) * 40
             
-            # Price Weighting (30%)
             price_score = (1 - (data['rate'] / 5000)) * 30
             
-            # Availability Weighting (30%)
             avail_score = (data['available'] / data['capacity']) * 30 if data['capacity'] > 0 else 0
             
             total_score = dist_score + price_score + avail_score

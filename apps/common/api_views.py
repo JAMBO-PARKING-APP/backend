@@ -40,14 +40,12 @@ class SystemHealthAPIView(APIView):
         from django.db import connection
         from django.core.cache import cache
 
-        # Database check
         db_ok = True
         try:
             connection.ensure_connection()
         except Exception:
             db_ok = False
 
-        # Cache check
         cache_ok = True
         try:
             cache.set('health_check', 1, 5)
@@ -56,7 +54,6 @@ class SystemHealthAPIView(APIView):
         except Exception:
             cache_ok = False
 
-        # Disk check
         total, used, free = shutil.disk_usage("/")
         disk_usage_pct = (used / total) * 100
 
@@ -68,8 +65,8 @@ class SystemHealthAPIView(APIView):
                 {'name': 'Static Assets', 'status': 'Healthy', 'color': 'success'}
             ],
             'resources': {
-                'cpu': 15,  # Placeholder for real CPU if psutil is not available
-                'memory': 45, # Placeholder
+                'cpu': 15,  
+                'memory': 45, 
                 'disk': round(disk_usage_pct, 1)
             },
             'timestamp': timezone.now()

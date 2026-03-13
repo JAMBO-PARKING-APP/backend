@@ -51,10 +51,14 @@ class ReservationService:
         vehicle, 
         zone: Zone, 
         start_time: timezone.datetime, 
-        end_time: timezone.datetime
+        end_time: timezone.datetime,
+        confirm_immediately: bool = False,
+        payment_method: str = 'wallet'
     ) -> Reservation:
         """
         Create a reservation with concurrency locking.
+        If confirm_immediately is True and payment_method is 'wallet', 
+        it performs the payment and confirms the reservation atomically.
         """
         parking_slot = ParkingSlot.objects.filter(
             zone=zone,
@@ -62,7 +66,6 @@ class ReservationService:
         ).select_for_update(skip_locked=True).first()
 
         if not parking_slot:
-
             if not ReservationService.check_availability(zone, start_time, end_time):
                 raise ValueError("No parking slots available for the selected time.")
             
@@ -88,9 +91,39 @@ class ReservationService:
         if parking_slot:
             parking_slot.status = SlotStatus.RESERVED 
             parking_slot.save()
-        
-        from apps.parking.tasks import expire_reservation_task
-        expire_reservation_task.apply_async((reservation.id,), countdown=900)
+
+        if confirm_immediately and payment_method == 'wallet':
+            user = vehicle.user
+            country = user.country
+            
+            from django.db.models import F
+            if country:
+                from apps.accounts.models import Wallet
+                wallet, _ = Wallet.objects.get_or_create(user=user, country=country)
+                wallet.balance = F('balance') - cost
+                wallet.save(update_fields=['balance'])
+            else:
+                user.wallet_balance_legacy = F('wallet_balance_legacy') - cost
+                user.save(update_fields=['wallet_balance_legacy'])
+            
+            WalletTransaction.objects.create(
+                user=user,
+                amount=cost,
+                transaction_type='payment',
+                status=TransactionStatus.COMPLETED,
+                description=f"Immediate reservation for {zone.name}",
+                metadata={'reservation_id': str(reservation.id)}
+            )
+            
+            reservation.payment_reference = 'WALLET'
+            reservation.status = 'confirmed'
+            reservation.is_active = True
+            reservation.save()
+            
+            notify_reservation_confirmed(reservation)
+        else:
+            from apps.parking.tasks import expire_reservation_task
+            expire_reservation_task.apply_async((reservation.id,), countdown=900)
 
         return reservation
 
@@ -166,8 +199,6 @@ class ReservationService:
                         'original_cost': float(reservation.cost)
                     }
                 )
-
-        # Slot release is now handled automatically by Reservation.save() logic if status is 'cancelled'
 
         reservation.status = 'cancelled'
         reservation.is_active = False

@@ -65,7 +65,7 @@ class _RewardsScreenState extends State<RewardsScreen> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.primaryColor.withOpacity(0.3),
+                        color: AppTheme.primaryColor.withValues(alpha: 0.3),
                         blurRadius: 10,
                         offset: const Offset(0, 5),
                       ),
@@ -93,7 +93,7 @@ class _RewardsScreenState extends State<RewardsScreen> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -142,8 +142,8 @@ class _RewardsScreenState extends State<RewardsScreen> {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: isCredit
-              ? Colors.green.withOpacity(0.1)
-              : Colors.red.withOpacity(0.1),
+              ? Colors.green.withValues(alpha: 0.1)
+              : Colors.red.withValues(alpha: 0.1),
           child: Icon(
             isCredit ? Icons.add : Icons.remove,
             color: isCredit ? Colors.green : Colors.red,

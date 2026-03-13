@@ -174,7 +174,6 @@ class CreateNotificationAPIView(APIView):
             from apps.notifications.firebase_service import send_notification_to_user
             from apps.notifications.notification_triggers import broadcast_parking_update
             
-            # Send Push
             send_notification_to_user(
                 user=user,
                 title=notification.title,
@@ -187,7 +186,6 @@ class CreateNotificationAPIView(APIView):
                 notification_event=notification
             )
             
-            # WebSocket Update
             broadcast_parking_update(user, {
                 'event': 'admin_notification',
                 'title': notification.title,
@@ -432,8 +430,7 @@ class AdminChatMessageListAPIView(generics.ListCreateAPIView):
                 sender=self.request.user,
                 is_read=False
             )
-            # Update conversation timestamp
-            conversation.save() # Triggers auto_now updated_at
+            conversation.save() 
         except ChatConversation.DoesNotExist:
             from rest_framework.exceptions import ValidationError
             raise ValidationError("Conversation does not exist")

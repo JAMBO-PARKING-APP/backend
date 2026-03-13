@@ -36,15 +36,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final officer = context.watch<OfficerProvider>();
+    
     return Scaffold(
       extendBody: true,
       body: Stack(
         children: [
           _buildBody(),
+          
+          // Floating Bottom Navigation Bar
           Positioned(
             left: 24,
             right: 24,
-            bottom: 32, // Floating padding
+            bottom: 32, 
             child: ClipRRect(
               borderRadius: BorderRadius.circular(32),
               child: BackdropFilter(
@@ -71,22 +75,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     type: BottomNavigationBarType.fixed,
                     backgroundColor: Colors.transparent,
                     elevation: 0,
-                    selectedItemColor: AppTheme.accentColor,
-                    unselectedItemColor: const Color(0xFF64748B),
-                    showUnselectedLabels: false,
+                    selectedItemColor: AppTheme.primaryColor,
+                    unselectedItemColor: AppTheme.textSecondary,
                     selectedLabelStyle: const TextStyle(
                       fontWeight: FontWeight.w800,
+                      fontSize: 11,
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontWeight: FontWeight.w600,
                       fontSize: 11,
                     ),
                     items: const [
                       BottomNavigationBarItem(
                         icon: Padding(
                           padding: EdgeInsets.only(bottom: 4),
-                          child: Icon(Icons.map_outlined),
+                          child: Icon(Icons.radar_rounded),
                         ),
                         activeIcon: Padding(
                           padding: EdgeInsets.only(bottom: 4),
-                          child: Icon(Icons.map_rounded),
+                          child: Icon(Icons.radar_rounded),
                         ),
                         label: 'Patrol',
                       ),
@@ -103,10 +110,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       BottomNavigationBarItem(
                         icon: Padding(
-                          padding: EdgeInsets.only(bottom: 4),
-                          child: Icon(Icons.history_rounded),
-                        ),
-                        activeIcon: Padding(
                           padding: EdgeInsets.only(bottom: 4),
                           child: Icon(Icons.history_rounded),
                         ),
@@ -129,10 +132,106 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           ),
+
+          // Offline Status Overlay / Dialog
+          if (!officer.isOnline && _currentIndex != 3) // Don't show on profile tab
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.4),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 40),
+                      child: Container(
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(32),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 30,
+                              offset: const Offset(0, 15),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.power_settings_new_rounded,
+                                color: AppTheme.primaryColor,
+                                size: 48,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            const Text(
+                              'Shift Inactive',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Go online to see enforcement zones and start your patrol shift.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppTheme.textSecondary,
+                                height: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                            ElevatedButton(
+                              onPressed: () async {
+                                final pos = await LocationService().getCurrentPosition();
+                                if (pos != null) {
+                                  officer.toggleOnlineStatus(
+                                    true,
+                                    latitude: pos.latitude,
+                                    longitude: pos.longitude,
+                                  );
+                                } else {
+                                  officer.toggleOnlineStatus(true);
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primaryColor,
+                                minimumSize: const Size(double.infinity, 56),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              child: const Text(
+                                'GO ONLINE',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
+
 
   Widget _buildBody() {
     switch (_currentIndex) {
@@ -246,54 +345,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
         top: MediaQuery.of(context).padding.top + 10,
         left: 20,
         right: 20,
-        bottom: 20,
+        bottom: 12,
       ),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            AppTheme.primaryColor.withValues(alpha: 0.9),
-            AppTheme.primaryColor.withValues(alpha: 0.0),
-          ],
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 12),
-              Text(
-                officer.isOnline ? 'DUTY ACTIVE' : 'OFF DUTY',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 24,
-                ),
-              ),
-            ],
-          ),
-          GestureDetector(
-            onTap: () async {
-              final pos = await LocationService().getCurrentPosition();
-              if (pos != null) {
-                officer.toggleOnlineStatus(
-                  !officer.isOnline,
-                  latitude: pos.latitude,
-                  longitude: pos.longitude,
-                );
-              } else {
-                officer.toggleOnlineStatus(!officer.isOnline);
-              }
-            },
-            child: _buildDutyStatusChip(officer),
+        color: Colors.white.withValues(alpha: 0.8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Space Patrol',
+                style: TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 20,
+                ),
+              ),
+              GestureDetector(
+                onTap: () async {
+                  final pos = await LocationService().getCurrentPosition();
+                  if (pos != null) {
+                    officer.toggleOnlineStatus(
+                      !officer.isOnline,
+                      latitude: pos.latitude,
+                      longitude: pos.longitude,
+                    );
+                  } else {
+                    officer.toggleOnlineStatus(!officer.isOnline);
+                  }
+                },
+                child: _buildDutyStatusChip(officer),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
+
 
   Widget _buildDutyStatusChip(OfficerProvider provider) {
     return Container(

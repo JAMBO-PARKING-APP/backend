@@ -149,7 +149,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             'revenue_labels': revenue_labels,
             'occupancy_data': occupancy_data,
             'occupancy_labels': occupancy_labels,
-            'occupancy_stats': zip(occupancy_labels, occupancy_data),  # For template iteration
+            'occupancy_stats': zip(occupancy_labels, occupancy_data),  
         })
         
         return context
@@ -201,12 +201,10 @@ class UserListView(AdminRequiredMixin, ListView):
     def get_queryset(self):
         queryset = User.objects.all()
         
-        # Apply Role Filter
         role = self.request.GET.get('role')
         if role:
             queryset = queryset.filter(role=role)
             
-        # Apply Country Filter
         selected_country_id = self.request.session.get('selected_country_id')
         if selected_country_id:
             queryset = queryset.filter(country_id=selected_country_id)
@@ -223,7 +221,6 @@ class UserListView(AdminRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Handle Currency Formatting based on filter
         selected_country_id = self.request.session.get('selected_country_id')
         if selected_country_id:
             try:
@@ -893,8 +890,6 @@ class SlotDeleteAllAjaxView(AdminRequiredMixin, View):
             
         try:
             zone = Zone.objects.get(pk=zone_id)
-            # Delete all unoccupied slots in this zone
-            # We don't delete occupied slots as they are currently in use
             deleted_count, _ = ParkingSlot.objects.filter(
                 zone=zone, 
                 status='available'

@@ -386,7 +386,6 @@ class PesapalUserCallbackView(APIView):
                     from apps.parking.services.reservation_service import ReservationService
                     ReservationService.confirm_reservation(trans.reservation, payment_method='pesapal')
                 
-                # Handle Parking Session Intent
                 parking_intent = trans.processor_response.get('parking_intent')
                 if parking_intent and not trans.parking_session:
                     try:
@@ -406,7 +405,6 @@ class PesapalUserCallbackView(APIView):
                         
                         planned_end = trans.created_at + timedelta(hours=float(duration_hours))
                         
-                        # Create session
                         session = ParkingSession.objects.create(
                             vehicle=vehicle,
                             zone=zone,

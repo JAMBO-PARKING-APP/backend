@@ -15,7 +15,7 @@ class AuthService {
   ) async {
     try {
       final response = await _apiClient.post(
-        'user/auth/login/', // Relative to base URL api/
+        'user/auth/login/', 
         data: {'phone': phoneNumber, 'password': password},
       );
 
@@ -24,7 +24,6 @@ class AuthService {
         final refresh = response.data['refresh'];
         final userData = response.data['user'];
 
-        // Security check: Only allow officers and admins
         if (userData['role'] != 'officer' && userData['role'] != 'admin') {
           return {
             'success': false,

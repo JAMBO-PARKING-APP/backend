@@ -3,7 +3,7 @@ class QRCodeScan {
   final String officerName;
   final String vehiclePlate;
   final String zoneName;
-  final String scanStatus; // valid, invalid, expired, already_ended
+  final String scanStatus; 
   final bool sessionEnded;
   final double? latitude;
   final double? longitude;

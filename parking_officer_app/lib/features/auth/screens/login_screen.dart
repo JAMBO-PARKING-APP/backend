@@ -21,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _countryCode = '+254'; // Default to Kenya
+    _countryCode = '+256';
   }
 
   @override
@@ -42,7 +42,6 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Validate phone format
     final phoneRegex = RegExp(r'^[0-9]{9}$');
     if (!phoneRegex.hasMatch(_phoneController.text.replaceAll(' ', ''))) {
       _showError('Please enter a valid phone number (9 digits)');
@@ -89,7 +88,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // App logo
                   Center(
                     child: Image.asset(
                       'assets/images/logo.png',
@@ -120,7 +118,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 48),
 
-                  // Country Code Selector
                   Card(
                     elevation: 1,
                     shape: RoundedRectangleBorder(
@@ -138,7 +135,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Phone Number Input
                   TextField(
                     controller: _phoneController,
                     focusNode: _phoneFocusNode,
@@ -164,7 +160,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Password Input
                   TextField(
                     controller: _passwordController,
                     decoration: InputDecoration(
@@ -188,7 +183,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 32),
 
-                  // Login Button
                   ElevatedButton(
                     onPressed: auth.status == AuthStatus.authenticating
                         ? null
@@ -220,7 +214,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 16),
 
-                  // Network Status Info
                   if (auth.status == AuthStatus.authenticating)
                     Container(
                       padding: const EdgeInsets.all(12),

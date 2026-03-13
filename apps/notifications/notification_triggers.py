@@ -107,7 +107,7 @@ def notify_parking_extended(session, additional_hours, cost):
         user=user,
         title=title,
         message=message,
-        type='parking_started', # Reusing parking_started type for UI tracking if needed
+        type='parking_started', 
         category='parking',
         metadata={
             'session_id': str(session.id),

@@ -23,12 +23,16 @@ class ReservationProvider with ChangeNotifier {
     required String zoneId,
     required DateTime startTime,
     required DateTime endTime,
+    bool confirmImmediately = true, // Default to true for the new flow
+    String paymentMethod = 'wallet',
   }) async {
     final reservation = await _reservationService.createReservation(
       vehicleId: vehicleId,
       zoneId: zoneId,
       startTime: startTime,
       endTime: endTime,
+      confirmImmediately: confirmImmediately,
+      paymentMethod: paymentMethod,
     );
     if (reservation != null) await fetchReservations();
     return reservation;

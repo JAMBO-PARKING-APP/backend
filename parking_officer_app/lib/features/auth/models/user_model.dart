@@ -6,7 +6,6 @@ class User {
   final String? email;
   final String role;
   final String? profilePhoto;
-  final bool canReceiveChats;
 
   User({
     required this.id,
@@ -16,7 +15,6 @@ class User {
     this.email,
     required this.role,
     this.profilePhoto,
-    this.canReceiveChats = false,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -28,7 +26,6 @@ class User {
       email: json['email'],
       role: json['role'] ?? '',
       profilePhoto: json['profile_photo'],
-      canReceiveChats: json['can_receive_chats'] ?? false,
     );
   }
 

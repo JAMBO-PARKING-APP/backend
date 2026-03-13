@@ -35,7 +35,6 @@ abstract class AppLocalizations {
     }
   }
 
-  // Common UI strings
   String get appTitle;
   String get zones;
   String get scan;

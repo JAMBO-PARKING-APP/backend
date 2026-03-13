@@ -45,15 +45,6 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
                       const SizedBox(height: 16),
                       _buildStatusConsole(officerProvider),
                       const SizedBox(height: 32),
-                      _buildSectionLabel('OFFICER PREFERENCES'),
-                      const SizedBox(height: 16),
-                      _buildPreferenceCard(
-                        'COMMUNICATIONS',
-                        'Available for citizen support requests',
-                        user.canReceiveChats,
-                        (val) => authProvider.updateChatAvailability(val),
-                      ),
-                      const SizedBox(height: 32),
                       _buildSectionLabel('ACCOUNT INFORMATION'),
                       const SizedBox(height: 16),
                       _buildInfoGrid(user),
@@ -73,7 +64,7 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
 
   Widget _buildSliverHeader(dynamic user) {
     return SliverAppBar(
-      expandedHeight: 200,
+      expandedHeight: 220,
       pinned: true,
       backgroundColor: AppTheme.primaryColor,
       flexibleSpace: FlexibleSpaceBar(
@@ -82,7 +73,7 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppTheme.primaryColor, AppTheme.primaryDark],
+              colors: [AppTheme.primaryColor, Color(0xFF38A169)],
             ),
           ),
           child: Stack(
@@ -101,34 +92,46 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(height: 40),
-                    CircleAvatar(
-                      radius: 40,
-                      backgroundColor: AppTheme.accentColor,
-                      child: Text(
-                        user.firstName[0].toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                        ),
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.white24,
+                        shape: BoxShape.circle,
+                      ),
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.white,
+                        backgroundImage: user.profilePhoto != null
+                            ? NetworkImage(user.profilePhoto!)
+                            : null,
+                        child: user.profilePhoto == null
+                            ? Text(
+                                user.firstName[0].toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 40,
+                                  color: AppTheme.primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )
+                            : null,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Text(
                       user.fullName.toUpperCase(),
                       style: const TextStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 22,
                         letterSpacing: 1.0,
                       ),
                     ),
                     Text(
                       'OFFICER ID: ${user.phone.substring(user.phone.length - 4)}',
-                      style: const TextStyle(
-                        color: AppTheme.accentColor,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
                       ),
                     ),
                   ],
@@ -142,13 +145,16 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
   }
 
   Widget _buildSectionLabel(String label) {
-    return Text(
-      label,
-      style: const TextStyle(
-        fontWeight: FontWeight.w900,
-        fontSize: 12,
-        color: AppTheme.primaryColor,
-        letterSpacing: 1.5,
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, bottom: 8),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.grey.shade400,
+          letterSpacing: 1.5,
+        ),
       ),
     );
   }
@@ -161,9 +167,9 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -220,7 +226,6 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
       ),
     );
   }
-
   Widget _buildConsoleRow(IconData icon, String label, String value) {
     return Row(
       children: [
@@ -243,39 +248,6 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
     );
   }
 
-  Widget _buildPreferenceCard(
-    String title,
-    String subtitle,
-    bool value,
-    Function(bool) onChanged,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: SwitchListTile(
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-        ),
-        value: value,
-        activeThumbColor: AppTheme.accentColor,
-        onChanged: onChanged,
-      ),
-    );
-  }
 
   Widget _buildInfoGrid(dynamic user) {
     return Container(

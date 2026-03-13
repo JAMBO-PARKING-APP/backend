@@ -11,8 +11,6 @@ class OfficerProvider with ChangeNotifier {
   List<QRCodeScan> _activityLogs = [];
   bool _isLoading = false;
   String? _errorMessage;
-
-  // Daily Stats for Dashboard
   int _dailyScans = 0;
   int _dailyViolations = 0;
 
@@ -99,9 +97,7 @@ class OfficerProvider with ChangeNotifier {
     }).toList();
 
     _dailyScans = todayLogs.where((log) => log.scanStatus == 'valid').length;
-    // Note: Violations might need a different provider or combined check
-    // For now, we'll try to count 'violation_issued' actions if they exist in logs
-    // Or we might need to fetch them from EnforcementProvider
+
     notifyListeners();
   }
 

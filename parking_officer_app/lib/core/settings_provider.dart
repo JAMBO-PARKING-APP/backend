@@ -6,7 +6,7 @@ class SettingsProvider extends ChangeNotifier {
   static const String _themeKey = 'app_theme_mode';
 
   late SharedPreferences _prefs;
-  String? _locale; // Null means follow system
+  String? _locale; 
   ThemeMode _themeMode = ThemeMode.system;
 
   String get locale => _locale ?? 'system';

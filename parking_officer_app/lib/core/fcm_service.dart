@@ -8,15 +8,12 @@ import 'package:parking_officer_app/features/enforcement/providers/officer_provi
 import 'package:parking_officer_app/features/parking/providers/zone_provider.dart';
 import 'api_client.dart';
 
-/// Background message handler - must be top-level function
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   debugPrint('Handling background message: ${message.messageId}');
 }
 
-/// FCM Service for Officer App
-/// Handles push notifications for chat messages and session events
 class FCMService {
   static final FCMService _instance = FCMService._internal();
   factory FCMService() => _instance;
@@ -29,16 +26,13 @@ class FCMService {
   String? _fcmToken;
   String? get fcmToken => _fcmToken;
 
-  /// Initialize FCM
   Future<void> initialize() async {
     try {
-      // Initialize Firebase
+ 
       await Firebase.initializeApp();
 
-      // Initialize local notifications
       await _initializeLocalNotifications();
 
-      // Request permission
       NotificationSettings settings = await _firebaseMessaging
           .requestPermission(
             alert: true,
@@ -50,16 +44,13 @@ class FCMService {
       if (settings.authorizationStatus == AuthorizationStatus.authorized) {
         debugPrint('Officer app: User granted notification permission');
 
-        // Get FCM token
         _fcmToken = await _firebaseMessaging.getToken();
         debugPrint('Officer FCM Token: $_fcmToken');
 
-        // Register token with backend
         if (_fcmToken != null) {
           await _registerTokenWithBackend(_fcmToken!);
         }
 
-        // Listen for token refresh
         _firebaseMessaging.onTokenRefresh.listen((newToken) {
           _fcmToken = newToken;
           _registerTokenWithBackend(newToken);
@@ -118,7 +109,6 @@ class FCMService {
       debugPrint('Foreground message received: ${message.notification?.title}');
       _showLocalNotification(message);
 
-      // Auto-refresh data and show UI feedback if it's a pertinent event
       final type = message.data['type'];
       if (type == 'session_ended' ||
           type == 'session_extended' ||

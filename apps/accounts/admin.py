@@ -41,7 +41,6 @@ class UserAdmin(RegionalAdminMixin, BaseUserAdmin):
         
         with db_transaction.atomic():
             for user in queryset:
-                # Use common logic for top-up based on country
                 if user.country:
                     wallet, _ = Wallet.objects.get_or_create(user=user, country=user.country)
                     wallet.balance += amount

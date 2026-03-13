@@ -12,10 +12,12 @@ import 'package:parking_user_app/widgets/base_scaffold.dart';
 import 'package:parking_user_app/core/dialog_service.dart';
 import 'package:parking_user_app/features/payments/screens/pesapal_webview_screen.dart';
 import 'package:parking_user_app/features/home/screens/home_screen.dart';
+import 'package:parking_user_app/features/parking/screens/active_session_screen.dart';
 
 class CreateReservationScreen extends StatefulWidget {
   final Zone? initialZone;
-  const CreateReservationScreen({super.key, this.initialZone});
+  final bool isImmediate;
+  const CreateReservationScreen({super.key, this.initialZone, this.isImmediate = false});
 
   @override
   State<CreateReservationScreen> createState() =>
@@ -57,7 +59,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
       _startTime.minute,
     );
 
-    if (startDateTime.isBefore(DateTime.now())) {
+    if (!widget.isImmediate && startDateTime.isBefore(DateTime.now())) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Start time must be in the future')),
       );
@@ -76,10 +78,14 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Do you want to book this parking spot?'),
+                Text(widget.isImmediate 
+                    ? 'Do you want to start this parking session now?'
+                    : 'Do you want to book this parking spot?'),
                 const SizedBox(height: 16),
-                Text('Date: ${DateFormat('yyyy-MM-dd').format(_startDate)}'),
-                Text('Time: ${_startTime.format(confirmDialogContext)}'),
+                if (!widget.isImmediate) ...[
+                  Text('Date: ${DateFormat('yyyy-MM-dd').format(_startDate)}'),
+                  Text('Time: ${_startTime.format(confirmDialogContext)}'),
+                ],
                 Text('Duration: $_durationMinutes min'),
               ],
             ),
@@ -99,151 +105,286 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
 
     if (!confirmed || !mounted) return;
 
-    // Show loading
-    DialogService.showLoading(message: 'Creating reservation...');
+    // Calculate cost
+    final zone = context.read<ParkingProvider>().zones.firstWhere(
+      (z) => z.id == _selectedZoneId,
+      orElse: () => throw Exception('Selected zone not found'),
+    );
+    final cost = zone.hourlyRate * (_durationMinutes / 60.0);
+    final walletBalance =
+        context.read<AuthProvider>().user?.walletBalance ?? 0.0;
 
-    try {
-      final reservation = await context
-          .read<ReservationProvider>()
-          .createReservation(
-            vehicleId: _selectedVehicleId!,
-            zoneId: _selectedZoneId!,
-            startTime: startDateTime,
-            endTime: endDateTime,
+    // Show Payment Selection Dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (paymentDialogContext) => PaymentSelectionDialog(
+        amount: cost,
+        walletBalance: walletBalance,
+        onWalletSelected: () async {
+          if (!mounted) return;
+          DialogService.showLoading(
+            message: widget.isImmediate ? 'Starting session...' : 'Processing reservation...',
           );
 
-      DialogService.hideLoading();
-
-      if (reservation != null && mounted) {
-        // Calculate cost
-        final zone = context.read<ParkingProvider>().zones.firstWhere(
-          (z) => z.id == _selectedZoneId,
-        );
-        final cost = zone.hourlyRate * (_durationMinutes / 60.0);
-        final walletBalance =
-            context.read<AuthProvider>().user?.walletBalance ?? 0.0;
-
-        if (!mounted) return;
-
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (dialogContext) => PaymentSelectionDialog(
-            amount: cost,
-            walletBalance: walletBalance,
-            onWalletSelected: () async {
-              // Note: PaymentSelectionDialog already pops itself.
-              if (!mounted) return;
-
-              DialogService.showLoading(
-                message: 'Processing wallet payment...',
+          try {
+            if (widget.isImmediate) {
+              final session = await context.read<ParkingProvider>().startParking(
+                context: context,
+                vehicleId: _selectedVehicleId!,
+                zoneId: _selectedZoneId!,
+                durationHours: _durationMinutes / 60.0,
+                paymentMethod: 'wallet',
               );
-
-              try {
-                final success = await context
-                    .read<ReservationProvider>()
-                    .confirmReservationWallet(reservation.id);
-
-                DialogService.hideLoading();
-
-                if (success && mounted) {
-                  Navigator.pop(context); // Close CreateReservationScreen
-                  DialogService.showSuccessDialog(
-                    title: 'Reservation Confirmed!',
-                    message:
-                        'Your spot has been booked successfully using your wallet.',
+              DialogService.hideLoading();
+              if (session != null && mounted) {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (_) => ActiveSessionScreen(session: session)),
+                );
+              }
+            } else {
+              final reservation = await context
+                  .read<ReservationProvider>()
+                  .createReservation(
+                    vehicleId: _selectedVehicleId!,
+                    zoneId: _selectedZoneId!,
+                    startTime: startDateTime,
+                    endTime: endDateTime,
+                    confirmImmediately: true,
+                    paymentMethod: 'wallet',
                   );
-                } else if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Wallet payment failed. Please check balance.',
+
+              DialogService.hideLoading();
+
+              if (reservation != null && mounted) {
+                _showSuccessWithStartSession(reservation);
+              } else if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Reservation failed. Please check balance.'),
+                  ),
+                );
+              }
+            }
+          } catch (e) {
+            DialogService.hideLoading();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Error: $e')),
+              );
+            }
+          }
+        },
+        onPesapalSelected: () async {
+          if (!mounted) return;
+          DialogService.showLoading(message: 'Initiating payment...');
+
+          try {
+            if (widget.isImmediate) {
+               // Direct session start with Pesapal
+               final paymentService = PaymentService();
+              final result = await paymentService.initiatePesapalPayment(
+                amount: cost,
+                description: "Parking Session: ${zone.name}",
+                isWalletTopup: false,
+              );
+              DialogService.hideLoading();
+
+              if (result['success'] == true && mounted) {
+                final url = result['redirect_url'];
+                if (url != null) {
+                  final success = await Navigator.push<bool>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (pushContext) => PesapalWebViewScreen(
+                        url: url,
+                        orderTrackingId: result['order_tracking_id'],
                       ),
                     ),
                   );
+
+                  if (success == true && mounted) {
+                    DialogService.showSuccessDialog(
+                      title: 'Payment Successful!',
+                      message: 'Your session in ${zone.name} is starting now.',
+                      onDismiss: () {
+                        // For immediate sessions, we assume the backend starts it
+                        // after payment. The user might need to check ActiveSessionScreen.
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          '/home',
+                          (route) => false,
+                        );
+                      },
+                    );
+                  }
                 }
-              } catch (e) {
+              }
+            } else {
+              // Create reservation first (as pending_payment) to get the ID for Pesapal
+              final reservation = await context
+                  .read<ReservationProvider>()
+                  .createReservation(
+                    vehicleId: _selectedVehicleId!,
+                    zoneId: _selectedZoneId!,
+                    startTime: startDateTime,
+                    endTime: endDateTime,
+                    confirmImmediately: false,
+                    paymentMethod: 'pesapal',
+                  );
+
+              if (reservation == null) {
                 DialogService.hideLoading();
                 if (mounted) {
                   ScaffoldMessenger.of(
                     context,
-                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                  ).showSnackBar(const SnackBar(content: Text('Failed to initialize reservation')));
                 }
+                return;
               }
-            },
-            onPesapalSelected: () async {
-              // Note: PaymentSelectionDialog already pops itself.
-              if (!mounted) return;
 
-              DialogService.showLoading(message: 'Securing payment session...');
+              final paymentService = PaymentService();
+              final result = await paymentService.initiatePesapalPayment(
+                amount: cost,
+                description: "Reservation Payment: ${reservation.id}",
+                isWalletTopup: false,
+                reservationId: reservation.id,
+              );
 
-              try {
-                final paymentService = PaymentService();
-                final result = await paymentService.initiatePesapalPayment(
-                  amount: cost,
-                  description: "Reservation Payment: ${reservation.id}",
-                  isWalletTopup: false,
-                  reservationId: reservation.id,
-                );
+              DialogService.hideLoading();
 
-                DialogService.hideLoading();
-
-                if (result['success'] == true && mounted) {
-                  final url = result['redirect_url'];
-                  if (url != null) {
-                    final success = await Navigator.push<bool>(
-                      context,
-                      MaterialPageRoute(
-                        builder: (pushContext) => PesapalWebViewScreen(
-                          url: url,
-                          orderTrackingId: result['order_tracking_id'],
-                        ),
-                      ),
-                    );
-
-                    if (success == true && mounted) {
-                      Navigator.pop(context); // Close CreateReservationScreen
-                      DialogService.showSuccessDialog(
-                        title: 'Reservation Confirmed!',
-                        message: 'Your spot has been booked successfully.',
-                      );
-                    }
-                  }
-                } else if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        result['message'] ?? 'Payment initiation failed',
+              if (result['success'] == true && mounted) {
+                final url = result['redirect_url'];
+                if (url != null) {
+                  final success = await Navigator.push<bool>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (pushContext) => PesapalWebViewScreen(
+                        url: url,
+                        orderTrackingId: result['order_tracking_id'],
                       ),
                     ),
                   );
+
+                  if (success == true && mounted) {
+                    _showSuccessWithStartSession(reservation);
+                  }
                 }
-              } catch (e) {
-                DialogService.hideLoading();
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error initiating payment: $e')),
-                  );
-                }
+              } else if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      result['message'] ?? 'Payment initiation failed',
+                    ),
+                  ),
+                );
               }
+            }
+          } catch (e) {
+            DialogService.hideLoading();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Error initiating payment: $e')),
+              );
+            }
+          }
+        },
+      ),
+    );
+  }
+
+  void _showSuccessWithStartSession(dynamic reservation) {
+    if (!mounted) return;
+
+    // Check if user can start session now (e.g. within 15 mins of start time)
+    final now = DateTime.now();
+    final startTime = reservation.startTime is String 
+        ? DateTime.parse(reservation.startTime) 
+        : reservation.startTime as DateTime;
+    
+    final bool canStartNow = startTime.difference(now).inMinutes <= 15;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Reservation Confirmed!'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Your parking spot has been booked successfully.'),
+            if (canStartNow) ...[
+              const SizedBox(height: 16),
+              const Text(
+                'You can start your session now since your time is near.',
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pop(this.context); // Close CreateReservationScreen
             },
+            child: const Text('OK'),
           ),
-        );
-      }
-    } catch (e) {
-      DialogService.hideLoading();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error creating reservation: $e')),
-        );
-      }
-    }
+          if (canStartNow)
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context); // Close dialog
+                DialogService.showLoading(message: 'Starting session...');
+                try {
+                  final parkingProvider = this.context.read<ParkingProvider>();
+                  final session = await parkingProvider.startParking(
+                    context: this.context,
+                    vehicleId: _selectedVehicleId!,
+                    zoneId: _selectedZoneId!,
+                    durationHours: _durationMinutes / 60.0,
+                    paymentMethod: 'wallet',
+                  );
+                  DialogService.hideLoading();
+
+                  if (!mounted) return;
+
+                  if (session != null) {
+                    if (context.mounted) {
+                      Navigator.of(context).pop(); // Close dialog
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ActiveSessionScreen(session: session),
+                        ),
+                      );
+                    }
+                  } else if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Failed to start session. Please try from Home.')),
+                    );
+                  }
+                } catch (e) {
+                  DialogService.hideLoading();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error starting session: $e')),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+              child: const Text('START SESSION NOW'),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return BaseScaffold(
-      title: 'Book a Spot',
+      title: widget.isImmediate ? 'Start Parking' : 'Book a Spot',
       showDrawer: true,
       currentIndex: -1, // Not a primary tab, but we want the drawer
       onTabChanged: (index) {
@@ -314,77 +455,79 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Date Selection
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Date',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      InkWell(
-                        onTap: () async {
-                          final date = await showDatePicker(
-                            context: context,
-                            initialDate: _startDate,
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime.now().add(
-                              const Duration(days: 7),
+            if (!widget.isImmediate) ...[
+              // Date Selection
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Date',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: _startDate,
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime.now().add(
+                                const Duration(days: 7),
+                              ),
+                            );
+                            if (date != null) setState(() => _startDate = date);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                          );
-                          if (date != null) setState(() => _startDate = date);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            DateFormat('yyyy-MM-dd').format(_startDate),
+                            child: Text(
+                              DateFormat('yyyy-MM-dd').format(_startDate),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Start Time',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      InkWell(
-                        onTap: () async {
-                          final time = await showTimePicker(
-                            context: context,
-                            initialTime: _startTime,
-                          );
-                          if (time != null) setState(() => _startTime = time);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(_startTime.format(context)),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Start Time',
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: () async {
+                            final time = await showTimePicker(
+                              context: context,
+                              initialTime: _startTime,
+                            );
+                            if (time != null) setState(() => _startTime = time);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(_startTime.format(context)),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
 
             // Duration
             const Text(
@@ -427,9 +570,9 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'CONFIRM BOOKING',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              child: Text(
+                widget.isImmediate ? 'START PARKING NOW' : 'CONFIRM BOOKING',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ],

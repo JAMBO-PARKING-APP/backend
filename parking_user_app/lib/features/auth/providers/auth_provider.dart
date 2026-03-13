@@ -4,6 +4,7 @@ import 'package:parking_user_app/features/auth/services/auth_service.dart';
 import 'package:parking_user_app/core/storage_manager.dart';
 import 'package:parking_user_app/core/fcm_service.dart';
 import 'package:parking_user_app/core/websocket_service.dart';
+import 'package:parking_user_app/core/background_service.dart';
 import 'dart:convert';
 
 enum AuthStatus { authenticated, unauthenticated, authenticating, initial }
@@ -53,6 +54,9 @@ class AuthProvider with ChangeNotifier {
         );
         // Connect WebSocket after loading from storage
         WebSocketService().connect();
+        
+        // Initialize Background Service
+        initializeBackgroundService();
       } catch (e) {
         debugPrint('[AuthProvider] Error parsing cached user: $e');
       }
@@ -71,6 +75,10 @@ class AuthProvider with ChangeNotifier {
           debugPrint(
             '[AuthProvider] Updated profile from network and saved to storage',
           );
+          
+          // Ensure background service is running
+          initializeBackgroundService();
+          
           notifyListeners();
         } else if (_user == null) {
           // Only set to unauthenticated if we defined no user from storage AND network failed
@@ -131,6 +139,10 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
       // Connect WebSocket after login
       WebSocketService().connect();
+      
+      // Initialize Background Service
+      initializeBackgroundService();
+      
       debugPrint('[AuthProvider] Notified listeners - UI should update now');
       return true;
     } else {

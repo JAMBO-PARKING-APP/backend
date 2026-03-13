@@ -1,7 +1,6 @@
 import 'dart:io' show Platform;
 
 class AppConstants {
-  // Set to true to use production URL, false for local development
   static bool useProduction = true;
   static const String prodBase = 'https://backend.p-space.ai/api/';
 
@@ -14,7 +13,6 @@ class AppConstants {
   static String get wsUrl {
     final base = baseUrl;
     final wsScheme = base.startsWith('https') ? 'wss' : 'ws';
-    // Remove trailing slash from base if present to avoid double slash in ws path
     final cleanBase = base.endsWith('/')
         ? base.substring(0, base.length - 1)
         : base;

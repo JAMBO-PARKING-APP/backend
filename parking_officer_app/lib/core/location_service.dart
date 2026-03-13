@@ -12,24 +12,20 @@ class LocationService {
   StreamSubscription<Position>? _positionStreamSubscription;
   DateTime? _lastUpdateTime;
 
-  // Settings - Officers might need more frequent updates?
-  // Let's keep same as user for now: 60s
   static const int _updateIntervalSeconds = 60;
   static const int _distanceFilterMeters =
-      30; // Slightly more sensitive for officers
+      30;
 
   Future<void> startTracking() async {
     bool serviceEnabled;
     LocationPermission permission;
 
-    // 1. Check if location services are enabled.
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       debugPrint('Location services are disabled.');
       return;
     }
 
-    // 2. Request permissions
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -44,7 +40,6 @@ class LocationService {
       return;
     }
 
-    // 3. Get current position immediately
     try {
       Position position = await Geolocator.getCurrentPosition();
       _sendLocationUpdate(position);
@@ -52,7 +47,6 @@ class LocationService {
       debugPrint('Error getting initial location: $e');
     }
 
-    // 4. Listen for updates
     const LocationSettings locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,
       distanceFilter: _distanceFilterMeters,
@@ -70,7 +64,7 @@ class LocationService {
     final now = DateTime.now();
     if (_lastUpdateTime != null &&
         now.difference(_lastUpdateTime!).inSeconds < _updateIntervalSeconds) {
-      return; // Too soon
+      return; 
     }
 
     _sendLocationUpdate(position);
@@ -79,7 +73,6 @@ class LocationService {
 
   Future<void> _sendLocationUpdate(Position position) async {
     try {
-      // Officer app posts to 'officer/location/'
       await _apiClient.post(
         'officer/location/',
         data: {

@@ -17,9 +17,6 @@ CSRF_TRUSTED_ORIGINS = [
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
-# DATABASES moved to base.py and configured via .env for PostgreSQL migration
-
-
 CORS_ALLOW_ALL_ORIGINS = True
 
 

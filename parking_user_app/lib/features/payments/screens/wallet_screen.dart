@@ -135,7 +135,7 @@ class _WalletScreenState extends State<WalletScreen> {
                             ),
                             Icon(
                               Icons.account_balance_wallet,
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withValues(alpha: 0.5),
                             ),
                           ],
                         ),
@@ -161,7 +161,7 @@ class _WalletScreenState extends State<WalletScreen> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
+                            color: Colors.white.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(
@@ -195,7 +195,7 @@ class _WalletScreenState extends State<WalletScreen> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -371,7 +371,7 @@ class _WalletScreenState extends State<WalletScreen> {
                                   (isCredit
                                           ? AppTheme.successColor
                                           : AppTheme.errorColor)
-                                      .withOpacity(0.1),
+                                      .withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
