@@ -166,6 +166,7 @@ class PesapalService:
             "description": description,
             "callback_url": self.callback_url,
             "notification_id": ipn_id,
+            "account_number": str(user.id),
             "billing_address": {
                 "email_address": user.email or "user@jambopark.com",
                 "phone_number": phone,

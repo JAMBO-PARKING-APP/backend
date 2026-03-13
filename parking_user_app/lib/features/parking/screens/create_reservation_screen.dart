@@ -12,6 +12,7 @@ import 'package:parking_user_app/widgets/base_scaffold.dart';
 import 'package:parking_user_app/core/dialog_service.dart';
 import 'package:parking_user_app/features/payments/screens/pesapal_webview_screen.dart';
 import 'package:parking_user_app/features/home/screens/home_screen.dart';
+import 'package:parking_user_app/features/payments/providers/payment_provider.dart';
 import 'package:parking_user_app/features/parking/screens/active_session_screen.dart';
 
 class CreateReservationScreen extends StatefulWidget {
@@ -40,6 +41,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<VehicleProvider>().fetchVehicles();
       context.read<ParkingProvider>().fetchZones();
+      context.read<PaymentProvider>().fetchWalletData();
     });
   }
 
@@ -175,7 +177,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
             }
           }
         },
-        onPesapalSelected: () async {
+        onPesapalSelected: (paymentType) async {
           if (!mounted) return;
           DialogService.showLoading(message: 'Initiating payment...');
 
@@ -187,6 +189,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
                 amount: cost,
                 description: "Parking Session: ${zone.name}",
                 isWalletTopup: false,
+                paymentType: paymentType,
               );
               DialogService.hideLoading();
 
@@ -249,6 +252,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
                 description: "Reservation Payment: ${reservation.id}",
                 isWalletTopup: false,
                 reservationId: reservation.id,
+                paymentType: paymentType,
               );
 
               DialogService.hideLoading();
@@ -285,6 +289,60 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Error initiating payment: $e')),
+              );
+            }
+          }
+        },
+        onTokenSelected: (method) async {
+          if (!mounted) return;
+          DialogService.showLoading(message: 'Processing one-click payment...');
+
+          try {
+            final paymentService = PaymentService();
+            final result = await paymentService.executePesapalTokenPayment(
+              amount: cost,
+              paymentMethodId: method.id,
+              description: widget.isImmediate ? "Parking Session: ${zone.name}" : "Reservation Payment",
+            );
+
+            DialogService.hideLoading();
+
+            if (result['success'] == true && mounted) {
+              // Handle redirection if necessary (some one-click flows still redirect)
+              final url = result['redirect_url'];
+              if (url != null) {
+                 final success = await Navigator.push<bool>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (pushContext) => PesapalWebViewScreen(
+                        url: url,
+                        orderTrackingId: result['order_tracking_id'],
+                      ),
+                    ),
+                  );
+                  if (success == true && mounted) {
+                    // Success logic
+                  }
+              } else {
+                 // Direct success
+                 DialogService.showSuccessDialog(
+                    title: 'Payment Successful!',
+                    message: 'Your one-click payment was successful.',
+                    onDismiss: () {
+                      Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+                    },
+                 );
+              }
+            } else if (mounted) {
+               ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(result['message'] ?? 'Token payment failed')),
+               );
+            }
+          } catch (e) {
+            DialogService.hideLoading();
+             if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Error: $e')),
               );
             }
           }

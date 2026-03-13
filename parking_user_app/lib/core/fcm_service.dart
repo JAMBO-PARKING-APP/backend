@@ -34,6 +34,7 @@ class FCMService {
 
   String? _fcmToken;
   String? get fcmToken => _fcmToken;
+  bool _isUnregistering = false;
 
   Future<void> initialize() async {
     try {
@@ -322,6 +323,9 @@ class FCMService {
   }
 
   Future<bool> unregisterToken() async {
+    if (_isUnregistering) return false;
+    _isUnregistering = true;
+
     try {
       final apiClient = ApiClient();
       final response = await apiClient.post(
@@ -335,7 +339,6 @@ class FCMService {
         );
       }
 
-      
       _fcmToken = null;
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('fcm_token');
@@ -346,6 +349,8 @@ class FCMService {
         print('Error unregistering FCM token: $e');
       }
       return false;
+    } finally {
+      _isUnregistering = false;
     }
   }
 

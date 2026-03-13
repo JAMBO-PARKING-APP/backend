@@ -9,6 +9,8 @@ import 'package:parking_user_app/features/settings/providers/settings_provider.d
 import 'package:parking_user_app/core/utils/currency_formatter.dart';
 import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/core/widgets/glass_container.dart';
+import 'package:parking_user_app/features/payments/models/payment_method_model.dart';
+import 'package:parking_user_app/widgets/payment_selection_dialog.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -40,6 +42,69 @@ class _WalletScreenState extends State<WalletScreen> {
       return;
     }
 
+    final balance = context.read<PaymentProvider>().balance;
+
+    showDialog(
+      context: context,
+      builder: (context) => PaymentSelectionDialog(
+        amount: amount,
+        walletBalance: balance,
+        onWalletSelected: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Cannot top up wallet using wallet!')),
+          );
+        },
+        onPesapalSelected: (paymentType) async {
+          _executeTopUp(amount, paymentType);
+        },
+        onTokenSelected: (method) async {
+          _executeTokenTopUp(amount, method);
+        },
+      ),
+    );
+  }
+
+  void _executeTokenTopUp(double amount, PaymentMethod method) async {
+     showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final result = await context.read<PaymentProvider>().executePesapalTokenPayment(
+            amount: amount,
+            paymentMethodId: method.id,
+            description: 'Wallet Top-up (One-click)',
+          );
+
+      if (mounted) Navigator.pop(context);
+
+      if (result['success'] && mounted) {
+          context.read<PaymentProvider>().fetchWalletData();
+          DialogService.showSuccessDialog(
+            title: 'Top-up Successful!',
+            message: 'Your wallet has been credited via one-click payment.',
+          );
+          _amountController.clear();
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Token payment failed'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
+  void _executeTopUp(double amount, String paymentType) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -47,9 +112,11 @@ class _WalletScreenState extends State<WalletScreen> {
     );
 
     try {
-      final result = await context
-          .read<PaymentProvider>()
-          .initiatePesapalPayment(amount: amount, description: 'Wallet Top-up');
+      final result = await context.read<PaymentProvider>().initiatePesapalPayment(
+            amount: amount,
+            description: 'Wallet Top-up',
+            paymentType: paymentType,
+          );
 
       if (mounted) Navigator.pop(context);
 

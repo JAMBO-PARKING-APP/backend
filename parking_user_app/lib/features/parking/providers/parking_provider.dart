@@ -19,6 +19,7 @@ class ParkingProvider with ChangeNotifier {
   bool _isLoading = false;
   Timer? _timer;
   ParkingSession? _newlyStartedSession;
+  bool _isEndingSession = false;
 
   ParkingSession? get newlyStartedSession => _newlyStartedSession;
   
@@ -154,9 +155,18 @@ class ParkingProvider with ChangeNotifier {
   }
 
   Future<bool> endParking(String sessionId) async {
-    final success = await _parkingService.endParking(sessionId);
-    if (success) await fetchSessions();
-    return success;
+    if (_isEndingSession) return false;
+    _isEndingSession = true;
+    notifyListeners();
+
+    try {
+      final success = await _parkingService.endParking(sessionId);
+      if (success) await fetchSessions();
+      return success;
+    } finally {
+      _isEndingSession = false;
+      notifyListeners();
+    }
   }
 
   // --- Phase 6: Find My Car (Local Storage) ---
@@ -228,7 +238,7 @@ class ParkingProvider with ChangeNotifier {
           ),
         );
         // Automatically end session on server if it's still active
-        if (session.status.toLowerCase() == 'active') {
+        if (session.status.toLowerCase() == 'active' && !_isEndingSession) {
           await endParking(session.id);
         }
         return;

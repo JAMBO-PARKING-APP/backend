@@ -1,5 +1,6 @@
 import 'package:parking_user_app/core/api_client.dart';
 import 'package:parking_user_app/features/payments/models/transaction_model.dart';
+import 'package:parking_user_app/features/payments/models/payment_method_model.dart';
 
 class PaymentService {
   final ApiClient _apiClient = ApiClient();
@@ -37,6 +38,7 @@ class PaymentService {
     String? parkingSessionId,
     String? violationId,
     String? reservationId,
+    String paymentType = 'MOBILE_MONEY',
   }) async {
     try {
       final response = await _apiClient.post(
@@ -45,6 +47,7 @@ class PaymentService {
           'amount': amount,
           'description': description,
           'is_wallet_topup': isWalletTopup,
+          'payment_type': paymentType,
           if (parkingSessionId?.isNotEmpty ?? false)
             'session_id': parkingSessionId,
           if (violationId?.isNotEmpty ?? false) 'violation_id': violationId,
@@ -71,6 +74,46 @@ class PaymentService {
       await _apiClient.get('payments/pesapal/prewarm/');
     } catch (_) {
       // Silent fail - it's just an optimization
+    }
+  }
+
+  Future<List<PaymentMethod>> getPaymentMethods() async {
+    try {
+      final response = await _apiClient.get('payments/methods/');
+      if (response.statusCode == 200) {
+        final List data = response.data['results'] ?? response.data;
+        return data.map((json) => PaymentMethod.fromJson(json)).toList();
+      }
+    } catch (e) {
+      return [];
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> executePesapalTokenPayment({
+    required double amount,
+    required String paymentMethodId,
+    String description = 'One-click payment',
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        'payments/user/payments/pesapal/token-execute/',
+        data: {
+          'amount': amount,
+          'payment_method_id': paymentMethodId,
+          'description': description,
+        },
+      );
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'redirect_url': response.data['redirect_url'],
+          'order_tracking_id': response.data['order_tracking_id'],
+        };
+      }
+      return {'success': false, 'message': response.data['error'] ?? 'Payment failed'};
+    } catch (e) {
+      return {'success': false, 'message': 'Payment failed'};
     }
   }
 }

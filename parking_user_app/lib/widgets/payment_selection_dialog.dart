@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
+import 'package:parking_user_app/features/payments/providers/payment_provider.dart';
+import 'package:parking_user_app/features/payments/models/payment_method_model.dart';
+import 'package:parking_user_app/features/payments/widgets/saved_cards_widget.dart';
 import 'package:parking_user_app/core/utils/currency_formatter.dart';
 
 class PaymentSelectionDialog extends StatelessWidget {
   final double amount;
   final double walletBalance;
   final VoidCallback onWalletSelected;
-  final VoidCallback onPesapalSelected;
+  final Function(String paymentType) onPesapalSelected;
+  final Function(PaymentMethod method)? onTokenSelected;
 
   const PaymentSelectionDialog({
     super.key,
@@ -15,6 +19,7 @@ class PaymentSelectionDialog extends StatelessWidget {
     required this.walletBalance,
     required this.onWalletSelected,
     required this.onPesapalSelected,
+    this.onTokenSelected,
   });
 
   @override
@@ -114,6 +119,22 @@ class PaymentSelectionDialog extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
+            // Saved Cards Section
+            Consumer<PaymentProvider>(
+              builder: (context, provider, _) {
+                if (provider.paymentMethods.isEmpty) return const SizedBox.shrink();
+                return SavedCardsWidget(
+                  paymentMethods: provider.paymentMethods,
+                  onCardSelected: (method) {
+                    Navigator.pop(context);
+                    if (onTokenSelected != null) {
+                      onTokenSelected!(method);
+                    }
+                  },
+                );
+              },
+            ),
+
             // Mobile Money / Card Option (if enabled)
             Consumer<SettingsProvider>(
               builder: (context, settings, _) {
@@ -127,10 +148,11 @@ class PaymentSelectionDialog extends StatelessWidget {
                 return Column(
                   children: [
                     const SizedBox(height: 16),
+                    // Mobile Money Option
                     InkWell(
                       onTap: () {
                         Navigator.pop(context);
-                        onPesapalSelected();
+                        onPesapalSelected('MOBILE_MONEY');
                       },
                       borderRadius: BorderRadius.circular(15),
                       child: Container(
@@ -143,7 +165,7 @@ class PaymentSelectionDialog extends StatelessWidget {
                         child: Row(
                           children: [
                             const Icon(
-                              Icons.credit_card,
+                              Icons.phone_android,
                               color: Colors.blue,
                               size: 32,
                             ),
@@ -152,19 +174,16 @@ class PaymentSelectionDialog extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    settings.countryConfig.paymentMethods
-                                            .contains('mpesa')
-                                        ? 'M-Pesa / Card'
-                                        : 'Mobile Money / Card',
-                                    style: const TextStyle(
+                                  const Text(
+                                    'Mobile Money (UGX)',
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Pay securely via ${settings.countryConfig.countryCode == 'UG' ? 'Pesapal' : 'Flutterwave'}',
+                                    'Pay via MTN/Airtel',
                                     style: const TextStyle(
                                       fontSize: 14,
                                       color: Colors.grey,
@@ -173,9 +192,55 @@ class PaymentSelectionDialog extends StatelessWidget {
                                 ],
                               ),
                             ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Card Option (USD)
+                    InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                        onPesapalSelected('CARD');
+                      },
+                      borderRadius: BorderRadius.circular(15),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.purple.shade50,
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(color: Colors.purple, width: 2),
+                        ),
+                        child: Row(
+                          children: [
                             const Icon(
-                              Icons.arrow_forward_ios,
-                              color: Colors.blue,
+                              Icons.credit_card,
+                              color: Colors.purple,
+                              size: 32,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Card (USD)',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Pay \$${(amount / 3700).toStringAsFixed(2)} USD',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.purple,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),

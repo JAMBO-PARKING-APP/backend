@@ -32,7 +32,9 @@ class PaymentMethod(BaseModel):
     card_brand = models.CharField(max_length=20)  
     is_default = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
-    stripe_payment_method_id = models.CharField(max_length=100, unique=True)
+    gateway = models.CharField(max_length=20, choices=PaymentGateway.choices, default=PaymentGateway.STRIPE)
+    stripe_payment_method_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    pesapal_token = models.CharField(max_length=100, unique=True, null=True, blank=True)
 
     class Meta:
         indexes = [
@@ -56,6 +58,8 @@ class Transaction(RegionalModel, BaseModel):
     stripe_payment_intent_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
     pesapal_order_tracking_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
     pesapal_merchant_reference = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    charge_amount_processor = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    charge_currency_processor = models.CharField(max_length=3, null=True, blank=True)
     processor_response = models.JSONField(default=dict, blank=True)
     idempotency_key = models.CharField(max_length=100, unique=True)
 

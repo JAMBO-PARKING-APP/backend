@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:parking_user_app/features/payments/models/transaction_model.dart';
+import 'package:parking_user_app/features/payments/models/payment_method_model.dart';
 import 'package:parking_user_app/features/payments/services/payment_service.dart';
 
 class PaymentProvider with ChangeNotifier {
   final PaymentService _paymentService = PaymentService();
   double _balance = 0.0;
   List<Transaction> _transactions = [];
+  List<PaymentMethod> _paymentMethods = [];
   bool _isLoading = false;
 
   double get balance => _balance;
   List<Transaction> get transactions => _transactions;
+  List<PaymentMethod> get paymentMethods => _paymentMethods;
   bool get isLoading => _isLoading;
 
   Future<void> fetchWalletData() async {
@@ -17,6 +20,7 @@ class PaymentProvider with ChangeNotifier {
     notifyListeners();
     _balance = await _paymentService.getWalletBalance();
     _transactions = await _paymentService.getTransactions();
+    _paymentMethods = await _paymentService.getPaymentMethods();
     _isLoading = false;
     notifyListeners();
   }
@@ -25,11 +29,25 @@ class PaymentProvider with ChangeNotifier {
     required double amount,
     required String description,
     bool isWalletTopup = true,
+    String paymentType = 'MOBILE_MONEY',
   }) async {
     return await _paymentService.initiatePesapalPayment(
       amount: amount,
       description: description,
       isWalletTopup: isWalletTopup,
+      paymentType: paymentType,
+    );
+  }
+
+  Future<Map<String, dynamic>> executePesapalTokenPayment({
+    required double amount,
+    required String paymentMethodId,
+    String description = 'One-click payment',
+  }) async {
+    return await _paymentService.executePesapalTokenPayment(
+      amount: amount,
+      paymentMethodId: paymentMethodId,
+      description: description,
     );
   }
 }

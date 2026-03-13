@@ -292,6 +292,18 @@ class InitiatePesapalPaymentAPIView(APIView):
         merchant_reference = str(uuid.uuid4())
         idempotency_key = merchant_reference
         
+        amount = serializer.validated_data['amount']
+        payment_type = serializer.validated_data.get('payment_type', 'MOBILE_MONEY')
+        currency = country.currency if country else "UGX"
+        
+        charge_amount_processor = amount
+        charge_currency_processor = currency
+        
+        if payment_type == 'CARD':
+            exchange_rate = getattr(settings, 'PESAPAL_USD_EXCHANGE_RATE', 3700)
+            charge_amount_processor = round(amount / Decimal(str(exchange_rate)), 2)
+            charge_currency_processor = "USD"
+            
         parking_session = None
         if serializer.validated_data.get('parking_session_id'):
             try:
@@ -315,21 +327,23 @@ class InitiatePesapalPaymentAPIView(APIView):
 
         trans = Transaction.objects.create(
             user=request.user,
-            amount=serializer.validated_data['amount'],
+            amount=amount,
             parking_session=parking_session,
             reservation=reservation,
             idempotency_key=idempotency_key,
             pesapal_merchant_reference=merchant_reference,
+            charge_amount_processor=charge_amount_processor,
+            charge_currency_processor=charge_currency_processor,
             status='pending',
             processor_response={'is_wallet_topup': serializer.validated_data.get('is_wallet_topup', False)}
         )
         
         response = pesapal.create_payment(
-            amount=serializer.validated_data['amount'],
+            amount=charge_amount_processor,
             merchant_reference=merchant_reference,
             description=serializer.validated_data['description'],
             user=request.user,
-            currency=country.currency if country else "UGX"
+            currency=charge_currency_processor
         )
 
         if not response or 'order_tracking_id' not in response:
@@ -455,6 +469,21 @@ class PesapalUserCallbackView(APIView):
                 else:
                     from apps.notifications.notification_triggers import notify_payment_success
                     notify_payment_success(trans)
+                
+                # Handle tokenization
+                payment_token = status_response.get('payment_token')
+                card_details = status_response.get('card_details', {})
+                if payment_token:
+                    PaymentMethod.objects.update_or_create(
+                        user=trans.user,
+                        pesapal_token=payment_token,
+                        defaults={
+                            'card_brand': card_details.get('card_type', 'visa'),
+                            'card_last_four': card_details.get('card_number', '****')[-4:],
+                            'gateway': PaymentGateway.PESAPAL,
+                            'is_active': True
+                        }
+                    )
             elif p_status in ['failed', 'invalid', 'rejected']:
                 trans.status = 'failed'
                 
@@ -550,6 +579,21 @@ class PesapalIPNAPIView(APIView):
                 else:
                     from apps.notifications.notification_triggers import notify_payment_success
                     notify_payment_success(trans)
+                
+                # Handle tokenization
+                payment_token = status_response.get('payment_token')
+                card_details = status_response.get('card_details', {})
+                if payment_token:
+                    PaymentMethod.objects.update_or_create(
+                        user=trans.user,
+                        pesapal_token=payment_token,
+                        defaults={
+                            'card_brand': card_details.get('card_type', 'visa'),
+                            'card_last_four': card_details.get('card_number', '****')[-4:],
+                            'gateway': PaymentGateway.PESAPAL,
+                            'is_active': True
+                        }
+                    )
             elif p_status in ['failed', 'invalid', 'rejected']:
                 trans.status = 'failed'
             
@@ -565,6 +609,75 @@ class PesapalIPNAPIView(APIView):
             
         except Transaction.DoesNotExist:
             return Response({'error': 'Transaction not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class ExecutePesapalTokenPaymentAPIView(APIView):
+    """Execute a payment using a saved Pesapal token (one-click)"""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        payment_method_id = request.data.get('payment_method_id')
+        amount = request.data.get('amount')
+        description = request.data.get('description', 'One-click payment')
+        
+        if not all([payment_method_id, amount]):
+            return Response({'error': 'payment_method_id and amount are required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            payment_method = PaymentMethod.objects.get(id=payment_method_id, user=request.user, is_active=True)
+            if not payment_method.pesapal_token:
+                return Response({'error': 'This payment method does not have a valid Pesapal token'}, status=status.HTTP_400_BAD_REQUEST)
+                
+            country = getattr(request.user, 'country', None)
+            config_obj = PesapalService.get_config_for_country(country)
+            pesapal = PesapalService(config_obj=config_obj) if config_obj else PesapalService()
+            
+            merchant_reference = str(uuid.uuid4())
+            # For direct charging, we'd use SubmitOrderRequest with payment_method set to TOKEN
+            # However, standard Pesapal V3 usually still requires some user interaction for the first time
+            # or uses a specific flow. Here we initiate it.
+            
+            # Conversion logic (same as InitiatePesapalPaymentAPIView)
+            charge_amount = Decimal(str(amount))
+            exchange_rate = getattr(settings, 'PESAPAL_USD_EXCHANGE_RATE', 3700)
+            charge_amount_usd = round(charge_amount / Decimal(str(exchange_rate)), 2)
+            
+            trans = Transaction.objects.create(
+                user=request.user,
+                amount=charge_amount,
+                payment_method=payment_method,
+                idempotency_key=merchant_reference,
+                pesapal_merchant_reference=merchant_reference,
+                charge_amount_processor=charge_amount_usd,
+                charge_currency_processor="USD",
+                status='pending'
+            )
+            
+            # Note: Direct token charging often requires specific white-label permissions from Pesapal.
+            # If standard, this returns a redirect URL that might auto-submit if the token is valid.
+            response = pesapal.create_payment(
+                amount=charge_amount_usd,
+                merchant_reference=merchant_reference,
+                description=description,
+                user=request.user,
+                currency="USD"
+            )
+            
+            if not response or 'order_tracking_id' not in response:
+                trans.status = 'failed'
+                trans.save()
+                return Response({'error': 'Failed to initiate token payment'}, status=status.HTTP_400_BAD_REQUEST)
+                
+            trans.pesapal_order_tracking_id = response['order_tracking_id']
+            trans.save()
+            
+            return Response({
+                'message': 'Token payment initiated',
+                'redirect_url': response.get('redirect_url'),
+                'order_tracking_id': response['order_tracking_id']
+            }, status=status.HTTP_200_OK)
+            
+        except PaymentMethod.DoesNotExist:
+            return Response({'error': 'Payment method not found'}, status=status.HTTP_404_NOT_FOUND)
 
 class AvailablePaymentGatewaysAPIView(generics.ListAPIView):
     """List available payment gateways for user's country"""

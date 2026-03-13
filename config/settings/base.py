@@ -145,7 +145,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/day',
-        'user': '1000/day'
+        'user': '1000/hour'
     },
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
@@ -235,6 +235,7 @@ PESAPAL_CONSUMER_SECRET = config('PESAPAL_CONSUMER_SECRET', default='')
 PESAPAL_SANDBOX = config('PESAPAL_SANDBOX', default=True, cast=bool)
 PESAPAL_CALLBACK_URL = config('PESAPAL_CALLBACK_URL', default='https://curtis-unmobilized-clarence.ngrok-free.dev/api/user/payments/pesapal/callback/')
 PESAPAL_IPN_ID = config('PESAPAL_IPN_ID', default='')
+PESAPAL_USD_EXCHANGE_RATE = config('PESAPAL_USD_EXCHANGE_RATE', default=3700, cast=int)
 
 FIREBASE_CREDENTIALS_PATH = BASE_DIR / 'jambo-parking-d6e88-firebase-adminsdk-fbsvc-9ba12edacb.json'
 FIREBASE_ENABLED = config('FIREBASE_ENABLED', default=True, cast=bool)

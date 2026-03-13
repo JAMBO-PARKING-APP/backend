@@ -310,7 +310,7 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
             }
           }
         },
-        onPesapalSelected: () async {
+        onPesapalSelected: (paymentType) async {
           Navigator.pop(dialogContext); // Close dialog
 
           // Show loading
@@ -328,6 +328,7 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
               description: "Reservation Payment: ${reservation.id}",
               isWalletTopup: false,
               reservationId: reservation.id,
+              paymentType: paymentType,
             );
 
             if (!context.mounted) return;
@@ -363,6 +364,48 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
               Navigator.pop(context); // Hide loading on error
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Error initiating payment: $e')),
+              );
+            }
+          }
+        },
+        onTokenSelected: (method) async {
+          Navigator.pop(dialogContext);
+          if (!mounted) return;
+          
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (c) => const Center(child: CircularProgressIndicator()),
+          );
+
+          try {
+            final paymentService = PaymentService();
+            final result = await paymentService.executePesapalTokenPayment(
+              amount: cost,
+              paymentMethodId: method.id,
+              description: "Reservation Payment: ${reservation.id}",
+            );
+
+            if (!context.mounted) return;
+            if (context.mounted) {
+              Navigator.of(context, rootNavigator: true).pop();
+            }
+
+            if (result['success'] == true && mounted) {
+               ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('One-click payment successful!')),
+               );
+               context.read<ReservationProvider>().fetchReservations();
+            } else if (mounted) {
+               ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(result['message'] ?? 'Token payment failed')),
+               );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Error: $e')),
               );
             }
           }

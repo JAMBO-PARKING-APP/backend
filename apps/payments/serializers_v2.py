@@ -4,7 +4,7 @@ from .models import Transaction, PaymentMethod, Refund, Invoice, WalletTransacti
 class PaymentMethodSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentMethod
-        fields = ['id', 'card_brand', 'card_last_four', 'is_default', 'is_active', 'created_at']
+        fields = ['id', 'card_brand', 'card_last_four', 'is_default', 'is_active', 'gateway', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 class TransactionSerializer(serializers.ModelSerializer):
@@ -53,8 +53,11 @@ class TransactionListSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
 class PesapalPaymentSerializer(serializers.Serializer):
+    PAYMENT_TYPES = [('CARD', 'Card'), ('MOBILE_MONEY', 'Mobile Money')]
+    
     amount = serializers.DecimalField(max_digits=12, decimal_places=2)
     description = serializers.CharField(max_length=100)
+    payment_type = serializers.ChoiceField(choices=PAYMENT_TYPES, default='MOBILE_MONEY')
     parking_session_id = serializers.UUIDField(required=False, allow_null=True)
     reservation_id = serializers.UUIDField(required=False, allow_null=True)
     violation_id = serializers.UUIDField(required=False, allow_null=True)
