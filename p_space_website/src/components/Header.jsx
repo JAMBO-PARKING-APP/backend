@@ -18,7 +18,6 @@ const Header = () => {
 
   const navLinks = [
     { name: 'Features', path: isHome ? '#features' : '/#features' },
-    { name: 'App Gallery', path: isHome ? '#marketplace' : '/#marketplace' },
     { name: 'Real-time Map', path: isHome ? '#real-time-map' : '/#real-time-map' },
     { name: 'Partners', path: isHome ? '#partners' : '/#partners' },
   ];

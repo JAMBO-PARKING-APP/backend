@@ -35,3 +35,25 @@ class ReservationSerializer(serializers.ModelSerializer):
         model = Reservation
         fields = ('id', 'vehicle_plate', 'zone_name', 'reserved_from', 'reserved_until', 
                  'cost', 'is_active')
+
+from .models import ZoneApplication
+
+class ZoneApplicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ZoneApplication
+        fields = ('id', 'proposed_name', 'address', 'latitude', 'longitude', 
+                 'total_slots', 'proposed_hourly_rate', 'operating_hours', 
+                 'parking_surface', 'has_security', 'has_cctv', 'access_instructions',
+                 'status', 'documents', 'created_at')
+        read_only_fields = ('id', 'status', 'created_at')
+
+class OwnerZoneSerializer(serializers.ModelSerializer):
+    available_slots_count = serializers.ReadOnlyField()
+    active_sessions_count = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = Zone
+        fields = ('id', 'name', 'code', 'description', 'hourly_rate', 'max_duration_hours', 
+                 'total_slots', 'is_active', 'latitude', 'longitude', 'commission_rate',
+                 'available_slots_count', 'active_sessions_count')
+        read_only_fields = ('id', 'commission_rate', 'active_sessions_count', 'available_slots_count')

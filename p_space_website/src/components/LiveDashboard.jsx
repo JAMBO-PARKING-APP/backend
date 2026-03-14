@@ -12,9 +12,12 @@ const LiveDashboard = () => {
     setLoading(true);
     try {
       const response = await axios.get('https://backend.p-space.ai/api/parking/zones/');
-      // Handling potential DRF pagination or direct list
-      const data = response.data.results || response.data;
-      setZones(data.slice(0, 6)); // Show top 6
+      const data = response.data?.results || response.data;
+      if (Array.isArray(data)) {
+        setZones(data.slice(0, 6));
+      } else {
+        throw new Error("Invalid format");
+      }
       setError(null);
     } catch (err) {
       console.error("Error fetching zones:", err);

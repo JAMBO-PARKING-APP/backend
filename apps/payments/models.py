@@ -119,6 +119,8 @@ class WalletTransaction(BaseModel):
         ('payment', _('Parking Payment')),
         ('fine_payment', _('Fine Payment')),
         ('refund', _('Refund')),
+        ('earning', _('Earning (Private Zone)')),
+        ('withdrawal', _('Withdrawal')),
     ]
     
     user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='wallet_transactions')

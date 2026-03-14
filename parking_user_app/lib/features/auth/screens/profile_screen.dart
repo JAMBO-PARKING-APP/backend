@@ -11,6 +11,7 @@ import 'package:parking_user_app/features/notifications/screens/notification_scr
 import 'package:parking_user_app/features/parking/screens/parking_history_screen.dart';
 import 'package:parking_user_app/features/home/screens/about_screen.dart';
 import 'package:parking_user_app/features/auth/screens/help_center_screen.dart';
+import 'package:parking_user_app/features/partner/screens/partner_info_screen.dart';
 import 'package:parking_user_app/core/app_theme.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -340,6 +341,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => const ReservationListScreen(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            _ProfileOptionGroup(
+              title: 'PARTNER PROGRAM',
+              options: [
+                _ProfileOption(
+                  icon: Icons.business_center_outlined,
+                  title: 'Host a Parking Space',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PartnerInfoScreen(),
                     ),
                   ),
                 ),

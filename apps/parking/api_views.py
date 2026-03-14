@@ -194,3 +194,31 @@ class AdminSlotUpdateView(generics.UpdateAPIView):
     queryset = ParkingSlot.objects.all()
     serializer_class = ParkingSlotSerializer
     permission_classes = [IsAdminUser]
+
+from .models import ZoneApplication
+from .serializers import ZoneApplicationSerializer, OwnerZoneSerializer
+
+class ZoneApplicationCreateView(generics.CreateAPIView):
+    """Submit a new application to become a zone owner"""
+    queryset = ZoneApplication.objects.all()
+    serializer_class = ZoneApplicationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class OwnerZoneListView(generics.ListAPIView):
+    """List zones owned by the current user"""
+    serializer_class = OwnerZoneSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Zone.objects.filter(owner=self.request.user, is_active=True)
+
+class OwnerZoneUpdateView(generics.UpdateAPIView):
+    """Update zone details like hourly_rate for owner"""
+    serializer_class = OwnerZoneSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Zone.objects.filter(owner=self.request.user, is_active=True)

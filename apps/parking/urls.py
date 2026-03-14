@@ -9,4 +9,7 @@ urlpatterns = [
     path('sessions/end/', api_views.EndParkingView.as_view(), name='end-parking'),
     path('sessions/active/', api_views.ActiveSessionView.as_view(), name='active-session'),
     path('reservations/', api_views.ReservationListCreateView.as_view(), name='reservations'),
+    path('applications/', api_views.ZoneApplicationCreateView.as_view(), name='zone-application'),
+    path('owner/zones/', api_views.OwnerZoneListView.as_view(), name='owner-zones'),
+    path('owner/zones/<uuid:pk>/', api_views.OwnerZoneUpdateView.as_view(), name='owner-zone-detail'),
 ]

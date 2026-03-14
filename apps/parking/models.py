@@ -6,10 +6,17 @@ from decimal import Decimal
 from apps.common.models import BaseModel, RegionalModel
 from apps.common.constants import ParkingStatus, SlotStatus
 
+class ZoneType(models.TextChoices):
+    COMPANY = 'company', _('Company')
+    PRIVATE = 'private', _('Private')
+
 class Zone(RegionalModel, BaseModel):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     hourly_rate = models.DecimalField(max_digits=12, decimal_places=2)
+    owner = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='owned_zones', help_text=_("Owner for private parking zones"))
+    zone_type = models.CharField(max_length=20, choices=ZoneType.choices, default=ZoneType.COMPANY)
+    commission_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('10.00'), help_text=_("Company commission percentage (e.g., 10 for 10%)"))
     max_duration_hours = models.IntegerField(default=24)
     total_slots = models.IntegerField(default=0, help_text=_("Total number of parking slots in this zone"))
     code = models.CharField(max_length=20, unique=True, null=True, blank=True, help_text=_("Short unique code for the zone (e.g. JB01)"))
@@ -31,20 +38,15 @@ class Zone(RegionalModel, BaseModel):
         if self.total_slots > 0:
             current_slots = self.slots.count()
             if current_slots < self.total_slots:
-                new_slots = []
-                for i in range(current_slots + 1, self.total_slots + 1):
-                    prefix = self.code or self.name[:3].upper()
-                    slot_code = f"{prefix}-{i:03d}"
-                    
-                    if not ParkingSlot.objects.filter(zone=self, slot_code=slot_code).exists():
-                        new_slots.append(ParkingSlot(
-                            zone=self,
-                            slot_code=slot_code,
-                            status=SlotStatus.AVAILABLE
-                        ))
-                
-                if new_slots:
-                    ParkingSlot.objects.bulk_create(new_slots)
+                slots_to_create = [
+                    ParkingSlot(
+                        zone=self,
+                        slot_code=f"{(self.code or self.name[:3].upper())}-{i:03d}"
+                    ) for i in range(current_slots + 1, self.total_slots + 1)
+                    if not ParkingSlot.objects.filter(zone=self, slot_code=f"{(self.code or self.name[:3].upper())}-{i:03d}").exists()
+                ]
+                if slots_to_create:
+                    ParkingSlot.objects.bulk_create(slots_to_create)
 
     def __str__(self):
         return self.name
@@ -280,6 +282,29 @@ class ParkingSession(RegionalModel, BaseModel):
         
         self.status = ParkingStatus.COMPLETED
         
+        # Credit private zone owner
+        if getattr(self.zone, 'zone_type', 'company') == 'private' and self.zone.owner:
+            owner = self.zone.owner
+            commission_amount = (self.final_cost * (self.zone.commission_rate / Decimal('100.0'))).quantize(Decimal('0.01'))
+            owner_earnings = self.final_cost - commission_amount
+            
+            if owner_earnings > 0:
+                owner.adjust_wallet_balance(owner_earnings, country=self.zone.country)
+                WalletTransaction.objects.create(
+                    user=owner,
+                    amount=owner_earnings,
+                    transaction_type='earning',
+                    description=f'Earnings from parking session {self.id} at {self.zone.name}',
+                    status='completed',
+                    parking_session=self,
+                    metadata={
+                        'session_id': str(self.id),
+                        'total_cost': str(self.final_cost),
+                        'commission_deducted': str(commission_amount),
+                        'commission_rate': str(self.zone.commission_rate)
+                    }
+                )
+
         try:
             from apps.rewards.tasks import award_loyalty_points_task
             award_loyalty_points_task.delay(
@@ -409,3 +434,39 @@ class Reservation(BaseModel):
                 self.parking_slot.status = SlotStatus.AVAILABLE
                 self.parking_slot.save(update_fields=['status'])
         super().save(*args, **kwargs)
+
+class ApplicationStatus(models.TextChoices):
+    PENDING = 'pending', _('Pending')
+    APPROVED = 'approved', _('Approved')
+    REJECTED = 'rejected', _('Rejected')
+
+class ZoneApplication(RegionalModel, BaseModel):
+    user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='zone_applications')
+    proposed_name = models.CharField(max_length=100)
+    address = models.TextField()
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    total_slots = models.IntegerField(default=1)
+    proposed_hourly_rate = models.DecimalField(max_digits=12, decimal_places=2)
+    
+    # New Detailed Fields
+    operating_hours = models.CharField(max_length=100, default="24/7", help_text=_("E.g., 24/7, 8 AM - 6 PM, Weekends only"))
+    parking_surface = models.CharField(max_length=50, choices=[
+        ('paved', _('Paved/Concrete')),
+        ('gravel', _('Gravel/Dirt')),
+        ('indoor', _('Indoor/Garage')),
+    ], default='paved')
+    has_security = models.BooleanField(default=False, help_text=_("Is there a physical security guard?"))
+    has_cctv = models.BooleanField(default=False, help_text=_("Are there CCTV cameras covering the area?"))
+    access_instructions = models.TextField(blank=True, help_text=_("Specific directions on how to find or enter the space"))
+    
+    status = models.CharField(max_length=20, choices=ApplicationStatus.choices, default=ApplicationStatus.PENDING)
+    documents = models.FileField(upload_to='zone_applications/docs/', null=True, blank=True, help_text=_("Proof of ownership or ID"))
+    admin_notes = models.TextField(blank=True, help_text=_("Internal notes by admins"))
+    created_zone = models.ForeignKey(Zone, on_delete=models.SET_NULL, null=True, blank=True, related_name='application')
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.proposed_name} ({self.get_status_display()})"

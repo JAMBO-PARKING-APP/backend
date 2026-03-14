@@ -57,11 +57,25 @@ const Hero = () => {
           className="relative"
         >
           <div className="relative z-10 p-4 bg-white/30 backdrop-blur-md rounded-[40px] border border-white/50 shadow-2xl overflow-hidden aspect-[9/16] max-w-[340px] mx-auto">
-             <img 
-               src="/assets/WhatsApp Image 2026-03-13 at 3.50.34 PM (3).jpeg" 
-               alt="Space Park User App"
-               className="w-full h-full object-cover rounded-[32px]"
-             />
+             <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+               <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4 backdrop-blur-md">
+                 <Smartphone className="text-primary w-8 h-8" />
+               </div>
+               <h3 className="text-2xl font-bold text-gray-800 mb-2">Space Park</h3>
+               <p className="text-sm font-medium text-gray-500">Intelligent Urban Mobility</p>
+               <div className="mt-8 space-y-3 w-full">
+                 <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                   <motion.div 
+                     initial={{ width: 0 }}
+                     animate={{ width: "70%" }}
+                     transition={{ duration: 1.5, ease: "easeOut" }}
+                     className="h-full bg-primary"
+                   />
+                 </div>
+                 <div className="h-2 w-4/5 bg-gray-200 rounded-full mx-auto" />
+                 <div className="h-2 w-3/5 bg-gray-200 rounded-full mx-auto" />
+               </div>
+             </div>
           </div>
           
           {/* Floating Elements */}
