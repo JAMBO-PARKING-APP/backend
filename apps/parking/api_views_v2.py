@@ -20,12 +20,37 @@ from rest_framework.views import APIView
 from django.core.cache import caches
 
 from apps.common.constants import ParkingStatus, SlotStatus
-from .models import Zone, ParkingSlot, ParkingSession, Reservation
+from .models import Zone, ParkingSlot, ParkingSession, Reservation, ZoneApplication
 from .serializers_v2 import (
     ZoneListSerializer, ZoneDetailSerializer, ParkingSessionSerializer,
     ReservationSerializer, StartParkingSerializer, EndParkingSerializer,
-    CreateReservationSerializer
+    CreateReservationSerializer, ZoneApplicationSerializer, OwnerZoneSerializer
 )
+
+class ZoneApplicationCreateAPIView(generics.CreateAPIView):
+    """Submit a new application to become a zone owner"""
+    queryset = ZoneApplication.objects.all()
+    serializer_class = ZoneApplicationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class OwnerZoneListAPIView(generics.ListAPIView):
+    """List zones owned by the current user"""
+    serializer_class = OwnerZoneSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Zone.objects.filter(owner=self.request.user, is_active=True)
+
+class OwnerZoneUpdateAPIView(generics.UpdateAPIView):
+    """Update zone details like hourly_rate for owner"""
+    serializer_class = OwnerZoneSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Zone.objects.filter(owner=self.request.user, is_active=True)
 from apps.payments.models import WalletTransaction
 
 class ZoneListAPIView(generics.ListAPIView):
