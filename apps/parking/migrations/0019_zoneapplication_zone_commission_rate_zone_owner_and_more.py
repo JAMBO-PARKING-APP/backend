@@ -56,13 +56,18 @@ class Migration(migrations.Migration):
             name='status',
             field=models.CharField(choices=[('active', 'Active'), ('completed', 'Completed'), ('expired', 'Expired'), ('cancelled', 'Cancelled'), ('pending_payment', 'Pending Payment')], db_index=True, default='active', max_length=20),
         ),
-        migrations.AddIndex(
-            model_name='parkingsession',
-            index=models.Index(fields=['status', 'planned_end_time'], name='prk_sess_stat_end_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='parkingsession',
-            index=models.Index(fields=['planned_end_time'], name='prk_sess_plan_end_idx'),
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.AddIndex(
+                    model_name='parkingsession',
+                    index=models.Index(fields=['status', 'planned_end_time'], name='prk_sess_stat_end_idx'),
+                ),
+                migrations.AddIndex(
+                    model_name='parkingsession',
+                    index=models.Index(fields=['planned_end_time'], name='prk_sess_plan_end_idx'),
+                ),
+            ],
+            database_operations=[]
         ),
         migrations.AddField(
             model_name='zoneapplication',
