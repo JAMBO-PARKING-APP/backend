@@ -10,6 +10,8 @@ from datetime import timedelta
 from django.contrib.auth import authenticate
 from django.utils import timezone
 from django.db.models import Q
+from django.core.mail import EmailMessage
+from django.conf import settings
 
 from rest_framework import status, generics, viewsets, serializers
 from rest_framework.decorators import api_view, permission_classes, action
@@ -49,16 +51,74 @@ class RegisterAPIView(APIView):
                 expires_at=timezone.now() + timedelta(minutes=10)
             )
 
+            # Send OTP via Email
             try:
-                from apps.notifications.twilio_service import send_verification
-                send_verification(to_phone=str(user.phone), channel='sms')
-            except Exception:
+                subject = "Welcome to Space Park - Verify Your Account"
+                message = f"Your Space Park verification code is: {otp_code}\n\nThis code will expire in 10 minutes."
+                html_content = f"""
+                <!DOCTYPE html>
+                <html>
+                <body style="margin: 0; padding: 0; background-color: #f6f9fc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="padding: 20px 0;">
+                        <tr>
+                            <td align="center">
+                                <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                                    <!-- Header with Logo -->
+                                    <tr>
+                                        <td align="center" style="padding: 40px 0 20px 0; background-color: #ffffff;">
+                                            <img src="https://iili.io/q0vCDYl.png" alt="Space Park Logo" width="150" style="display: block; outline: none; border: none; text-decoration: none;">
+                                        </td>
+                                    </tr>
+                                    <!-- Body -->
+                                    <tr>
+                                        <td style="padding: 20px 40px 40px 40px;">
+                                            <h1 style="color: #1a1f36; font-size: 24px; font-weight: 600; margin: 0; text-align: center;">Welcome to Space Park</h1>
+                                            <p style="color: #4f566b; font-size: 16px; line-height: 24px; margin-top: 20px; text-align: center;">
+                                                Thank you for joining our elite parking network. To secure your account and complete your registration, please use the verification code below.
+                                            </p>
+                                            
+                                            <div style="margin: 30px 0; padding: 25px; background-color: #f8fbff; border-radius: 8px; text-align: center;">
+                                                <span style="font-family: monospace; font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #5469d4;">{otp_code}</span>
+                                            </div>
+                                            
+                                            <p style="color: #697386; font-size: 14px; line-height: 20px; text-align: center;">
+                                                This code is valid for <strong>10 minutes</strong>. For security, never share this code with anyone.
+                                            </p>
+                                        </td>
+                                    </tr>
+                                    <!-- Footer -->
+                                    <tr>
+                                        <td style="padding: 20px 40px; background-color: #f7fafc; text-align: center; border-top: 1px solid #e3e8ee;">
+                                            <p style="color: #a3acb9; font-size: 12px; margin: 0;">&copy; 2026 Space Park Systems. All rights reserved.</p>
+                                            <p style="color: #a3acb9; font-size: 12px; margin: 5px 0 0 0;">You received this because you registered for a Space Park account.</p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </body>
+                </html>
+                """
+                email = EmailMessage(
+                    subject=subject,
+                    body=message,
+                    from_email=f"Space Park <{settings.DEFAULT_FROM_EMAIL}>",
+                    to=[user.email],
+                    bcc=[settings.DEFAULT_FROM_EMAIL],
+                )
+                email.content_subtype = "html"
+                email.body = html_content
+                email.send(fail_silently=False)
+            except Exception as e:
+                print(f"ERROR: Failed to send OTP email to {user.email}: {e}")
                 print(f"DEBUG: OTP for {user.phone}: {otp_code}")
             
             return Response({
-                'message': 'Registration successful. OTP sent to your phone.',
+                'message': 'Registration successful. OTP sent to your email.',
                 'user_id': user.id,
-                'phone': str(user.phone)
+                'phone': str(user.phone),
+                'email': user.email
             }, status=status.HTTP_201_CREATED)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -306,15 +366,73 @@ class ResendOTPAPIView(APIView):
                 code=otp_code,
                 expires_at=timezone.now() + timedelta(minutes=10)
             )
+            # Send OTP via Email
             try:
-                from apps.notifications.twilio_service import send_verification
-                send_verification(to_phone=str(user.phone), channel='sms')
-            except Exception:
+                subject = "Space Park Verification Code"
+                message = f"Your Space Park verification code is: {otp_code}\n\nThis code will expire in 10 minutes."
+                html_content = f"""
+                <!DOCTYPE html>
+                <html>
+                <body style="margin: 0; padding: 0; background-color: #f6f9fc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="padding: 20px 0;">
+                        <tr>
+                            <td align="center">
+                                <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                                    <!-- Header with Logo -->
+                                    <tr>
+                                        <td align="center" style="padding: 40px 0 20px 0; background-color: #ffffff;">
+                                            <img src="https://iili.io/q0vCDYl.png" alt="Space Park Logo" width="150" style="display: block; outline: none; border: none; text-decoration: none;">
+                                        </td>
+                                    </tr>
+                                    <!-- Body -->
+                                    <tr>
+                                        <td style="padding: 20px 40px 40px 40px;">
+                                            <h1 style="color: #1a1f36; font-size: 24px; font-weight: 600; margin: 0; text-align: center;">Verification Code</h1>
+                                            <p style="color: #4f566b; font-size: 16px; line-height: 24px; margin-top: 20px; text-align: center;">
+                                                You requested a new verification code. Please use the following code to continue with your Space Park session.
+                                            </p>
+                                            
+                                            <div style="margin: 30px 0; padding: 25px; background-color: #f8fbff; border-radius: 8px; text-align: center;">
+                                                <span style="font-family: monospace; font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #5469d4;">{otp_code}</span>
+                                            </div>
+                                            
+                                            <p style="color: #697386; font-size: 14px; line-height: 20px; text-align: center;">
+                                                This code is valid for <strong>10 minutes</strong>. For security, never share this code with anyone.
+                                            </p>
+                                        </td>
+                                    </tr>
+                                    <!-- Footer -->
+                                    <tr>
+                                        <td style="padding: 20px 40px; background-color: #f7fafc; text-align: center; border-top: 1px solid #e3e8ee;">
+                                            <p style="color: #a3acb9; font-size: 12px; margin: 0;">&copy; 2026 Space Park Systems. All rights reserved.</p>
+                                            <p style="color: #a3acb9; font-size: 12px; margin: 5px 0 0 0;">Did not request this? You can safely ignore this email.</p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </body>
+                </html>
+                """
+                email = EmailMessage(
+                    subject=subject,
+                    body=message,
+                    from_email=f"Space Park <{settings.DEFAULT_FROM_EMAIL}>",
+                    to=[user.email],
+                    bcc=[settings.DEFAULT_FROM_EMAIL],
+                )
+                email.content_subtype = "html"
+                email.body = html_content
+                email.send(fail_silently=False)
+            except Exception as e:
+                print(f"ERROR: Failed to send OTP email to {user.email}: {e}")
                 print(f"DEBUG: OTP for {user.phone}: {otp_code}")
             
             return Response({
-                'message': 'OTP resent successfully',
-                'phone': str(user.phone)
+                'message': 'OTP resent successfully to your email.',
+                'phone': str(user.phone),
+                'email': user.email
             }, status=status.HTTP_200_OK)
             
         except User.DoesNotExist:

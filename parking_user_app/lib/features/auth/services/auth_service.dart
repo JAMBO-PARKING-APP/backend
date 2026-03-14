@@ -98,11 +98,15 @@ class AuthService {
     return {'success': false, 'message': 'Registration failed'};
   }
 
-  Future<Map<String, dynamic>> verifyOtp(String phone, String otp) async {
+  Future<Map<String, dynamic>> verifyOtp(String phone, String otp, {String? email}) async {
     try {
       final response = await _apiClient.post(
         'auth/verify-otp/',
-        data: {'phone': phone, 'otp': otp},
+        data: {
+          'phone': phone, 
+          'otp': otp,
+          if (email != null) 'email': email,
+        },
       );
       if (response.statusCode == 200) {
         final access = response.data['access'];
@@ -147,11 +151,14 @@ class AuthService {
     return {'success': false, 'message': 'Verification failed'};
   }
 
-  Future<bool> resendOtp(String phone) async {
+  Future<bool> resendOtp(String phone, {String? email}) async {
     try {
       final response = await _apiClient.post(
         'auth/resend-otp/',
-        data: {'phone': phone},
+        data: {
+          'phone': phone,
+          if (email != null) 'email': email,
+        },
       );
       return response.statusCode == 200;
     } catch (e) {

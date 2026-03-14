@@ -6,7 +6,12 @@ import 'package:parking_user_app/core/widgets/glass_container.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String phoneNumber;
-  const OtpVerificationScreen({super.key, required this.phoneNumber});
+  final String? email;
+  const OtpVerificationScreen({
+    super.key, 
+    required this.phoneNumber,
+    this.email,
+  });
 
   @override
   State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
@@ -20,6 +25,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     final success = await authProvider.verifyOtp(
       widget.phoneNumber,
       _otpController.text,
+      email: widget.email,
     );
 
     if (success && mounted) {
@@ -86,14 +92,16 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         height: 1.5,
                       ),
                       children: [
-                        const TextSpan(text: 'We sent a 6-digit code to '),
+                        const TextSpan(text: 'We sent a verification code to '),
                         TextSpan(
-                          text: widget.phoneNumber,
+                          text: widget.email ?? widget.phoneNumber,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: AppTheme.textPrimary,
                           ),
                         ),
+                        if (widget.email != null)
+                          const TextSpan(text: '\n(Check your inbox)'),
                       ],
                     ),
                   ),
@@ -179,6 +187,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             final messenger = ScaffoldMessenger.of(context);
                             final success = await auth.resendOtp(
                               widget.phoneNumber,
+                              email: widget.email,
                             );
                             if (mounted) {
                               messenger.showSnackBar(

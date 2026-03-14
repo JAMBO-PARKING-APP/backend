@@ -237,6 +237,15 @@ PESAPAL_CALLBACK_URL = config('PESAPAL_CALLBACK_URL', default='https://curtis-un
 PESAPAL_IPN_ID = config('PESAPAL_IPN_ID', default='')
 PESAPAL_USD_EXCHANGE_RATE = config('PESAPAL_USD_EXCHANGE_RATE', default=3700, cast=int)
 
+# Email Settings
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='union.crm.products@gmail.com')
+
 FIREBASE_CREDENTIALS_PATH = BASE_DIR / 'jambo-parking-d6e88-firebase-adminsdk-fbsvc-9ba12edacb.json'
 FIREBASE_ENABLED = config('FIREBASE_ENABLED', default=True, cast=bool)
 

@@ -20,7 +20,7 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 CORS_ALLOW_ALL_ORIGINS = True
 
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Email backend inherited from base.py (SMTP)
 
 
 LOGGING = {

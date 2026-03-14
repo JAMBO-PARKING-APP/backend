@@ -183,12 +183,12 @@ class AuthProvider with ChangeNotifier {
     return result['success'];
   }
 
-  Future<bool> verifyOtp(String phoneNumber, String otp) async {
+  Future<bool> verifyOtp(String phoneNumber, String otp, {String? email}) async {
     _status = AuthStatus.authenticating;
     _errorMessage = null;
     notifyListeners();
 
-    final result = await _authService.verifyOtp(phoneNumber, otp);
+    final result = await _authService.verifyOtp(phoneNumber, otp, email: email);
     if (result['success']) {
       _user = result['user'];
       _status = AuthStatus.authenticated;
@@ -210,10 +210,10 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> resendOtp(String phoneNumber) async {
+  Future<bool> resendOtp(String phoneNumber, {String? email}) async {
     _errorMessage = null;
     notifyListeners();
-    final success = await _authService.resendOtp(phoneNumber);
+    final success = await _authService.resendOtp(phoneNumber, email: email);
     if (!success) {
       _errorMessage = 'Failed to resend OTP. Please try again.';
     }
