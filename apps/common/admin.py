@@ -11,10 +11,11 @@ class CountryAdmin(admin.ModelAdmin):
 
 @admin.register(SystemConfiguration)
 class SystemConfigurationAdmin(admin.ModelAdmin):
-    list_display = ('currency', 'timezone', 'company_name', 'contact_email')
+    list_display = ('company_name', 'min_android_version', 'min_ios_version', 'force_update', 'timezone')
     fieldsets = (
-        ('Currency & Timezone', {'fields': ('currency', 'timezone')}),
-        ('Contact Information', {'fields': ('company_name', 'contact_email', 'contact_phone')}),
+        ('General Settings', {'fields': ('company_name', 'currency', 'timezone')}),
+        ('Contact Information', {'fields': ('contact_email', 'contact_phone')}),
+        ('App Version Control', {'fields': ('min_android_version', 'min_ios_version', 'app_update_url', 'force_update')}),
     )
 
 

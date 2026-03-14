@@ -71,3 +71,15 @@ class SystemHealthAPIView(APIView):
             },
             'timestamp': timezone.now()
         })
+
+
+from rest_framework.permissions import AllowAny
+
+class PublicSystemConfigAPIView(generics.RetrieveAPIView):
+    """Public version of system configuration for mobile app startup (version check, etc)"""
+    queryset = SystemConfiguration.objects.all()
+    serializer_class = SystemConfigurationSerializer
+    permission_classes = [AllowAny]
+
+    def get_object(self):
+        return SystemConfiguration.get_config()

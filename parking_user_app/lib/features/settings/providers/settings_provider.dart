@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:parking_user_app/core/models/country_config.dart';
+import 'package:parking_user_app/core/models/system_config.dart';
 import 'package:parking_user_app/core/api_client.dart';
 
 class SettingsProvider extends ChangeNotifier {
@@ -41,8 +42,9 @@ class SettingsProvider extends ChangeNotifier {
 
     notifyListeners();
 
-    // Auto-detect country in background
+    // Auto-detect country and fetch configs in background
     _detectAndFetchConfig();
+    fetchSystemConfig();
   }
 
   Future<void> _detectAndFetchConfig() async {
@@ -131,4 +133,20 @@ class SettingsProvider extends ChangeNotifier {
     Locale('de'),
     Locale('ar'),
   ];
+
+  SystemConfig? _systemConfig;
+  SystemConfig get systemConfig => _systemConfig ?? SystemConfig.defaultConfig;
+
+  Future<void> fetchSystemConfig() async {
+    try {
+      final apiClient = ApiClient();
+      final response = await apiClient.get('system/config/');
+      if (response.statusCode == 200) {
+        _systemConfig = SystemConfig.fromJson(response.data);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error fetching system config: $e');
+    }
+  }
 }

@@ -9,10 +9,11 @@ from apps.parking import api_views_v2 as parking_views
 from apps.enforcement import api_views_v2 as enforcement_views
 from apps.payments import api_views_v2 as payments_views
 from apps.notifications import api_views as notifications_views
-from apps.common import api_views_help, views as common_views
+from apps.common import api_views_help, views as common_views, api_views as common_api_views
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
+    path('system/config/', common_api_views.PublicSystemConfigAPIView.as_view(), name='system-config'),
     path('auth/register/', accounts_views.RegisterAPIView.as_view(), name='register'),
     path('auth/verify-otp/', accounts_views.VerifyOTPAPIView.as_view(), name='verify-otp'),
     path('auth/login/', accounts_views.LoginAPIView.as_view(), name='login'),
