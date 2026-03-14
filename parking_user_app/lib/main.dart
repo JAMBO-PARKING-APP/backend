@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:parking_user_app/features/splash/screens/version_check_screen.dart';
+import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/core/localizations.dart';
@@ -89,7 +91,19 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           home: Consumer<AuthProvider>(
             builder: (context, auth, _) {
+              // 1. Always show splash until initialization is explicitly marked as complete
+              if (!auth.isInitialLoadComplete) {
+                return const SplashScreen();
+              }
+
+              // 2. Once initialized, check for app health and auth status
               switch (auth.status) {
+                case AuthStatus.needsUpdate:
+                  final settings = context.read<SettingsProvider>();
+                  return VersionCheckScreen(
+                    updateUrl: settings.systemConfig.appUpdateUrl,
+                    isMandatory: settings.systemConfig.forceUpdate,
+                  );
                 case AuthStatus.authenticated:
                   return const HomeScreen();
                 case AuthStatus.unauthenticated:
@@ -99,6 +113,8 @@ class MyApp extends StatelessWidget {
                   return const WelcomeScreen();
                 case AuthStatus.initial:
                 case AuthStatus.authenticating:
+                  // This should ideally not be reached after isInitialLoadComplete
+                  // but we keep it for safety during transitions.
                   return const SplashScreen();
               }
             },

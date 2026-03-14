@@ -6,6 +6,7 @@ User App API Endpoints
 """
 
 import random
+import logging
 from datetime import timedelta
 from django.contrib.auth import authenticate
 from django.utils import timezone
@@ -29,6 +30,8 @@ from .serializers_v2 import (
 )
 from apps.payments.models import PaymentMethod
 
+logger = logging.getLogger(__name__)
+
 class RegisterAPIView(APIView):
     """User registration with phone number"""
     permission_classes = [AllowAny]
@@ -41,9 +44,15 @@ class RegisterAPIView(APIView):
     )
     
     def post(self, request):
+        logger.debug(f"Registration attempt with data: {request.data}")
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
-            user = serializer.save()
+            try:
+                user = serializer.save()
+            except Exception as e:
+                logger.error(f"User creation failed during registration: {str(e)}")
+                return Response({'error': f"Account creation failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
             otp_code = str(random.randint(100000, 999999))
             OTPCode.objects.create(
                 user=user,
@@ -111,8 +120,15 @@ class RegisterAPIView(APIView):
                 email.body = html_content
                 email.send(fail_silently=False)
             except Exception as e:
-                print(f"ERROR: Failed to send OTP email to {user.email}: {e}")
-                print(f"DEBUG: OTP for {user.phone}: {otp_code}")
+                logger.error(f"Failed to send registration OTP email to {user.email}: {str(e)}")
+                # We return success because the user IS created, but we notify about the email delay
+                return Response({
+                    'message': 'Registration successful, but there was an issue sending the verification email. Please try resending the code.',
+                    'user_id': user.id,
+                    'phone': str(user.phone),
+                    'email': user.email,
+                    'email_error': str(e)
+                }, status=status.HTTP_201_CREATED)
             
             return Response({
                 'message': 'Registration successful. OTP sent to your email.',
@@ -121,7 +137,18 @@ class RegisterAPIView(APIView):
                 'email': user.email
             }, status=status.HTTP_201_CREATED)
         
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        logger.warning(f"Registration validation failed: {serializer.errors}")
+        # Flatten errors for the mobile app
+        errors = serializer.errors
+        error_msg = "Registration failed"
+        if isinstance(errors, dict):
+            first_error = next(iter(errors.values()))
+            if isinstance(first_error, list):
+                error_msg = first_error[0]
+            else:
+                error_msg = str(first_error)
+                
+        return Response({'error': error_msg, 'details': errors}, status=status.HTTP_400_BAD_REQUEST)
 
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -426,8 +453,11 @@ class ResendOTPAPIView(APIView):
                 email.body = html_content
                 email.send(fail_silently=False)
             except Exception as e:
-                print(f"ERROR: Failed to send OTP email to {user.email}: {e}")
-                print(f"DEBUG: OTP for {user.phone}: {otp_code}")
+                logger.error(f"Failed to resend OTP email to {user.email}: {str(e)}")
+                return Response({
+                    'error': 'Failed to send email. Please check your internet or try again later.',
+                    'details': str(e)
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             return Response({
                 'message': 'OTP resent successfully to your email.',

@@ -50,9 +50,12 @@ class AuthService {
         return {'success': true, 'user': User.fromJson(userData)};
       }
     } on DioException catch (e) {
+      debugPrint('[AuthService] Login DioException: ${e.message}');
+      debugPrint('[AuthService] Response data: ${e.response?.data}');
       String message = _handleDioError(e);
       return {'success': false, 'message': message};
     } catch (e) {
+      debugPrint('[AuthService] Login Unexpected error: $e');
       return {
         'success': false,
         'message': 'An unexpected error occurred. Please try again.',
@@ -70,6 +73,7 @@ class AuthService {
     String? lastName,
   }) async {
     try {
+      debugPrint('[AuthService] Registering phone: $phone, email: $email');
       final response = await _apiClient.post(
         'auth/register/',
         data: {
@@ -82,17 +86,16 @@ class AuthService {
         },
       );
       if (response.statusCode == 201) {
+        debugPrint('[AuthService] Registration successful: ${response.data['message']}');
         return {'success': true, 'message': response.data['message']};
       }
+    } on DioException catch (e) {
+      debugPrint('[AuthService] Registration DioException: ${e.message}');
+      debugPrint('[AuthService] Response data: ${e.response?.data}');
+      String message = _handleDioError(e);
+      return {'success': false, 'message': message};
     } catch (e) {
-      if (e is DioException && e.response?.data != null) {
-        final errorData = e.response!.data;
-        String errorMessage = 'Registration failed';
-        if (errorData is Map) {
-          errorMessage = errorData.values.first.toString();
-        }
-        return {'success': false, 'message': errorMessage};
-      }
+      debugPrint('[AuthService] Registration unexpected error: $e');
       return {'success': false, 'message': 'Registration failed'};
     }
     return {'success': false, 'message': 'Registration failed'};
@@ -100,6 +103,7 @@ class AuthService {
 
   Future<Map<String, dynamic>> verifyOtp(String phone, String otp, {String? email}) async {
     try {
+      debugPrint('[AuthService] Verifying OTP for $phone, code: $otp');
       final response = await _apiClient.post(
         'auth/verify-otp/',
         data: {
@@ -134,18 +138,13 @@ class AuthService {
 
         return {'success': true, 'user': User.fromJson(userData)};
       }
+    } on DioException catch (e) {
+      debugPrint('[AuthService] verifyOtp DioException: ${e.message}');
+      debugPrint('[AuthService] Response data: ${e.response?.data}');
+      String message = _handleDioError(e);
+      return {'success': false, 'message': message};
     } catch (e) {
-      if (e is DioException) {
-        if (e.type == DioExceptionType.connectionError) {
-          return {'success': false, 'message': 'No internet connection'};
-        }
-        if (e.response?.data != null) {
-          final data = e.response!.data;
-          if (data is Map && data.values.isNotEmpty) {
-            return {'success': false, 'message': data.values.first.toString()};
-          }
-        }
-      }
+      debugPrint('[AuthService] verifyOtp unexpected error: $e');
       return {'success': false, 'message': 'Verification failed'};
     }
     return {'success': false, 'message': 'Verification failed'};
@@ -153,6 +152,7 @@ class AuthService {
 
   Future<bool> resendOtp(String phone, {String? email}) async {
     try {
+      debugPrint('[AuthService] Resending OTP for $phone');
       final response = await _apiClient.post(
         'auth/resend-otp/',
         data: {
@@ -161,6 +161,10 @@ class AuthService {
         },
       );
       return response.statusCode == 200;
+    } on DioException catch (e) {
+      debugPrint('[AuthService] resendOtp DioException: ${e.message}');
+      debugPrint('[AuthService] Response data: ${e.response?.data}');
+      return false;
     } catch (e) {
       return false;
     }
@@ -176,6 +180,10 @@ class AuthService {
       if (response.statusCode == 200) {
         return User.fromJson(response.data);
       }
+    } on DioException catch (e) {
+      debugPrint('[AuthService] getProfile DioException: ${e.message}');
+      debugPrint('[AuthService] Response data: ${e.response?.data}');
+      return null;
     } catch (e) {
       return null;
     }
@@ -194,6 +202,9 @@ class AuthService {
 
       final response = await _apiClient.patch('profile/', data: formData);
       return response.statusCode == 200;
+    } on DioException catch (e) {
+      debugPrint('[AuthService] updateProfilePhoto DioException: ${e.message}');
+      return false;
     } catch (e) {
       return false;
     }
@@ -207,12 +218,16 @@ class AuthService {
         return true;
       }
       return false;
+    } on DioException catch (e) {
+      debugPrint('[AuthService] deleteAccount DioException: ${e.message}');
+      return false;
     } catch (e) {
       return false;
     }
   }
 
   String _handleDioError(DioException e) {
+    debugPrint('[AuthService] _handleDioError: ${e.type}');
     if (e.type == DioExceptionType.connectionTimeout) {
       return 'Connection timeout. Please check your internet connection.';
     }
@@ -241,11 +256,12 @@ class AuthService {
       case 404:
         return 'User not found or service unavailable.';
       case 500:
-        return 'Server error. Please try again later.';
+        final errors = data?['error'] ?? data?['detail'] ?? 'Server error. Please try again later.';
+        return errors.toString();
       default:
         return data?['error'] ??
             data?['detail'] ??
-            'Login failed. Please try again.';
+            'Action failed. Please try again.';
     }
   }
 }

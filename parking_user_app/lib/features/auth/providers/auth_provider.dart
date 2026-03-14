@@ -7,23 +7,43 @@ import 'package:parking_user_app/core/websocket_service.dart';
 import 'package:parking_user_app/core/background_service.dart';
 import 'dart:convert';
 
-enum AuthStatus { authenticated, unauthenticated, authenticating, initial }
+import 'dart:io';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+enum AuthStatus { authenticated, unauthenticated, authenticating, initial, needsUpdate }
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
   User? _user;
   AuthStatus _status = AuthStatus.initial;
   String? _errorMessage;
+  bool _isInitialLoadComplete = false;
 
   User? get user => _user;
   AuthStatus get status => _status;
   String? get errorMessage => _errorMessage;
+  bool get isInitialLoadComplete => _isInitialLoadComplete;
 
   bool _hasRequestedPermissions = false;
   bool get hasRequestedPermissions => _hasRequestedPermissions;
   String get currencySymbol => user?.countryDetails?.currencySymbol ?? 'UGX';
 
+  void setInitialLoadComplete() {
+    _isInitialLoadComplete = true;
+    notifyListeners();
+  }
+
   Future<void> checkAuth() async {
+    // 0. Version Check
+    final needsUpdate = await _checkVersion();
+    if (needsUpdate) {
+      _status = AuthStatus.needsUpdate;
+      notifyListeners();
+      return;
+    }
+
     // Only show global loading if we are NOT already authenticated
     if (_status != AuthStatus.authenticated &&
         _status != AuthStatus.authenticating) {
@@ -101,6 +121,49 @@ class AuthProvider with ChangeNotifier {
       _status = AuthStatus.unauthenticated;
       notifyListeners();
     }
+  }
+
+  Future<bool> _checkVersion() async {
+    try {
+      
+      // We rely on SettingsProvider having fetched the config already in SplashScreen
+      // But we can double check here or use a safe default
+      final settings = SettingsProvider();
+      await settings.fetchSystemConfig();
+      final config = settings.systemConfig;
+      
+      final packageInfo = await PackageInfo.fromPlatform();
+      final currentVersion = packageInfo.version;
+      
+      final targetVersion = Platform.isAndroid 
+          ? config.minAndroidVersion 
+          : config.minIosVersion;
+
+      if (_isVersionLower(currentVersion, targetVersion)) {
+        debugPrint('[AuthProvider] Version check failed: $currentVersion < $targetVersion');
+        return true;
+      }
+    } catch (e) {
+      debugPrint('[AuthProvider] Version check error: $e');
+    }
+    return false;
+  }
+
+  bool _isVersionLower(String current, String target) {
+    try {
+      List<int> currentParts = current.split('.').map((s) => int.tryParse(s) ?? 0).toList();
+      List<int> targetParts = target.split('.').map((s) => int.tryParse(s) ?? 0).toList();
+      
+      for (int i = 0; i < 3; i++) {
+        int c = i < currentParts.length ? currentParts[i] : 0;
+        int t = i < targetParts.length ? targetParts[i] : 0;
+        if (c < t) return true;
+        if (c > t) return false;
+      }
+    } catch (e) {
+      debugPrint('Error comparing versions: $e');
+    }
+    return false;
   }
 
   Future<void> completePermissions() async {
