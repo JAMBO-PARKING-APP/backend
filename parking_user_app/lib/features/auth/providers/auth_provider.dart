@@ -238,12 +238,29 @@ class AuthProvider with ChangeNotifier {
       lastName: lastName,
     );
 
-    _status = AuthStatus.unauthenticated;
-    if (!result['success']) {
+    if (result['success']) {
+      _user = result['user'];
+      _status = AuthStatus.authenticated;
+      
+      // Register FCM token after successful registration
+      FCMService().registerToken().then((success) {
+        debugPrint('[AuthProvider] FCM token registration: $success');
+      });
+
+      // Connect WebSocket after registration
+      WebSocketService().connect();
+      
+      // Initialize Background Service
+      initializeBackgroundService();
+      
+      notifyListeners();
+      return true;
+    } else {
+      _status = AuthStatus.unauthenticated;
       _errorMessage = result['message'];
+      notifyListeners();
+      return false;
     }
-    notifyListeners();
-    return result['success'];
   }
 
   Future<bool> verifyOtp(String phoneNumber, String otp, {String? email}) async {

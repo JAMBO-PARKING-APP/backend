@@ -86,8 +86,20 @@ class AuthService {
         },
       );
       if (response.statusCode == 201) {
-        debugPrint('[AuthService] Registration successful: ${response.data['message']}');
-        return {'success': true, 'message': response.data['message']};
+        final access = response.data['access'];
+        final refresh = response.data['refresh'];
+        final userData = response.data['user'];
+
+        debugPrint('[AuthService] Registration successful, saving tokens...');
+        await _storageManager.saveTokens(access, refresh);
+        
+        // persist user JSON for offline session
+        try {
+          await _storageManager.saveUserJson(json.encode(userData));
+        } catch (_) {}
+
+        debugPrint('[AuthService] Returning success with user data');
+        return {'success': true, 'user': User.fromJson(userData)};
       }
     } on DioException catch (e) {
       debugPrint('[AuthService] Registration DioException: ${e.message}');
