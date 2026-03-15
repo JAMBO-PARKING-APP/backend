@@ -43,7 +43,7 @@ LOCAL_APPS = [
     'apps.analytics',
     'apps.support_chat',
     'apps.rewards',
-    'apps.zone_owner_portal',
+    'apps.zone_owner_portal.apps.ZoneOwnerPortalConfig',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
