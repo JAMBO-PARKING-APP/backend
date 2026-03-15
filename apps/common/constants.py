@@ -5,6 +5,7 @@ class UserRole(models.TextChoices):
     DRIVER = 'driver', _('Driver')
     OFFICER = 'officer', _('Officer')
     ADMIN = 'admin', _('Admin')
+    ZONE_OWNER = 'zone_owner', _('Zone Owner')
 
 class ParkingStatus(models.TextChoices):
     ACTIVE = 'active', _('Active')

@@ -7,9 +7,10 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, Spec
 from django.conf.urls.i18n import i18n_patterns
 
 urlpatterns = [
-    path('api/user/', include('apps.common.api_urls_user')), 
+    path('api/user/', include('apps.common.api_urls_user')),
     path('api/auth/', include('apps.accounts.urls')),
     path('api/parking/', include('apps.parking.urls')),
+    path('api/partner/', include('apps.zone_owner_portal.urls')),
     path('api/payments/', include('apps.payments.urls')),
     path('api/enforcement/', include('apps.enforcement.urls')),
     path('api/officer/', include('apps.enforcement.api_urls')),  

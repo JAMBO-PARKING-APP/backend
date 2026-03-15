@@ -41,8 +41,9 @@ LOCAL_APPS = [
     'apps.enforcement',
     'apps.notifications',
     'apps.analytics',
-    'apps.support_chat',  
+    'apps.support_chat',
     'apps.rewards',
+    'apps.zone_owner_portal',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
