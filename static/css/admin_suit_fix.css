@@ -1,0 +1,122 @@
+/* Comprehensive Fix for Django Suit v2 and Django 4.2+ Layout Conflicts */
+
+/* 1. Hide Hidden/Redundant Elements */
+#nav-sidebar, .nav-sidebar, #nav-filter, .skip-to-content-link {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    position: absolute !important;
+    left: -9999px !important;
+}
+
+/* 2. Main Layout Alignment */
+/* Enforce clear separation from the fixed Suit sidebar (220px) */
+#main, .main, #content, #content-main, .breadcrumbs {
+    margin-left: 230px !important;
+    max-width: calc(100% - 250px) !important;
+    box-sizing: border-box !important;
+}
+
+/* Ensure the container doesn't have its own conflicting margins */
+#container {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+}
+
+/* 3. Header and Top Navigation Fixes */
+#header {
+    height: 50px !important;
+    position: fixed !important;
+    width: 100% !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 1001 !important;
+    padding: 0 20px !important;
+}
+
+#suit-left-column {
+    position: fixed !important;
+    top: 50px !important; /* Below header */
+    left: 0 !important;
+    width: 220px !important;
+    height: calc(100% - 50px) !important;
+    z-index: 1000 !important;
+    overflow-y: auto !important;
+}
+
+/* 4. Breadcrumbs Alignment */
+.breadcrumbs {
+    position: relative !important;
+    top: 60px !important; /* Below header with padding */
+    margin-bottom: 20px !important;
+    padding: 10px 0 !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+/* 5. Main Content Spacing */
+#content {
+    margin-top: 60px !important; /* Offset for header and breadcrumbs */
+    padding: 20px !important;
+    background: #fdfdfd !important;
+}
+
+/* 6. Fix for Changelist Filters (moved from below to right) */
+.change-list .filtered {
+    display: flex !important;
+    flex-direction: row-reverse !important;
+    align-items: flex-start !important;
+}
+
+#changelist-filter {
+    position: static !important;
+    width: 240px !important;
+    margin-left: 20px !important;
+    margin-top: 0 !important;
+    background: #f8f8f8 !important;
+    border-left: 1px solid #ddd !important;
+    padding: 15px !important;
+    box-shadow: none !important;
+}
+
+#changelist-form {
+    flex-grow: 1 !important;
+    width: calc(100% - 280px) !important;
+}
+
+/* 7. Button and Input Polish */
+.button, input[type=submit], input[type=button], .submit-row input, a.addlink, a.closelink {
+    border-radius: 4px !important;
+    font-weight: 500 !important;
+    padding: 8px 15px !important;
+}
+
+.search-container {
+    margin-bottom: 20px !important;
+}
+
+#searchbar {
+    height: 35px !important;
+    padding: 5px 10px !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4px 0 0 4px !important;
+}
+
+#changelist-search input[type="submit"] {
+    height: 35px !important;
+    border-radius: 0 4px 4px 0 !important;
+    margin-left: -5px !important;
+}
+
+/* Fix for mobile/responsive bits that might cause "messy" overlaps */
+@media (max-width: 767px) {
+    #main, .main, #content, #content-main, .breadcrumbs {
+        margin-left: 0 !important;
+        max-width: 100% !important;
+    }
+    #suit-left-column {
+        position: static !important;
+        width: 100% !important;
+    }
+}

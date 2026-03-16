@@ -7,6 +7,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, Spec
 from django.conf.urls.i18n import i18n_patterns
 
 urlpatterns = [
+    path('grappelli/', include('grappelli.urls')),
     path('api/user/', include('apps.common.api_urls_user')),
     path('api/auth/', include('apps.accounts.urls')),
     path('api/parking/', include('apps.parking.urls')),

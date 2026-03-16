@@ -1,4 +1,4 @@
-https://github.com/darklow/django-suit/tarball/v2
+django-grappelli==3.0.8
 Django==4.2.7
 djangorestframework==3.14.0
 django-cors-headers==4.3.1

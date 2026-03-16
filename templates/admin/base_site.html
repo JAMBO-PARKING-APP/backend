@@ -1,0 +1,18 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">
+        JAMBO PARKING <span class="header-label">Admin</span>
+    </a>
+</h1>
+{% endblock %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <style>
+        /* Extra safety if base.html didn't catch it */
+        #nav-sidebar { display: none !important; }
+    </style>
+{% endblock %}
