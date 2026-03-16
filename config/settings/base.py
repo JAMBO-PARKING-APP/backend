@@ -1,7 +1,52 @@
-import os
 from pathlib import Path
 from decouple import config
 from celery.schedules import crontab
+import django.utils.translation
+import sys
+import types
+import inspect
+import builtins
+
+# Python 3.11 compatibility shim for legacy libraries (like django-suit)
+if not hasattr(inspect, 'getargspec'):
+    inspect.getargspec = inspect.getfullargspec
+
+# Python 3 compatibility for legacy 'basestring'
+if not hasattr(builtins, 'basestring'):
+    builtins.basestring = str
+
+# Django 4.x compatibility shim for legacy libraries (like django-suit)
+if not hasattr(django.utils.translation, 'ugettext'):
+    django.utils.translation.ugettext = django.utils.translation.gettext
+if not hasattr(django.utils.translation, 'ugettext_lazy'):
+    django.utils.translation.ugettext_lazy = django.utils.translation.gettext_lazy
+if not hasattr(django.utils.translation, 'ugettext_noop'):
+    django.utils.translation.ugettext_noop = django.utils.translation.gettext_noop
+if not hasattr(django.utils.translation, 'ungettext'):
+    django.utils.translation.ungettext = django.utils.translation.ngettext
+
+# Shim for removed django.utils.six
+try:
+    import six
+    sys.modules['django.utils.six'] = six
+except ImportError:
+    # Create a minimal six shim if not installed
+    six_mod = types.ModuleType('six')
+    six_mod.string_types = (str,)
+    six_mod.text_type = str
+    six_mod.binary_type = bytes
+    six_mod.PY3 = True
+    sys.modules['six'] = six_mod
+    sys.modules['django.utils.six'] = six_mod
+
+# Shim for removed admin_static module in Django 3.0+
+try:
+    from django.templatetags.static import static
+    admin_static_mod = types.ModuleType('django.contrib.admin.templatetags.admin_static')
+    admin_static_mod.static = static
+    sys.modules['django.contrib.admin.templatetags.admin_static'] = admin_static_mod
+except ImportError:
+    pass
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -14,6 +59,7 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lamb
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='http://localhost:8000,http://127.0.0.1:8000', cast=lambda v: [s.strip() for s in v.split(',')])
 
 DJANGO_APPS = [
+    'suit',
     'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -49,6 +95,7 @@ LOCAL_APPS = [
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -77,6 +124,9 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.i18n', 
                 'apps.common.context_processors.regional_settings',
+            ],
+            'builtins': [
+                'apps.common.templatetags.admin_static',
             ],
         },
     },
@@ -127,6 +177,10 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# WhiteNoise settings for development
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'accounts.User'
 

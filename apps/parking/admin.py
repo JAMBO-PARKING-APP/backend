@@ -56,7 +56,8 @@ class ZoneApplicationAdmin(RegionalAdminMixin, admin.ModelAdmin):
 class ZoneAdmin(RegionalAdminMixin, admin.ModelAdmin):
     list_display = ('name', 'zone_type', 'owner', 'hourly_rate', 'total_slots', 'available_slots_count', 'is_active')
     list_filter = ('zone_type', 'country', 'is_active')
-    search_fields = ('name', 'code', 'owner__full_name')
+    search_fields = ('name', 'code', 'owner__full_name', 'owner__phone')
+    autocomplete_fields = ['owner']
     inlines = [ParkingSlotInline]
 
 @admin.register(ParkingSlot)
@@ -64,12 +65,14 @@ class ParkingSlotAdmin(admin.ModelAdmin):
     list_display = ('zone', 'slot_code', 'status')
     list_filter = ('status', 'zone')
     search_fields = ('slot_code', 'zone__name')
+    autocomplete_fields = ['zone']
 
 @admin.register(ParkingSession)
 class ParkingSessionAdmin(admin.ModelAdmin):
     list_display = ('vehicle', 'zone', 'get_zone_type', 'start_time', 'status', 'final_cost')
     list_filter = ('status', 'zone__zone_type', 'zone')
-    search_fields = ('vehicle__license_plate', 'zone__name', 'zone__owner__full_name')
+    search_fields = ('vehicle__license_plate', 'zone__name', 'zone__owner__full_name', 'zone__owner__phone')
+    autocomplete_fields = ['vehicle', 'zone', 'parking_slot']
     readonly_fields = ('duration_minutes',)
 
     def get_zone_type(self, obj):
@@ -80,5 +83,6 @@ class ParkingSessionAdmin(admin.ModelAdmin):
 class ReservationAdmin(admin.ModelAdmin):
     list_display = ('vehicle', 'zone', 'reserved_from', 'reserved_until', 'status', 'payment_reference')
     list_filter = ('status', 'zone', 'reserved_from')
-    search_fields = ('vehicle__license_plate', 'payment_reference')
+    search_fields = ('vehicle__license_plate', 'payment_reference', 'zone__name')
+    autocomplete_fields = ['vehicle', 'zone']
     readonly_fields = ('created_at',)

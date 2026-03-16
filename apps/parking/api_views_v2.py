@@ -241,13 +241,9 @@ class StartParkingAPIView(APIView):
                     }, status=status.HTTP_400_BAD_REQUEST)
     
                 with transaction.atomic():
-                    request.user.adjust_wallet_balance(-estimated_cost)
-                    
-                    wallet_tx = WalletTransaction.objects.create(
-                        user=request.user,
-                        amount=estimated_cost,
+                    wallet_tx = request.user.adjust_wallet_balance(
+                        -estimated_cost,
                         transaction_type='payment',
-                        status='completed',
                         description=f'Parking payment for zone {zone.name}'
                     )
                     
@@ -409,18 +405,13 @@ class ExtendParkingAPIView(APIView):
                     'error': f'Insufficient balance. Need {additional_cost}, but only have {user.wallet_balance}'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            user.adjust_wallet_balance(-additional_cost)
-            
-            from apps.payments.models import WalletTransaction
-            from apps.common.constants import TransactionStatus
-            WalletTransaction.objects.create(
-                user=user,
-                amount=additional_cost,
+            wallet_tx = user.adjust_wallet_balance(
+                -additional_cost,
                 transaction_type='payment',
-                status=TransactionStatus.COMPLETED,
-                description=f"Extension of {additional_hours}h for {session.zone.name}",
-                metadata={'session_id': str(session.id), 'type': 'extension'}
+                description=f"Extension of {additional_hours}h for {session.zone.name}"
             )
+            wallet_tx.metadata.update({'session_id': str(session.id), 'type': 'extension'})
+            wallet_tx.save(update_fields=['metadata'])
 
             session.planned_end_time += timedelta(hours=additional_hours)
             session.estimated_cost += additional_cost

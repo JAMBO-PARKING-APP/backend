@@ -13,12 +13,14 @@ class PaymentMethodAdmin(admin.ModelAdmin):
     list_display = ('user', 'card_brand', 'card_last_four', 'is_default', 'is_active')
     list_filter = ('card_brand', 'is_default', 'is_active')
     search_fields = ('user__phone', 'card_last_four')
+    autocomplete_fields = ['user']
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
     list_display = ('user', 'amount', 'status', 'created_at')
     list_filter = ('status', 'created_at')
     search_fields = ('user__phone', 'idempotency_key')
+    autocomplete_fields = ['user']
     readonly_fields = ('stripe_payment_intent_id', 'processor_response')
 
 @admin.register(Refund)
@@ -26,6 +28,14 @@ class RefundAdmin(admin.ModelAdmin):
     list_display = ('original_transaction', 'amount', 'status', 'created_at')
     list_filter = ('status',)
     readonly_fields = ('stripe_refund_id',)
+
+@admin.register(WalletTransaction)
+class WalletTransactionAdmin(admin.ModelAdmin):
+    list_display = ('user', 'transaction_type', 'amount', 'opening_balance', 'closing_balance', 'created_at', 'status')
+    list_filter = ('transaction_type', 'status', 'created_at')
+    search_fields = ('user__phone', 'description')
+    autocomplete_fields = ['user']
+    readonly_fields = ('opening_balance', 'closing_balance', 'created_at')
 
 @admin.register(Invoice)
 class InvoiceAdmin(admin.ModelAdmin):

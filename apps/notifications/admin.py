@@ -19,6 +19,7 @@ class NotificationAdmin(admin.ModelAdmin):
     list_display = ('user', 'title', 'type', 'priority', 'is_read', 'sent_via_push', 'created_at')
     list_filter = ('type', 'category', 'priority', 'is_read', 'is_promotional', 'sent_via_push', 'created_at')
     search_fields = ('user__phone', 'user__first_name', 'user__last_name', 'title', 'message')
+    autocomplete_fields = ['user']
     readonly_fields = ('created_at', 'updated_at', 'push_sent_at')
     ordering = ('-created_at',)
     
@@ -125,7 +126,8 @@ class NotificationAdmin(admin.ModelAdmin):
 class ChatConversationAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'assigned_agent', 'status', 'priority', 'created_at')
     list_filter = ('status', 'priority', 'category', 'created_at')
-    search_fields = ('user__phone', 'user__first_name', 'subject', 'assigned_agent__username')
+    search_fields = ('user__phone', 'user__first_name', 'user__last_name', 'subject', 'assigned_agent__username')
+    autocomplete_fields = ['user', 'assigned_agent']
     readonly_fields = ('created_at', 'updated_at')
     ordering = ('-created_at',)
     
@@ -159,7 +161,8 @@ class ChatConversationAdmin(admin.ModelAdmin):
 class ChatMessageAdmin(admin.ModelAdmin):
     list_display = ('id', 'conversation', 'sender_name', 'message_type', 'is_read', 'created_at')
     list_filter = ('message_type', 'is_read', 'created_at')
-    search_fields = ('conversation__subject', 'sender__phone', 'content')
+    search_fields = ('conversation__subject', 'sender__phone', 'sender__first_name', 'sender__last_name', 'content')
+    autocomplete_fields = ['conversation', 'sender']
     readonly_fields = ('created_at', 'read_at')
     ordering = ('-created_at',)
     

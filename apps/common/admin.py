@@ -5,7 +5,7 @@ from .models import Country, SystemConfiguration, CountryConfig, CountryConfig
 class CountryAdmin(admin.ModelAdmin):
     list_display = ('name', 'iso_code', 'phone_code', 'currency', 'is_active')
     list_filter = ('is_active', 'currency')
-    search_fields = ('name', 'iso_code', 'phone_code')
+    search_fields = ('name', 'iso_code', 'phone_code', 'currency')
     ordering = ('name',)
     list_editable = ('is_active',)
 
@@ -24,6 +24,7 @@ class CountryConfigAdmin(admin.ModelAdmin):
     list_display = ('country', 'get_currency', 'get_payment_methods', 'exchange_rate_to_base', 'is_active')
     list_filter = ('is_active', 'country')
     search_fields = ('country__name', 'country__iso_code')
+    autocomplete_fields = ['country']
     readonly_fields = ('created_at', 'updated_at')
     
     fieldsets = (

@@ -121,6 +121,7 @@ class WalletTransaction(BaseModel):
         ('refund', _('Refund')),
         ('earning', _('Earning (Private Zone)')),
         ('withdrawal', _('Withdrawal')),
+        ('payout', _('Payout (Manual)')),
     ]
     
     user = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='wallet_transactions')
@@ -130,6 +131,8 @@ class WalletTransaction(BaseModel):
     description = models.CharField(max_length=255)
     related_transaction = models.ForeignKey(Transaction, on_delete=models.SET_NULL, null=True, blank=True)
     parking_session = models.ForeignKey('parking.ParkingSession', on_delete=models.SET_NULL, null=True, blank=True)
+    opening_balance = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    closing_balance = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
 
     class Meta:

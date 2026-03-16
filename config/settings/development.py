@@ -1,7 +1,7 @@
 from decouple import config
 from .base import *
 
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', 
                        default='localhost,127.0.0.1,0.0.0.0,10.0.2.2,curtis-unmobilized-clarence.ngrok-free.dev', 

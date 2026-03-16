@@ -96,7 +96,6 @@ class MyApp extends StatelessWidget {
                 return const SplashScreen();
               }
 
-              // 2. Once initialized, check for app health and auth status
               switch (auth.status) {
                 case AuthStatus.needsUpdate:
                   final settings = context.read<SettingsProvider>();
@@ -113,8 +112,7 @@ class MyApp extends StatelessWidget {
                   return const WelcomeScreen();
                 case AuthStatus.initial:
                 case AuthStatus.authenticating:
-                  // This should ideally not be reached after isInitialLoadComplete
-                  // but we keep it for safety during transitions.
+
                   return const SplashScreen();
               }
             },

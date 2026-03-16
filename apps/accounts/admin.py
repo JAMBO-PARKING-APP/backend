@@ -72,9 +72,12 @@ class VehicleAdmin(admin.ModelAdmin):
     list_display = ('license_plate', 'user', 'make', 'model', 'is_active')
     list_filter = ('is_active', 'make')
     search_fields = ('license_plate', 'user__phone')
+    autocomplete_fields = ['user']
 
 @admin.register(OTPCode)
 class OTPCodeAdmin(admin.ModelAdmin):
     list_display = ('user', 'code', 'is_used', 'expires_at')
     list_filter = ('is_used',)
+    search_fields = ('user__phone', 'code')
+    autocomplete_fields = ['user']
     readonly_fields = ('created_at',)

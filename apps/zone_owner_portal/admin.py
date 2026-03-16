@@ -1,9 +1,12 @@
-from django.contrib import admin
+from django.contrib import admin, messages
+from django import forms
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from .models import ZoneApplicationPublic, OwnerBankDetails, ZoneOwner
 from .signals import generate_temp_password
 from apps.common.constants import UserRole
+from apps.payments.models import WalletTransaction
+from django.db.models import Sum
 
 
 def approve_applications(modeladmin, request, queryset):
@@ -142,7 +145,8 @@ class ZoneApplicationPublicAdmin(admin.ModelAdmin):
 @admin.register(OwnerBankDetails)
 class OwnerBankDetailsAdmin(admin.ModelAdmin):
     list_display = ['user', 'bank_name', 'account_number', 'account_holder_name', 'updated_at']
-    search_fields = ['user__email', 'bank_name', 'account_number']
+    search_fields = ['user__email', 'user__phone', 'bank_name', 'account_number']
+    autocomplete_fields = ['user']
     readonly_fields = ['created_at', 'updated_at']
 
 class OwnerBankDetailsInline(admin.StackedInline):
@@ -151,17 +155,93 @@ class OwnerBankDetailsInline(admin.StackedInline):
     verbose_name_plural = 'Bank Details'
     classes = ['collapse']
 
+class WalletTransactionInline(admin.TabularInline):
+    model = WalletTransaction
+    fields = ('created_at', 'transaction_type', 'amount', 'opening_balance', 'closing_balance', 'description')
+    readonly_fields = ('created_at', 'transaction_type', 'amount', 'opening_balance', 'closing_balance', 'description')
+    extra = 0
+    can_delete = False
+    ordering = ('-created_at',)
+    verbose_name_plural = _('Accounting Ledger / Payment History')
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(status='completed')
+
+class ZoneOwnerAdminForm(forms.ModelForm):
+    record_payout_amount = forms.DecimalField(
+        max_digits=12, decimal_places=2, required=False, 
+        help_text=_("Input an amount here to record a manual payout. This will DECREASE the wallet balance.")
+    )
+    payout_description = forms.CharField(max_length=255, required=False, initial="Manual Payout")
+
+    class Meta:
+        model = ZoneOwner
+        fields = '__all__'
+
 @admin.register(ZoneOwner)
 class ZoneOwnerAdmin(admin.ModelAdmin):
     """Specialized admin panel for Partners/Zone Owners"""
-    list_display = ('email', 'phone', 'first_name', 'last_name', 'is_active', 'has_bank_details')
+    form = ZoneOwnerAdminForm
+    list_display = ('email', 'phone', 'first_name', 'last_name', 'current_wallet_balance', 'has_bank_details')
     search_fields = ('email', 'phone', 'first_name', 'last_name')
     list_filter = ('is_active',)
-    inlines = [OwnerBankDetailsInline]
+    inlines = [OwnerBankDetailsInline, WalletTransactionInline]
+    readonly_fields = ('total_earnings', 'total_paid', 'current_wallet_balance_display')
     
+    fieldsets = (
+        (None, {
+            'fields': ('email', 'phone', 'first_name', 'last_name', 'is_active')
+        }),
+        (_('💸 Record Payout (Manual Payment)'), {
+            'fields': ('record_payout_amount', 'payout_description'),
+            'description': _('Record a payment made to this partner. This will create a payout transaction and decrease their balance.')
+        }),
+        (_('💰 Financial Summary'), {
+            'fields': (('total_earnings', 'total_paid', 'current_wallet_balance_display'),),
+            'description': _('Earnings and Payouts overview for this partner.')
+        }),
+    )
+
     def get_queryset(self, request):
         return super().get_queryset(request).filter(role=UserRole.ZONE_OWNER)
         
     @admin.display(boolean=True, description='Bank Details Provided')
     def has_bank_details(self, obj):
         return hasattr(obj, 'bank_details')
+
+    @admin.display(description=_('Total Earnings'))
+    def total_earnings(self, obj):
+        amount = WalletTransaction.objects.filter(
+            user=obj, transaction_type='earning', status='completed'
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        return f"{obj.country.currency_symbol if obj.country else ''} {amount:,.2f}"
+
+    @admin.display(description=_('Total Paid (Payouts)'))
+    def total_paid(self, obj):
+        amount = WalletTransaction.objects.filter(
+            user=obj, transaction_type='payout', status='completed'
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        # Payouts are stored as negative adjustments usually, but let's show as positive total paid
+        return f"{obj.country.currency_symbol if obj.country else ''} {abs(amount):,.2f}"
+
+    @admin.display(description=_('Current Balance'))
+    def current_wallet_balance_display(self, obj):
+        return f"{obj.country.currency_symbol if obj.country else ''} {obj.wallet_balance:,.2f}"
+    
+    @admin.display(description=_('Balance'))
+    def current_wallet_balance(self, obj):
+        return f"{obj.wallet_balance:,.2f}"
+
+    def save_model(self, request, obj, form, change):
+        payout_amount = form.cleaned_data.get('record_payout_amount')
+        if payout_amount and payout_amount > 0:
+            description = form.cleaned_data.get('payout_description', 'Manual Payout')
+            # Adjust wallet balance (passing negative amount for payout)
+            obj.adjust_wallet_balance(
+                -payout_amount, 
+                transaction_type='payout', 
+                description=description
+            )
+            messages.success(request, f"✅ Successfully recorded payout of {payout_amount}")
+        
+        super().save_model(request, obj, form, change)

@@ -73,23 +73,40 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
         return self.full_name
 
     @transaction.atomic
-    def adjust_wallet_balance(self, amount, country=None):
+    def adjust_wallet_balance(self, amount, country=None, transaction_type=None, description=None, parking_session=None):
         """
         Adjusts the user's wallet balance.
         Positive amount for deposits/refunds, negative for payments.
         """
+        from apps.payments.models import WalletTransaction
         from django.db.models import F
         target_country = country or self.country
         
         if target_country:
-            wallet, _ = Wallet.objects.get_or_create(user=self, country=target_country)
+            wallet, _ = Wallet.objects.select_for_update().get_or_create(user=self, country=target_country)
+            opening_balance = wallet.balance
             wallet.balance = F('balance') + amount
             wallet.save(update_fields=['balance'])
             wallet.refresh_from_db()
+            closing_balance = wallet.balance
         else:
+            opening_balance = self.wallet_balance_legacy
             self.wallet_balance_legacy = F('wallet_balance_legacy') + amount
             self.save(update_fields=['wallet_balance_legacy'])
             self.refresh_from_db()
+            closing_balance = self.wallet_balance_legacy
+
+        if transaction_type:
+            return WalletTransaction.objects.create(
+                user=self,
+                amount=amount,
+                transaction_type=transaction_type,
+                description=description or f"Wallet adjustment: {amount}",
+                parking_session=parking_session,
+                opening_balance=opening_balance,
+                closing_balance=closing_balance,
+                status='completed'
+            )
 
     def save(self, *args, **kwargs):
         if not self.country and self.phone:

@@ -262,21 +262,19 @@ class ParkingSession(RegionalModel, BaseModel):
             
             from django.db.models import F
             user = self.vehicle.user
-            user.adjust_wallet_balance(refund_amount)
-            
-            wallet_tx = WalletTransaction.objects.create(
-                user=user,
-                amount=refund_amount,
+            wallet_tx = user.adjust_wallet_balance(
+                refund_amount,
                 transaction_type='refund',
                 description=f'Refund for early session end at {self.zone.name}',
-                status='completed',
-                parking_session=self,
-                metadata={
-                    'session_id': str(self.id),
-                    'estimated_cost': str(self.estimated_cost),
-                    'final_cost': str(self.final_cost),
-                }
+                parking_session=self
             )
+            # Update metadata if needed
+            wallet_tx.metadata.update({
+                'session_id': str(self.id),
+                'estimated_cost': str(self.estimated_cost),
+                'final_cost': str(self.final_cost),
+            })
+            wallet_tx.save(update_fields=['metadata'])
             
             notify_wallet_refund(wallet_tx, self)
         
@@ -289,21 +287,14 @@ class ParkingSession(RegionalModel, BaseModel):
             owner_earnings = self.final_cost - commission_amount
             
             if owner_earnings > 0:
-                owner.adjust_wallet_balance(owner_earnings, country=self.zone.country)
-                WalletTransaction.objects.create(
-                    user=owner,
-                    amount=owner_earnings,
+                owner.adjust_wallet_balance(
+                    owner_earnings, 
+                    country=self.zone.country,
                     transaction_type='earning',
                     description=f'Earnings from parking session {self.id} at {self.zone.name}',
-                    status='completed',
-                    parking_session=self,
-                    metadata={
-                        'session_id': str(self.id),
-                        'total_cost': str(self.final_cost),
-                        'commission_deducted': str(commission_amount),
-                        'commission_rate': str(self.zone.commission_rate)
-                    }
+                    parking_session=self
                 )
+                # Note: Metadata can be added here if needed by fetching the returned tx
 
         try:
             from apps.rewards.tasks import award_loyalty_points_task
@@ -355,16 +346,11 @@ class ParkingSession(RegionalModel, BaseModel):
         
         if refund_amount > 0:
             user = self.vehicle.user
-            user.adjust_wallet_balance(refund_amount)
-            
-            from apps.payments.models import WalletTransaction
-            wallet_tx = WalletTransaction.objects.create(
-                user=user,
-                amount=refund_amount,
+            wallet_tx = user.adjust_wallet_balance(
+                refund_amount,
                 transaction_type='refund',
                 description=f"Refund for cancelled session at {self.zone.name}",
-                parking_session=self,
-                status='completed'
+                parking_session=self
             )
             
             from apps.notifications.notification_triggers import notify_wallet_refund
