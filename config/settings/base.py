@@ -178,7 +178,39 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# WhiteNoise settings for development
+# Django Suit Configuration
+SUIT_CONFIG = {
+    'ADMIN_NAME': 'JAMBO PARKING',
+    'HEADER_DATE_FORMAT': 'l, j. F Y',
+    'HEADER_TIME_FORMAT': 'H:i',
+    'MENU_ICONS': {
+        'sites': 'icon-leaf',
+        'auth': 'icon-lock',
+        'accounts': 'icon-user',
+        'parking': 'icon-map-marker',
+        'payments': 'icon-shopping-cart',
+        'enforcement': 'icon-flag',
+        'notifications': 'icon-envelope',
+        'analytics': 'icon-signal',
+        'rewards': 'icon-gift',
+    },
+    'MENU_OPEN_FIRST_CHILD': True,
+    'MENU': (
+        'sites',
+        {'app': 'auth', 'icon': 'icon-lock', 'models': ('user', 'group')},
+        {'app': 'accounts', 'icon': 'icon-user', 'models': ('user', 'vehicle', 'otpcode')},
+        {'app': 'parking', 'icon': 'icon-map-marker', 'models': ('country', 'zone', 'parkingslot', 'parkingsession', 'reservation')},
+        {'app': 'payments', 'icon': 'icon-shopping-cart', 'models': ('paymentmethod', 'transaction', 'wallet', 'wallettransaction')},
+        {'app': 'enforcement', 'icon': 'icon-flag', 'models': ('violation', 'officerlog', 'officerstatus', 'qrcodescan')},
+        {'app': 'notifications', 'icon': 'icon-envelope', 'models': ('notification', 'smstemplate')},
+        {'app': 'rewards', 'icon': 'icon-gift', 'models': ('loyaltypoint', 'reward', 'userreward')},
+        {'label': 'Zone Owner Portal', 'icon': 'icon-home', 'url': '/admin/zone_owner_portal/'},
+    ),
+    'LIST_PER_PAGE': 20,
+    'LAYOUT': 'vertical',
+}
+
+# WhiteNoise settings
 WHITENOISE_USE_FINDERS = True
 WHITENOISE_AUTOREFRESH = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
