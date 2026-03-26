@@ -22,11 +22,13 @@ class DeviceSessionJWTAuthentication(JWTAuthentication):
         user, token = auth_result
 
         token_jti = token.get('jti')
-        
         if token_jti is not None:
             current_session_token = getattr(user, 'current_session_token', None)
             if current_session_token and str(current_session_token) != str(token_jti):
-                print(f"DeviceSessionJWTAuthentication: session mismatch: user={user.id} current_db={current_session_token} token_jti={token_jti}")
+                print(f"DeviceSessionJWTAuthentication: SESSION MISMATCH for user {user.phone} ({user.id})")
+                print(f"  - Token JTI: {token_jti}")
+                print(f"  - DB Session: {current_session_token}")
+                print(f"  - Request Path: {request.path}")
                 raise AuthenticationFailed('Session expired. You have logged in on another device.')
         
         return user, token

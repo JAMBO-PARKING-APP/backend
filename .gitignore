@@ -1,38 +1,21 @@
-# Python
 __pycache__/
 *.py[cod]
 *$py.class
-
-# Django
 *.log
 local_settings.py
-
 db.sqlite3-journal
 media/
 staticfiles/
-
-# Environment
 .venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
-
-# IDE
 .idea/
-.vscode/
-
-# OS
+.vscode
 .DS_Store
 Thumbs.db
-
-# Secrets and Keys
-
-# Actually, the user app might need google-services.json to build, 
-# but for the backend repo, they definitely shouldn't be there.
-# Let's be safe and ignore all JSON files in the root or specifically the identified ones.
-
 *.key
 *.pem
 parking_officer_app/

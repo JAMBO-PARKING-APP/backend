@@ -109,10 +109,13 @@ class OfficerStatusToggleAPIView(APIView):
             status_obj.went_offline_at = timezone.now()
             action = 'offline'
         
-        if latitude and longitude:
+        if latitude and longitude and str(latitude).strip() and str(longitude).strip():
             from apps.common.utils import truncate_coord
             status_obj.latitude = truncate_coord(latitude)
             status_obj.longitude = truncate_coord(longitude)
+        else:
+            status_obj.latitude = None
+            status_obj.longitude = None
         
         status_obj.save()
         

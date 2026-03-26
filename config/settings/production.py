@@ -11,12 +11,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_BROWSER_XSS_FILTER = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+# Database override removed to use base.py settings (PostgreSQL via env)
 
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'

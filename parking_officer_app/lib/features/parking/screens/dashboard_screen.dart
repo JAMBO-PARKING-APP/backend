@@ -180,45 +180,68 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 color: AppTheme.textPrimary,
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'Go online to see enforcement zones and start your patrol shift.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppTheme.textSecondary,
-                                height: 1.5,
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                            ElevatedButton(
-                              onPressed: () async {
-                                final pos = await LocationService().getCurrentPosition();
-                                if (pos != null) {
-                                  officer.toggleOnlineStatus(
-                                    true,
-                                    latitude: pos.latitude,
-                                    longitude: pos.longitude,
-                                  );
-                                } else {
-                                  officer.toggleOnlineStatus(true);
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryColor,
-                                minimumSize: const Size(double.infinity, 56),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              child: const Text(
-                                'GO ONLINE',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                            ),
+                             const SizedBox(height: 12),
+                             const Text(
+                               'Go online to see enforcement zones and start your patrol shift.',
+                               textAlign: TextAlign.center,
+                               style: TextStyle(
+                                 fontSize: 14,
+                                 color: AppTheme.textSecondary,
+                                 height: 1.5,
+                               ),
+                             ),
+                             if (officer.errorMessage != null) ...[
+                               const SizedBox(height: 16),
+                               Container(
+                                 padding: const EdgeInsets.all(12),
+                                 decoration: BoxDecoration(
+                                   color: Colors.red.withValues(alpha: 0.1),
+                                   borderRadius: BorderRadius.circular(12),
+                                   border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                                 ),
+                                 child: Text(
+                                   officer.errorMessage!,
+                                   textAlign: TextAlign.center,
+                                   style: const TextStyle(
+                                     color: Colors.red,
+                                     fontSize: 12,
+                                     fontWeight: FontWeight.w600,
+                                   ),
+                                 ),
+                               ),
+                             ],
+                             const SizedBox(height: 32),
+                             if (officer.isLoading)
+                               const CircularProgressIndicator()
+                             else
+                               ElevatedButton(
+                                 onPressed: () async {
+                                   final pos = await LocationService().getCurrentPosition();
+                                   if (pos != null) {
+                                     officer.toggleOnlineStatus(
+                                       true,
+                                       latitude: pos.latitude,
+                                       longitude: pos.longitude,
+                                     );
+                                   } else {
+                                     officer.toggleOnlineStatus(true);
+                                   }
+                                 },
+                                 style: ElevatedButton.styleFrom(
+                                   backgroundColor: AppTheme.primaryColor,
+                                   minimumSize: const Size(double.infinity, 56),
+                                   shape: RoundedRectangleBorder(
+                                     borderRadius: BorderRadius.circular(16),
+                                   ),
+                                 ),
+                                 child: const Text(
+                                   'GO ONLINE',
+                                   style: TextStyle(
+                                     fontWeight: FontWeight.bold,
+                                     letterSpacing: 1,
+                                   ),
+                                 ),
+                               ),
                           ],
                         ),
                       ),
