@@ -8,8 +8,13 @@ import 'package:parking_user_app/features/parking/models/zone_model.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_user_app/widgets/payment_selection_dialog.dart';
 import 'package:parking_user_app/features/payments/services/payment_service.dart';
+import 'package:parking_user_app/features/payments/providers/payment_provider.dart';
+import 'package:parking_user_app/features/payments/screens/pesapal_webview_screen.dart';
 import 'package:parking_user_app/core/localizations.dart';
+import 'package:parking_user_app/core/dialog_service.dart';
 import 'package:parking_user_app/features/parking/screens/active_session_screen.dart';
+import 'package:parking_user_app/widgets/base_scaffold.dart';
+import 'package:parking_user_app/features/home/screens/home_screen.dart';
 
 class CreateReservationScreen extends StatefulWidget {
   final Zone? initialZone;
@@ -28,6 +33,9 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
   TimeOfDay _startTime = TimeOfDay.now();
   int _durationMinutes = 60;
 
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +50,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
   }
 
   void _handleCreate() async {
+    if (!mounted) return;
     final l10n = AppLocalizations.of(context);
     if (_selectedVehicleId == null || _selectedZoneId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -123,7 +132,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
         onWalletSelected: () async {
           if (!mounted) return;
           DialogService.showLoading(
-            message: widget.isImmediate ? l10n.startingSession : l10n.processingReservation,
+            message: widget.isImmediate ? l10n.sessionStarting : l10n.processingReservation,
           );
 
           try {
@@ -401,7 +410,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
             ElevatedButton(
               onPressed: () async {
                 Navigator.pop(context); // Close dialog
-                DialogService.showLoading(message: l10n.startingSession);
+                DialogService.showLoading(message: l10n.sessionStarting);
                 try {
                   final parkingProvider = this.context.read<ParkingProvider>();
                   final session = await parkingProvider.startParking(
@@ -440,7 +449,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-              child: Text(l10n.startSessionNow.toUpperCase()),
+              child: Text(l10n.startParkingNow.toUpperCase()),
             ),
         ],
       ),
@@ -449,6 +458,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return BaseScaffold(
       title: widget.isImmediate ? l10n.startParking : l10n.bookSpot,
       showDrawer: true,
@@ -566,7 +576,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          l10n.startTime,
+                          'Start Time',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),

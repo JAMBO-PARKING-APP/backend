@@ -523,7 +523,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                           elevation: 0,
                         ),
-                        child: Text(AppLocalizations.of(context).extendParking.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                        child: Text(AppLocalizations.of(context).extendDuration.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                       ),
                       const SizedBox(height: 16),
                       TextButton(

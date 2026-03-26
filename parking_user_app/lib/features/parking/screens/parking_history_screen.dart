@@ -5,7 +5,7 @@ import 'package:parking_user_app/features/parking/providers/parking_provider.dar
 import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:parking_user_app/core/utils/currency_formatter.dart';
 import 'package:parking_user_app/core/app_theme.dart';
-import 'package:parking_user_app/features/parking/screens/session_detail_screen.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 import 'package:parking_user_app/core/constants.dart';
 
@@ -92,11 +92,8 @@ class _ParkingHistoryScreenState extends State<ParkingHistoryScreen> {
 
                 return InkWell(
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SessionDetailScreen(session: session),
-                      ),
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Session details coming soon')),
                     );
                   },
                   borderRadius: BorderRadius.circular(20),

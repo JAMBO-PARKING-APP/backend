@@ -72,7 +72,7 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return BaseScaffold(
-      title: l10n.parkingZones,
+      title: l10n.zones,
       showDrawer: false,
       currentIndex: 1, // Zones index
       onTabChanged: (index) {
@@ -101,13 +101,13 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    l10n.noParkingFound,
+                    'No parking found',
                     style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: () => zoneProvider.fetchZones(),
-                    child: Text(l10n.retry),
+                    child: Text(l10n.tryAgain),
                   ),
                 ],
               ),
@@ -181,6 +181,7 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                                         color: AppTheme.textSecondary,
                                       ),
                                       const SizedBox(width: 4),
+                                      Expanded(
                                         child: Text(
                                           '${zone.code} • ${zone.availableSlots}/${zone.totalSlots} ${l10n.slots} • ${_calculateDistance(zone.latitude, zone.longitude).toStringAsFixed(1)} ${l10n.km}',
                                           style: const TextStyle(
@@ -238,7 +239,8 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                         ),
                         const SizedBox(height: 16),
                         const Divider(height: 1, thickness: 1),
-                        const SizedBox(height: 8),                        Row(
+                        const SizedBox(height: 8),
+                        Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             TextButton.icon(
@@ -266,7 +268,7 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                                       ),
                                     );
                                   },
-                                  child: Text(l10n.bookLater),
+                                  child: Text(l10n.bookSpot),
                                 ),
                                 const SizedBox(width: 8),
                                 ElevatedButton(

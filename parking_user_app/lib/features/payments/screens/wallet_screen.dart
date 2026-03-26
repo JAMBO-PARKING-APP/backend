@@ -64,7 +64,7 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  void _executeTokenTopUp(double amount, PaymentMethod method) async {
+  void _executeTokenTopUp(double amount, dynamic method) async {
      showDialog(
       context: context,
       barrierDismissible: false,

@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:parking_user_app/features/payments/providers/payment_provider.dart';
 import 'package:parking_user_app/features/payments/models/payment_method_model.dart';
-import 'package:parking_user_app/features/payments/widgets/saved_cards_widget.dart';
+
 import 'package:parking_user_app/core/utils/currency_formatter.dart';
 
 class PaymentSelectionDialog extends StatelessWidget {
@@ -11,7 +11,7 @@ class PaymentSelectionDialog extends StatelessWidget {
   final double walletBalance;
   final VoidCallback onWalletSelected;
   final Function(String paymentType) onPesapalSelected;
-  final Function(PaymentMethod method)? onTokenSelected;
+  final Function(dynamic method)? onTokenSelected;
 
   const PaymentSelectionDialog({
     super.key,
@@ -119,21 +119,6 @@ class PaymentSelectionDialog extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Saved Cards Section
-            Consumer<PaymentProvider>(
-              builder: (context, provider, _) {
-                if (provider.paymentMethods.isEmpty) return const SizedBox.shrink();
-                return SavedCardsWidget(
-                  paymentMethods: provider.paymentMethods,
-                  onCardSelected: (method) {
-                    Navigator.pop(context);
-                    if (onTokenSelected != null) {
-                      onTokenSelected!(method);
-                    }
-                  },
-                );
-              },
-            ),
 
             // Mobile Money / Card Option (if enabled)
             Consumer<SettingsProvider>(

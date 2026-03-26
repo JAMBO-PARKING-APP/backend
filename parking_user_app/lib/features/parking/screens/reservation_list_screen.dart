@@ -382,7 +382,7 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
             final paymentService = PaymentService();
             final result = await paymentService.executePesapalTokenPayment(
               amount: cost,
-              paymentMethodId: method.id,
+              paymentMethodId: (method as dynamic).id,
               description: "Reservation Payment: ${reservation.id}",
             );
 
