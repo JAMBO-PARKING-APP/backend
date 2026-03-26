@@ -54,9 +54,13 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                     color: isCredit ? Colors.green : Colors.red,
                   ),
                 ),
-                title: Text(tx.description),
+                title: Text(
+                  tx.description,
+                  style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
+                ),
                 subtitle: Text(
                   DateFormat('MMM dd, yyyy HH:mm').format(tx.timestamp),
+                  style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color),
                 ),
                 trailing: Consumer<SettingsProvider>(
                   builder: (context, settings, _) => Text(

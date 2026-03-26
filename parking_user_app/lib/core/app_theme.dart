@@ -19,10 +19,11 @@ class AppTheme {
   static const Color cardBackground = Colors.white;
 
   // Dark theme colors (Adjusted to White and Green as requested)
-  static const Color darkBackgroundColor = Color(0xFF0D1B2A); // Deep Navy
-  static const Color darkCardBackground = Color(0xFF1B263B); // Navy Gray
+  static const Color darkBackgroundColor = Color(0xFF121212); // Standard Dark
+  static const Color darkCardBackground = Color(0xFF1E1E1E); // Lighter Surface
   static const Color darkTextPrimary = Colors.white;
-  static const Color darkDividerColor = Color(0xFF415A77);
+  static const Color darkTextSecondary = Color(0xFFB0B0B0); // Light Gray
+  static const Color darkDividerColor = Color(0xFF2C2C2C);
 
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
@@ -205,6 +206,11 @@ class AppTheme {
     textTheme: lightTheme.textTheme.apply(
       bodyColor: darkTextPrimary,
       displayColor: darkTextPrimary,
+      decorationColor: darkTextPrimary,
+    ).copyWith(
+      bodyMedium: lightTheme.textTheme.bodyMedium?.copyWith(color: darkTextSecondary),
+      bodySmall: lightTheme.textTheme.bodySmall?.copyWith(color: darkTextSecondary),
+      titleSmall: lightTheme.textTheme.titleSmall?.copyWith(color: darkTextSecondary),
     ),
     inputDecorationTheme: lightTheme.inputDecorationTheme.copyWith(
       fillColor: darkCardBackground,
@@ -212,8 +218,9 @@ class AppTheme {
         borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: darkDividerColor, width: 1),
       ),
+      labelStyle: const TextStyle(color: darkTextSecondary),
       hintStyle: lightTheme.inputDecorationTheme.hintStyle?.copyWith(
-        color: darkTextPrimary.withOpacity(0.5),
+        color: darkTextSecondary.withOpacity(0.5),
       ),
     ),
   );

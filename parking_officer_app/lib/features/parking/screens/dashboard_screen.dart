@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:provider/provider.dart';
 import 'package:parking_officer_app/features/parking/providers/zone_provider.dart';
+import 'package:parking_officer_app/features/parking/models/parking_session_model.dart';
 import 'package:parking_officer_app/features/enforcement/providers/officer_provider.dart';
 import 'package:parking_officer_app/core/app_theme.dart';
 import 'package:parking_officer_app/features/parking/screens/zone_detail_screen.dart';
@@ -272,92 +273,114 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildZoneMonitor() {
-    return Stack(
+    return Column(
       children: [
-        // Base Layer: Map
-        _buildPatrolMap(),
+        _buildPatrolHeader(),
+        Expanded(
+          child: Consumer<ZoneProvider>(
+            builder: (context, zoneProvider, _) {
+              if (zoneProvider.isLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-        // Top Layer: Status & Duty Header
-        Positioned(top: 0, left: 0, right: 0, child: _buildPatrolHeader()),
+              // Automatically select first zone if none selected
+              if (zoneProvider.selectedZone == null && zoneProvider.zones.isNotEmpty) {
+                Future.microtask(() => zoneProvider.selectZone(zoneProvider.zones.first.id));
+              }
 
-        // Bottom Layer: Zone Stats Overlay
-        Positioned(
-          bottom: 120, // Moved up to clear the new floating nav bar
-          left: 20,
-          right: 20,
-          child: _buildZoneSummaryOverlay(),
+              final sessions = zoneProvider.activeSessions;
+              
+              if (sessions.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.directions_car_filled_outlined, size: 64, color: Colors.grey.withValues(alpha: 0.3)),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'No active vehicles in this zone',
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 16),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.only(top: 8, left: 16, right: 16, bottom: 120),
+                itemCount: sessions.length,
+                itemBuilder: (context, index) {
+                  final session = sessions[index];
+                  return _buildVehiclePatrolCard(session);
+                },
+              );
+            },
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildPatrolMap() {
-    return Consumer<ZoneProvider>(
-      builder: (context, zoneProvider, _) {
-        final zones = zoneProvider.zones;
-        final initialCenter = zones.isNotEmpty
-            ? LatLng(zones.first.latitude, zones.first.longitude)
-            : const LatLng(0.3476, 32.5825); // Kampala Default
-
-        return FlutterMap(
-          options: MapOptions(
-            initialCenter: initialCenter,
-            initialZoom: 15.0,
-            maxZoom: 18.0,
-            minZoom: 12.0,
+  Widget _buildVehiclePatrolCard(ParkingSession session) {
+    final remaining = session.plannedEndTime.difference(DateTime.now());
+    final isOverdue = remaining.isNegative;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          children: [
-            TileLayer(
-              urlTemplate:
-                  'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-              subdomains: const ['a', 'b', 'c', 'd'],
-              userAgentPackageName: 'com.smartparking.officer',
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        leading: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: (isOverdue ? Colors.red : AppTheme.primaryColor).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            Icons.directions_car_rounded,
+            color: isOverdue ? Colors.red : AppTheme.primaryColor,
+          ),
+        ),
+        title: Text(
+          session.vehiclePlate,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            letterSpacing: 1.2,
+          ),
+        ),
+        subtitle: Text(
+          'Ends: ${session.plannedEndTime.hour}:${session.plannedEndTime.minute.toString().padLeft(2, '0')}',
+          style: TextStyle(color: Colors.grey[600]),
+        ),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: isOverdue ? Colors.red : Colors.green[50],
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            isOverdue 
+                ? 'OVERDUE' 
+                : '${remaining.inHours}:${(remaining.inMinutes % 60).toString().padLeft(2, '0')}:${(remaining.inSeconds % 60).toString().padLeft(2, '0')}',
+            style: TextStyle(
+              color: isOverdue ? Colors.white : Colors.green[700],
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
             ),
-            MarkerLayer(
-              markers: zones.map((zone) {
-                return Marker(
-                  point: LatLng(zone.latitude, zone.longitude),
-                  width: 80,
-                  height: 80,
-                  child: GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ZoneDetailScreen(zone: zone),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryColor,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                          child: Text(
-                            '${(zone.occupiedSlots / zone.totalSlots * 100).toInt()}%',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                        const Icon(
-                          Icons.location_on_rounded,
-                          color: AppTheme.primaryColor,
-                          size: 32,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        );
-      },
+          ),
+        ),
+      ),
     );
   }
 

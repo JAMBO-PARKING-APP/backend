@@ -129,6 +129,42 @@ abstract class AppLocalizations {
   String get english;
   String get french;
   String get german;
+  String get swahili;
+  String get spanish;
+  String get arabic;
+  String get system;
+  String get hostParkingSpace;
+  String get hostParkingSpaceSubtitle;
+  String get helpCenter;
+  String get privacyPolicy;
+  String get termsOfService;
+  String get aboutSpacePark;
+  String get secureParkingMadeEasy;
+  String get alreadyHaveAccount;
+  String get dontHaveAccount;
+  String get joinSpacePark;
+  String get iAcceptThe;
+  String get terms;
+  String get loginToYourAccount;
+  String get forgotPassword;
+  String get comingSoon;
+  String get passwordResetSoon;
+  String get confirmYourPasswordPrompt;
+  String get passwordsDoNotMatch;
+  String get passwordTooShort;
+  String get registrationFailed;
+  String get accountDeletionRequested;
+  String get failedToRequestDeletion;
+  String get permissionsUpdated;
+  String get uploadingPhoto;
+  String get photoUpdated;
+  String get uploadFailed;
+  String get deleteAccountConfirmation;
+  String get yourDigitalPass;
+  String get scanToVerify;
+  String get name;
+  String get vehicleLabel;
+  String get partnerProgram;
   String get selectCountry;
   String get pleaseSelectCountry;
   String get continueText;
@@ -385,6 +421,78 @@ class _EnglishLocalizations extends AppLocalizations {
   String get french => 'French';
   @override
   String get german => 'German';
+  @override
+  String get swahili => 'Swahili';
+  @override
+  String get spanish => 'Spanish';
+  @override
+  String get arabic => 'Arabic';
+  @override
+  String get system => 'System Default';
+  @override
+  String get hostParkingSpace => 'Host a Parking Space';
+  @override
+  String get hostParkingSpaceSubtitle => 'Earn money by listing your empty space!';
+  @override
+  String get helpCenter => 'Help Center';
+  @override
+  String get privacyPolicy => 'Privacy Policy';
+  @override
+  String get termsOfService => 'Terms of Service';
+  @override
+  String get aboutSpacePark => 'About Space Park';
+  @override
+  String get secureParkingMadeEasy => 'SECURE PARKING MADE EASY';
+  @override
+  String get alreadyHaveAccount => 'Already have an account?';
+  @override
+  String get dontHaveAccount => 'Don\'t have an account?';
+  @override
+  String get joinSpacePark => 'Join Space Park';
+  @override
+  String get iAcceptThe => 'I accept the ';
+  @override
+  String get terms => 'Terms';
+  @override
+  String get loginToYourAccount => 'Login to your Space Park account';
+  @override
+  String get forgotPassword => 'Forgot Password?';
+  @override
+  String get comingSoon => 'Coming soon!';
+  @override
+  String get passwordResetSoon => 'Password reset functionality coming soon!';
+  @override
+  String get confirmYourPasswordPrompt => 'Confirm your password';
+  @override
+  String get passwordsDoNotMatch => 'Passwords do not match';
+  @override
+  String get passwordTooShort => 'Password too short';
+  @override
+  String get registrationFailed => 'Registration failed';
+  @override
+  String get accountDeletionRequested => 'Account deletion requested.';
+  @override
+  String get failedToRequestDeletion => 'Failed to request deletion.';
+  @override
+  String get permissionsUpdated => 'Permissions updated';
+  @override
+  String get uploadingPhoto => 'Uploading photo...';
+  @override
+  String get photoUpdated => 'Photo updated';
+  @override
+  String get uploadFailed => 'Upload failed';
+  @override
+  String get deleteAccountConfirmation => 'Are you sure you want to delete your account? This action cannot be undone immediately, but your data will be kept for 30 days before permanent deletion.';
+  @override
+  String get yourDigitalPass => 'Your Digital Pass';
+  @override
+  String get scanToVerify => 'Scan this code to verify your identity';
+  @override
+  String get name => 'Name';
+  @override
+  String get vehicleLabel => 'Vehicle';
+  @override
+  String get partnerProgram => 'PARTNER PROGRAM';
   @override
   String get selectCountry => 'Select Your Country';
   @override
@@ -731,6 +839,78 @@ class _SwahiliLocalizations extends AppLocalizations {
   @override
   String get german => 'Kijerumani';
   @override
+  String get swahili => 'Kiswahili';
+  @override
+  String get spanish => 'Kihispania';
+  @override
+  String get arabic => 'Kiarabu';
+  @override
+  String get system => 'Mfumo Chaguomsingi';
+  @override
+  String get hostParkingSpace => 'Miliki Nafasi ya Maegesho';
+  @override
+  String get hostParkingSpaceSubtitle => 'Pata pesa kwa kuorodhesha nafasi yako tupu!';
+  @override
+  String get helpCenter => 'Kituo cha Msaada';
+  @override
+  String get privacyPolicy => 'Sera ya Faragha';
+  @override
+  String get termsOfService => 'Masharti ya Huduma';
+  @override
+  String get aboutSpacePark => 'Kuhusu Space Park';
+  @override
+  String get secureParkingMadeEasy => 'MAEGESHO SALAMA YALERAHISISHWA';
+  @override
+  String get alreadyHaveAccount => 'Tayari una akaunti?';
+  @override
+  String get dontHaveAccount => 'Hauna akaunti?';
+  @override
+  String get joinSpacePark => 'Jiunge na Space Park';
+  @override
+  String get iAcceptThe => 'Ninakubali ';
+  @override
+  String get terms => 'Masharti';
+  @override
+  String get loginToYourAccount => 'Ingia kwenye akaunti yako ya Space Park';
+  @override
+  String get forgotPassword => 'Umesahau Neno la Siri?';
+  @override
+  String get comingSoon => 'Inakuja hivi karibuni!';
+  @override
+  String get passwordResetSoon => 'Utendaji wa kuweka upya neno la siri unakuja hivi karibuni!';
+  @override
+  String get confirmYourPasswordPrompt => 'Thibitisha neno lako la siri';
+  @override
+  String get passwordsDoNotMatch => 'Neno la siri halilingani';
+  @override
+  String get passwordTooShort => 'Neno la siri ni fupi sana';
+  @override
+  String get registrationFailed => 'Usajili umeshindwa';
+  @override
+  String get accountDeletionRequested => 'Ombi la kufuta akaunti limetumwa.';
+  @override
+  String get failedToRequestDeletion => 'Imeshindwa kutuma ombi la kufuta.';
+  @override
+  String get permissionsUpdated => 'Ruhusa zimepata upya';
+  @override
+  String get uploadingPhoto => 'Inapakia picha...';
+  @override
+  String get photoUpdated => 'Picha imesasishwa';
+  @override
+  String get uploadFailed => 'Upakiaji umeshindwa';
+  @override
+  String get deleteAccountConfirmation => 'Je, una uhakika unataka kufuta akaunti yako? Hatua hii haiwezi kubadilishwa mara moja, lakini data yako itahifadhiwa kwa siku 30 kabla ya kufutwa kabisa.';
+  @override
+  String get yourDigitalPass => 'Pasi Yako ya Dijitali';
+  @override
+  String get scanToVerify => 'Skena msimbo huu ili kuthibitisha utambulisho wako';
+  @override
+  String get name => 'Jina';
+  @override
+  String get vehicleLabel => 'Chombo';
+  @override
+  String get partnerProgram => 'MPANGO WA WASHIRIKA';
+  @override
   String get selectCountry => 'Chagua Nchi Yako';
   @override
   String get pleaseSelectCountry => 'Tafadhali chagua nchi yako ili kuendelea';
@@ -1076,6 +1256,78 @@ class _FrenchLocalizations extends AppLocalizations {
   String get french => 'Français';
   @override
   String get german => 'Allemand';
+  @override
+  String get swahili => 'Swahili';
+  @override
+  String get spanish => 'Espagnol';
+  @override
+  String get arabic => 'Arabe';
+  @override
+  String get system => 'Par Défaut';
+  @override
+  String get hostParkingSpace => 'Accueillir une Place';
+  @override
+  String get hostParkingSpaceSubtitle => 'Gagnez de l\'argent en listant votre espace!';
+  @override
+  String get helpCenter => 'Centre d\'Aide';
+  @override
+  String get privacyPolicy => 'Confidentialité';
+  @override
+  String get termsOfService => 'Conditions d\'Utilisation';
+  @override
+  String get aboutSpacePark => 'À Propos';
+  @override
+  String get secureParkingMadeEasy => 'PARKING SÉCURISÉ SIMPLIFIÉ';
+  @override
+  String get alreadyHaveAccount => 'Vous avez déjà un compte ?';
+  @override
+  String get dontHaveAccount => 'Vous n\'avez pas de compte ?';
+  @override
+  String get joinSpacePark => 'Rejoindre Space Park';
+  @override
+  String get iAcceptThe => 'J\'accepte les ';
+  @override
+  String get terms => 'Conditions';
+  @override
+  String get loginToYourAccount => 'Connectez-vous à votre compte';
+  @override
+  String get forgotPassword => 'Mot de passe oublié ?';
+  @override
+  String get comingSoon => 'Bientôt disponible !';
+  @override
+  String get passwordResetSoon => 'Réinitialisation bientôt disponible !';
+  @override
+  String get confirmYourPasswordPrompt => 'Confirmez votre mot de passe';
+  @override
+  String get passwordsDoNotMatch => 'Les mots de passe ne correspondent pas';
+  @override
+  String get passwordTooShort => 'Mot de passe trop court';
+  @override
+  String get registrationFailed => 'Échec de l\'inscription';
+  @override
+  String get accountDeletionRequested => 'Suppression de compte demandée.';
+  @override
+  String get failedToRequestDeletion => 'Échec de la demande de suppression.';
+  @override
+  String get permissionsUpdated => 'Autorisations mises à jour';
+  @override
+  String get uploadingPhoto => 'Téléchargement de la photo...';
+  @override
+  String get photoUpdated => 'Photo mise à jour';
+  @override
+  String get uploadFailed => 'Échec du téléchargement';
+  @override
+  String get deleteAccountConfirmation => 'Êtes-vous sûr de vouloir supprimer votre compte ? Cette action ne peut pas être annulée immédiatement, mais vos données seront conservées pendant 30 jours avant suppression définitive.';
+  @override
+  String get yourDigitalPass => 'Votre Pass Numérique';
+  @override
+  String get scanToVerify => 'Scannez ce code pour vérifier votre identité';
+  @override
+  String get name => 'Nom';
+  @override
+  String get vehicleLabel => 'Véhicule';
+  @override
+  String get partnerProgram => 'PROGRAMME PARTENAIRE';
   @override
   String get selectCountry => 'Sélectionnez votre pays';
   @override
@@ -1426,6 +1678,78 @@ class _SpanishLocalizations extends AppLocalizations {
   @override
   String get german => 'Alemán';
   @override
+  String get swahili => 'Swahili';
+  @override
+  String get spanish => 'Español';
+  @override
+  String get arabic => 'Árabe';
+  @override
+  String get system => 'Sistema';
+  @override
+  String get hostParkingSpace => 'Alquilar una Plaza';
+  @override
+  String get hostParkingSpaceSubtitle => '¡Gane dinero alquilando su espacio!';
+  @override
+  String get helpCenter => 'Centro de Ayuda';
+  @override
+  String get privacyPolicy => 'Privacidad';
+  @override
+  String get termsOfService => 'Condiciones';
+  @override
+  String get aboutSpacePark => 'Acerca de';
+  @override
+  String get secureParkingMadeEasy => 'ESTACIONAMIENTO SEGURO FÁCIL';
+  @override
+  String get alreadyHaveAccount => '¿Ya tienes una cuenta?';
+  @override
+  String get dontHaveAccount => '¿No tienes una cuenta?';
+  @override
+  String get joinSpacePark => 'Únete a Space Park';
+  @override
+  String get iAcceptThe => 'Acepto los ';
+  @override
+  String get terms => 'Términos';
+  @override
+  String get loginToYourAccount => 'Inicia sesión en tu cuenta';
+  @override
+  String get forgotPassword => '¿Olvidaste tu contraseña?';
+  @override
+  String get comingSoon => '¡Próximamente!';
+  @override
+  String get passwordResetSoon => '¡Restablecimiento próximamente!';
+  @override
+  String get confirmYourPasswordPrompt => 'Confirma tu contraseña';
+  @override
+  String get passwordsDoNotMatch => 'Las contraseñas no coinciden';
+  @override
+  String get passwordTooShort => 'Contraseña demasiado corta';
+  @override
+  String get registrationFailed => 'Error en el registro';
+  @override
+  String get accountDeletionRequested => 'Eliminación de cuenta solicitada.';
+  @override
+  String get failedToRequestDeletion => 'Error al solicitar la eliminación.';
+  @override
+  String get permissionsUpdated => 'Permisos actualizados';
+  @override
+  String get uploadingPhoto => 'Subiendo foto...';
+  @override
+  String get photoUpdated => 'Foto actualizada';
+  @override
+  String get uploadFailed => 'Error al subir';
+  @override
+  String get deleteAccountConfirmation => '¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer de inmediato, pero tus datos se guardarán durante 30 días antes de la eliminación permanente.';
+  @override
+  String get yourDigitalPass => 'Tu Pase Digital';
+  @override
+  String get scanToVerify => 'Escanea este código para verificar tu identidad';
+  @override
+  String get name => 'Nombre';
+  @override
+  String get vehicleLabel => 'Vehículo';
+  @override
+  String get partnerProgram => 'PROGRAMA DE SOCIOS';
+  @override
   String get selectCountry => 'Selecciona tu país';
   @override
   String get pleaseSelectCountry => 'Por favor, selecciona tu país para continuar';
@@ -1571,8 +1895,6 @@ class _SpanishLocalizations extends AppLocalizations {
   @override
   String get themeSettings => 'Ajustes de tema';
   @override
-  String get system => 'Sistema';
-  @override
   String get current => 'Actual';
   @override
   String get appVersion => 'Versión de la aplicación';
@@ -1645,7 +1967,27 @@ class _GermanLocalizations extends AppLocalizations {
   @override
   String get confirm => 'Bestätigen';
   @override
-  String get areYouSure => 'Sind Sie sicher?';
+  String get preferences => 'Einstellungen';
+
+  @override
+  String get detectingLocation => 'Standort wird ermittelt';
+  @override
+  String get detectingLocationSubtitle =>
+      'Wir identifizieren Ihr Land, um Ihnen das beste Erlebnis zu bieten.';
+  @override
+  String get spaceAvailableInCountry => 'SPACE ist in Ihrem Land verfügbar!';
+  @override
+  String get spaceNotAvailableTitle => 'SPACE ist in Ihrer Region noch nicht verfügbar';
+  @override
+  String spaceNotAvailableBody(String countryName) =>
+      'Wir sind noch nicht in $countryName verfügbar. Wir arbeiten hart daran!';
+  @override
+  String get retryDetection => 'Erneut versuchen';
+  @override
+  String get locationDetectionFailed => 'Standort konnte nicht erkannt werden';
+  @override
+  String get locationDetectionFailedSubtitle =>
+      'Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.';
   @override
   String get deleteAccount => 'Konto löschen';
   @override
@@ -1775,6 +2117,78 @@ class _GermanLocalizations extends AppLocalizations {
   String get french => 'Französisch';
   @override
   String get german => 'Deutsch';
+  @override
+  String get swahili => 'Swahili';
+  @override
+  String get spanish => 'Spanisch';
+  @override
+  String get arabic => 'Arabisch';
+  @override
+  String get system => 'Systemstandard';
+  @override
+  String get hostParkingSpace => 'Parkplatz vermieten';
+  @override
+  String get hostParkingSpaceSubtitle => 'Geld verdienen durch Vermietung!';
+  @override
+  String get helpCenter => 'Hilfe-Center';
+  @override
+  String get privacyPolicy => 'Datenschutz';
+  @override
+  String get termsOfService => 'AGB';
+  @override
+  String get aboutSpacePark => 'Über Space Park';
+  @override
+  String get secureParkingMadeEasy => 'SICHERES PARKEN EINFACH GEMACHT';
+  @override
+  String get alreadyHaveAccount => 'Haben Sie bereits ein Konto?';
+  @override
+  String get dontHaveAccount => 'Haben Sie noch kein Konto?';
+  @override
+  String get joinSpacePark => 'Space Park beitreten';
+  @override
+  String get iAcceptThe => 'Ich akzeptiere die ';
+  @override
+  String get terms => 'Bedingungen';
+  @override
+  String get loginToYourAccount => 'In Ihr Konto einloggen';
+  @override
+  String get forgotPassword => 'Passwort vergessen?';
+  @override
+  String get comingSoon => 'Demnächst verfügbar!';
+  @override
+  String get passwordResetSoon => 'Passwort-Reset demnächst verfügbar!';
+  @override
+  String get confirmYourPasswordPrompt => 'Passwort bestätigen';
+  @override
+  String get passwordsDoNotMatch => 'Passwörter stimmen nicht überein';
+  @override
+  String get passwordTooShort => 'Passwort zu kurz';
+  @override
+  String get registrationFailed => 'Registrierung fehlgeschlagen';
+  @override
+  String get accountDeletionRequested => 'Kontolöschung angefordert.';
+  @override
+  String get failedToRequestDeletion => 'Anforderung fehlgeschlagen.';
+  @override
+  String get permissionsUpdated => 'Berechtigungen aktualisiert';
+  @override
+  String get uploadingPhoto => 'Foto wird hochgeladen...';
+  @override
+  String get photoUpdated => 'Foto aktualisiert';
+  @override
+  String get uploadFailed => 'Upload fehlgeschlagen';
+  @override
+  String get deleteAccountConfirmation => 'Sind Sie sicher, dass Sie Ihr Konto löschen möchten? Diese Aktion kann nicht sofort rückgängig gemacht werden, aber Ihre Daten werden 30 Tage lang aufbewahrt, bevor sie endgültig gelöscht werden.';
+  @override
+  String get yourDigitalPass => 'Ihr digitaler Pass';
+  @override
+  String get scanToVerify => 'Scannen Sie diesen Code, um Ihre Identität zu verfälschen';
+  @override
+  String get name => 'Name';
+  @override
+  String get vehicleLabel => 'Fahrzeug';
+  @override
+  String get partnerProgram => 'PARTNERPROGRAMM';
   @override
   String get selectCountry => 'Wählen Sie Ihr Land';
   @override
@@ -1927,26 +2341,6 @@ class _GermanLocalizations extends AppLocalizations {
   String get account => 'Konto';
   @override
   String get preferences => 'Einstellungen';
-
-  @override
-  String get detectingLocation => 'Standort wird ermittelt';
-  @override
-  String get detectingLocationSubtitle =>
-      'Wir identifizieren Ihr Land, um Ihnen das beste Erlebnis zu bieten.';
-  @override
-  String get spaceAvailableInCountry => 'SPACE ist in Ihrem Land verfügbar!';
-  @override
-  String get spaceNotAvailableTitle => 'SPACE ist in Ihrer Region noch nicht verfügbar';
-  @override
-  String spaceNotAvailableBody(String countryName) =>
-      'Wir sind noch nicht in $countryName verfügbar. Wir arbeiten hart daran!';
-  @override
-  String get retryDetection => 'Erneut versuchen';
-  @override
-  String get locationDetectionFailed => 'Standort konnte nicht erkannt werden';
-  @override
-  String get locationDetectionFailedSubtitle =>
-      'Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.';
 }
 
 // Arabic Localizations
@@ -2119,6 +2513,78 @@ class _ArabicLocalizations extends AppLocalizations {
   @override
   String get german => 'الألمانية';
   @override
+  String get swahili => 'السواحيلية';
+  @override
+  String get spanish => 'الإسبانية';
+  @override
+  String get arabic => 'العربية';
+  @override
+  String get system => 'النظام';
+  @override
+  String get hostParkingSpace => 'تأجير مساحة وقوف';
+  @override
+  String get hostParkingSpaceSubtitle => 'اربح المال عن طريق عرض مساحتك!';
+  @override
+  String get helpCenter => 'مركز المساعدة';
+  @override
+  String get privacyPolicy => 'سياسة الخصوصية';
+  @override
+  String get termsOfService => 'شروط الخدمة';
+  @override
+  String get aboutSpacePark => 'حول سبيس بارك';
+  @override
+  String get secureParkingMadeEasy => 'مواقف آمنة وسهلة';
+  @override
+  String get alreadyHaveAccount => 'هل لديك حساب بالفعل؟';
+  @override
+  String get dontHaveAccount => 'ليس لديك حساب؟';
+  @override
+  String get joinSpacePark => 'انضم إلى سبيس بارك';
+  @override
+  String get iAcceptThe => 'أنا أقبل ';
+  @override
+  String get terms => 'الشروط';
+  @override
+  String get loginToYourAccount => 'تسجيل الدخول إلى حسابك';
+  @override
+  String get forgotPassword => 'هل نسيت كلمة السر؟';
+  @override
+  String get comingSoon => 'قريباً!';
+  @override
+  String get passwordResetSoon => 'خاصية استعادة كلمة السر قادمة قريباً!';
+  @override
+  String get confirmYourPasswordPrompt => 'تأكيد كلمة المرور';
+  @override
+  String get passwordsDoNotMatch => 'كلمات المرور غير متطابقة';
+  @override
+  String get passwordTooShort => 'كلمة السر قصيرة جداً';
+  @override
+  String get registrationFailed => 'فشل التسجيل';
+  @override
+  String get accountDeletionRequested => 'تم طلب حذف الحساب.';
+  @override
+  String get failedToRequestDeletion => 'فشل طلب الحذف.';
+  @override
+  String get permissionsUpdated => 'تم تحديث الأذونات';
+  @override
+  String get uploadingPhoto => 'جاري رفع الصورة...';
+  @override
+  String get photoUpdated => 'تم تحديث الصورة';
+  @override
+  String get uploadFailed => 'فشل الرفع';
+  @override
+  String get deleteAccountConfirmation => 'هل أنت متأكد أنك تريد حذف حسابك؟ لا يمكن التراجع عن هذا الإجراء فوراً، ولكن سيتم الاحتفاظ ببياناتك لمدة 30 يوماً قبل الحذف الدائم.';
+  @override
+  String get yourDigitalPass => 'بطاقتك الرقمية';
+  @override
+  String get scanToVerify => 'امسح هذا الرمز للتحقق من هويتك';
+  @override
+  String get name => 'الاسم';
+  @override
+  String get vehicleLabel => 'المركبة';
+  @override
+  String get partnerProgram => 'برنامج الشركاء';
+  @override
   String get selectCountry => 'اختر بلدك';
   @override
   String get pleaseSelectCountry => 'يرجى اختيار بلدك للمتابعة';
@@ -2254,8 +2720,6 @@ class _ArabicLocalizations extends AppLocalizations {
   String get languagePreferences => 'تفضيلات اللغة';
   @override
   String get themeSettings => 'إعدادات المظهر';
-  @override
-  String get system => 'النظام';
   @override
   String get current => 'الحالي';
   @override

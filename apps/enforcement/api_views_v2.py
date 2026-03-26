@@ -9,8 +9,9 @@ Officer API Endpoints
 - Activity logs
 """
 
-from django.db import transaction
+from decimal import Decimal
 import logging
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import generics, status, serializers
 from rest_framework.decorators import permission_classes
@@ -310,7 +311,6 @@ class StartSessionByOfficerAPIView(APIView):
         try:
             from apps.parking.models import Zone, ParkingSlot
             from apps.parking.serializers_v2 import ParkingSessionSerializer
-            from decimal import Decimal
 
             vehicle = Vehicle.objects.get(id=vehicle_id, is_active=True)
             zone = Zone.objects.get(id=zone_id, is_active=True)

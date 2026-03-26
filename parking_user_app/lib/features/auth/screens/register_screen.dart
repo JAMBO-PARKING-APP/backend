@@ -86,7 +86,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 const SizedBox(height: 20),
                 Text(
-                  'Join Space Park',
+                  l10n.joinSpacePark,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).primaryColor,
@@ -194,7 +194,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   obscureText: _obscurePassword,
                   validator: (val) =>
-                      val!.length < 6 ? 'Password too short' : null,
+                      val!.length < 6 ? l10n.passwordTooShort : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -219,9 +219,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   obscureText: _obscureConfirmPassword,
                   validator: (val) {
-                    if (val!.isEmpty) return 'Confirm your password';
+                    if (val!.isEmpty) return l10n.confirmYourPasswordPrompt;
                     if (val != _passwordController.text) {
-                      return 'Passwords do not match';
+                      return l10n.passwordsDoNotMatch;
                     }
                     return null;
                   },
@@ -237,7 +237,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Expanded(
                       child: Wrap(
                         children: [
-                          const Text('I accept the '),
+                          Text(l10n.iAcceptThe),
                           GestureDetector(
                             onTap: () => Navigator.push(
                               context,
@@ -246,7 +246,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                             ),
                             child: Text(
-                              'Terms',
+                              l10n.terms,
                               style: TextStyle(
                                 color: Theme.of(context).primaryColor,
                                 fontWeight: FontWeight.bold,
@@ -283,7 +283,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           : _handleRegister,
                       child: auth.status == AuthStatus.authenticating
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('REGISTER'),
+                          : Text(l10n.register.toUpperCase()),
                     );
                   },
                 ),
@@ -291,11 +291,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Already have an account? '),
+                    Text('${l10n.alreadyHaveAccount} '),
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Text(
-                        'Login',
+                        l10n.login,
                         style: TextStyle(
                           color: Theme.of(context).primaryColor,
                           fontWeight: FontWeight.bold,

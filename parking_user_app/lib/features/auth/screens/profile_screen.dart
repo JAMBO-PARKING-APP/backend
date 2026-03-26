@@ -27,6 +27,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ImagePicker _picker = ImagePicker();
 
   Future<void> _requestPermissions() async {
+    final l10n = AppLocalizations.of(context);
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -35,23 +36,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Permissions updated')));
+      ).showSnackBar(SnackBar(content: Text(l10n.permissionsUpdated)));
     }
   }
 
   Future<void> _pickImage() async {
+    final l10n = AppLocalizations.of(context);
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null && mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Uploading photo...')));
+      ).showSnackBar(SnackBar(content: Text(l10n.uploadingPhoto)));
       final success = await context.read<AuthProvider>().updateProfilePhoto(
         image.path,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success ? 'Photo updated' : 'Upload failed'),
+            content: Text(success ? l10n.photoUpdated : l10n.uploadFailed),
             backgroundColor: success
                 ? AppTheme.successColor
                 : AppTheme.errorColor,
@@ -62,22 +64,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Account'),
-        content: const Text(
-          'Are you sure you want to delete your account? This action cannot be undone immediately, but your data will be kept for 30 days before permanent deletion.',
+        title: Text(l10n.deleteAccount),
+        content: Text(
+          l10n.deleteAccountConfirmation,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
-            child: const Text('Delete'),
+            child: Text(l10n.deleteAccount),
           ),
         ],
       ),
@@ -87,8 +90,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final success = await context.read<AuthProvider>().deleteAccount();
       if (!success && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to delete account. Please try again.'),
+          SnackBar(
+            content: Text(l10n.failedToRequestDeletion),
           ),
         );
       }
@@ -97,6 +100,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _showDigitalPass(dynamic user) {
     if (user == null) return;
+    final l10n = AppLocalizations.of(context);
     
     // Construct data string: Name, Phone, Vehicle
     final vehiclePlate = user.vehicles.isNotEmpty ? user.vehicles.first.licensePlate : 'No Vehicle';
@@ -108,9 +112,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       isScrollControlled: true,
       builder: (context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -124,13 +128,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Your Digital Pass',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+            Text(
+              l10n.yourDigitalPass,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
             ),
             const SizedBox(height: 8),
             Text(
-              'Scan this code to verify your identity',
+              l10n.scanToVerify,
               style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
             ),
             const SizedBox(height: 32),
@@ -163,9 +167,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 32),
-            _buildPassInfoRow('Name', user.fullName),
-            _buildPassInfoRow('Phone', user.phone),
-            _buildPassInfoRow('Vehicle', vehiclePlate),
+            _buildPassInfoRow(l10n.name, user.fullName),
+            _buildPassInfoRow(l10n.phone, user.phone),
+            _buildPassInfoRow(l10n.vehicleLabel, vehiclePlate),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
@@ -174,7 +178,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 minimumSize: const Size(double.infinity, 56),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
-              child: const Text('CLOSE', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+              child: Text(l10n.ok.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
             ),
           ],
         ),
@@ -188,8 +192,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+          Text(label, style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontWeight: FontWeight.w500)),
+          Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
         ],
       ),
     );
@@ -201,7 +205,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -350,7 +354,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
 
             _ProfileOptionGroup(
-              title: 'PARTNER PROGRAM',
+              title: l10n.partnerProgram,
               options: [
                 _ProfileOption(
                   icon: Icons.business_center_outlined,
@@ -370,7 +374,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               options: [
                 _ProfileOption(
                   icon: Icons.notifications_none,
-                  title: 'Notifications',
+                  title: l10n.notifications,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -391,7 +395,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               options: [
                 _ProfileOption(
                   icon: Icons.help_outline,
-                  title: 'Help Center',
+                  title: l10n.helpCenter,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -438,12 +442,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
 
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () => _confirmDeleteAccount(context),
-              child: Text(
-                'Delete Account',
-                style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+            // Delete Account Button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: OutlinedButton(
+                onPressed: () => _confirmDeleteAccount(context),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.errorColor,
+                  side: const BorderSide(color: AppTheme.errorColor, width: 1.5),
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: Text(
+                  l10n.deleteAccount.toUpperCase(),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 48),
@@ -480,7 +498,7 @@ class _ProfileOptionGroup extends StatelessWidget {
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
@@ -495,7 +513,7 @@ class _ProfileOptionGroup extends StatelessWidget {
               for (var i = 0; i < options.length; i++) ...[
                 options[i],
                 if (i < options.length - 1)
-                  Divider(height: 1, indent: 60, color: Colors.grey.shade50),
+                  Divider(height: 1, indent: 60, color: Theme.of(context).dividerColor),
               ],
             ],
           ),
@@ -530,10 +548,10 @@ class _ProfileOption extends StatelessWidget {
       ),
       title: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w600,
           fontSize: 15,
-          color: AppTheme.textPrimary,
+          color: Theme.of(context).textTheme.bodyLarge?.color,
         ),
       ),
       trailing: Icon(

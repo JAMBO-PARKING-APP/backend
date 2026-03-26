@@ -108,11 +108,11 @@ class MyApp extends StatelessWidget {
                 case AuthStatus.authenticated:
                   return const HomeScreen();
                 case AuthStatus.unauthenticated:
-                  if (!auth.hasRequestedPermissions) {
-                    return const PermissionsScreen();
-                  }
                   if (!settings.hasSelectedLanguage) {
                     return const LanguageSelectionScreen();
+                  }
+                  if (!auth.hasRequestedPermissions) {
+                    return const PermissionsScreen();
                   }
                   if (!settings.hasSelectedCountry) {
                     return CountrySelectionScreen();

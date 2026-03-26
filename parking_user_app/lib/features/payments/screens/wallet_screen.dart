@@ -180,7 +180,7 @@ class _WalletScreenState extends State<WalletScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text(
           'My Wallet',
@@ -189,7 +189,7 @@ class _WalletScreenState extends State<WalletScreen> {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: AppTheme.textPrimary,
+        foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
       ),
       body: Consumer<PaymentProvider>(
         builder: (context, provider, _) {
@@ -268,18 +268,18 @@ class _WalletScreenState extends State<WalletScreen> {
                   const SizedBox(height: 32),
 
                   // Top-up Section
-                  const Text(
+                  Text(
                     'Quick Top-up',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
                     ),
                   ),
                   const SizedBox(height: 16),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
@@ -337,7 +337,7 @@ class _WalletScreenState extends State<WalletScreen> {
                                 ),
                                 onPressed: () =>
                                     _amountController.text = amt.toString(),
-                                backgroundColor: Colors.white,
+                                backgroundColor: Theme.of(context).cardColor,
                                 elevation: 0,
                                 side: BorderSide(color: Colors.grey.shade200),
                                 padding: const EdgeInsets.symmetric(
@@ -380,12 +380,12 @@ class _WalletScreenState extends State<WalletScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Recent Transactions',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimary,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
                         ),
                       ),
                       TextButton(
@@ -417,7 +417,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     Container(
                       padding: const EdgeInsets.all(40),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: Colors.grey.shade100),
                       ),
@@ -443,7 +443,7 @@ class _WalletScreenState extends State<WalletScreen> {
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: Colors.grey.shade50),
                         ),
@@ -474,9 +474,10 @@ class _WalletScreenState extends State<WalletScreen> {
                           ),
                           title: Text(
                             tx.description,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
+                              color: Theme.of(context).textTheme.bodyLarge?.color,
                             ),
                           ),
                           subtitle: Text(

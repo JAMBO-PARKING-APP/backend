@@ -124,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Login to your Space Park account',
+                    l10n.loginToYourAccount,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: AppTheme.textSecondary,
                     ),
@@ -211,14 +211,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: TextButton(
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
+                          SnackBar(
                             content: Text(
-                              'Password reset functionality coming soon!',
+                              l10n.passwordResetSoon,
                             ),
                           ),
                         );
                       },
-                      child: const Text('Forgot Password?'),
+                      child: Text(l10n.forgotPassword),
                     ),
                   ),
 
@@ -235,9 +235,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       Expanded(
                         child: Row(
                           children: [
-                            const Text(
-                              'I accept the ',
-                              style: TextStyle(fontSize: 12),
+                            Text(
+                              l10n.iAcceptThe,
+                              style: const TextStyle(fontSize: 12),
                             ),
                             GestureDetector(
                               onTap: () => Navigator.push(
@@ -247,9 +247,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                       const TermsOfServiceScreen(),
                                 ),
                               ),
-                              child: const Text(
-                                'Terms',
-                                style: TextStyle(
+                              child: Text(
+                                l10n.terms,
+                                style: const TextStyle(
                                   fontSize: 12,
                                   color: AppTheme.primaryColor,
                                   fontWeight: FontWeight.bold,
@@ -265,9 +265,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                       const PrivacyPolicyScreen(),
                                 ),
                               ),
-                              child: const Text(
-                                'Privacy Policy',
-                                style: TextStyle(
+                              child: Text(
+                                l10n.privacyPolicy,
+                                style: const TextStyle(
                                   fontSize: 12,
                                   color: AppTheme.primaryColor,
                                   fontWeight: FontWeight.bold,
@@ -303,24 +303,24 @@ class _LoginScreenState extends State<LoginScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text("Don't have an account? "),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const RegisterScreen(),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          'Register',
-                          style: TextStyle(
-                            color: AppTheme.primaryColor,
-                            fontWeight: FontWeight.bold,
+                    Text("${l10n.dontHaveAccount} "),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const RegisterScreen(),
                           ),
+                        );
+                      },
+                      child: Text(
+                        l10n.register,
+                        style: const TextStyle(
+                          color: AppTheme.primaryColor,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
+                    ),
                     ],
                   ),
                 ],

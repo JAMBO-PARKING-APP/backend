@@ -53,6 +53,7 @@ class SettingsScreen extends StatelessWidget {
                           ButtonSegment(value: 'sw', label: Text(l10n.swahili)),
                           ButtonSegment(value: 'fr', label: Text(l10n.french)),
                           ButtonSegment(value: 'es', label: Text(l10n.spanish)),
+                          ButtonSegment(value: 'ar', label: Text(l10n.arabic)),
                         ],
                         selected: {settings.locale},
                         onSelectionChanged: (Set<String> newSelection) {
@@ -61,10 +62,10 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        '${l10n.current}: ${_getLanguageName(settings.locale)}',
+                        '${l10n.current}: ${_getLanguageName(settings.locale, l10n)}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: Theme.of(context).textTheme.bodySmall?.color,
                         ),
                       ),
                     ],
@@ -132,9 +133,9 @@ class SettingsScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'About Space Park',
-                        style: TextStyle(
+                      Text(
+                        l10n.aboutSpacePark,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -173,9 +174,9 @@ class SettingsScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     ListTile(
-                      leading: const Icon(Icons.business_center, color: Colors.blue),
-                      title: const Text('Host a Parking Space', style: TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: const Text('Earn money by listing your empty space!'),
+                      leading: const Icon(Icons.business_center, color: AppTheme.primaryColor),
+                      title: Text(l10n.hostParkingSpace, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Text(l10n.hostParkingSpaceSubtitle),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () {
                         Navigator.push(
@@ -200,7 +201,7 @@ class SettingsScreen extends StatelessWidget {
                   children: [
                     ListTile(
                       leading: const Icon(Icons.help_outline),
-                      title: const Text('Help Center'),
+                      title: Text(l10n.helpCenter),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () async {
                         final uri = Uri.parse('https://p-space.ai/');
@@ -212,7 +213,7 @@ class SettingsScreen extends StatelessWidget {
                     const Divider(height: 1),
                     ListTile(
                       leading: const Icon(Icons.privacy_tip_outlined),
-                      title: const Text('Privacy Policy'),
+                      title: Text(l10n.privacyPolicy),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () async {
                         final uri = Uri.parse('https://p-space.ai/privacy');
@@ -224,7 +225,7 @@ class SettingsScreen extends StatelessWidget {
                     const Divider(height: 1),
                     ListTile(
                       leading: const Icon(Icons.description_outlined),
-                      title: const Text('Terms of Service'),
+                      title: Text(l10n.termsOfService),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () async {
                         final uri = Uri.parse('https://p-space.ai/terms');
@@ -306,18 +307,22 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  String _getLanguageName(String code) {
+  String _getLanguageName(String code, AppLocalizations l10n) {
     switch (code) {
       case 'system':
-        return 'System Default';
+        return l10n.system;
       case 'sw':
-        return 'Swahili (Kiswahili)';
+        return l10n.swahili;
       case 'fr':
-        return 'French (Français)';
+        return l10n.french;
       case 'es':
-        return 'Spanish (Español)';
+        return l10n.spanish;
+      case 'ar':
+        return l10n.arabic;
+      case 'de':
+        return l10n.german;
       default:
-        return 'English';
+        return l10n.english;
     }
   }
 }
