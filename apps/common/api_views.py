@@ -74,6 +74,7 @@ class SystemHealthAPIView(APIView):
 
 
 from rest_framework.permissions import AllowAny
+import requests as http_requests
 
 class PublicSystemConfigAPIView(generics.RetrieveAPIView):
     """Public version of system configuration for mobile app startup (version check, etc)"""
@@ -83,3 +84,98 @@ class PublicSystemConfigAPIView(generics.RetrieveAPIView):
 
     def get_object(self):
         return SystemConfiguration.get_config()
+
+
+class PublicCountryListAPIView(generics.ListAPIView):
+    """Public endpoint: returns all active countries for the mobile app."""
+    serializer_class = CountrySerializer
+    permission_classes = [AllowAny]
+    pagination_class = None
+
+    def get_queryset(self):
+        return Country.objects.filter(is_active=True).order_by('name')
+
+
+class CountryDetectAPIView(APIView):
+    """
+    Public endpoint: detects the country of the requesting device using IP geolocation.
+    Returns country details and whether it is active in the SPACE system.
+    The Flutter app calls this on startup to auto-detect and gate access.
+    """
+    permission_classes = [AllowAny]
+
+    def _get_client_ip(self, request):
+        """Extract real IP, respecting proxy headers."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            return x_forwarded_for.split(',')[0].strip()
+        return request.META.get('REMOTE_ADDR', '')
+
+    def get(self, request):
+        client_ip = self._get_client_ip(request)
+
+        # Allow manual override via query param (useful for testing)
+        iso_code_override = request.query_params.get('iso_code')
+        if iso_code_override:
+            try:
+                country = Country.objects.get(iso_code=iso_code_override.upper())
+                return Response({
+                    'detected': True,
+                    'iso_code': country.iso_code,
+                    'name': country.name,
+                    'flag_emoji': country.flag_emoji,
+                    'currency': country.currency,
+                    'currency_symbol': country.currency_symbol,
+                    'phone_code': country.phone_code,
+                    'timezone': country.timezone,
+                    'is_active': country.is_active,
+                })
+            except Country.DoesNotExist:
+                return Response({'detected': False, 'is_active': False, 'iso_code': iso_code_override.upper()})
+
+        # Use ip-api.com for free IP geolocation (no API key needed, 1000 req/min free)
+        detected_iso = None
+        detected_name = None
+        try:
+            geo_resp = http_requests.get(
+                f'http://ip-api.com/json/{client_ip}?fields=status,countryCode,country',
+                timeout=3,
+            )
+            if geo_resp.status_code == 200:
+                geo_data = geo_resp.json()
+                if geo_data.get('status') == 'success':
+                    detected_iso = geo_data.get('countryCode', '').upper()
+                    detected_name = geo_data.get('country', '')
+        except Exception:
+            pass  # Graceful fallback if geo service is unreachable
+
+        if not detected_iso:
+            return Response({
+                'detected': False,
+                'is_active': False,
+                'message': 'Could not determine your location. Please check your connection.',
+            })
+
+        # Check if detected country exists AND is active in our system
+        try:
+            country = Country.objects.get(iso_code=detected_iso)
+            return Response({
+                'detected': True,
+                'iso_code': country.iso_code,
+                'name': country.name,
+                'flag_emoji': country.flag_emoji,
+                'currency': country.currency,
+                'currency_symbol': country.currency_symbol,
+                'phone_code': country.phone_code,
+                'timezone': country.timezone,
+                'is_active': country.is_active,
+            })
+        except Country.DoesNotExist:
+            # Country detected but not in our system → treat as inactive
+            return Response({
+                'detected': True,
+                'is_active': False,
+                'iso_code': detected_iso,
+                'name': detected_name or detected_iso,
+                'flag_emoji': '',
+            })

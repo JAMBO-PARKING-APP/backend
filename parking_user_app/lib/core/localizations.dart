@@ -123,6 +123,103 @@ abstract class AppLocalizations {
   String get noRecentSessions;
   String get unpaidViolations;
   String get payNow;
+
+  // Added for SPACE Redesign
+  String get selectLanguage;
+  String get english;
+  String get french;
+  String get german;
+  String get selectCountry;
+  String get pleaseSelectCountry;
+  String get continueText;
+  String get nearestParking;
+  String get km;
+  String get walletBalance;
+  String get activeSession;
+  String get startNewSession;
+  String get rate;
+  String get slots;
+  String get directions;
+  String get viewOnMap;
+  String get nearbyParking;
+  String get searchParking;
+  String get navigatingTo;
+  String get remaining;
+  String get unableToGetLocation;
+  String get startParkingSession;
+  String get startReservedSession;
+  String get selectVehicle;
+  String get selectZone;
+  String get duration;
+  String get minutes;
+  String get startParkingNow;
+  String get confirmBooking;
+  String get confirmReservation;
+  String get date;
+  String get cancel;
+  String get confirm;
+  String get pleaseSelectVehicleAndZone;
+  String get startTimeInFuture;
+  String get reservationFailed;
+  String get paymentSuccessful;
+  String get processingReservation;
+  String get initiatingPayment;
+  String get oneClickSuccess;
+  String get startReservedSessionPrompt;
+  String get bookSpotPrompt;
+  String get endParking;
+  String get areYouSureEndSession;
+  String get endSession;
+  String get sessionEndedSuccess;
+  String get extendDuration;
+  String get additionalCost;
+  String get insufficientBalance;
+  String get parkingLocationSaved;
+  String get noSavedLocation;
+  String get viewVerificationQR;
+  String get endSessionEarly;
+  String get history;
+  String get saveSpot;
+  String get findCar;
+  String get until;
+  String get remaining;
+  String get vehicle;
+  String get activeSession;
+  String get extended;
+  String get sessionExtendedBy;
+  String get hours;
+  String get sessionEnded;
+  String get payAndExtendNow;
+  String get processingPayment;
+  String get sessionStarting;
+  String get spotBooked;
+  String get reservationConfirmed;
+  String get spotBookedSuccess;
+  String get canStartNowPrompt;
+  String get ok;
+  String get startParking;
+  String get bookSpot;
+  String get time;
+  String get showToOfficer;
+  String get expiresAt;
+  String get settings;
+  String get languagePreferences;
+  String get themeSettings;
+  String get current;
+  String get appVersion;
+  String get buildNumber;
+  String get lastUpdated;
+  String get account;
+  String get preferences;
+  // Country detection
+  String get detectingLocation;
+  String get detectingLocationSubtitle;
+  String get spaceAvailableInCountry;
+  String get spaceNotAvailableTitle;
+  String spaceNotAvailableBody(String countryName);
+  String get retryDetection;
+  String get locationDetectionFailed;
+  String get locationDetectionFailedSubtitle;
 }
 
 // English Localizations
@@ -278,6 +375,194 @@ class _EnglishLocalizations extends AppLocalizations {
   String get unpaidViolations => 'Unpaid Violations';
   @override
   String get payNow => 'Pay Now';
+
+  // Added for SPACE Redesign
+  @override
+  String get selectLanguage => 'Select Language';
+  @override
+  String get english => 'English';
+  @override
+  String get french => 'French';
+  @override
+  String get german => 'German';
+  @override
+  String get selectCountry => 'Select Your Country';
+  @override
+  String get pleaseSelectCountry => 'Please select your country to continue';
+  @override
+  String get continueText => 'CONTINUE';
+  @override
+  String get nearestParking => 'Nearest Parking';
+  @override
+  String get km => 'km';
+  @override
+  String get walletBalance => 'Wallet Balance';
+  @override
+  String get activeSession => 'Active Session';
+  @override
+  String get startNewSession => 'Start New Session';
+  @override
+  String get rate => 'Rate';
+  @override
+  String get slots => 'slots';
+  @override
+  String get directions => 'Directions';
+  @override
+  String get nearbyParking => 'Nearby Parking';
+  @override
+  String get searchParking => 'Search for parking...';
+  @override
+  String get navigatingTo => 'Navigating to';
+  @override
+  String get unableToGetLocation => 'Unable to get your location';
+  @override
+  String get startParkingSession => 'Start Parking Session';
+  @override
+  String get startReservedSession => 'Start Reserved Session';
+  @override
+  String get selectVehicle => 'Select Vehicle';
+  @override
+  String get selectZone => 'Select Zone';
+  @override
+  String get duration => 'Duration';
+  @override
+  String get minutes => 'Minutes';
+  @override
+  String get startParkingNow => 'START PARKING NOW';
+  @override
+  String get confirmBooking => 'CONFIRM BOOKING';
+  @override
+  String get confirmReservation => 'Confirm Reservation';
+  @override
+  String get date => 'Date';
+  @override
+  String get cancel => 'Cancel';
+  @override
+  String get confirm => 'Confirm';
+  @override
+  String get pleaseSelectVehicleAndZone => 'Please select a vehicle and a zone';
+  @override
+  String get startTimeInFuture => 'Start time must be in the future';
+  @override
+  String get reservationFailed => 'Reservation failed. Please check balance.';
+  @override
+  String get paymentSuccessful => 'Payment Successful!';
+  @override
+  String get processingReservation => 'Processing reservation...';
+  @override
+  String get initiatingPayment => 'Initiating payment...';
+  @override
+  String get oneClickSuccess => 'One-Click Success!';
+  @override
+  String get startReservedSessionPrompt => 'Do you want to start this parking session now?';
+  @override
+  String get bookSpotPrompt => 'Do you want to book this parking spot?';
+  @override
+  String get endParking => 'End Parking';
+  @override
+  String get areYouSureEndSession => 'Are you sure you want to end this parking session?';
+  @override
+  String get endSession => 'End Session';
+  @override
+  String get sessionEndedSuccess => 'Your parking session has been stopped successfully.';
+  @override
+  String get extendDuration => 'Extend Duration';
+  @override
+  String get additionalCost => 'Additional Cost';
+  @override
+  String get insufficientBalance => 'Insufficient wallet balance. Please top up.';
+  @override
+  String get parkingLocationSaved => 'Parking location saved!';
+  @override
+  String get noSavedLocation => 'No saved location found. Tap "Save Spot" first.';
+  @override
+  String get viewVerificationQR => 'VIEW VERIFICATION QR';
+  @override
+  String get endSessionEarly => 'End Session Early';
+  @override
+  String get history => 'History';
+  @override
+  String get saveSpot => 'Save Spot';
+  @override
+  String get findCar => 'Find Car';
+  @override
+  String get until => 'until';
+  @override
+  String get remaining => 'Remaining';
+  @override
+  String get vehicle => 'Vehicle';
+  @override
+  String get activeSession => 'Active Session';
+  @override
+  String get extended => 'Extended!';
+  @override
+  String get sessionExtendedBy => 'Parking session extended by';
+  @override
+  String get hours => 'hour(s)';
+  @override
+  String get sessionEnded => 'Session Ended';
+  @override
+  String get payAndExtendNow => 'Pay & Extend Now';
+  @override
+  String get processingPayment => 'Processing payment...';
+  @override
+  String get sessionStarting => 'Your parking session is starting now';
+  @override
+  String get spotBooked => 'Your spot has been booked';
+  @override
+  String get reservationConfirmed => 'Reservation Confirmed!';
+  @override
+  String get spotBookedSuccess => 'Your parking spot has been booked successfully.';
+  @override
+  String get canStartNowPrompt => 'You can start your session now since your time is near.';
+  @override
+  String get ok => 'OK';
+  @override
+  String get startParking => 'Start Parking';
+  @override
+  String get bookSpot => 'Book a Spot';
+  @override
+  String get time => 'Time';
+  @override
+  String get showToOfficer => 'Show this to the parking officer';
+  @override
+  String get expiresAt => 'Expires at';
+  @override
+  String get settings => 'Settings';
+  @override
+  String get languagePreferences => 'Language Preferences';
+  @override
+  String get themeSettings => 'Theme Settings';
+  @override
+  String get system => 'System';
+  @override
+  String get current => 'Current';
+  @override
+  String get appVersion => 'App Version';
+  @override
+  String get buildNumber => 'Build Number';
+  @override
+  String get lastUpdated => 'Last Updated';
+  @override
+  String get account => 'Account';
+  @override
+  String get preferences => 'Preferences';
+  @override
+  String get detectingLocation => 'Detecting Your Location';
+  @override
+  String get detectingLocationSubtitle => 'We are identifying your country to serve you the best experience.';
+  @override
+  String get spaceAvailableInCountry => 'SPACE is available in your country!';
+  @override
+  String get spaceNotAvailableTitle => 'SPACE is not available in your region yet';
+  @override
+  String spaceNotAvailableBody(String countryName) => 'We haven\'t launched in $countryName yet. We are working hard to bring SPACE to your area. Stay tuned!';
+  @override
+  String get retryDetection => 'Retry';
+  @override
+  String get locationDetectionFailed => 'Could Not Detect Location';
+  @override
+  String get locationDetectionFailedSubtitle => 'Please check your internet connection and try again.';
 }
 
 // Swahili Localizations
@@ -433,6 +718,196 @@ class _SwahiliLocalizations extends AppLocalizations {
   String get unpaidViolations => 'Ukiukaji Usiolipiwa';
   @override
   String get payNow => 'Lipa Sasa';
+
+  // Added for SPACE Redesign
+  @override
+  String get selectLanguage => 'Chagua Lugha';
+  @override
+  String get english => 'Kiingereza';
+  @override
+  String get french => 'Kifaransa';
+  @override
+  String get german => 'Kijerumani';
+  @override
+  String get selectCountry => 'Chagua Nchi Yako';
+  @override
+  String get pleaseSelectCountry => 'Tafadhali chagua nchi yako ili kuendelea';
+  @override
+  String get continueText => 'ENDELEA';
+  @override
+  String get nearestParking => 'Maegesho ya Karibu';
+  @override
+  String get km => 'km';
+  @override
+  String get walletBalance => 'Salio la Pochi';
+  @override
+  String get activeSession => 'Kipindi Kinachotumika';
+  @override
+  String get startNewSession => 'Anza Kipindi Kipya';
+  @override
+  String get rate => 'Kiwango';
+  @override
+  String get slots => 'nafasi';
+  @override
+  String get directions => 'Maelekezo';
+  @override
+  String get viewOnMap => 'Ona kwenye Ramani';
+  @override
+  String get nearbyParking => 'Maegesho ya Karibu';
+  @override
+  String get searchParking => 'Tafuta maegesho...';
+  @override
+  String get navigatingTo => 'Kuelekea';
+  @override
+  String get unableToGetLocation => 'Haiwezi kupata eneo lako';
+  @override
+  String get startParkingSession => 'Anza Kipindi cha Maegesho';
+  @override
+  String get startReservedSession => 'Anza Kipindi Kilichohifadhiwa';
+  @override
+  String get selectVehicle => 'Chagua Gari';
+  @override
+  String get selectZone => 'Chagua Eneo';
+  @override
+  String get duration => 'Muda';
+  @override
+  String get minutes => 'Dakika';
+  @override
+  String get startParkingNow => 'ANZA MAEGESHO SASA';
+  @override
+  String get confirmBooking => 'THIBITISHA UWEKAJI';
+  @override
+  String get confirmReservation => 'Thibitisha Uhifadhi';
+  @override
+  String get date => 'Tarehe';
+  @override
+  String get cancel => 'Ghairi';
+  @override
+  String get confirm => 'Thibitisha';
+  @override
+  String get pleaseSelectVehicleAndZone => 'Tafadhali chagua gari na eneo';
+  @override
+  String get startTimeInFuture => 'Muda wa kuanza lazima uwe katika siku zijazo';
+  @override
+  String get reservationFailed => 'Uhifadhi umeshindwa. Tafadhali angalia salio.';
+  @override
+  String get paymentSuccessful => 'Malipo Yamefanikiwa!';
+  @override
+  String get processingReservation => 'Inashughulikia uhifadhi...';
+  @override
+  String get initiatingPayment => 'Inaanzisha malipo...';
+  @override
+  String get oneClickSuccess => 'Mafanikio kwa Mbofyo Mmoja!';
+  @override
+  String get startReservedSessionPrompt => 'Je, unataka kuanza kipindi hiki cha maegesho sasa?';
+  @override
+  String get bookSpotPrompt => 'Je, unataka kuhifadhi nafasi hii ya maegesho?';
+  @override
+  String get endParking => 'Maliza Maegesho';
+  @override
+  String get areYouSureEndSession => 'Je, una uhakika unataka kumaliza kipindi hiki cha maegesho?';
+  @override
+  String get endSession => 'Maliza Kipindi';
+  @override
+  String get sessionEndedSuccess => 'Kipindi chako cha maegesho kimesimamishwa kwa mafanikio.';
+  @override
+  String get extendDuration => 'Ongeza Muda';
+  @override
+  String get additionalCost => 'Gharama ya Ziada';
+  @override
+  String get insufficientBalance => 'Salio la pochi halitoshi. Tafadhali ongeza.';
+  @override
+  String get parkingLocationSaved => 'Eneo la maegesho limehifadhiwa!';
+  @override
+  String get noSavedLocation => 'Hakuna eneo lililohifadhiwa lililopatikana. Gusa "Hifadhi Eneo" kwanza.';
+  @override
+  String get viewVerificationQR => 'ONA QR YA UHAKIKISHO';
+  @override
+  String get endSessionEarly => 'Maliza Kipindi Mapema';
+  @override
+  String get history => 'Historia';
+  @override
+  String get saveSpot => 'Hifadhi Eneo';
+  @override
+  String get findCar => 'Pata Gari';
+  @override
+  String get until => 'hadi';
+  @override
+  String get remaining => 'Zilizobaki';
+  @override
+  String get vehicle => 'Gari';
+  @override
+  String get activeSession => 'Kipindi Kinachoendelea';
+  @override
+  String get extended => 'Imeongezwa!';
+  @override
+  String get sessionExtendedBy => 'Kipindi cha maegesho kimeongezwa kwa';
+  @override
+  String get hours => 'saa';
+  @override
+  String get sessionEnded => 'Kipindi Kimeisha';
+  @override
+  String get payAndExtendNow => 'Lipa na Ongeza Sasa';
+  @override
+  String get processingPayment => 'Inashughulikia malipo...';
+  @override
+  String get sessionStarting => 'Kipindi chako cha maegesho kinaanza sasa';
+  @override
+  String get spotBooked => 'Nafasi yako imehifadhiwa';
+  @override
+  String get reservationConfirmed => 'Uhifadhi Umetibitishwa!';
+  @override
+  String get spotBookedSuccess => 'Nafasi yako ya maegesho imehifadhiwa kwa mafanikio.';
+  @override
+  String get canStartNowPrompt => 'Unaweza kuanza kipindi chako sasa kwa sababu muda wako uko karibu.';
+  @override
+  String get ok => 'Sawa';
+  @override
+  String get startParking => 'Anza Maegesho';
+  @override
+  String get bookSpot => 'Hifadhi Nafasi';
+  @override
+  String get time => 'Muda';
+  @override
+  String get showToOfficer => 'Onyesha hili kwa ofisa wa maegesho';
+  @override
+  String get expiresAt => 'Inaisha saa';
+  @override
+  String get settings => 'Mipangilio';
+  @override
+  String get languagePreferences => 'Mapendeleo ya Lugha';
+  @override
+  String get themeSettings => 'Mipangilio ya Mandhari';
+  @override
+  String get system => 'Mfumo';
+  @override
+  String get current => 'Sasa';
+  @override
+  String get appVersion => 'Toleo la Programu';
+  @override
+  String get buildNumber => 'Nambari ya Toleo';
+  @override
+  String get lastUpdated => 'Ilisasishwa Mwisho';
+  @override
+  String get account => 'Akaunti';
+  @override
+  String get preferences => 'Mapendeleo';
+  @override
+  String get detectingLocation => 'Kutambua Eneo Lako';
+  @override
+  String get detectingLocationSubtitle => 'Tunabainisha nchi yako ili kukupa uzoefu bora.';
+  @override
+  String get spaceAvailableInCountry => 'SPACE inapatikana katika nchi yako!';
+  @override
+  String get spaceNotAvailableTitle => 'SPACE haijapatikana katika eneo lako bado';
+  @override
+  String spaceNotAvailableBody(String countryName) => 'Bado hatujaanzisha katika $countryName. Endelea kutazama!';
+  @override
+  String get retryDetection => 'Jaribu Tena';
+  @override
+  String get locationDetectionFailed => 'Haiwezekani Kutambua Eneo';
+  @override
+  String get locationDetectionFailedSubtitle => 'Tafadhali angalia muunganisho wako wa intaneti na ujaribu tena.';
 }
 
 // French Localizations
@@ -589,6 +1064,196 @@ class _FrenchLocalizations extends AppLocalizations {
   String get unpaidViolations => 'Violations Non Payées';
   @override
   String get payNow => 'Payer Maintenant';
+
+  // Added for SPACE Redesign
+  @override
+  String get selectLanguage => 'Choisir la langue';
+  @override
+  String get english => 'Anglais';
+  @override
+  String get french => 'Français';
+  @override
+  String get german => 'Allemand';
+  @override
+  String get selectCountry => 'Sélectionnez votre pays';
+  @override
+  String get pleaseSelectCountry => 'Veuillez sélectionner votre pays pour continuer';
+  @override
+  String get continueText => 'CONTINUER';
+  @override
+  String get nearestParking => 'Parking le plus proche';
+  @override
+  String get km => 'km';
+  @override
+  String get walletBalance => 'Solde du portefeuille';
+  @override
+  String get activeSession => 'Session active';
+  @override
+  String get startNewSession => 'Démarrer une nouvelle session';
+  @override
+  String get rate => 'Tarif';
+  @override
+  String get slots => 'places';
+  @override
+  String get directions => 'Itinéraire';
+  @override
+  String get nearbyParking => 'Parkings à proximité';
+  @override
+  String get searchParking => 'Rechercher un parking...';
+  @override
+  String get navigatingTo => 'Navigation vers';
+  @override
+  String get remaining => 'restants';
+  @override
+  String get unableToGetLocation => 'Impossible d\'obtenir votre position';
+  @override
+  String get startParkingSession => 'Démarrer une session de parking';
+  @override
+  String get startReservedSession => 'Démarrer la session réservée';
+  @override
+  String get selectVehicle => 'Sélectionner le véhicule';
+  @override
+  String get selectZone => 'Sélectionner la zone';
+  @override
+  String get duration => 'Durée';
+  @override
+  String get minutes => 'Minutes';
+  @override
+  String get startParkingNow => 'STATIONNER MAINTENANT';
+  @override
+  String get confirmBooking => 'CONFIRMER LA RÉSERVATION';
+  @override
+  String get confirmReservation => 'Confirmer la réservation';
+  @override
+  String get date => 'Date';
+  @override
+  String get cancel => 'Annuler';
+  @override
+  String get confirm => 'Confirmer';
+  @override
+  String get pleaseSelectVehicleAndZone => 'Veuillez sélectionner un véhicule et une zone';
+  @override
+  String get startTimeInFuture => 'L\'heure de début doit être dans le futur';
+  @override
+  String get reservationFailed => 'Échec de la réservation. Veuillez vérifier le solde.';
+  @override
+  String get paymentSuccessful => 'Paiement réussi !';
+  @override
+  String get processingReservation => 'Traitement de la réservation...';
+  @override
+  String get initiatingPayment => 'Initiation du paiement...';
+  @override
+  String get oneClickSuccess => 'Succès en un clic !';
+  @override
+  String get startReservedSessionPrompt => 'Voulez-vous démarrer cette session de stationnement maintenant ?';
+  @override
+  String get bookSpotPrompt => 'Voulez-vous réserver cet emplacement de stationnement ?';
+  @override
+  String get endParking => 'Terminer le stationnement';
+  @override
+  String get areYouSureEndSession => 'Êtes-vous sûr de vouloir terminer cette session de stationnement ?';
+  @override
+  String get endSession => 'Terminer la session';
+  @override
+  String get sessionEndedSuccess => 'Votre session de stationnement a été arrêtée avec succès.';
+  @override
+  String get extendDuration => 'Prolonger la durée';
+  @override
+  String get additionalCost => 'Coût supplémentaire';
+  @override
+  String get insufficientBalance => 'Solde du portefeuille insuffisant. Veuillez recharger.';
+  @override
+  String get parkingLocationSaved => 'Emplacement de stationnement enregistré !';
+  @override
+  String get noSavedLocation => 'Aucun emplacement enregistré trouvé. Appuyez d\'abord sur "Enregistrer l\'emplacement".';
+  @override
+  String get viewVerificationQR => 'VOIR LE QR DE VÉRIFICATION';
+  @override
+  String get endSessionEarly => 'Terminer la session plus tôt';
+  @override
+  String get history => 'Historique';
+  @override
+  String get saveSpot => 'Enregistrer';
+  @override
+  String get findCar => 'Trouver';
+  @override
+  String get until => 'jusqu\'à';
+  @override
+  String get remaining => 'Restant';
+  @override
+  String get vehicle => 'Véhicule';
+  @override
+  String get activeSession => 'Session active';
+  @override
+  String get extended => 'Prolongé !';
+  @override
+  String get sessionExtendedBy => 'Session de stationnement prolongée de';
+  @override
+  String get hours => 'heure(s)';
+  @override
+  String get sessionEnded => 'Session terminée';
+  @override
+  String get payAndExtendNow => 'Payer et prolonger maintenant';
+  @override
+  String get processingPayment => 'Traitement du paiement...';
+  @override
+  String get sessionStarting => 'Votre session de stationnement commence maintenant';
+  @override
+  String get spotBooked => 'Votre place a été réservée';
+  @override
+  String get reservationConfirmed => 'Réservation confirmée !';
+  @override
+  String get spotBookedSuccess => 'Votre place de stationnement a été réservée avec succès.';
+  @override
+  String get canStartNowPrompt => 'Vous pouvez commencer votre session maintenant car votre heure est proche.';
+  @override
+  String get ok => 'OK';
+  @override
+  String get startParking => 'Démarrer le stationnement';
+  @override
+  String get bookSpot => 'Réserver une place';
+  @override
+  String get time => 'Heure';
+  @override
+  String get showToOfficer => 'Montrez ceci à l\'officier de stationnement';
+  @override
+  String get expiresAt => 'Expire à';
+  @override
+  String get settings => 'Paramètres';
+  @override
+  String get languagePreferences => 'Préférences linguistiques';
+  @override
+  String get themeSettings => 'Paramètres du thème';
+  @override
+  String get system => 'Système';
+  @override
+  String get current => 'Actuel';
+  @override
+  String get appVersion => 'Version de l\'application';
+  @override
+  String get buildNumber => 'Numéro de build';
+  @override
+  String get lastUpdated => 'Dernière mise à jour';
+  @override
+  String get account => 'Compte';
+  @override
+  String get preferences => 'Préférences';
+  @override
+  String get detectingLocation => 'Détection de votre emplacement';
+  @override
+  String get detectingLocationSubtitle => 'Nous identifions votre pays pour vous offrir la meilleure expérience.';
+  @override
+  String get spaceAvailableInCountry => 'SPACE est disponible dans votre pays!';
+  @override
+  String get spaceNotAvailableTitle => 'SPACE n\'est pas encore disponible dans votre région';
+  @override
+  String spaceNotAvailableBody(String countryName) => 'Nous n\'avons pas encore lancé en $countryName. Restez à l\'affut!';
+  @override
+  String get retryDetection => 'Réessayer';
+  @override
+  String get locationDetectionFailed => 'Impossible de détecter l\'emplacement';
+  @override
+  String get locationDetectionFailedSubtitle => 'Vérifiez votre connexion internet et réessayez.';
 }
 
 // Spanish Localizations
@@ -744,6 +1409,198 @@ class _SpanishLocalizations extends AppLocalizations {
   String get unpaidViolations => 'Violaciones No Pagadas';
   @override
   String get payNow => 'Pagar Ahora';
+
+  // Added for SPACE Redesign
+  @override
+  String get selectLanguage => 'Seleccionar idioma';
+  @override
+  String get english => 'Inglés';
+  @override
+  String get french => 'Francés';
+  @override
+  String get german => 'Alemán';
+  @override
+  String get selectCountry => 'Selecciona tu país';
+  @override
+  String get pleaseSelectCountry => 'Por favor, selecciona tu país para continuar';
+  @override
+  String get continueText => 'CONTINUAR';
+  @override
+  String get nearestParking => 'Estacionamiento más cercano';
+  @override
+  String get km => 'km';
+  @override
+  String get walletBalance => 'Saldo de billetera';
+  @override
+  String get activeSession => 'Sesión activa';
+  @override
+  String get startNewSession => 'Iniciar nueva sesión';
+  @override
+  String get rate => 'Tarifa';
+  @override
+  String get slots => 'plazas';
+  @override
+  String get directions => 'Direcciones';
+  @override
+  String get viewOnMap => 'Ver en el mapa';
+  @override
+  String get nearbyParking => 'Estacionamiento cercano';
+  @override
+  String get searchParking => 'Buscar estacionamiento...';
+  @override
+  String get navigatingTo => 'Navegando a';
+  @override
+  String get remaining => 'restantes';
+  @override
+  String get unableToGetLocation => 'No se pudo obtener su ubicación';
+  @override
+  String get startParkingSession => 'Iniciar sesión de estacionamiento';
+  @override
+  String get startReservedSession => 'Iniciar sesión reservada';
+  @override
+  String get selectVehicle => 'Seleccionar vehículo';
+  @override
+  String get selectZone => 'Seleccionar zona';
+  @override
+  String get duration => 'Duración';
+  @override
+  String get minutes => 'Minutos';
+  @override
+  String get startParkingNow => 'ESTACIONAR AHORA';
+  @override
+  String get confirmBooking => 'CONFIRMAR RESERVA';
+  @override
+  String get confirmReservation => 'Confirmar reserva';
+  @override
+  String get date => 'Fecha';
+  @override
+  String get cancel => 'Cancelar';
+  @override
+  String get confirm => 'Confirmar';
+  @override
+  String get pleaseSelectVehicleAndZone => 'Por favor, seleccione un vehículo y una zona';
+  @override
+  String get startTimeInFuture => 'La hora de inicio debe ser en el futuro';
+  @override
+  String get reservationFailed => 'Error en la reserva. Por favor, compruebe el saldo.';
+  @override
+  String get paymentSuccessful => '¡Pago exitoso!';
+  @override
+  String get processingReservation => 'Procesando reserva...';
+  @override
+  String get initiatingPayment => 'Iniciando pago...';
+  @override
+  String get oneClickSuccess => '¡Éxito en un clic!';
+  @override
+  String get startReservedSessionPrompt => '¿Desea iniciar esta sesión de estacionamiento ahora?';
+  @override
+  String get bookSpotPrompt => '¿Desea reservar este lugar de estacionamiento?';
+  @override
+  String get endParking => 'Finalizar estacionamiento';
+  @override
+  String get areYouSureEndSession => '¿Está seguro de que desea finalizar esta sesión de estacionamiento?';
+  @override
+  String get endSession => 'Finalizar sesión';
+  @override
+  String get sessionEndedSuccess => 'Su sesión de estacionamiento se ha detenido con éxito.';
+  @override
+  String get extendDuration => 'Extender duración';
+  @override
+  String get additionalCost => 'Costo adicional';
+  @override
+  String get insufficientBalance => 'Saldo de billetera insuficiente. Por favor recargue.';
+  @override
+  String get parkingLocationSaved => '¡Ubicación de estacionamiento guardada!';
+  @override
+  String get noSavedLocation => 'No se encontró ninguna ubicación guardada. Toque "Guardar lugar" primero.';
+  @override
+  String get viewVerificationQR => 'VER QR DE VERIFICACIÓN';
+  @override
+  String get endSessionEarly => 'Finalizar sesión antes';
+  @override
+  String get history => 'Historial';
+  @override
+  String get saveSpot => 'Guardar lugar';
+  @override
+  String get findCar => 'Encontrar auto';
+  @override
+  String get until => 'hasta';
+  @override
+  String get remaining => 'Restante';
+  @override
+  String get vehicle => 'Vehículo';
+  @override
+  String get activeSession => 'Sesión activa';
+  @override
+  String get extended => '¡Extendido!';
+  @override
+  String get sessionExtendedBy => 'Sesión de estacionamiento extendida por';
+  @override
+  String get hours => 'hora(s)';
+  @override
+  String get sessionEnded => 'Sesión finalizada';
+  @override
+  String get payAndExtendNow => 'Pagar y extender ahora';
+  @override
+  String get processingPayment => 'Procesando pago...';
+  @override
+  String get sessionStarting => 'Su sesión de estacionamiento está comenzando ahora';
+  @override
+  String get spotBooked => 'Su lugar ha sido reservado';
+  @override
+  String get reservationConfirmed => '¡Reserva confirmada!';
+  @override
+  String get spotBookedSuccess => 'Su lugar de estacionamiento ha sido reservado con éxito.';
+  @override
+  String get canStartNowPrompt => 'Puede iniciar su sesión ahora ya que su hora está cerca.';
+  @override
+  String get ok => 'OK';
+  @override
+  String get startParking => 'Iniciar estacionamiento';
+  @override
+  String get bookSpot => 'Reservar un lugar';
+  @override
+  String get time => 'Hora';
+  @override
+  String get showToOfficer => 'Muestre esto al oficial de estacionamiento';
+  @override
+  String get expiresAt => 'Expira a las';
+  @override
+  String get settings => 'Ajustes';
+  @override
+  String get languagePreferences => 'Preferencias de idioma';
+  @override
+  String get themeSettings => 'Ajustes de tema';
+  @override
+  String get system => 'Sistema';
+  @override
+  String get current => 'Actual';
+  @override
+  String get appVersion => 'Versión de la aplicación';
+  @override
+  String get buildNumber => 'Número de compilación';
+  @override
+  String get lastUpdated => 'Última actualización';
+  @override
+  String get account => 'Cuenta';
+  @override
+  String get preferences => 'Preferencias';
+  @override
+  String get detectingLocation => 'Detectando tu ubicación';
+  @override
+  String get detectingLocationSubtitle => 'Estamos identificando tu país para brindarte la mejor experiencia.';
+  @override
+  String get spaceAvailableInCountry => '¡SPACE está disponible en tu país!';
+  @override
+  String get spaceNotAvailableTitle => 'SPACE aún no está disponible en tu región';
+  @override
+  String spaceNotAvailableBody(String countryName) => 'Aún no hemos lanzado en $countryName. ¡Estamos trabajando para llegar a tu área!';
+  @override
+  String get retryDetection => 'Reintentar';
+  @override
+  String get locationDetectionFailed => 'No se pudo detectar la ubicación';
+  @override
+  String get locationDetectionFailedSubtitle => 'Por favor, revisa tu conexión a internet e inténtalo de nuevo.';
 }
 
 // German Localizations
@@ -897,6 +1754,196 @@ class _GermanLocalizations extends AppLocalizations {
   String get unpaidViolations => 'Unbezahlte Verstöße';
   @override
   String get payNow => 'Jetzt bezahlen';
+
+  // Added for SPACE Redesign
+  @override
+  String get selectLanguage => 'Sprache wählen';
+  @override
+  String get english => 'Englisch';
+  @override
+  String get french => 'Französisch';
+  @override
+  String get german => 'Deutsch';
+  @override
+  String get selectCountry => 'Wählen Sie Ihr Land';
+  @override
+  String get pleaseSelectCountry => 'Bitte wählen Sie Ihr Land aus, um fortzufahren';
+  @override
+  String get continueText => 'WEITER';
+  @override
+  String get nearestParking => 'Nächster Parkplatz';
+  @override
+  String get km => 'km';
+  @override
+  String get walletBalance => 'Wallet-Guthaben';
+  @override
+  String get activeSession => 'Aktive Sitzung';
+  @override
+  String get startNewSession => 'Neue Sitzung starten';
+  @override
+  String get rate => 'Tarif';
+  @override
+  String get slots => 'plätzen';
+  @override
+  String get directions => 'Wegbeschreibung';
+  @override
+  String get nearbyParking => 'Parkplätze in der Nähe';
+  @override
+  String get searchParking => 'Suche nach Parkplätzen...';
+  @override
+  String get navigatingTo => 'Navigation zu';
+  @override
+  String get remaining => 'verbleibend';
+  @override
+  String get unableToGetLocation => 'Ihre Position konnte nicht ermittelt werden';
+  @override
+  String get startParkingSession => 'Parksitzung starten';
+  @override
+  String get startReservedSession => 'Reservierte Sitzung starten';
+  @override
+  String get selectVehicle => 'Fahrzeug auswählen';
+  @override
+  String get selectZone => 'Zone auswählen';
+  @override
+  String get duration => 'Dauer';
+  @override
+  String get minutes => 'Minuten';
+  @override
+  String get startParkingNow => 'JETZT PARKEN';
+  @override
+  String get confirmBooking => 'BUCHUNG BESTÄTIGEN';
+  @override
+  String get confirmReservation => 'Reservierung bestätigen';
+  @override
+  String get date => 'Datum';
+  @override
+  String get cancel => 'Abbrechen';
+  @override
+  String get confirm => 'Bestätigen';
+  @override
+  String get pleaseSelectVehicleAndZone => 'Bitte wählen Sie ein Fahrzeug und eine Zone aus';
+  @override
+  String get startTimeInFuture => 'Startzeit muss in der Zukunft liegen';
+  @override
+  String get reservationFailed => 'Reservierung fehlgeschlagen. Bitte Guthaben prüfen.';
+  @override
+  String get paymentSuccessful => 'Zahlung erfolgreich!';
+  @override
+  String get processingReservation => 'Reservierung wird verarbeitet...';
+  @override
+  String get initiatingPayment => 'Zahlung wird eingeleitet...';
+  @override
+  String get oneClickSuccess => 'Ein-Klick-Erfolg!';
+  @override
+  String get startReservedSessionPrompt => 'Möchten Sie diese Parksitzung jetzt starten?';
+  @override
+  String get bookSpotPrompt => 'Möchten Sie diesen Parkplatz buchen?';
+  @override
+  String get endParking => 'Parken beenden';
+  @override
+  String get areYouSureEndSession => 'Sind Sie sicher, dass Sie diese Parksitzung beenden möchten?';
+  @override
+  String get endSession => 'Sitzung beenden';
+  @override
+  String get sessionEndedSuccess => 'Ihre Parksitzung wurde erfolgreich beendet.';
+  @override
+  String get extendDuration => 'Dauer verlängern';
+  @override
+  String get additionalCost => 'Zusätzliche Kosten';
+  @override
+  String get insufficientBalance => 'Unzureichendes Guthaben. Bitte aufladen.';
+  @override
+  String get parkingLocationSaved => 'Parkplatz gespeichert!';
+  @override
+  String get noSavedLocation => 'Kein gespeicherter Standort gefunden. Tippen Sie zuerst auf "Parkplatz speichern".';
+  @override
+  String get viewVerificationQR => 'VERIFIZIERUNGS-QR ANZEIGEN';
+  @override
+  String get endSessionEarly => 'Sitzung vorzeitig beenden';
+  @override
+  String get history => 'Verlauf';
+  @override
+  String get saveSpot => 'Speichern';
+  @override
+  String get findCar => 'Auto finden';
+  @override
+  String get until => 'bis';
+  @override
+  String get remaining => 'Verbleibend';
+  @override
+  String get vehicle => 'Fahrzeug';
+  @override
+  String get activeSession => 'Aktive Sitzung';
+  @override
+  String get extended => 'Verlängert!';
+  @override
+  String get sessionExtendedBy => 'Parksitzung verlängert um';
+  @override
+  String get hours => 'Stunde(n)';
+  @override
+  String get sessionEnded => 'Sitzung beendet';
+  @override
+  String get payAndExtendNow => 'Jetzt bezahlen & verlängern';
+  @override
+  String get processingPayment => 'Zahlung wird verarbeitet...';
+  @override
+  String get sessionStarting => 'Ihre Parksitzung beginnt jetzt';
+  @override
+  String get spotBooked => 'Ihr Platz wurde gebucht';
+  @override
+  String get reservationConfirmed => 'Reservierung bestätigt!';
+  @override
+  String get spotBookedSuccess => 'Ihr Parkplatz wurde erfolgreich gebucht.';
+  @override
+  String get canStartNowPrompt => 'Sie können Ihre Sitzung jetzt starten, da Ihre Zeit nahe ist.';
+  @override
+  String get ok => 'OK';
+  @override
+  String get startParking => 'Parken starten';
+  @override
+  String get bookSpot => 'Platz buchen';
+  @override
+  String get time => 'Zeit';
+  @override
+  String get showToOfficer => 'Zeigen Sie dies dem Parkplatzwächter';
+  @override
+  String get expiresAt => 'Läuft ab um';
+  @override
+  String get settings => 'Einstellungen';
+  @override
+  String get languagePreferences => 'Spracheinstellungen';
+  @override
+  String get themeSettings => 'Theme-Einstellungen';
+  @override
+  String get system => 'System';
+  @override
+  String get current => 'Aktuell';
+  @override
+  String get appVersion => 'App-Version';
+  @override
+  String get buildNumber => 'Build-Nummer';
+  @override
+  String get lastUpdated => 'Zuletzt aktualisiert';
+  @override
+  String get account => 'Konto';
+  @override
+  String get preferences => 'Einstellungen';
+  @override
+  String get detectingLocation => 'Standort wird ermittelt';
+  @override
+  String get detectingLocationSubtitle => 'Wir identifizieren Ihr Land, um Ihnen das beste Erlebnis zu bieten.';
+  @override
+  String get spaceAvailableInCountry => 'SPACE ist in Ihrem Land verfügbar!';
+  @override
+  String get spaceNotAvailableTitle => 'SPACE ist in Ihrer Region noch nicht verfügbar';
+  @override
+  String spaceNotAvailableBody(String countryName) => 'Wir sind noch nicht in $countryName verfügbar. Wir arbeiten hart daran!';
+  @override
+  String get retryDetection => 'Erneut versuchen';
+  @override
+  String get locationDetectionFailed => 'Standort konnte nicht erkannt werden';
+  @override
+  String get locationDetectionFailedSubtitle => 'Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.';
 }
 
 // Arabic Localizations
@@ -1050,6 +2097,198 @@ class _ArabicLocalizations extends AppLocalizations {
   String get unpaidViolations => 'مخالفات غير مدفوعة';
   @override
   String get payNow => 'ادفع الآن';
+
+  // Added for SPACE Redesign
+  @override
+  String get selectLanguage => 'اختر اللغة';
+  @override
+  String get english => 'الإنجليزية';
+  @override
+  String get french => 'الفرنسية';
+  @override
+  String get german => 'الألمانية';
+  @override
+  String get selectCountry => 'اختر بلدك';
+  @override
+  String get pleaseSelectCountry => 'يرجى اختيار بلدك للمتابعة';
+  @override
+  String get continueText => 'استمرار';
+  @override
+  String get nearestParking => 'أقرب موقف سيارات';
+  @override
+  String get km => 'كم';
+  @override
+  String get walletBalance => 'رصيد المحفظة';
+  @override
+  String get activeSession => 'جلسة نشطة';
+  @override
+  String get startNewSession => 'بدء جلسة جديدة';
+  @override
+  String get rate => 'السعر';
+  @override
+  String get slots => 'فتحات';
+  @override
+  String get directions => 'الاتجاهات';
+  @override
+  String get viewOnMap => 'عرض على الخريطة';
+  @override
+  String get nearbyParking => 'مواقف السيارات القريبة';
+  @override
+  String get searchParking => 'البحث عن موقف سيارات...';
+  @override
+  String get navigatingTo => 'التنقل إلى';
+  @override
+  String get remaining => 'المتبقي';
+  @override
+  String get unableToGetLocation => 'تعذر الحصول على موقعك';
+  @override
+  String get startParkingSession => 'بدء جلسة وقوف السيارات';
+  @override
+  String get startReservedSession => 'بدء الجلسة المحجوزة';
+  @override
+  String get selectVehicle => 'اختر السيارة';
+  @override
+  String get selectZone => 'اختر المنطقة';
+  @override
+  String get duration => 'المدة';
+  @override
+  String get minutes => 'دقائق';
+  @override
+  String get startParkingNow => 'ابدأ الوقوف الآن';
+  @override
+  String get confirmBooking => 'تأكيد الحجز';
+  @override
+  String get confirmReservation => 'تأكيد الحجز';
+  @override
+  String get date => 'التاريخ';
+  @override
+  String get cancel => 'إلغاء';
+  @override
+  String get confirm => 'تأكيد';
+  @override
+  String get pleaseSelectVehicleAndZone => 'يرجى اختيار سيارة ومنطقة';
+  @override
+  String get startTimeInFuture => 'يجب أن يكون وقت البدء في المستقبل';
+  @override
+  String get reservationFailed => 'فشل الحجز. يرجى التحقق من الرصيد.';
+  @override
+  String get paymentSuccessful => 'تم الدفع بنجاح!';
+  @override
+  String get processingReservation => 'جاري معالجة الحجز...';
+  @override
+  String get initiatingPayment => 'جاري بدء الدفع...';
+  @override
+  String get oneClickSuccess => 'نجاح بنقرة واحدة!';
+  @override
+  String get startReservedSessionPrompt => 'هل تريد بدء جلسة وقوف السيارات هذه الآن؟';
+  @override
+  String get bookSpotPrompt => 'هل تريد حجز موقف السيارات هذا؟';
+  @override
+  String get endParking => 'إنهاء الوقوف';
+  @override
+  String get areYouSureEndSession => 'هل أنت متأكد أنك تريد إنهاء جلسة وقوف السيارات هذه؟';
+  @override
+  String get endSession => 'إنهاء الجلسة';
+  @override
+  String get sessionEndedSuccess => 'تم إيقاف جلسة وقوف السيارات الخاصة بك بنجاح.';
+  @override
+  String get extendDuration => 'تمديد المدة';
+  @override
+  String get additionalCost => 'تكلفة إضافية';
+  @override
+  String get insufficientBalance => 'رصيد المحفظة غير كافٍ. يرجى التعبئة.';
+  @override
+  String get parkingLocationSaved => 'تم حفظ موقع وقوف السيارات!';
+  @override
+  String get noSavedLocation => 'لم يتم العثور على موقع محفوظ. اضغط على "حفظ الموقع" أولاً.';
+  @override
+  String get viewVerificationQR => 'عرض رمز التحقق QR';
+  @override
+  String get endSessionEarly => 'إنهاء الجلسة مبكرًا';
+  @override
+  String get history => 'السجل';
+  @override
+  String get saveSpot => 'حفظ الموقع';
+  @override
+  String get findCar => 'البحث عن السيارة';
+  @override
+  String get until => 'حتى';
+  @override
+  String get remaining => 'المتبقي';
+  @override
+  String get vehicle => 'السيارة';
+  @override
+  String get activeSession => 'الجلسة النشطة';
+  @override
+  String get extended => 'تم التمديد!';
+  @override
+  String get sessionExtendedBy => 'تم تمديد جلسة الوقوف بمقدار';
+  @override
+  String get hours => 'ساعة';
+  @override
+  String get sessionEnded => 'انتهت الجلسة';
+  @override
+  String get payAndExtendNow => 'ادفع ومدد الآن';
+  @override
+  String get processingPayment => 'جاري معالجة الدفع...';
+  @override
+  String get sessionStarting => 'تبدأ جلسة الوقوف الخاصة بك الآن';
+  @override
+  String get spotBooked => 'تم حجز مكانك';
+  @override
+  String get reservationConfirmed => 'تم تأكيد الحجز!';
+  @override
+  String get spotBookedSuccess => 'تم حجز موقع الوقوف الخاص بك بنجاح.';
+  @override
+  String get canStartNowPrompt => 'يمكنك بدء جلستك الآن لأن وقتك اقترب.';
+  @override
+  String get ok => 'موافق';
+  @override
+  String get startParking => 'ابدأ الوقوف';
+  @override
+  String get bookSpot => 'حجز مكان';
+  @override
+  String get time => 'الوقت';
+  @override
+  String get showToOfficer => 'أظهر هذا لمسؤول وقوف السيارات';
+  @override
+  String get expiresAt => 'تنتهي الصلاحية في';
+  @override
+  String get settings => 'الإعدادات';
+  @override
+  String get languagePreferences => 'تفضيلات اللغة';
+  @override
+  String get themeSettings => 'إعدادات المظهر';
+  @override
+  String get system => 'النظام';
+  @override
+  String get current => 'الحالي';
+  @override
+  String get appVersion => 'اصدار التطبيق';
+  @override
+  String get buildNumber => 'رقم البناء';
+  @override
+  String get lastUpdated => 'آخر تحديث';
+  @override
+  String get account => 'الحساب';
+  @override
+  String get preferences => 'التفضيلات';
+  @override
+  String get detectingLocation => 'تحديد موقعك';
+  @override
+  String get detectingLocationSubtitle => 'نحن نحدد بلدك لنقدم لك أفضل تجربة.';
+  @override
+  String get spaceAvailableInCountry => 'سبيس متاح في بلدك!';
+  @override
+  String get spaceNotAvailableTitle => 'سبيس غير متاح في منطقتك بعد';
+  @override
+  String spaceNotAvailableBody(String countryName) => 'لم نطلق بعد في $countryName. نعمل بجد لإحضار سبيس إلى منطقتك!';
+  @override
+  String get retryDetection => 'إعادة المحاولة';
+  @override
+  String get locationDetectionFailed => 'تعذر تحديد الموقع';
+  @override
+  String get locationDetectionFailedSubtitle => 'يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.';
 }
 
 // Localizations Delegate

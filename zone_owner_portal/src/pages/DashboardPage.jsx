@@ -70,7 +70,7 @@ export default function DashboardPage() {
               <StatCard label="This Month" value={fmt(data.summary.month_earnings)} sub="Current month" icon={<Calendar size={24} />} iconColor="var(--accent-light)" />
               <StatCard label="Today" value={fmt(data.summary.today_earnings)} sub="Today's earnings" icon={<Sun size={24} />} iconColor="var(--warning)" />
               <StatCard label="Active Sessions" value={data.summary.active_sessions} sub={`${data.summary.today_sessions} today`} icon={<CarFront size={24} />} iconColor="var(--accent)" />
-              <StatCard label="Zones" value={data.summary.zones_count} sub="Active zones" icon={<MapIcon size={24} />} iconColor="#c084fc" />
+              <StatCard label="Reservations" value={data.summary.total_reservations} sub={`${data.summary.pending_reservations} pending`} icon={<Calendar size={24} />} iconColor="var(--accent-light)" />
             </div>
 
             {/* Charts section: Area Chart & Pie Chart */}
@@ -80,7 +80,7 @@ export default function DashboardPage() {
                   <TrendingUp size={20} color="var(--success)" /> Earnings — Last 30 Days
                 </h2>
                 {data.earnings_chart.length === 0
-                  ? <p style={{ color: 'var(--text-muted)', fontSize: 14, textAlign: 'center', padding: '40px 0' }}>No earnings data yet. Earnings will appear here once sessions complete.</p>
+                  ? <p style={{ color: 'var(--text-muted)', fontSize: 14, textAlign: 'center', padding: '40px 0' }}>No earnings data yet.</p>
                   : (
                     <ResponsiveContainer width="100%" height={260}>
                       <AreaChart data={data.earnings_chart} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
@@ -144,7 +144,7 @@ export default function DashboardPage() {
                     <thead>
                       <tr>
                         <th>Zone</th><th>Slots</th><th>Hourly Rate</th>
-                        <th>Active Sessions</th><th>Occupancy</th><th>Commission</th>
+                        <th>Active Sessions</th><th>Occupancy</th><th>Reservations</th><th>Pricing</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -162,7 +162,16 @@ export default function DashboardPage() {
                               <span style={{ fontSize: 12, color: 'var(--text-muted)', minWidth: 36 }}>{z.occupancy_rate}%</span>
                             </div>
                           </td>
-                          <td style={{ color: 'var(--text-muted)' }}>{z.commission_rate}%</td>
+                          <td style={{ textAlign: 'center' }}>
+                             <span className={`badge ${z.supports_reservations ? 'badge-approved' : 'badge-pending'}`} style={{ opacity: z.supports_reservations ? 1 : 0.4 }}>
+                               {z.supports_reservations ? 'Yes' : 'No'}
+                             </span>
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                             <span className={`badge ${z.supports_pricing ? 'badge-approved' : 'badge-pending'}`} style={{ opacity: z.supports_pricing ? 1 : 0.4 }}>
+                               {z.supports_pricing ? 'Yes' : 'No'}
+                             </span>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -177,7 +186,7 @@ export default function DashboardPage() {
                 <Car size={20} color="var(--text-secondary)" /> Recent Sessions
               </h2>
               {data.recent_sessions.length === 0
-                ? <p style={{ color: 'var(--text-muted)', fontSize: 14, textAlign: 'center', padding: '40px 0' }}>No sessions yet. Sessions will appear here once drivers start parking.</p>
+                ? <p style={{ color: 'var(--text-muted)', fontSize: 14, textAlign: 'center', padding: '40px 0' }}>No sessions yet.</p>
                 : (
                   <div className="table-wrapper">
                     <table>
@@ -185,7 +194,9 @@ export default function DashboardPage() {
                       <tbody>
                         {data.recent_sessions.map(s => (
                           <tr key={s.id}>
-                            <td style={{ fontFamily: 'monospace', letterSpacing: '0.05em' }}>{s.vehicle}</td>
+                            <td style={{ fontFamily: 'monospace', letterSpacing: '0.05em' }}>
+                              {s.vehicle} {s.is_guest && <span style={{ fontSize: 9, opacity: 0.6, background: '#475569', padding: '1px 4px', borderRadius: 3, verticalAlign: 'middle', marginLeft: 4 }}>GUEST</span>}
+                            </td>
                             <td>{s.zone}</td>
                             <td style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                               {new Date(s.start_time).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
@@ -196,6 +207,40 @@ export default function DashboardPage() {
                               </span>
                             </td>
                             <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{fmt(s.final_cost)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              }
+            </div>
+
+            {/* Recent Reservations */}
+            <div className="glass-card" style={{ padding: 28, marginTop: 24 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Calendar size={20} color="var(--accent-light)" /> Recent Reservations
+              </h2>
+              {data.recent_reservations.length === 0
+                ? <p style={{ color: 'var(--text-muted)', fontSize: 14, textAlign: 'center', padding: '40px 0' }}>No reservations yet.</p>
+                : (
+                  <div className="table-wrapper">
+                    <table>
+                      <thead><tr><th>User</th><th>Zone</th><th>Planned Start</th><th>Status</th><th>Fee Deducted</th></tr></thead>
+                      <tbody>
+                        {data.recent_reservations.map(r => (
+                          <tr key={r.id}>
+                            <td style={{ fontWeight: 600 }}>{r.user}</td>
+                            <td>{r.zone}</td>
+                            <td style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                              {new Date(r.start_time).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                            </td>
+                            <td>
+                              <span className={`badge ${r.status === 'pending' ? 'badge-warning' : r.status === 'active' ? 'badge-active' : 'badge-approved'}`}>
+                                {r.status}
+                              </span>
+                            </td>
+                            <td style={{ fontWeight: 600, color: 'var(--success)' }}>{fmt(r.service_fee)}</td>
                           </tr>
                         ))}
                       </tbody>

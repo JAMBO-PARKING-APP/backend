@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 class PublicApplyView(APIView):
     """POST /api/partner/apply/ — submit a zone application (no auth required)"""
-    authentication_classes = []   # bypass DeviceSessionJWTAuthentication
+    authentication_classes = []   
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -42,9 +42,7 @@ class AuthApplyView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        user = request.user
-        
-        # We merge the user's existing details with the incoming request data
+        user = request.user  
         data = request.data.copy()
         data['applicant_name'] = data.get('applicant_name') or user.full_name or f"{user.first_name} {user.last_name}".strip()
         data['applicant_email'] = data.get('applicant_email') or user.email
@@ -63,7 +61,7 @@ class AuthApplyView(APIView):
 
 class ApplicationStatusView(APIView):
     """GET /api/partner/status/<application_id>/ — public status check"""
-    authentication_classes = []   # bypass DeviceSessionJWTAuthentication
+    authentication_classes = []   
     permission_classes = [AllowAny]
 
     def get(self, request, application_id):
@@ -80,7 +78,7 @@ class ApplicationStatusView(APIView):
 
 class PartnerLoginView(APIView):
     """POST /api/partner/login/ — login for zone owners, returns JWT"""
-    authentication_classes = []   # bypass DeviceSessionJWTAuthentication — no token exists yet
+    authentication_classes = []   
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -100,7 +98,6 @@ class PartnerLoginView(APIView):
             print(f"DEBUG LOGIN: No user found for email {email_clean}")
             return Response({'error': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
 
-        # Direct password check since authenticate() can be finicky with custom Phone fields
         if not user.check_password(password):
             print(f"DEBUG LOGIN: Password check failed for user {email}")
             return Response({'error': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -109,7 +106,6 @@ class PartnerLoginView(APIView):
             print(f"DEBUG LOGIN: User {email} is inactive")
             return Response({'error': 'Account is disabled.'}, status=status.HTTP_403_FORBIDDEN)
 
-        # Check user owns at least one zone
         has_zones = user.owned_zones.filter(is_active=True).exists()
         print(f"DEBUG LOGIN: User {email} has active zones: {has_zones}")
         if not has_zones:
@@ -121,8 +117,6 @@ class PartnerLoginView(APIView):
         token_jti = str(access_token.get('jti', ''))
         user.current_session_token = token_jti
         user.save(update_fields=['current_session_token'])
-
-        # Check if bank details exist
         has_bank_details = OwnerBankDetails.objects.filter(user=user).exists()
 
         return Response({
@@ -184,7 +178,6 @@ class OwnerDashboardView(APIView):
         start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
         last_30_days = now - timedelta(days=30)
 
-        # Aggregate earnings from wallet transactions
         total_earnings = WalletTransaction.objects.filter(
             user=user, transaction_type='earning', status='completed'
         ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
@@ -199,9 +192,7 @@ class OwnerDashboardView(APIView):
             created_at__gte=start_of_today
         ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
 
-        # Sessions info
         zone_ids = list(zones.values_list('id', flat=True))
-
         today_sessions = ParkingSession.objects.filter(
             zone_id__in=zone_ids,
             start_time__gte=start_of_today
@@ -211,7 +202,15 @@ class OwnerDashboardView(APIView):
             zone_id__in=zone_ids, status='active'
         ).count()
 
-        # Earnings chart: last 30 days grouped by day
+        # Reservations info
+        from apps.parking.models import Reservation
+        total_reservations = Reservation.objects.filter(
+            zone_id__in=zone_ids
+        ).count()
+        pending_reservations = Reservation.objects.filter(
+            zone_id__in=zone_ids, status='pending'
+        ).count()
+
         from django.db.models.functions import TruncDate
         daily_earnings = list(
             WalletTransaction.objects.filter(
@@ -224,13 +223,11 @@ class OwnerDashboardView(APIView):
             .values('day', 'amount')
         )
 
-        # Serialize daily earnings
         earnings_chart = [
             {'date': str(item['day']), 'amount': float(item['amount'])}
             for item in daily_earnings
         ]
 
-        # Zone details and revenue split
         zone_data = []
         revenue_by_zone = []
         
@@ -244,24 +241,20 @@ class OwnerDashboardView(APIView):
                 'active_sessions': z.active_sessions_count,
                 'available_slots': z.available_slots_count,
                 'occupancy_rate': round(z.occupancy_rate, 1),
+                'supports_reservations': z.supports_reservations,
+                'supports_pricing': z.supports_dynamic_pricing,
             })
             
-            # Calculate total earnings specifically for this zone
-            # WalletTransaction doesn't link directly to zone usually, so we sum the completed ParkingSessions for this zone
             zone_earnings = ParkingSession.objects.filter(
                 zone=z, status='completed'
             ).aggregate(total=Sum('final_cost'))['total'] or Decimal('0')
             
-            # Assuming an 80/20 split roughly, or we just show gross session revenue for the pie chart
-            # For exact wallet match, we'd need to trace WalletTransaction -> ParkingSession if linked,
-            # but gross session revenue is a great metric for comparing zone performance.
             if zone_earnings > 0:
                 revenue_by_zone.append({
                     'name': z.name,
                     'value': float(zone_earnings)
                 })
 
-        # Recent sessions
         recent_sessions = ParkingSession.objects.filter(
             zone_id__in=zone_ids
         ).select_related('zone', 'vehicle').order_by('-start_time')[:20]
@@ -270,12 +263,29 @@ class OwnerDashboardView(APIView):
             {
                 'id': str(s.id),
                 'zone': s.zone.name,
-                'vehicle': s.vehicle.license_plate,
+                'vehicle': s.vehicle.license_plate if s.vehicle else s.guest_license_plate,
                 'start_time': s.start_time.isoformat(),
                 'status': s.status,
                 'final_cost': float(s.final_cost) if s.final_cost else float(s.estimated_cost),
+                'is_guest': s.vehicle is None
             }
             for s in recent_sessions
+        ]
+
+        recent_reservations = Reservation.objects.filter(
+            zone_id__in=zone_ids
+        ).select_related('zone', 'vehicle__user').order_by('-reserved_from')[:20]
+
+        reservations_data = [
+            {
+                'id': str(r.id),
+                'zone': r.zone.name,
+                'user': r.vehicle.user.full_name or r.vehicle.user.phone,
+                'start_time': r.reserved_from.isoformat(),
+                'status': r.status,
+                'service_fee': float(r.service_fee),
+            }
+            for r in recent_reservations
         ]
 
         return Response({
@@ -285,12 +295,15 @@ class OwnerDashboardView(APIView):
                 'today_earnings': float(today_earnings),
                 'today_sessions': today_sessions,
                 'active_sessions': active_sessions,
+                'total_reservations': total_reservations,
+                'pending_reservations': pending_reservations,
                 'zones_count': zones.count(),
             },
             'earnings_chart': earnings_chart,
             'revenue_by_zone': revenue_by_zone,
             'zones': zone_data,
             'recent_sessions': sessions_data,
+            'recent_reservations': reservations_data,
         })
 
 

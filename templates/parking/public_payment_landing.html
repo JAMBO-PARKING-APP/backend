@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pay for Parking - {{ zone.name }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h1 { font-size: 24px; color: #333; margin-bottom: 8px; }
+        p.subtitle { color: #666; margin-bottom: 24px; }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        .btn { background: #007bff; color: white; border: none; padding: 14px; width: 100%; border-radius: 8px; font-size: 18px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        .btn:hover { background: #0056b3; }
+        .error { color: #dc3545; background: #f8d7da; padding: 10px; border-radius: 6px; margin-bottom: 16px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>{{ zone.name }}</h1>
+        <p class="subtitle">Quick Parking Payment</p>
+        
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="license_plate">License Plate Number</label>
+                <input type="text" name="license_plate" id="license_plate" placeholder="e.g. UBA 123X" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="duration">Duration</label>
+                <select name="duration" id="duration">
+                    <option value="1">1 Hour ({{ zone.hourly_rate }})</option>
+                    <option value="2">2 Hours</option>
+                    <option value="4">4 Hours</option>
+                    <option value="8">8 Hours</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="btn">Pay Now with PesaPal</button>
+        </form>
+        
+        <div style="margin-top: 20px; text-align: center; font-size: 12px; color: #999;">
+            Secure payment powered by Jambo Park
+        </div>
+    </div>
+</body>
+</html>

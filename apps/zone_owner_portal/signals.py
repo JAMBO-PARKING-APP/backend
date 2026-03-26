@@ -7,9 +7,6 @@ from django.conf import settings
 from django.core.mail import EmailMessage
 from django.db import transaction
 
-# Late imports inside functions to avoid circularity if possible, 
-# but we need the model name for the receiver string.
-
 logger = logging.getLogger(__name__)
 
 
@@ -33,20 +30,16 @@ def _process_approval(instance_pk):
     if instance.status != 'approved':
         return
 
-    # Already has a zone linked — nothing left to do
     if instance.created_zone_id:
         return
 
     from apps.accounts.models import User
     from apps.parking.models import Zone, ZoneType
 
-    # Use the password already generated and stored by admin's save_model
     temp_password = instance.demo_password or generate_temp_password()
 
-    # Lowercase email for comparison
     applicant_email = instance.applicant_email.strip().lower()
 
-    # Proper phone normalization using phonenumbers before lookup
     phone_str = instance.applicant_phone.strip()
     try:
         import phonenumbers
@@ -67,7 +60,6 @@ def _process_approval(instance_pk):
         print(f"DEBUG SIGNAL: Phone parsing error: {pe}")
         phone = phone_str
 
-    # ── 1. Create or locate user ──────────────────────────────
     try:
         from django.db.models import Q
         user = User.objects.filter(Q(email__iexact=applicant_email) | Q(phone=phone)).first()
@@ -107,11 +99,6 @@ def _process_approval(instance_pk):
                  update_fields.append('role')
                  print(f"DEBUG SIGNAL: Updated role to ZONE_OWNER")
                  
-            # Note: We do NOT overwrite the password if the user already exists,
-            # as they might actively be using it. However, the email sent WILL 
-            # contain the demo password. If this is a real issue, we could conditionally
-            # reset it, but it's safer to avoid unrequested password resets.
-            
             if update_fields:
                 user.save(update_fields=update_fields)
             logger.info(f"[ZonePortal] Using existing user {user.email}")
@@ -122,7 +109,6 @@ def _process_approval(instance_pk):
         logger.error(f"[ZonePortal] Failed to create user for application {instance.application_id}: {e}")
         return
 
-    # ── 1.5 Determine Country from Coordinates ────────────────
     from apps.common.utils import get_country_from_coords
     country = get_country_from_coords(instance.latitude, instance.longitude)
     if country:
@@ -130,7 +116,6 @@ def _process_approval(instance_pk):
     else:
         print(f"DEBUG SIGNAL: Could not map coordinates to a country.")
 
-    # ── 2. Create zone ────────────────────────────────────────
     try:
         zone = Zone(
             name=instance.proposed_name,
@@ -144,23 +129,20 @@ def _process_approval(instance_pk):
             country=country,
             is_active=True,
             commission_rate=10,
+            zone_image=instance.zone_picture, # Copy the picture
         )
         zone.save()
 
-        # Update user country if they don't have one
         if user and not user.country and country:
             user.country = country
             user.save(update_fields=['country'])
             print(f"DEBUG SIGNAL: Set user country to {country.name}")
-
-        # Link zone back; credentials already written by save_model
         ZoneApplicationPublic.objects.filter(pk=instance.pk).update(created_zone=zone)
         logger.info(f"[ZonePortal] Created zone '{zone.name}' (id={zone.id}) mapped to {country.name if country else 'Unknown'}")
     except Exception as e:
         logger.error(f"[ZonePortal] Failed to create zone for application {instance.application_id}: {e}")
         return
 
-    # ── 3. Send welcome email ─────────────────────────────────
     try:
         portal_url = getattr(settings, 'PARTNER_PORTAL_URL', 'http://localhost:5173')
         login_url = f"{portal_url}/login"
@@ -251,10 +233,6 @@ def handle_application_approval(sender, instance, created, **kwargs):
         print(f"DEBUG SIGNAL: Application {instance.application_id} already has a zone, skipping.")
         return
 
-    # Schedule after the current atomic block commits — safe from admin transactions
     print(f"DEBUG SIGNAL: Scheduling deferred processing for {instance.application_id}")
     transaction.on_commit(lambda: _process_approval(instance.pk))
-
-
-# Ensure the model is importable at signal-registration time
 from apps.zone_owner_portal.models import ZoneApplicationPublic  # noqa

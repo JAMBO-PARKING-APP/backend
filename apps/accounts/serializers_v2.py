@@ -20,7 +20,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'phone', 'email', 'first_name', 'last_name', 'full_name', 
-                  'role', 'profile_photo', 'is_verified', 'created_at', 'vehicles', 'wallet_balance']
+                  'role', 'profile_photo', 'is_verified', 'created_at', 'vehicles', 'wallet_balance',
+                  'app_version', 'device_model', 'device_os']
         read_only_fields = ['id', 'role', 'is_verified', 'created_at', 'wallet_balance']
     
     @extend_schema_field(serializers.URLField(allow_null=True))
@@ -37,7 +38,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 class UpdateProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['email', 'first_name', 'last_name', 'profile_photo']
+        fields = ['email', 'first_name', 'last_name', 'profile_photo', 'app_version', 'device_model', 'device_os']
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=6)

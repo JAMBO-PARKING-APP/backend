@@ -24,7 +24,6 @@ class ZoneApplicationAdmin(RegionalAdminMixin, admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         if change and obj.status == ApplicationStatus.APPROVED and not obj.created_zone:
-            # Status changed to approved in the form
             self._do_approve(obj)
         super().save(request, obj, form, change)
 
@@ -32,7 +31,6 @@ class ZoneApplicationAdmin(RegionalAdminMixin, admin.ModelAdmin):
         if application.created_zone:
             return
             
-        # Create the actual zone
         zone = Zone.objects.create(
             name=application.proposed_name,
             address=application.address,
@@ -54,8 +52,8 @@ class ZoneApplicationAdmin(RegionalAdminMixin, admin.ModelAdmin):
 
 @admin.register(Zone)
 class ZoneAdmin(RegionalAdminMixin, admin.ModelAdmin):
-    list_display = ('name', 'zone_type', 'owner', 'hourly_rate', 'total_slots', 'available_slots_count', 'is_active')
-    list_filter = ('zone_type', 'country', 'is_active')
+    list_display = ('name', 'zone_type', 'owner', 'hourly_rate', 'supports_dynamic_pricing', 'supports_reservations', 'commission_rate', 'is_active')
+    list_filter = ('zone_type', 'country', 'is_active', 'supports_dynamic_pricing', 'supports_reservations')
     search_fields = ('name', 'code', 'owner__full_name', 'owner__phone')
     autocomplete_fields = ['owner']
     inlines = [ParkingSlotInline]

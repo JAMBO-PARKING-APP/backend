@@ -1,5 +1,5 @@
 from django.urls import path
-from . import api_views
+from . import api_views, invoice_views, qr_payment_views
 
 urlpatterns = [
     path('zones/', api_views.ZoneListView.as_view(), name='zones'),
@@ -12,4 +12,9 @@ urlpatterns = [
     path('applications/', api_views.ZoneApplicationCreateView.as_view(), name='zone-application'),
     path('owner/zones/', api_views.OwnerZoneListView.as_view(), name='owner-zones'),
     path('owner/zones/<uuid:pk>/', api_views.OwnerZoneUpdateView.as_view(), name='owner-zone-detail'),
+    
+    # Invoices & Public QR Payments
+    path('invoice/<uuid:session_id>/', invoice_views.DownloadInvoiceView.as_view(), name='download-invoice'),
+    path('pay/zone/<uuid:zone_id>/', qr_payment_views.PublicZonePaymentLandingView.as_view(), name='public-zone-payment'),
+    path('pay/callback/', qr_payment_views.PublicPaymentCallbackView.as_view(), name='public-payment-callback'),
 ]

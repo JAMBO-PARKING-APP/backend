@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Invoice - {{ plate }}</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; }
+        .invoice-box { max-width: 800px; margin: auto; padding: 30px; border: 1px solid #eee; box-shadow: 0 0 10px rgba(0, 0, 0, .15); }
+        .header { text-align: center; margin-bottom: 20px; }
+        .details { margin-bottom: 40px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }
+        .total { font-weight: bold; font-size: 1.2em; text-align: right; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="invoice-box">
+        <div class="header">
+            <h1>JAMBO PARK</h1>
+            <p>Parking Session Invoice</p>
+        </div>
+        
+        <div class="details">
+            <p><strong>License Plate:</strong> {{ plate }}</p>
+            <p><strong>Zone:</strong> {{ session.zone.name }}</p>
+            <p><strong>Start Time:</strong> {{ session.start_time }}</p>
+            <p><strong>End Time:</strong> {{ session.actual_end_time|default:session.planned_end_time }}</p>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Duration (hrs)</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Parking Fee (at {{ session.zone.hourly_rate }}/hr)</td>
+                    <td>{{ duration_hours }}</td>
+                    <td>{{ cost }} {{ session.zone.country.currency_symbol }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="total">
+            Total: {{ cost }} {{ session.zone.country.currency_symbol }}
+        </div>
+        
+        <div style="margin-top: 50px; text-align: center; color: #777;">
+            Thank you for parking with Jambo Park!
+        </div>
+    </div>
+    <script>
+        // Auto print or allow save as PDF UI
+        // window.print();
+    </script>
+</body>
+</html>

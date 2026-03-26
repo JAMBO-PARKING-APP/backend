@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:parking_user_app/core/localizations.dart';
 import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
@@ -30,16 +31,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final l10n = AppLocalizations.of(context);
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
+      ).showSnackBar(SnackBar(content: Text(l10n.errorOccurred))); // Passwords mismatch
       return;
     }
 
     if (!_acceptTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please accept the Terms & Privacy Policy')),
+        SnackBar(content: Text(l10n.errorOccurred)),
       );
       return;
     }
@@ -71,8 +73,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Account')),
+      appBar: AppBar(title: Text(l10n.register)),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -96,29 +99,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Expanded(
                       child: TextFormField(
                         controller: _firstNameController,
-                        decoration: const InputDecoration(
-                          labelText: 'First Name',
-                          prefixIcon: Icon(Icons.person_outline),
-                          border: OutlineInputBorder(
+                        decoration: InputDecoration(
+                          labelText: l10n.firstName,
+                          prefixIcon: const Icon(Icons.person_outline),
+                          border: const OutlineInputBorder(
                             borderRadius: BorderRadius.all(Radius.circular(12)),
                           ),
                         ),
                         validator: (val) =>
-                            val!.isEmpty ? 'Enter first name' : null,
+                            val!.isEmpty ? l10n.errorOccurred : null,
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: TextFormField(
                         controller: _lastNameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Last Name',
-                          border: OutlineInputBorder(
+                        decoration: InputDecoration(
+                          labelText: l10n.lastName,
+                          border: const OutlineInputBorder(
                             borderRadius: BorderRadius.all(Radius.circular(12)),
                           ),
                         ),
                         validator: (val) =>
-                            val!.isEmpty ? 'Enter last name' : null,
+                            val!.isEmpty ? l10n.errorOccurred : null,
                       ),
                     ),
                   ],
@@ -126,16 +129,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email Address',
-                    prefixIcon: Icon(Icons.email_outlined),
-                    border: OutlineInputBorder(
+                  decoration: InputDecoration(
+                    labelText: l10n.email,
+                    prefixIcon: const Icon(Icons.email_outlined),
+                    border: const OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
                   ),
                   keyboardType: TextInputType.emailAddress,
                   validator: (val) => val!.isEmpty || !val.contains('@')
-                      ? 'Enter a valid email'
+                      ? l10n.errorOccurred
                       : null,
                 ),
                 const SizedBox(height: 16),
@@ -155,15 +158,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Expanded(
                       child: TextFormField(
                         controller: _phoneController,
-                        decoration: const InputDecoration(
-                          labelText: 'Phone Number',
-                          border: OutlineInputBorder(
+                        decoration: InputDecoration(
+                          labelText: l10n.phone,
+                          border: const OutlineInputBorder(
                             borderRadius: BorderRadius.all(Radius.circular(12)),
                           ),
                         ),
                         keyboardType: TextInputType.phone,
                         validator: (val) =>
-                            val!.isEmpty ? 'Enter phone number' : null,
+                            val!.isEmpty ? l10n.errorOccurred : null,
                       ),
                     ),
                   ],
@@ -172,7 +175,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextFormField(
                   controller: _passwordController,
                   decoration: InputDecoration(
-                    labelText: 'Password',
+                    labelText: l10n.password,
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -197,7 +200,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextFormField(
                   controller: _confirmPasswordController,
                   decoration: InputDecoration(
-                    labelText: 'Confirm Password',
+                    labelText: l10n.confirmPassword,
                     prefixIcon: const Icon(Icons.lock_clock_outlined),
                     suffixIcon: IconButton(
                       icon: Icon(

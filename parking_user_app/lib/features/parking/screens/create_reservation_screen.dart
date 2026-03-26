@@ -8,11 +8,7 @@ import 'package:parking_user_app/features/parking/models/zone_model.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_user_app/widgets/payment_selection_dialog.dart';
 import 'package:parking_user_app/features/payments/services/payment_service.dart';
-import 'package:parking_user_app/widgets/base_scaffold.dart';
-import 'package:parking_user_app/core/dialog_service.dart';
-import 'package:parking_user_app/features/payments/screens/pesapal_webview_screen.dart';
-import 'package:parking_user_app/features/home/screens/home_screen.dart';
-import 'package:parking_user_app/features/payments/providers/payment_provider.dart';
+import 'package:parking_user_app/core/localizations.dart';
 import 'package:parking_user_app/features/parking/screens/active_session_screen.dart';
 
 class CreateReservationScreen extends StatefulWidget {
@@ -46,9 +42,10 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
   }
 
   void _handleCreate() async {
+    final l10n = AppLocalizations.of(context);
     if (_selectedVehicleId == null || _selectedZoneId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a vehicle and a zone')),
+        SnackBar(content: Text(l10n.pleaseSelectVehicleAndZone)),
       );
       return;
     }
@@ -63,7 +60,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
 
     if (!widget.isImmediate && startDateTime.isBefore(DateTime.now())) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Start time must be in the future')),
+        SnackBar(content: Text(l10n.startTimeInFuture)),
       );
       return;
     }
@@ -75,30 +72,30 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
         await showDialog<bool>(
           context: context,
           builder: (confirmDialogContext) => AlertDialog(
-            title: const Text('Confirm Reservation'),
+            title: Text(l10n.confirmReservation),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(widget.isImmediate 
-                    ? 'Do you want to start this parking session now?'
-                    : 'Do you want to book this parking spot?'),
+                    ? l10n.startReservedSessionPrompt
+                    : l10n.bookSpotPrompt),
                 const SizedBox(height: 16),
                 if (!widget.isImmediate) ...[
-                  Text('Date: ${DateFormat('yyyy-MM-dd').format(_startDate)}'),
-                  Text('Time: ${_startTime.format(confirmDialogContext)}'),
+                  Text('${l10n.date}: ${DateFormat('yyyy-MM-dd').format(_startDate)}'),
+                  Text('${l10n.time}: ${_startTime.format(confirmDialogContext)}'),
                 ],
-                Text('Duration: $_durationMinutes min'),
+                Text('${l10n.duration}: $_durationMinutes ${l10n.minutes}'),
               ],
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(confirmDialogContext, false),
-                child: const Text('Cancel'),
+                child: Text(l10n.cancel),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(confirmDialogContext, true),
-                child: const Text('Confirm'),
+                child: Text(l10n.confirm),
               ),
             ],
           ),
@@ -126,7 +123,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
         onWalletSelected: () async {
           if (!mounted) return;
           DialogService.showLoading(
-            message: widget.isImmediate ? 'Starting session...' : 'Processing reservation...',
+            message: widget.isImmediate ? l10n.startingSession : l10n.processingReservation,
           );
 
           try {
@@ -140,6 +137,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
               );
               DialogService.hideLoading();
               if (session != null && mounted) {
+                context.read<PaymentProvider>().fetchWalletData(); // Refresh balance
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(builder: (_) => ActiveSessionScreen(session: session)),
                 );
@@ -159,11 +157,12 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
               DialogService.hideLoading();
 
               if (reservation != null && mounted) {
+                context.read<PaymentProvider>().fetchWalletData(); // Refresh balance
                 _showSuccessWithStartSession(reservation);
               } else if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Reservation failed. Please check balance.'),
+                  SnackBar(
+                    content: Text(l10n.reservationFailed),
                   ),
                 );
               }
@@ -179,7 +178,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
         },
         onPesapalSelected: (paymentType) async {
           if (!mounted) return;
-          DialogService.showLoading(message: 'Initiating payment...');
+          DialogService.showLoading(message: l10n.initiatingPayment);
 
           try {
             if (widget.isImmediate) {
@@ -207,9 +206,10 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
                   );
 
                   if (success == true && mounted) {
+                    context.read<PaymentProvider>().fetchWalletData(); // Refresh balance
                     DialogService.showSuccessDialog(
-                      title: 'Payment Successful!',
-                      message: 'Your session in ${zone.name} is starting now.',
+                      title: l10n.paymentSuccessful,
+                      message: '${AppLocalizations.of(context).sessionStarting} in ${zone.name}.',
                       onDismiss: () {
                         // For immediate sessions, we assume the backend starts it
                         // after payment. The user might need to check ActiveSessionScreen.
@@ -295,7 +295,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
         },
         onTokenSelected: (method) async {
           if (!mounted) return;
-          DialogService.showLoading(message: 'Processing one-click payment...');
+          DialogService.showLoading(message: l10n.processingPayment);
 
           try {
             final paymentService = PaymentService();
@@ -321,10 +321,10 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
                   );
                   if (success == true && mounted) {
                     DialogService.showSuccessDialog(
-                      title: 'Payment Successful!',
+                      title: l10n.paymentSuccessful,
                       message: widget.isImmediate 
-                          ? 'Your parking session is starting now.' 
-                          : 'Your spot has been booked.',
+                          ? l10n.sessionStarting 
+                          : l10n.spotBooked,
                       onDismiss: () {
                         Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
                       },
@@ -374,17 +374,17 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Reservation Confirmed!'),
+        title: Text(l10n.reservationConfirmed),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Your parking spot has been booked successfully.'),
+            Text(l10n.spotBookedSuccess),
             if (canStartNow) ...[
               const SizedBox(height: 16),
-              const Text(
-                'You can start your session now since your time is near.',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+              Text(
+                l10n.canStartNowPrompt,
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
               ),
             ],
           ],
@@ -395,13 +395,13 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
               Navigator.pop(context); // Close dialog
               Navigator.pop(this.context); // Close CreateReservationScreen
             },
-            child: const Text('OK'),
+            child: Text(l10n.ok),
           ),
           if (canStartNow)
             ElevatedButton(
               onPressed: () async {
                 Navigator.pop(context); // Close dialog
-                DialogService.showLoading(message: 'Starting session...');
+                DialogService.showLoading(message: l10n.startingSession);
                 try {
                   final parkingProvider = this.context.read<ParkingProvider>();
                   final session = await parkingProvider.startParking(
@@ -440,7 +440,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-              child: const Text('START SESSION NOW'),
+              child: Text(l10n.startSessionNow.toUpperCase()),
             ),
         ],
       ),
@@ -450,7 +450,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
   @override
   Widget build(BuildContext context) {
     return BaseScaffold(
-      title: widget.isImmediate ? 'Start Parking' : 'Book a Spot',
+      title: widget.isImmediate ? l10n.startParking : l10n.bookSpot,
       showDrawer: true,
       currentIndex: -1, // Not a primary tab, but we want the drawer
       onTabChanged: (index) {
@@ -466,9 +466,9 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Vehicle Selection
-            const Text(
-              'Select Vehicle',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              l10n.selectVehicle,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Consumer<VehicleProvider>(
@@ -495,9 +495,9 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
             const SizedBox(height: 24),
 
             // Zone Selection
-            const Text(
-              'Select Zone',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              l10n.selectZone,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Consumer<ParkingProvider>(
@@ -529,9 +529,9 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Date',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                        Text(
+                          l10n.date,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         InkWell(
@@ -565,9 +565,9 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Start Time',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                        Text(
+                          l10n.startTime,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         InkWell(
@@ -596,9 +596,9 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
             ],
 
             // Duration
-            const Text(
-              'Duration (Minutes)',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              '${l10n.duration} (${l10n.minutes})',
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Row(
@@ -610,7 +610,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
                   icon: const Icon(Icons.remove_circle_outline),
                 ),
                 Text(
-                  '$_durationMinutes min',
+                  '$_durationMinutes ${l10n.minutes}',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -637,7 +637,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
                 ),
               ),
               child: Text(
-                widget.isImmediate ? 'START PARKING NOW' : 'CONFIRM BOOKING',
+                widget.isImmediate ? l10n.startParkingNow : l10n.confirmBooking,
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),

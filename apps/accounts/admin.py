@@ -5,7 +5,7 @@ from .models import User, Vehicle, OTPCode
 
 @admin.register(User)
 class UserAdmin(RegionalAdminMixin, BaseUserAdmin):
-    list_display = ('phone', 'first_name', 'last_name', 'role', 'country', 'wallet_balance', 'is_active')
+    list_display = ('phone', 'first_name', 'last_name', 'role', 'country', 'app_version', 'device_model', 'is_active')
     list_filter = ('country', 'role', 'is_active', 'is_verified')
     search_fields = ('phone', 'first_name', 'last_name', 'email')
     ordering = ('-created_at',)
@@ -19,6 +19,8 @@ class UserAdmin(RegionalAdminMixin, BaseUserAdmin):
         ('Wallet', {'fields': ('wallet_balance',)}),
         ('Permissions', {'fields': ('role', 'is_active', 'is_staff', 'is_superuser', 'is_verified')}),
         ('Officer Assignments', {'fields': ('assigned_zones',)}),
+        ('Device Info', {'fields': ('app_version', 'device_model', 'device_os', 'last_login_device')}),
+        ('Account Deletion', {'fields': ('deletion_requested_at', 'deletion_planned_at')}),
     )
     
     filter_horizontal = ('assigned_zones', 'groups', 'user_permissions')

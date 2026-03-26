@@ -25,7 +25,8 @@ from apps.notifications.models import NotificationEvent
 from .models import Violation, OfficerStatus, OfficerLog, QRCodeScan
 from .serializers_v2 import (
     ViolationListSerializer, ViolationDetailSerializer,
-    OfficerStatusSerializer, QRCodeScanSerializer, OfficerActionLogV2Serializer
+    OfficerStatusSerializer, QRCodeScanSerializer, OfficerActionLogV2Serializer,
+    VehicleStatusCheckSerializer
 )
 
 class UserViolationsListAPIView(generics.ListAPIView):
@@ -209,6 +210,83 @@ class SearchVehicleByPlateAPIView(APIView):
             return Response({
                 'error': f'Vehicle with plate {license_plate} not found'
             }, status=status.HTTP_404_NOT_FOUND)
+
+class OfficerVehicleStatusAPIView(APIView):
+    """
+    Officer lookup for vehicle status and fine calculation.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @extend_schema(
+        parameters=[OpenApiParameter("plate", str, OpenApiParameter.QUERY, description="License plate")],
+        responses={200: VehicleStatusCheckSerializer},
+    )
+    def get(self, request):
+        license_plate = request.query_params.get('plate', '').upper()
+        if not license_plate:
+            return Response({'error': 'Plate is required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            vehicle = Vehicle.objects.get(license_plate=license_plate)
+            
+            # Find the most recent session (active or recently ended/expired)
+            session = ParkingSession.objects.filter(
+                vehicle=vehicle
+            ).order_by('-created_at').first()
+            
+            status_text = 'no_active_session'
+            overdue_minutes = 0
+            suggested_fine = Decimal('0.00')
+            planned_end = None
+            zone_name = None
+            active_session_id = None
+            
+            if session:
+                zone_name = session.zone.name
+                planned_end = session.planned_end_time
+                
+                if session.status == ParkingStatus.ACTIVE:
+                    active_session_id = session.id
+                    if timezone.now() > session.planned_end_time:
+                        status_text = 'overdue'
+                        overdue_seconds = (timezone.now() - session.planned_end_time).total_seconds()
+                        overdue_minutes = int(overdue_seconds / 60)
+                        overdue_hours = Decimal(str(overdue_seconds / 3600))
+                        suggested_fine = (overdue_hours * session.zone.hourly_rate).quantize(Decimal('0.01'))
+                    else:
+                        status_text = 'parked'
+                elif session.status == ParkingStatus.EXPIRED:
+                    status_text = 'expired'
+            
+            data = {
+                'id': str(vehicle.id),
+                'license_plate': vehicle.license_plate,
+                'make': vehicle.make,
+                'model': vehicle.model,
+                'color': vehicle.color,
+                'owner_name': vehicle.user.get_full_name() or str(vehicle.user.phone),
+                'owner_phone': str(vehicle.user.phone),
+                'unpaid_violations': Violation.objects.filter(vehicle=vehicle, is_paid=False).count(),
+                'active_session': None,
+                'status': status_text,
+                'overdue_duration_minutes': overdue_minutes,
+                'suggested_fine': float(suggested_fine),
+            }
+            
+            if session and session.status == ParkingStatus.ACTIVE:
+                data['active_session'] = {
+                    'id': str(session.id),
+                    'zone': session.zone.name,
+                    'zone_id': str(session.zone.id),
+                    'started_at': session.start_time.isoformat(),
+                    'planned_end': session.planned_end_time.isoformat(),
+                    'estimated_cost': float(session.estimated_cost),
+                }
+            
+            return Response(data, status=status.HTTP_200_OK)
+            
+        except Vehicle.DoesNotExist:
+            return Response({'error': 'Vehicle not found'}, status=status.HTTP_404_NOT_FOUND)
 
 class StartSessionByOfficerAPIView(APIView):
     """Allow enforcement officers to start a parking session for a vehicle"""

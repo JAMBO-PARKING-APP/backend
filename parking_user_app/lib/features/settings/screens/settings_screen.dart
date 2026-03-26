@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:parking_user_app/core/localizations.dart';
 
 import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:parking_user_app/widgets/base_scaffold.dart';
@@ -11,8 +13,9 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return BaseScaffold(
-      title: 'Settings',
+      title: l10n.settings,
       currentIndex: 7,
       onTabChanged: (index) {
         final homeState = context.findAncestorStateOfType<HomeScreenState>();
@@ -35,21 +38,21 @@ class SettingsScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Language Preferences',
-                        style: TextStyle(
+                      Text(
+                        l10n.languagePreferences,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 16),
                       SegmentedButton<String>(
-                        segments: const [
-                          ButtonSegment(value: 'system', label: Text('System')),
-                          ButtonSegment(value: 'en', label: Text('English')),
-                          ButtonSegment(value: 'sw', label: Text('Swahili')),
-                          ButtonSegment(value: 'fr', label: Text('French')),
-                          ButtonSegment(value: 'es', label: Text('Spanish')),
+                        segments: [
+                          ButtonSegment(value: 'system', label: Text(l10n.system)),
+                          ButtonSegment(value: 'en', label: Text(l10n.english)),
+                          ButtonSegment(value: 'sw', label: Text(l10n.swahili)),
+                          ButtonSegment(value: 'fr', label: Text(l10n.french)),
+                          ButtonSegment(value: 'es', label: Text(l10n.spanish)),
                         ],
                         selected: {settings.locale},
                         onSelectionChanged: (Set<String> newSelection) {
@@ -58,7 +61,7 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Current: ${_getLanguageName(settings.locale)}',
+                        '${l10n.current}: ${_getLanguageName(settings.locale)}',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade600,
@@ -80,9 +83,9 @@ class SettingsScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Theme Settings',
-                        style: TextStyle(
+                      Text(
+                        l10n.themeSettings,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -119,7 +122,6 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              // App Information
               Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(
@@ -138,13 +140,24 @@ class SettingsScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _InfoRow(label: 'App Version', value: '1.0.0'),
-                      const SizedBox(height: 12),
-                      _InfoRow(label: 'Build Number', value: '1'),
+                      FutureBuilder<PackageInfo>(
+                        future: PackageInfo.fromPlatform(),
+                        builder: (context, snapshot) {
+                          final version = snapshot.data?.version ?? '...';
+                          final buildNumber = snapshot.data?.buildNumber ?? '...';
+                          return Column(
+                            children: [
+                              _InfoRow(label: AppLocalizations.of(context).appVersion, value: version),
+                              const SizedBox(height: 12),
+                              _InfoRow(label: AppLocalizations.of(context).buildNumber, value: buildNumber),
+                            ],
+                          );
+                        },
+                      ),
                       const SizedBox(height: 12),
                       _InfoRow(
-                        label: 'Last Updated',
-                        value: 'February 10, 2026',
+                        label: AppLocalizations.of(context).lastUpdated,
+                        value: 'March 2026',
                       ),
                     ],
                   ),
@@ -190,7 +203,7 @@ class SettingsScreen extends StatelessWidget {
                       title: const Text('Help Center'),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () async {
-                        final uri = Uri.parse('https://spacepark.com/help');
+                        final uri = Uri.parse('https://p-space.ai/');
                         if (await canLaunchUrl(uri)) {
                           await launchUrl(uri);
                         }
@@ -202,7 +215,7 @@ class SettingsScreen extends StatelessWidget {
                       title: const Text('Privacy Policy'),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () async {
-                        final uri = Uri.parse('https://spacepark.com/privacy');
+                        final uri = Uri.parse('https://p-space.ai/privacy');
                         if (await canLaunchUrl(uri)) {
                           await launchUrl(uri);
                         }
@@ -214,7 +227,7 @@ class SettingsScreen extends StatelessWidget {
                       title: const Text('Terms of Service'),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () async {
-                        final uri = Uri.parse('https://spacepark.com/terms');
+                        final uri = Uri.parse('https://p-space.ai/terms');
                         if (await canLaunchUrl(uri)) {
                           await launchUrl(uri);
                         }
@@ -223,9 +236,72 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 24),
+              // Danger Zone
+              Card(
+                elevation: 0,
+                color: Colors.red.shade50,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.red.shade100),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.delete_forever, color: Colors.red),
+                  title: const Text(
+                    'Delete Account',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  subtitle: const Text('Temporarily deactivate and schedule for deletion'),
+                  onTap: () => _showDeleteConfirmation(context),
+                ),
+              ),
+              const SizedBox(height: 40),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Account?'),
+        content: const Text(
+          'Your account will be deactivated immediately and permanently deleted in 30 days. You can cancel this by logging back in within 30 days.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCEL'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog
+              final authProvider = context.read<AuthProvider>();
+              final success = await authProvider.deleteAccount();
+              if (success && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Account deletion requested.')),
+                );
+                // AuthState listener will handle navigation to login
+              } else if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Failed to request deletion.')),
+                );
+              }
+            },
+            child: const Text('DELETE'),
+          ),
+        ],
       ),
     );
   }

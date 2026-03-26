@@ -18,12 +18,9 @@ class ZoneApplicationPublic(BaseModel):
     application_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False,
                                       help_text="Public-facing unique identifier for the application")
 
-    # Applicant details
     applicant_name = models.CharField(max_length=100)
     applicant_email = models.EmailField()
     applicant_phone = models.CharField(max_length=30)
-
-    # Zone proposal
     proposed_name = models.CharField(max_length=100)
     address = models.TextField()
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
@@ -42,18 +39,14 @@ class ZoneApplicationPublic(BaseModel):
     access_instructions = models.TextField(blank=True)
     documents = models.FileField(upload_to='zone_applications/public/', null=True, blank=True,
                                  help_text="Proof of ownership or ID")
-
-    # Admin processing
+    zone_picture = models.ImageField(upload_to='zone_applications/public_pics/', null=True, blank=True,
+                                    help_text="Photo of the actual parking zone")
     status = models.CharField(max_length=20, choices=ApplicationStatus.choices,
                               default=ApplicationStatus.PENDING, db_index=True)
     admin_notes = models.TextField(blank=True)
-
-    # Demo credentials — generated when application is approved
     demo_email = models.EmailField(blank=True, help_text="Login email sent to the applicant upon approval")
     demo_password = models.CharField(max_length=100, blank=True,
                                      help_text="Temporary password generated upon approval — shown once, remind owner to change it")
-
-    # Link to created zone after approval
     created_zone = models.ForeignKey(
         'parking.Zone', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='public_application'

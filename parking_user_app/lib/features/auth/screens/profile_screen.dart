@@ -13,6 +13,7 @@ import 'package:parking_user_app/features/home/screens/about_screen.dart';
 import 'package:parking_user_app/features/auth/screens/help_center_screen.dart';
 import 'package:parking_user_app/features/partner/screens/partner_info_screen.dart';
 import 'package:parking_user_app/core/app_theme.dart';
+import 'package:parking_user_app/core/localizations.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -197,6 +198,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -297,16 +299,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             // Profile Options
             _ProfileOptionGroup(
-              title: 'ACCOUNT',
+              title: l10n.account.toUpperCase(),
               options: [
                 _ProfileOption(
                   icon: Icons.qr_code_rounded,
-                  title: 'My Digital Pass',
+                  title: l10n.viewVerificationQR,
                   onTap: () => _showDigitalPass(user),
                 ),
                 _ProfileOption(
                   icon: Icons.history,
-                  title: 'Parking History',
+                  title: l10n.parkingHistory,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -316,7 +318,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 _ProfileOption(
                   icon: Icons.directions_car_outlined,
-                  title: 'My Vehicles',
+                  title: l10n.myVehicles,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -326,7 +328,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 _ProfileOption(
                   icon: Icons.account_balance_wallet_outlined,
-                  title: 'Wallet & Payments',
+                  title: '${l10n.wallet} & ${l10n.payments}',
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -336,7 +338,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 _ProfileOption(
                   icon: Icons.calendar_today_outlined,
-                  title: 'My Reservations',
+                  title: l10n.reservations,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -352,7 +354,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               options: [
                 _ProfileOption(
                   icon: Icons.business_center_outlined,
-                  title: 'Host a Parking Space',
+                  title: l10n.bookSpot,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -364,7 +366,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
 
             _ProfileOptionGroup(
-              title: 'PREFERENCES',
+              title: l10n.preferences.toUpperCase(),
               options: [
                 _ProfileOption(
                   icon: Icons.notifications_none,
@@ -378,14 +380,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 _ProfileOption(
                   icon: Icons.location_on_outlined,
-                  title: 'App Permissions',
+                  title: l10n.about,
                   onTap: _requestPermissions,
                 ),
               ],
             ),
 
             _ProfileOptionGroup(
-              title: 'SUPPORT',
+              title: l10n.support.toUpperCase(),
               options: [
                 _ProfileOption(
                   icon: Icons.help_outline,
@@ -399,7 +401,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 _ProfileOption(
                   icon: Icons.info_outline,
-                  title: 'About Space Park',
+                  title: l10n.about,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -427,7 +429,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 child: const Text(
-                  'LOGOUT',
+                  l10n.logout.toUpperCase(),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1,

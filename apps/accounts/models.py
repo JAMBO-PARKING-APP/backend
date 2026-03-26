@@ -26,6 +26,12 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     can_receive_chats = models.BooleanField(default=False, verbose_name=_("Can Receive Chats"), help_text="Whether this officer/agent is available to receive chat assignments")
     deletion_requested_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Deletion Requested At"))
     deletion_planned_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Deletion Planned At"), help_text="Scheduled date for permanent deletion")
+    
+    # App tracking
+    app_version = models.CharField(max_length=20, blank=True, null=True, verbose_name=_("App Version"))
+    device_model = models.CharField(max_length=100, blank=True, null=True, verbose_name=_("Device Model"))
+    device_os = models.CharField(max_length=20, choices=[('android', 'Android'), ('ios', 'iOS')], blank=True, null=True, verbose_name=_("Device OS"))
+
     assigned_zones = models.ManyToManyField(
         'parking.Zone',
         related_name='assigned_officers',

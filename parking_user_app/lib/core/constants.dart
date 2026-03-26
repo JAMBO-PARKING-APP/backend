@@ -23,7 +23,7 @@ class AppConstants {
         .replaceFirst('/api/user', '/ws');
   }
 
-  static const String appName = 'Space Park';
+  static const String appName = 'SPACE';
 }
 
 class CountryCode {

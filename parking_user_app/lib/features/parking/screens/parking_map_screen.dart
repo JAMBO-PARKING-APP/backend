@@ -12,6 +12,7 @@ import 'package:parking_user_app/features/settings/providers/settings_provider.d
 import 'package:parking_user_app/core/utils/currency_formatter.dart';
 import 'package:parking_user_app/features/parking/providers/zone_provider.dart';
 import 'package:parking_user_app/core/app_theme.dart';
+import 'package:parking_user_app/core/localizations.dart';
 import 'package:parking_user_app/core/widgets/glass_container.dart';
 import 'package:parking_user_app/features/parking/providers/parking_provider.dart';
 import 'package:parking_user_app/features/parking/providers/reservation_provider.dart';
@@ -372,13 +373,13 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                 children: [
                   _buildStatItemModern(
                     Icons.directions_car_filled_rounded,
-                    'Available',
+                    AppLocalizations.of(context).available,
                     '${zone.availableSlots}/${zone.totalSlots}',
                     AppTheme.primaryColor,
                   ),
                   _buildStatItemModern(
                     Icons.access_time_rounded,
-                    'Hourly Rate',
+                    AppLocalizations.of(context).rate,
                     context.select<SettingsProvider, String>(
                       (settings) => CurrencyFormatter.formatCurrency(
                         zone.hourlyRate,
@@ -412,7 +413,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                         minimumSize: const Size(double.infinity, 56),
                         backgroundColor: AppTheme.successColor,
                       ),
-                      child: const Text('Start Reserved Session'),
+                      child: Text(AppLocalizations.of(context).startReservedSession),
                     );
                   }
 
@@ -434,7 +435,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 56),
                     ),
-                    child: const Text('Start Parking Session'),
+                    child: Text(AppLocalizations.of(context).startParkingSession),
                   );
                 },
               ),
@@ -496,9 +497,9 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text(
-          'Nearby Parking',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context).nearbyParking,
+          style: const TextStyle(
             color: AppTheme.textPrimary,
             fontWeight: FontWeight.bold,
           ),
@@ -529,11 +530,11 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                         color: Colors.grey,
                       ),
                       const SizedBox(height: 16),
-                      const Text('Unable to get your location'),
+                      Text(AppLocalizations.of(context).unableToGetLocation),
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: _getCurrentLocation,
-                        child: const Text('Retry'),
+                        child: Text(AppLocalizations.of(context).retry),
                       ),
                     ],
                   ),
@@ -611,7 +612,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: TextField(
                 decoration: InputDecoration(
-                  hintText: 'Search for parking...',
+                  hintText: AppLocalizations.of(context).searchParking,
                   prefixIcon: const Icon(
                     Icons.search,
                     color: AppTheme.primaryColor,
@@ -703,7 +704,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Navigating to ${_selectedZone!.name}',
+                            '${AppLocalizations.of(context).navigatingTo} ${_selectedZone!.name}',
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -711,7 +712,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                             ),
                           ),
                           Text(
-                            '${(_distanceToTarget! / 1000).toStringAsFixed(1)} km remaining',
+                            '${(_distanceToTarget! / 1000).toStringAsFixed(1)} ${AppLocalizations.of(context).km} ${AppLocalizations.of(context).remaining}',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,

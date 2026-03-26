@@ -36,7 +36,7 @@ export default function ApplyPage() {
     proposed_name: '', address: '', total_slots: 1, proposed_hourly_rate: '',
     operating_hours: '24/7', parking_surface: 'paved',
     has_security: false, has_cctv: false, access_instructions: '',
-    latitude: '', longitude: '', documents: null,
+    latitude: '', longitude: '', documents: null, zone_picture: null,
   });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -66,7 +66,7 @@ export default function ApplyPage() {
     try {
       const fd = new FormData();
       Object.entries(form).forEach(([k, v]) => {
-        if (k === 'documents') { if (v) fd.append(k, v); }
+        if (k === 'documents' || k === 'zone_picture') { if (v) fd.append(k, v); }
         else fd.append(k, v);
       });
       const res = await api.post('/apply/', fd, {
@@ -238,6 +238,12 @@ export default function ApplyPage() {
                       <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{v}</span>
                     </div>
                   ))}
+                </div>
+
+                <div className="form-group">
+                  <label>Zone Photo (Used in the App)</label>
+                  <input type="file" accept="image/*" style={{ color: 'var(--text-secondary)', fontSize: 14 }}
+                    onChange={e => set('zone_picture', e.target.files[0])} />
                 </div>
 
                 <div className="form-group">

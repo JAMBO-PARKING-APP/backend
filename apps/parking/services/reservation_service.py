@@ -70,13 +70,18 @@ class ReservationService:
                 raise ValueError("No parking slots available for the selected time.")
             
             _ = Zone.objects.select_for_update().get(id=zone.id)
+            
+        if not zone.supports_reservations:
+            raise ValueError(f"Zone {zone.name} does not support reservations.")
 
         duration_seconds = (end_time - start_time).total_seconds()
         duration_hours = Decimal(str(duration_seconds / 3600))
         if duration_hours < Decimal('0.25'):
             duration_hours = Decimal('0.25')
         
-        cost = (duration_hours * zone.hourly_rate).quantize(Decimal('0.01'))
+        base_cost = (duration_hours * zone.hourly_rate).quantize(Decimal('0.01'))
+        service_fee = (base_cost * Decimal('0.05')).quantize(Decimal('0.01'))
+        total_cost = base_cost + service_fee
 
         reservation = Reservation.objects.create(
             vehicle=vehicle,
@@ -84,7 +89,8 @@ class ReservationService:
             parking_slot=parking_slot,
             reserved_from=start_time,
             reserved_until=end_time,
-            cost=cost,
+            cost=total_cost,
+            service_fee=service_fee,
             status='pending_payment'
         )
 
@@ -163,6 +169,15 @@ class ReservationService:
         reservation.save()
         notify_reservation_confirmed(reservation)
         
+        # Trigger attendance check 30 minutes after reserved_from
+        from apps.parking.tasks import check_reservation_attendance
+        eta = reservation.reserved_from + timedelta(minutes=30)
+        if eta > timezone.now():
+            check_reservation_attendance.apply_async((reservation.id,), eta=eta)
+        else:
+            # If for some reason confirmed after the 30min mark, check in 1 min
+            check_reservation_attendance.apply_async((reservation.id,), countdown=60)
+        
         return reservation
 
     @staticmethod
@@ -171,11 +186,16 @@ class ReservationService:
         if reservation.status in ['cancelled', 'expired', 'completed']:
             return
 
+        now = timezone.now()
+        if reservation.reserved_from - now < timedelta(hours=1):
+            raise ValueError("Reservations cannot be cancelled within 1 hour of the start time.")
+
         user = reservation.vehicle.user
         country = user.country
 
         if reservation.status == 'confirmed':
-             refund_amount = reservation.cost
+             # Refund total cost minus the 5% service fee
+             refund_amount = reservation.cost - reservation.service_fee
              
              if refund_amount > 0:
                  from django.db.models import F

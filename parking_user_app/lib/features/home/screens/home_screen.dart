@@ -5,6 +5,7 @@ import 'package:parking_user_app/features/parking/screens/parking_map_screen.dar
 import 'package:parking_user_app/features/parking/screens/zone_list_screen.dart';
 import 'package:parking_user_app/features/payments/screens/wallet_screen.dart';
 import 'package:parking_user_app/features/auth/screens/profile_screen.dart';
+import 'package:parking_user_app/features/home/screens/dashboard_screen.dart';
 import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/core/location_service.dart';
 import 'package:parking_user_app/features/payments/providers/payment_provider.dart';
@@ -74,7 +75,7 @@ class HomeScreenState extends State<HomeScreen> {
         }
 
         final List<Widget> pages = [
-          const ParkingMapScreen(),
+          const DashboardScreen(),
           const ZoneListScreen(),
           const WalletScreen(),
           const ProfileScreen(),
@@ -195,53 +196,28 @@ class HomeScreenState extends State<HomeScreen> {
                               ),
                             ],
                           ),
-                          child: BottomNavigationBar(
-                            currentIndex: _currentIndex,
-                            onTap:
-                                (index) => setState(() => _currentIndex = index),
-                            type: BottomNavigationBarType.fixed,
-                            backgroundColor:
-                                Colors.transparent, // Transparent for blur
-                            elevation: 0,
-                            selectedItemColor: AppTheme.primaryColor,
-                            unselectedItemColor: AppTheme.textSecondary,
-                            selectedLabelStyle: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 11,
-                            ),
-                            unselectedLabelStyle: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 11,
-                            ),
                             items: [
-                              BottomNavigationBarItem(
-                                icon: const Padding(
+                              const BottomNavigationBarItem(
+                                icon: Padding(
                                   padding: EdgeInsets.only(bottom: 4),
-                                  child: Icon(Icons.map_outlined),
+                                  child: Icon(Icons.home_outlined),
                                 ),
                                 activeIcon: Padding(
-                                  padding: const EdgeInsets.only(bottom: 4),
-                                  child: Selector<ParkingProvider, bool>(
-                                    selector: (_, p) => p.activeSessions.isNotEmpty,
-                                    builder: (context, hasActive, _) => Icon(
-                                      hasActive
-                                          ? Icons.timer_outlined
-                                          : Icons.map_rounded,
-                                    ),
-                                  ),
+                                  padding: EdgeInsets.only(bottom: 4),
+                                  child: Icon(Icons.home_rounded),
                                 ),
                                 label: 'Home',
                               ),
                               const BottomNavigationBarItem(
                                 icon: Padding(
                                   padding: EdgeInsets.only(bottom: 4),
-                                  child: Icon(Icons.directions_car_outlined),
+                                  child: Icon(Icons.map_outlined),
                                 ),
                                 activeIcon: Padding(
                                   padding: EdgeInsets.only(bottom: 4),
-                                  child: Icon(Icons.directions_car_rounded),
+                                  child: Icon(Icons.map_rounded),
                                 ),
-                                label: 'Explore',
+                                label: 'Map',
                               ),
                               const BottomNavigationBarItem(
                                 icon: Padding(
@@ -254,12 +230,12 @@ class HomeScreenState extends State<HomeScreen> {
                                 ),
                                 label: 'Wallet',
                               ),
-                              BottomNavigationBarItem(
-                                icon: const Padding(
+                              const BottomNavigationBarItem(
+                                icon: Padding(
                                   padding: EdgeInsets.only(bottom: 4),
                                   child: Icon(Icons.person_outline_rounded),
                                 ),
-                                activeIcon: const Padding(
+                                activeIcon: Padding(
                                   padding: EdgeInsets.only(bottom: 4),
                                   child: Icon(Icons.person_rounded),
                                 ),

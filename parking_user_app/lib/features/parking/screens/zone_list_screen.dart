@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:parking_user_app/features/parking/providers/zone_provider.dart';
 import 'package:parking_user_app/features/parking/screens/parking_map_screen.dart';
 import 'package:parking_user_app/features/payments/services/payment_service.dart';
 import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/features/parking/screens/create_reservation_screen.dart';
 import 'package:parking_user_app/features/home/screens/home_screen.dart';
-import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
+import 'package:parking_user_app/core/localizations.dart';
 import 'package:parking_user_app/core/utils/currency_formatter.dart';
 import 'package:parking_user_app/widgets/base_scaffold.dart';
 
@@ -19,13 +20,37 @@ class ZoneListScreen extends StatefulWidget {
 }
 
 class _ZoneListScreenState extends State<ZoneListScreen> {
+  Position? _currentPosition;
+
   @override
   void initState() {
     super.initState();
+    _determinePosition();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ZoneProvider>().fetchZones();
       PaymentService().preWarmPesapal();
     });
+  }
+
+  Future<void> _determinePosition() async {
+    try {
+      Position position = await Geolocator.getCurrentPosition();
+      setState(() {
+        _currentPosition = position;
+      });
+    } catch (e) {
+      debugPrint('Error getting location: $e');
+    }
+  }
+
+  double _calculateDistance(double lat, double lng) {
+    if (_currentPosition == null) return 0.0;
+    return Geolocator.distanceBetween(
+      _currentPosition!.latitude,
+      _currentPosition!.longitude,
+      lat,
+      lng,
+    ) / 1000;
   }
 
   Future<void> _launchMaps(double lat, double lng) async {
@@ -45,8 +70,9 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return BaseScaffold(
-      title: 'Parking Zones',
+      title: l10n.parkingZones,
       showDrawer: false,
       currentIndex: 1, // Zones index
       onTabChanged: (index) {
@@ -75,13 +101,13 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'No parking zones found nearby',
+                    l10n.noParkingFound,
                     style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: () => zoneProvider.fetchZones(),
-                    child: const Text('Retry'),
+                    child: Text(l10n.retry),
                   ),
                 ],
               ),
@@ -137,7 +163,7 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Text(
-                                        'Rate: ${CurrencyFormatter.formatCurrency(zone.hourlyRate, settings.countryConfig)}/hr',
+                                        '${l10n.rate}: ${CurrencyFormatter.formatCurrency(zone.hourlyRate, settings.countryConfig)}/hr',
                                         style: const TextStyle(
                                           color: AppTheme.primaryColor,
                                           fontWeight: FontWeight.w700,
@@ -155,11 +181,12 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                                         color: AppTheme.textSecondary,
                                       ),
                                       const SizedBox(width: 4),
-                                      Text(
-                                        '${zone.code} • ${zone.availableSlots}/${zone.totalSlots} slots',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w500,
-                                          color: AppTheme.textSecondary,
+                                        child: Text(
+                                          '${zone.code} • ${zone.availableSlots}/${zone.totalSlots} ${l10n.slots} • ${_calculateDistance(zone.latitude, zone.longitude).toStringAsFixed(1)} ${l10n.km}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w500,
+                                            color: AppTheme.textSecondary,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -205,7 +232,7 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                                   ),
                                 );
                               },
-                              tooltip: 'View on Map',
+                              tooltip: l10n.viewOnMap,
                             ),
                           ],
                         ),
@@ -218,7 +245,7 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                               onPressed: () =>
                                   _launchMaps(zone.latitude, zone.longitude),
                               icon: const Icon(Icons.directions_outlined, size: 20),
-                              label: const Text('Directions'),
+                              label: Text(l10n.directions),
                               style: TextButton.styleFrom(
                                 foregroundColor: AppTheme.textSecondary,
                                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -239,7 +266,7 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                                       ),
                                     );
                                   },
-                                  child: const Text('Book Later'),
+                                  child: Text(l10n.bookLater),
                                 ),
                                 const SizedBox(width: 8),
                                 ElevatedButton(
@@ -267,7 +294,7 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                   ),
-                                  child: const Text('Start Now'),
+                                  child: Text(l10n.startParking),
                                 ),
                               ],
                             ),

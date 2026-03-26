@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:parking_user_app/features/auth/models/user_model.dart';
 import 'package:parking_user_app/core/storage_manager.dart';
+import 'package:parking_user_app/core/device_helper.dart';
 import 'dart:convert';
 
 class AuthService {
@@ -16,7 +17,13 @@ class AuthService {
     try {
       final response = await _apiClient.post(
         'auth/login/',
-        data: {'phone': phoneNumber, 'password': password},
+        data: {
+          'phone': phoneNumber,
+          'password': password,
+          'app_version': await DeviceHelper.getAppVersion(),
+          'device_model': await DeviceHelper.getDeviceModel(),
+          'device_os': DeviceHelper.getDeviceOS(),
+        },
       );
 
       if (response.statusCode == 200) {
@@ -83,6 +90,9 @@ class AuthService {
           if (email?.isNotEmpty ?? false) 'email': email,
           if (firstName?.isNotEmpty ?? false) 'first_name': firstName,
           if (lastName?.isNotEmpty ?? false) 'last_name': lastName,
+          'app_version': await DeviceHelper.getAppVersion(),
+          'device_model': await DeviceHelper.getDeviceModel(),
+          'device_os': DeviceHelper.getDeviceOS(),
         },
       );
       if (response.statusCode == 201) {
@@ -122,6 +132,9 @@ class AuthService {
           'phone': phone, 
           'otp': otp,
           if (email != null) 'email': email,
+          'app_version': await DeviceHelper.getAppVersion(),
+          'device_model': await DeviceHelper.getDeviceModel(),
+          'device_os': DeviceHelper.getDeviceOS(),
         },
       );
       if (response.statusCode == 200) {

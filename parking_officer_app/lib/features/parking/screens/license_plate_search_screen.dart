@@ -228,15 +228,75 @@ class _LicensePlateSearchScreenState extends State<LicensePlateSearchScreen> {
                   ],
                 ),
                 const SizedBox(height: 24),
+                if (vehicle.status == 'overdue' || vehicle.status == 'expired')
+                  _buildOverstayWarning(context, vehicle),
+                const SizedBox(height: 16),
                 if (vehicle.activeSession != null)
                   _buildActiveSessionCard(vehicle.activeSession!)
-                else
+                else if (vehicle.status == 'no_active_session' || vehicle.status == 'expired')
                   _buildNoActiveSessionState(context, vehicle),
               ],
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildOverstayWarning(BuildContext context, dynamic vehicle) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.timer_off_rounded, color: Colors.red),
+              const SizedBox(width: 12),
+              Text(
+                'Overstay Detected',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red.shade700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildDetailRow('Overdue By', '${vehicle.overdueDurationMinutes} mins'),
+          const Divider(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Suggested Fine', style: TextStyle(color: Colors.grey)),
+              Text(
+                'UGX ${vehicle.suggestedFine.toStringAsFixed(0)}',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red.shade900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Fine is calculated from the time session ended until now.',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

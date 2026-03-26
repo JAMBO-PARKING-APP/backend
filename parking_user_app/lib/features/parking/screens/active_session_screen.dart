@@ -7,6 +7,7 @@ import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/core/dialog_service.dart';
 import 'package:parking_user_app/features/parking/screens/qr_code_view_screen.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:parking_user_app/core/localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 
@@ -103,20 +104,21 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
   }
 
   void _handleEndParking() async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('End Parking'),
-        content: const Text('Are you sure you want to end this parking session?'),
+        title: Text(l10n.endParking),
+        content: Text(l10n.areYouSureEndSession),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorColor),
-            child: const Text('End Session'),
+            child: Text(l10n.endSession),
           ),
         ],
       ),
@@ -129,8 +131,8 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
         setState(() => _isLoading = false);
         if (success) {
           DialogService.showSuccessDialog(
-            title: 'Session Ended',
-            message: 'Your parking session has been stopped successfully.',
+            title: l10n.sessionEnded,
+            message: l10n.sessionEndedSuccess,
           );
         }
       }
@@ -162,9 +164,9 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  'Extend Duration',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                Text(
+                  AppLocalizations.of(context).extendDuration,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
                 const SizedBox(height: 32),
                 Row(
@@ -190,7 +192,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Additional Cost:', style: TextStyle(color: Colors.white70)),
+                    Text(AppLocalizations.of(context).additionalCost + ':', style: const TextStyle(color: Colors.white70)),
                     Consumer<AuthProvider>(
                       builder: (context, auth, _) {
                         final hourlyRate = widget.session.hourlyRate;
@@ -213,7 +215,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                     
                     if ((auth.user?.walletBalance ?? 0) < total) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Insufficient wallet balance. Please top up.')),
+                        SnackBar(content: Text(AppLocalizations.of(context).insufficientBalance)),
                       );
                       return;
                     }
@@ -227,8 +229,8 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                     }
                       if (success) {
                         DialogService.showSuccessDialog(
-                          title: 'Extended!',
-                          message: 'Parking session extended by $additionalHours hour(s).',
+                          title: AppLocalizations.of(context).extended,
+                          message: '${AppLocalizations.of(context).sessionExtendedBy} $additionalHours ${AppLocalizations.of(context).hours}.',
                         );
                       }
                     }
@@ -238,7 +240,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                     backgroundColor: AppTheme.accentColor,
                     foregroundColor: AppTheme.primaryDark,
                   ),
-                  child: const Text('PAY & EXTEND NOW', style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: Text(AppLocalizations.of(context).payAndExtendNow.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -276,7 +278,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
           _savedLng = position.longitude;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Parking location saved!')),
+          SnackBar(content: Text(AppLocalizations.of(context).parkingLocationSaved)),
         );
       }
     } catch (e) {
@@ -298,7 +300,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
     } else {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No saved location found. Tap "Save Spot" first.')),
+        SnackBar(content: Text(AppLocalizations.of(context).noSavedLocation)),
       );
     }
   }
@@ -325,10 +327,10 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                     icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
                     onPressed: () => Navigator.pop(context),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'ACTIVE SESSION',
-                      style: TextStyle(
+                      AppLocalizations.of(context).activeSession.toUpperCase(),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -380,7 +382,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Vehicle: ${widget.session.vehiclePlate}',
+                                  '${AppLocalizations.of(context).vehicle}: ${widget.session.vehiclePlate}',
                                   style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14),
                                 ),
                               ],
@@ -417,7 +419,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'REMAINING',
+                                AppLocalizations.of(context).remaining.toUpperCase(),
                                 style: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.5),
                                   fontSize: 12,
@@ -443,7 +445,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  'Until ${widget.session.endTime != null ? _formatTime(widget.session.endTime!) : '--:--'}',
+                                  '${AppLocalizations.of(context).until[0].toUpperCase()}${AppLocalizations.of(context).until.substring(1)} ${widget.session.endTime != null ? _formatTime(widget.session.endTime!) : '--:--'}',
                                   style: TextStyle(
                                     color: isLowTime ? Colors.white : AppTheme.accentColor,
                                     fontSize: 12,
@@ -470,7 +472,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                         MaterialPageRoute(builder: (_) => QRCodeViewScreen(session: widget.session)),
                       ),
                       icon: const Icon(Icons.qr_code_scanner_rounded),
-                      label: const Text('VIEW VERIFICATION QR'),
+                      label: Text(AppLocalizations.of(context).viewVerificationQR),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white.withValues(alpha: 0.1),
                         foregroundColor: Colors.white,
@@ -489,19 +491,19 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                       children: [
                         _buildActionIcon(
                           icon: Icons.history_rounded,
-                          label: 'History',
+                          label: AppLocalizations.of(context).history,
                           onTap: () {
                             // Navigation to history if needed
                           },
                         ),
                         _buildActionIcon(
                           icon: Icons.my_location_rounded,
-                          label: 'Save Spot',
+                          label: AppLocalizations.of(context).saveSpot,
                           onTap: _handleSaveSpot,
                         ),
                         _buildActionIcon(
                           icon: Icons.directions_rounded,
-                          label: 'Find Car',
+                          label: AppLocalizations.of(context).findCar,
                           onTap: _handleLocateCar,
                         ),
                       ],
@@ -521,7 +523,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                           elevation: 0,
                         ),
-                        child: const Text('EXTEND PARKING', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                        child: Text(AppLocalizations.of(context).extendParking.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                       ),
                       const SizedBox(height: 16),
                       TextButton(
@@ -530,7 +532,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                           minimumSize: const Size(double.infinity, 56),
                           foregroundColor: Colors.white.withValues(alpha: 0.7),
                         ),
-                        child: const Text('End Session Early', style: TextStyle(fontWeight: FontWeight.w600)),
+                        child: Text(AppLocalizations.of(context).endSessionEarly, style: const TextStyle(fontWeight: FontWeight.w600)),
                       ),
                     ],
                   ],

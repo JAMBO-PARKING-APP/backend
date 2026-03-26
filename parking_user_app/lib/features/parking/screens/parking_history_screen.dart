@@ -6,6 +6,8 @@ import 'package:parking_user_app/features/settings/providers/settings_provider.d
 import 'package:parking_user_app/core/utils/currency_formatter.dart';
 import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/features/parking/screens/session_detail_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:parking_user_app/core/constants.dart';
 
 class ParkingHistoryScreen extends StatefulWidget {
   const ParkingHistoryScreen({super.key});
@@ -182,6 +184,32 @@ class _ParkingHistoryScreenState extends State<ParkingHistoryScreen> {
                                   fontWeight: FontWeight.bold,
                                   color: Colors.grey.shade600,
                                 ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            InkWell(
+                              onTap: () async {
+                                final baseUrl = AppConstants.baseUrl;
+                                final domain = baseUrl.substring(0, baseUrl.indexOf('/api/'));
+                                final url = Uri.parse('$domain/api/parking/invoice/${session.id}/');
+                                if (await canLaunchUrl(url)) {
+                                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                                }
+                              },
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.download_rounded, size: 14, color: AppTheme.primaryColor),
+                                  const SizedBox(width: 4),
+                                  const Text(
+                                    'Invoice',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppTheme.primaryColor,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],

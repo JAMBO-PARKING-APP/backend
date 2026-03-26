@@ -14,6 +14,8 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
     path('system/config/', common_api_views.PublicSystemConfigAPIView.as_view(), name='system-config'),
+    path('countries/', common_api_views.PublicCountryListAPIView.as_view(), name='country-list'),
+    path('countries/detect/', common_api_views.CountryDetectAPIView.as_view(), name='country-detect'),
     path('auth/register/', accounts_views.RegisterAPIView.as_view(), name='register'),
     path('auth/verify-otp/', accounts_views.VerifyOTPAPIView.as_view(), name='verify-otp'),
     path('auth/login/', accounts_views.LoginAPIView.as_view(), name='login'),

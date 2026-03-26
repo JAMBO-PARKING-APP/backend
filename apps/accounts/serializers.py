@@ -8,8 +8,12 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ('id', 'phone', 'phone_number', 'email', 'first_name', 'last_name', 'role', 'full_name', 'country_details')
-        read_only_fields = ('id', 'role', 'phone_number', 'country_details')
+        fields = [
+            'id', 'phone', 'first_name', 'last_name', 'full_name', 'email', 
+            'role', 'profile_photo', 'is_verified', 'country', 'wallet_balance',
+            'app_version', 'device_model', 'device_os'
+        ]
+        read_only_fields = ['id', 'phone', 'role', 'is_verified', 'wallet_balance']
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)

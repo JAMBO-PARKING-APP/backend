@@ -10,6 +10,9 @@ class VehicleSearchModel {
   final String ownerPhone;
   final ActiveSessionData? activeSession;
   final int unpaidViolations;
+  final String status;
+  final int overdueDurationMinutes;
+  final double suggestedFine;
 
   VehicleSearchModel({
     required this.id,
@@ -21,6 +24,9 @@ class VehicleSearchModel {
     required this.ownerPhone,
     this.activeSession,
     required this.unpaidViolations,
+    required this.status,
+    this.overdueDurationMinutes = 0,
+    this.suggestedFine = 0.0,
   });
 
   factory VehicleSearchModel.fromJson(Map<String, dynamic> json) {
@@ -36,6 +42,9 @@ class VehicleSearchModel {
           ? ActiveSessionData.fromJson(json['active_session'])
           : null,
       unpaidViolations: json['unpaid_violations'] ?? 0,
+      status: json['status'] ?? 'unknown',
+      overdueDurationMinutes: json['overdue_duration_minutes'] ?? 0,
+      suggestedFine: (json['suggested_fine'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

@@ -8,13 +8,16 @@ import 'package:parking_user_app/core/api_client.dart';
 
 class SettingsProvider extends ChangeNotifier {
   static const String _languageKey = 'app_language';
+  static const String _hasSelectedLanguageKey = 'has_selected_language';
   static const String _themeKey = 'app_theme_mode';
 
   late SharedPreferences _prefs;
   String? _locale; // Null means follow system
+  bool _hasSelectedLanguage = false;
   ThemeMode _themeMode = ThemeMode.system;
 
   String get locale => _locale ?? 'system';
+  bool get hasSelectedLanguage => _hasSelectedLanguage;
   ThemeMode get themeMode => _themeMode;
   bool get isDarkMode => _themeMode == ThemeMode.dark;
 
@@ -29,9 +32,9 @@ class SettingsProvider extends ChangeNotifier {
     if (_prefs.containsKey(_languageKey)) {
       _locale = _prefs.getString(_languageKey);
     } else {
-      // Default to null to follow system language
       _locale = null;
     }
+    _hasSelectedLanguage = _prefs.getBool(_hasSelectedLanguageKey) ?? false;
     final savedTheme = _prefs.getString(_themeKey);
     if (savedTheme != null) {
       _themeMode = ThemeMode.values.firstWhere(
@@ -66,9 +69,16 @@ class SettingsProvider extends ChangeNotifier {
         await _prefs.remove(_languageKey);
       } else {
         await _prefs.setString(_languageKey, effectiveLocale);
+        await markLanguageSelected(); // Auto-mark as selected if they set one
       }
       notifyListeners();
     }
+  }
+
+  Future<void> markLanguageSelected() async {
+    _hasSelectedLanguage = true;
+    await _prefs.setBool(_hasSelectedLanguageKey, true);
+    notifyListeners();
   }
 
   Future<void> setTheme(ThemeMode mode) async {

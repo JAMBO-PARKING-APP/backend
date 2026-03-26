@@ -3,6 +3,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/parking_session_model.dart';
 import '../../../core/app_theme.dart';
+import 'package:parking_user_app/core/localizations.dart';
 
 class QRCodeViewScreen extends StatelessWidget {
   final ParkingSession session;
@@ -27,7 +28,7 @@ class QRCodeViewScreen extends StatelessWidget {
         children: [
           const SizedBox(height: 20),
           Text(
-            "Space Park Pass",
+            "SPACE Park Pass",
             style: GoogleFonts.outfit(
               color: Colors.white,
               fontSize: 28,
@@ -36,7 +37,7 @@ class QRCodeViewScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            "Show this to the parking officer",
+            AppLocalizations.of(context).showToOfficer,
             style: GoogleFonts.outfit(color: Colors.white70, fontSize: 16),
           ),
           const Spacer(),
@@ -106,7 +107,7 @@ class QRCodeViewScreen extends StatelessWidget {
                 const Icon(Icons.access_time, color: Colors.white),
                 const SizedBox(width: 10),
                 Text(
-                  "Expires at: ${session.endTime?.hour.toString().padLeft(2, '0')}:${session.endTime?.minute.toString().padLeft(2, '0')}",
+                  "${AppLocalizations.of(context).expiresAt}: ${session.endTime?.hour.toString().padLeft(2, '0')}:${session.endTime?.minute.toString().padLeft(2, '0')}",
                   style: GoogleFonts.outfit(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,

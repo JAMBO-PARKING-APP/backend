@@ -51,14 +51,13 @@ class RegisterAPIView(APIView):
             try:
                 user = serializer.save()
                 user.is_verified = True
-                
-                # Generate tokens immediately
                 refresh = RefreshToken.for_user(user)
                 access_token = refresh.access_token
                 token_jti = str(access_token.get('jti', ''))
-                
                 user.current_session_token = token_jti
-                # Set default device info if available
+                user.app_version = request.data.get('app_version', '')
+                user.device_model = request.data.get('device_model', '')
+                user.device_os = request.data.get('device_os', 'android')
                 device_info = request.data.get('device_info', '')
                 user.last_login_device = device_info or request.META.get('HTTP_USER_AGENT', '')[:255]
                 user.save()
@@ -77,7 +76,6 @@ class RegisterAPIView(APIView):
                 return Response({'error': f"Account creation failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         logger.warning(f"Registration validation failed: {serializer.errors}")
-        # Flatten errors for the mobile app
         errors = serializer.errors
         error_msg = "Registration failed"
         if isinstance(errors, dict):
@@ -104,9 +102,6 @@ class CustomTokenRefreshAPIView(TokenRefreshView):
                 from rest_framework_simplejwt.tokens import AccessToken
                 access_token = AccessToken(access_token_str)
                 token_jti = str(access_token.get('jti', ''))
-                
-                # We need to find the user. Since refresh is unauthenticated, 
-                # we can extract user_id from the new access token.
                 user_id = access_token.get('user_id')
                 if user_id:
                     User.objects.filter(id=user_id).update(current_session_token=token_jti)
@@ -161,6 +156,9 @@ class VerifyOTPAPIView(APIView):
             if device_id:
                 user.current_device_id = device_id
             user.current_session_token = token_jti
+            user.app_version = request.data.get('app_version', '')
+            user.device_model = request.data.get('device_model', '')
+            user.device_os = request.data.get('device_os', 'android')
             user.last_login_device = device_info or request.META.get('HTTP_USER_AGENT', '')[:255]
             user.save()
             
@@ -201,6 +199,9 @@ class LoginAPIView(APIView):
             if device_id:
                 user.current_device_id = device_id
             user.current_session_token = token_jti
+            user.app_version = request.data.get('app_version', '')
+            user.device_model = request.data.get('device_model', '')
+            user.device_os = request.data.get('device_os', 'android')
             user.last_login_device = device_info or request.META.get('HTTP_USER_AGENT', '')[:255]
             user.save()
             
@@ -332,7 +333,7 @@ class ResendOTPAPIView(APIView):
                 code=otp_code,
                 expires_at=timezone.now() + timedelta(minutes=10)
             )
-            # Send OTP via Email
+            
             try:
                 subject = "Space Park Verification Code"
                 message = f"Your Space Park verification code is: {otp_code}\n\nThis code will expire in 10 minutes."
@@ -454,6 +455,7 @@ class DeleteAccountAPIView(APIView):
         user.is_active = False
         user.deletion_requested_at = timezone.now()
         user.deletion_planned_at = timezone.now() + timedelta(days=30)
+        user.current_session_token = None
         user.save()
         
         return Response({

@@ -3,12 +3,12 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // White and Green Palette
-  static const Color primaryColor = Color(0xFF10B981); // Emerald Green
-  static const Color primaryDark = Color(0xFF059669); // Deeper Green
-  static const Color accentColor = Color(0xFF34D399); // Lighter Emerald
-  static const Color successColor = Color(0xFF10B981); // Emerald Green
-  static const Color warningColor = Color(0xFFF59E0B); // Amber
-  static const Color errorColor = Color(0xFFEF4444); // Red
+  static const Color primaryColor = Color(0xFF00A4E4); // Electric Blue
+  static const Color primaryDark = Color(0xFF004B8D); // Navy Blue
+  static const Color accentColor = Color(0xFF00D4FF); // Cyan
+  static const Color successColor = Color(0xFF10B981); 
+  static const Color warningColor = Color(0xFFF59E0B); 
+  static const Color errorColor = Color(0xFFEF4444); 
 
   // Neutral Colors
   static const Color textPrimary = Color(0xFF1F2937); // Gray 800
@@ -19,10 +19,10 @@ class AppTheme {
   static const Color cardBackground = Colors.white;
 
   // Dark theme colors (Adjusted to White and Green as requested)
-  static const Color darkBackgroundColor = Color(0xFFF9FAFB); // Very light gray (almost white)
-  static const Color darkCardBackground = Colors.white;
-  static const Color darkTextPrimary = Color(0xFF111827); // Gray 900
-  static const Color darkDividerColor = Color(0xFFE5E7EB); // Gray 200
+  static const Color darkBackgroundColor = Color(0xFF0D1B2A); // Deep Navy
+  static const Color darkCardBackground = Color(0xFF1B263B); // Navy Gray
+  static const Color darkTextPrimary = Colors.white;
+  static const Color darkDividerColor = Color(0xFF415A77);
 
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,

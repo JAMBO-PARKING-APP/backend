@@ -131,3 +131,24 @@ class VehicleListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+class AccountDeletionView(APIView):
+    """
+    Endpoint for users to request account deletion.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        user = request.user
+        user.is_active = False
+        user.deletion_requested_at = timezone.now()
+        user.deletion_planned_at = timezone.now() + timedelta(days=30)
+        user.save()
+        
+        # Log out user by clearing the session token
+        user.current_session_token = None
+        user.save(update_fields=['current_session_token'])
+        
+        return Response({
+            'message': 'Account deletion requested. Your account has been deactivated and will be permanently deleted in 30 days.'
+        }, status=status.HTTP_200_OK)

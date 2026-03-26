@@ -21,6 +21,8 @@ class Zone(RegionalModel, BaseModel):
     total_slots = models.IntegerField(default=0, help_text=_("Total number of parking slots in this zone"))
     code = models.CharField(max_length=20, unique=True, null=True, blank=True, help_text=_("Short unique code for the zone (e.g. JB01)"))
     is_active = models.BooleanField(default=True, db_index=True)
+    supports_dynamic_pricing = models.BooleanField(default=False, help_text=_("Toggle dynamic pricing for this zone"))
+    supports_reservations = models.BooleanField(default=True, help_text=_("Toggle if this zone supports reservations"))
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
     radius_meters = models.IntegerField(default=100)
@@ -179,7 +181,8 @@ class DrivePath(BaseModel):
         return f"{self.zone.name} - {self.name}"
 
 class ParkingSession(RegionalModel, BaseModel):
-    vehicle = models.ForeignKey('accounts.Vehicle', on_delete=models.CASCADE, related_name='parking_sessions')
+    vehicle = models.ForeignKey('accounts.Vehicle', on_delete=models.CASCADE, related_name='parking_sessions', null=True, blank=True)
+    guest_license_plate = models.CharField(max_length=20, null=True, blank=True, help_text=_("Plate number for non-app users"))
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE, related_name='sessions')
     parking_slot = models.ForeignKey(ParkingSlot, on_delete=models.SET_NULL, null=True, blank=True)
     
@@ -202,8 +205,13 @@ class ParkingSession(RegionalModel, BaseModel):
         constraints = [
             models.UniqueConstraint(
                 fields=['vehicle'],
-                condition=models.Q(status=ParkingStatus.ACTIVE),
+                condition=models.Q(status=ParkingStatus.ACTIVE, vehicle__isnull=False),
                 name='one_active_session_per_vehicle'
+            ),
+            models.UniqueConstraint(
+                fields=['guest_license_plate'],
+                condition=models.Q(status=ParkingStatus.ACTIVE, guest_license_plate__isnull=False),
+                name='one_active_session_per_guest'
             )
         ]
         indexes = [
@@ -219,7 +227,8 @@ class ParkingSession(RegionalModel, BaseModel):
         ]
 
     def __str__(self):
-        return f"{self.vehicle.license_plate} - {self.zone.name}"
+        plate = self.vehicle.license_plate if self.vehicle else self.guest_license_plate
+        return f"{plate} - {self.zone.name}"
 
         if self.parking_slot and self.parking_slot.zone != self.zone:
             raise ValidationError(_("Parking slot must belong to the selected zone"))
@@ -268,7 +277,7 @@ class ParkingSession(RegionalModel, BaseModel):
                 description=f'Refund for early session end at {self.zone.name}',
                 parking_session=self
             )
-            # Update metadata if needed
+
             wallet_tx.metadata.update({
                 'session_id': str(self.id),
                 'estimated_cost': str(self.estimated_cost),
@@ -277,10 +286,40 @@ class ParkingSession(RegionalModel, BaseModel):
             wallet_tx.save(update_fields=['metadata'])
             
             notify_wallet_refund(wallet_tx, self)
-        
+        elif self.final_cost > self.estimated_cost:
+            overdue_charge = self.final_cost - self.estimated_cost
+            user = self.vehicle.user
+            
+            wallet_tx = user.adjust_wallet_balance(
+                -overdue_charge,
+                transaction_type='payment',
+                description=f'Overdue parking charge for {self.zone.name}',
+                parking_session=self
+            )
+            
+            if user.wallet_balance < 0:
+                from apps.enforcement.models import Violation
+                from apps.common.constants import ViolationType
+                from apps.notifications.notification_triggers import notify_violation_issued
+                
+                violation = Violation.objects.create(
+                    vehicle=self.vehicle,
+                    officer=None, 
+                    zone=self.zone,
+                    parking_session=self,
+                    violation_type=ViolationType.OVERDUE_PARKING,
+                    description=f'Vehicle parked beyond planned end time. Overdue charge: {overdue_charge}',
+                    fine_amount=overdue_charge,
+                    latitude=self.zone.latitude,
+                    longitude=self.zone.longitude
+                )
+                
+                v_message = f"An overdue parking violation has been issued at {self.zone.name}. Fine: {overdue_charge}. Your wallet balance is {user.wallet_balance}"
+                notify_violation_issued(violation, message=v_message)
+
         self.status = ParkingStatus.COMPLETED
         
-        # Credit private zone owner
+
         if getattr(self.zone, 'zone_type', 'company') == 'private' and self.zone.owner:
             owner = self.zone.owner
             commission_amount = (self.final_cost * (self.zone.commission_rate / Decimal('100.0'))).quantize(Decimal('0.01'))
@@ -294,7 +333,7 @@ class ParkingSession(RegionalModel, BaseModel):
                     description=f'Earnings from parking session {self.id} at {self.zone.name}',
                     parking_session=self
                 )
-                # Note: Metadata can be added here if needed by fetching the returned tx
+                
 
         try:
             from apps.rewards.tasks import award_loyalty_points_task
@@ -400,6 +439,7 @@ class Reservation(BaseModel):
     cost = models.DecimalField(max_digits=12, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_payment', db_index=True)
     payment_reference = models.CharField(max_length=100, blank=True, null=True, help_text=_("Payment transaction reference"))
+    service_fee = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), help_text=_("Non-refundable service fee (5%)"))
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -434,8 +474,6 @@ class ZoneApplication(RegionalModel, BaseModel):
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
     total_slots = models.IntegerField(default=1)
     proposed_hourly_rate = models.DecimalField(max_digits=12, decimal_places=2)
-    
-    # New Detailed Fields
     operating_hours = models.CharField(max_length=100, default="24/7", help_text=_("E.g., 24/7, 8 AM - 6 PM, Weekends only"))
     parking_surface = models.CharField(max_length=50, choices=[
         ('paved', _('Paved/Concrete')),
@@ -445,9 +483,9 @@ class ZoneApplication(RegionalModel, BaseModel):
     has_security = models.BooleanField(default=False, help_text=_("Is there a physical security guard?"))
     has_cctv = models.BooleanField(default=False, help_text=_("Are there CCTV cameras covering the area?"))
     access_instructions = models.TextField(blank=True, help_text=_("Specific directions on how to find or enter the space"))
-    
     status = models.CharField(max_length=20, choices=ApplicationStatus.choices, default=ApplicationStatus.PENDING)
     documents = models.FileField(upload_to='zone_applications/docs/', null=True, blank=True, help_text=_("Proof of ownership or ID"))
+    zone_picture = models.ImageField(upload_to='zone_applications/pics/', null=True, blank=True, help_text=_("Photo of the actual parking zone"))
     admin_notes = models.TextField(blank=True, help_text=_("Internal notes by admins"))
     created_zone = models.ForeignKey(Zone, on_delete=models.SET_NULL, null=True, blank=True, related_name='application')
 

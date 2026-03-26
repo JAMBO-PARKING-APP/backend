@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Successful - Jambo Park</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        .success-icon { font-size: 64px; color: #28a745; margin-bottom: 20px; }
+        h1 { font-size: 24px; color: #333; }
+        p { color: #666; font-size: 16px; line-height: 1.5; }
+        .highlight { font-weight: bold; color: #007bff; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="success-icon">✓</div>
+        <h1>Payment Successful!</h1>
+        <p>Parking started for vehicle <span class="highlight">{{ plate }}</span>.</p>
+        <p>Your session will be active until <br><strong>{{ planned_end }}</strong>.</p>
+        <p>You can safely park now. No dashboard display is needed; enforcement officers will see your status by your plate number.</p>
+    </div>
+</body>
+</html>

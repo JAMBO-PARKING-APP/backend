@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:parking_user_app/core/app_theme.dart';
+import 'package:parking_user_app/core/localizations.dart';
 import 'package:parking_user_app/core/widgets/glass_container.dart';
 import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:country_code_picker/country_code_picker.dart';
@@ -27,18 +28,19 @@ class _LoginScreenState extends State<LoginScreen> {
     final phone = _phoneController.text.trim();
     final password = _passwordController.text;
 
+    final l10n = AppLocalizations.of(context);
     if (phone.isEmpty) {
-      _showError('Please enter your phone number');
+      _showError(l10n.errorOccurred); // Using generic error for now, or specific if added
       return;
     }
 
     if (password.isEmpty) {
-      _showError('Please enter your password');
+      _showError(l10n.errorOccurred);
       return;
     }
 
     if (!_acceptTerms) {
-      _showError('Please accept the Terms & Privacy Policy');
+      _showError(l10n.errorOccurred);
       return;
     }
 
@@ -66,6 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: Stack(
         children: [
@@ -113,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 40),
                   Text(
-                    'Welcome Back',
+                    l10n.welcome,
                     style: Theme.of(context).textTheme.displaySmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppTheme.textPrimary,
@@ -162,8 +165,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: TextField(
                                 controller: _phoneController,
                                 keyboardType: TextInputType.phone,
-                                decoration: const InputDecoration(
-                                  hintText: 'Phone Number',
+                                decoration: InputDecoration(
+                                  hintText: l10n.phone,
                                   border: InputBorder.none,
                                   enabledBorder: InputBorder.none,
                                   focusedBorder: InputBorder.none,
@@ -179,7 +182,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _passwordController,
                           obscureText: _obscurePassword,
                           decoration: InputDecoration(
-                            hintText: 'Password',
+                            hintText: l10n.password,
                             prefixIcon: const Icon(Icons.lock_outline),
                             suffixIcon: IconButton(
                               icon: Icon(
@@ -289,7 +292,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ? const CircularProgressIndicator(
                                 color: Colors.white,
                               )
-                            : const Text('Login'),
+                            : Text(l10n.login),
                       );
                     },
                   ),

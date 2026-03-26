@@ -107,6 +107,55 @@ def cancel_overdue_reservations():
         
     return f"Cancelled {count} overdue reservations."
 
+@shared_task(name='apps.parking.tasks.check_reservation_attendance')
+def check_reservation_attendance(reservation_id):
+    """
+    Check if a user has arrived for their reservation within 30 minutes of start.
+    If not, the reservation is marked as expired and no refund is issued.
+    """
+    try:
+        reservation = Reservation.objects.get(id=reservation_id, status='confirmed')
+        
+        # Check if there is an active session for this vehicle in this zone
+        session_exists = ParkingSession.objects.filter(
+            vehicle=reservation.vehicle,
+            zone=reservation.zone,
+            status=ParkingStatus.ACTIVE,
+            start_time__gte=reservation.reserved_from - timedelta(minutes=10) # Buffer
+        ).exists()
+        
+        if session_exists:
+            return f"Reservation {reservation_id} validated: User arrived."
+
+        # Check location if no session
+        user = reservation.vehicle.user
+        last_loc = UserLocation.objects.filter(user=user).order_by('-timestamp').first()
+        
+        arrived = False
+        if last_loc:
+            dist_km = calculate_distance(
+                float(last_loc.latitude), float(last_loc.longitude),
+                float(reservation.zone.latitude), float(reservation.zone.longitude)
+            )
+            if dist_km < 0.2: # 200 meters
+                arrived = True
+        
+        if not arrived:
+            # Mark as expired, no refund logic needed here as it simply stops being 'confirmed'
+            reservation.status = 'expired'
+            reservation.is_active = False
+            reservation.save()
+            
+            from apps.notifications.notification_triggers import notify_reservation_cancelled
+            # You might want a specific 'expired_no_show' notification
+            notify_reservation_cancelled(reservation)
+            return f"Reservation {reservation_id} expired: No-show after 30 mins."
+            
+        return f"Reservation {reservation_id} pending: User is in zone but hasn't started session."
+        
+    except Reservation.DoesNotExist:
+        return f"Reservation {reservation_id} not found or not confirmed."
+
 @shared_task
 def expire_reservation_task(reservation_id):
     """
