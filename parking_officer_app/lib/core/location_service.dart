@@ -91,7 +91,9 @@ class LocationService {
 
   Future<Position?> getCurrentPosition() async {
     try {
-      return await Geolocator.getCurrentPosition();
+      return await Geolocator.getCurrentPosition(
+        timeLimit: const Duration(seconds: 10),
+      );
     } catch (e) {
       debugPrint('Error getting current position: $e');
       return null;

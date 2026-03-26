@@ -55,7 +55,7 @@ flutter:
   assets:
     - assets/images/logo.png
     - assets/images/skyline_splash.png
-    - assets/images/splash_animation.gif
+    - assets/animations/splash_animation.gif
 
 flutter_icons:
   android: "launcher_icon"

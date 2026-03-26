@@ -49,7 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final success = await authProvider.login(fullPhone, password);
 
     if (success && mounted) {
-      Navigator.pop(context);
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } else if (!success && mounted) {
       _showError(authProvider.errorMessage ?? 'Login failed');
     }

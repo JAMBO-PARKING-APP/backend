@@ -19,7 +19,7 @@ import 'package:parking_user_app/features/home/screens/home_screen.dart';
 import 'package:parking_user_app/features/notifications/providers/notification_provider.dart';
 import 'package:parking_user_app/features/auth/screens/permissions_screen.dart';
 import 'package:parking_user_app/features/auth/screens/language_selection_screen.dart';
-import 'package:parking_user_app/features/auth/screens/country_detection_screen.dart';
+import 'package:parking_user_app/features/auth/screens/country_selection_screen.dart';
 import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -114,8 +114,10 @@ class MyApp extends StatelessWidget {
                   if (!settings.hasSelectedLanguage) {
                     return const LanguageSelectionScreen();
                   }
-                  // After language, always auto-detect country
-                  return const CountryDetectionScreen();
+                  if (!settings.hasSelectedCountry) {
+                    return CountrySelectionScreen();
+                  }
+                  return const WelcomeScreen();
                 case AuthStatus.initial:
                 case AuthStatus.authenticating:
 

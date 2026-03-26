@@ -32,22 +32,30 @@ class OfficerProvider with ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    final result = await _officerService.toggleOnlineStatus(
-      goOnline,
-      latitude: latitude,
-      longitude: longitude,
-    );
+    try {
+      final result = await _officerService.toggleOnlineStatus(
+        goOnline,
+        latitude: latitude,
+        longitude: longitude,
+      );
 
-    if (result['success']) {
-      _officerStatus = result['status'];
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } else {
-      _errorMessage = result['message'];
-      _isLoading = false;
+      if (result['success']) {
+        _officerStatus = result['status'];
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = result['message'];
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Error toggling online status: $e');
+      _errorMessage = 'An unexpected error occurred. Please try again.';
       notifyListeners();
       return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
@@ -55,36 +63,48 @@ class OfficerProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    final result = await _officerService.getOfficerStatus();
-    if (result['success']) {
-      _officerStatus = result['status'];
+    try {
+      final result = await _officerService.getOfficerStatus();
+      if (result['success']) {
+        _officerStatus = result['status'];
+      }
+    } catch (e) {
+      debugPrint('Error fetching officer status: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-
-    _isLoading = false;
-    notifyListeners();
   }
 
   Future<void> fetchQRScans() async {
     _isLoading = true;
     notifyListeners();
 
-    final scans = await _officerService.getQRScans();
-    _qrScans = scans;
-
-    _isLoading = false;
-    notifyListeners();
+    try {
+      final scans = await _officerService.getQRScans();
+      _qrScans = scans;
+    } catch (e) {
+      debugPrint('Error fetching QR scans: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> fetchActivityLogs() async {
     _isLoading = true;
     notifyListeners();
 
-    final logs = await _officerService.getActivityLogs();
-    _activityLogs = logs;
-    _updateDailyStats();
-
-    _isLoading = false;
-    notifyListeners();
+    try {
+      final logs = await _officerService.getActivityLogs();
+      _activityLogs = logs;
+      _updateDailyStats();
+    } catch (e) {
+      debugPrint('Error fetching activity logs: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   void _updateDailyStats() {

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class OfficerStatus {
   final String id;
   final String officerName;
@@ -24,21 +26,28 @@ class OfficerStatus {
   });
 
   factory OfficerStatus.fromJson(Map<String, dynamic> json) {
-    return OfficerStatus(
-      id: json['id'],
-      officerName: json['officer_name'] ?? '',
-      officerPhone: json['officer_phone'] ?? '',
-      isOnline: json['is_online'] ?? false,
-      wentOnlineAt: json['went_online_at'] != null
-          ? DateTime.parse(json['went_online_at'])
-          : null,
-      wentOfflineAt: json['went_offline_at'] != null
-          ? DateTime.parse(json['went_offline_at'])
-          : null,
-      zoneName: json['zone_name'],
-      latitude: json['latitude'],
-      longitude: json['longitude'],
-      updatedAt: DateTime.parse(json['updated_at']),
-    );
+    try {
+      return OfficerStatus(
+        id: json['id']?.toString() ?? '',
+        officerName: json['officer_name'] ?? '',
+        officerPhone: json['officer_phone'] ?? '',
+        isOnline: json['is_online'] ?? false,
+        wentOnlineAt: json['went_online_at'] != null
+            ? DateTime.tryParse(json['went_online_at'])
+            : null,
+        wentOfflineAt: json['went_offline_at'] != null
+            ? DateTime.tryParse(json['went_offline_at'])
+            : null,
+        zoneName: json['zone_name'],
+        latitude: json['latitude'] != null ? double.tryParse(json['latitude'].toString()) : null,
+        longitude: json['longitude'] != null ? double.tryParse(json['longitude'].toString()) : null,
+        updatedAt: json['updated_at'] != null 
+            ? DateTime.tryParse(json['updated_at']) ?? DateTime.now()
+            : DateTime.now(),
+      );
+    } catch (e) {
+      debugPrint('Error parsing OfficerStatus: $e');
+      rethrow;
+    }
   }
 }

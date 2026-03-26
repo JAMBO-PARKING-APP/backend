@@ -4,11 +4,13 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:parking_user_app/core/models/country_config.dart';
 import 'package:parking_user_app/core/models/system_config.dart';
+import 'package:parking_user_app/core/constants.dart';
 import 'package:parking_user_app/core/api_client.dart';
 
 class SettingsProvider extends ChangeNotifier {
   static const String _languageKey = 'app_language';
   static const String _hasSelectedLanguageKey = 'has_selected_language';
+  static const String _hasSelectedCountryKey = 'has_selected_country';
   static const String _themeKey = 'app_theme_mode';
 
   late SharedPreferences _prefs;
@@ -18,9 +20,11 @@ class SettingsProvider extends ChangeNotifier {
 
   List<CountryCode> _activeCountries = [];
   bool _isLoadingCountries = false;
+  bool _hasSelectedCountry = false;
   
   String get locale => _locale ?? 'system';
   bool get hasSelectedLanguage => _hasSelectedLanguage;
+  bool get hasSelectedCountry => _hasSelectedCountry;
   List<CountryCode> get activeCountries => _activeCountries;
   bool get isLoadingCountries => _isLoadingCountries;
   ThemeMode get themeMode => _themeMode;
@@ -40,6 +44,7 @@ class SettingsProvider extends ChangeNotifier {
       _locale = null;
     }
     _hasSelectedLanguage = _prefs.getBool(_hasSelectedLanguageKey) ?? false;
+    _hasSelectedCountry = _prefs.getBool(_hasSelectedCountryKey) ?? false;
     final savedTheme = _prefs.getString(_themeKey);
     if (savedTheme != null) {
       _themeMode = ThemeMode.values.firstWhere(
@@ -83,6 +88,12 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> markLanguageSelected() async {
     _hasSelectedLanguage = true;
     await _prefs.setBool(_hasSelectedLanguageKey, true);
+    notifyListeners();
+  }
+
+  Future<void> markCountrySelected() async {
+    _hasSelectedCountry = true;
+    await _prefs.setBool(_hasSelectedCountryKey, true);
     notifyListeners();
   }
 
