@@ -196,6 +196,18 @@ class HomeScreenState extends State<HomeScreen> {
                               ),
                             ],
                           ),
+                          child: BottomNavigationBar(
+                            currentIndex: _currentIndex,
+                            onTap: (index) => setState(() => _currentIndex = index),
+                            type: BottomNavigationBarType.fixed,
+                            backgroundColor: Colors.transparent,
+                            elevation: 0,
+                            selectedItemColor: AppTheme.primaryColor,
+                            unselectedItemColor: AppTheme.textSecondary.withValues(alpha: 0.5),
+                            showSelectedLabels: true,
+                            showUnselectedLabels: true,
+                            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                            unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
                             items: [
                               const BottomNavigationBarItem(
                                 icon: Padding(

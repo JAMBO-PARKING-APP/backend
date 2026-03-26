@@ -148,8 +148,8 @@ abstract class AppLocalizations {
   String get unableToGetLocation;
   String get startParkingSession;
   String get startReservedSession;
+  String get reservationConfirmed;
   String get selectVehicle;
-  String get selectZone;
   String get duration;
   String get minutes;
   String get startParkingNow;
@@ -157,7 +157,6 @@ abstract class AppLocalizations {
   String get confirmReservation;
   String get date;
   String get cancel;
-  String get confirm;
   String get pleaseSelectVehicleAndZone;
   String get startTimeInFuture;
   String get reservationFailed;
@@ -167,7 +166,6 @@ abstract class AppLocalizations {
   String get oneClickSuccess;
   String get startReservedSessionPrompt;
   String get bookSpotPrompt;
-  String get endParking;
   String get areYouSureEndSession;
   String get endSession;
   String get sessionEndedSuccess;
@@ -182,9 +180,7 @@ abstract class AppLocalizations {
   String get saveSpot;
   String get findCar;
   String get until;
-  String get remaining;
   String get vehicle;
-  String get activeSession;
   String get extended;
   String get sessionExtendedBy;
   String get hours;
@@ -193,16 +189,13 @@ abstract class AppLocalizations {
   String get processingPayment;
   String get sessionStarting;
   String get spotBooked;
-  String get reservationConfirmed;
   String get spotBookedSuccess;
   String get canStartNowPrompt;
   String get ok;
-  String get startParking;
   String get bookSpot;
   String get time;
   String get showToOfficer;
   String get expiresAt;
-  String get settings;
   String get languagePreferences;
   String get themeSettings;
   String get current;
@@ -211,6 +204,7 @@ abstract class AppLocalizations {
   String get lastUpdated;
   String get account;
   String get preferences;
+
   // Country detection
   String get detectingLocation;
   String get detectingLocationSubtitle;
@@ -226,6 +220,8 @@ abstract class AppLocalizations {
 class _EnglishLocalizations extends AppLocalizations {
   _EnglishLocalizations();
 
+  @override
+  String get viewOnMap => 'View on Map';
   @override
   String get appTitle => 'Spave Park';
   @override
@@ -265,6 +261,7 @@ class _EnglishLocalizations extends AppLocalizations {
   @override
   String get deleteAccountDescription =>
       'This will permanently delete your account and all associated data.';
+
   @override
   String get enterOtp => 'Enter OTP';
   @override
@@ -275,6 +272,7 @@ class _EnglishLocalizations extends AppLocalizations {
   String get verifyPhone => 'Verify Phone Number';
   @override
   String get phoneVerified => 'Phone verified successfully';
+
   @override
   String get startParking => 'Start Parking';
   @override
@@ -289,6 +287,7 @@ class _EnglishLocalizations extends AppLocalizations {
   String get zones => 'Zones';
   @override
   String get selectZone => 'Select a Zone';
+
   @override
   String get payments => 'Payments';
   @override
@@ -301,6 +300,7 @@ class _EnglishLocalizations extends AppLocalizations {
   String get topUp => 'Top Up';
   @override
   String get paymentMethod => 'Payment Method';
+
   @override
   String get chat => 'Chat';
   @override
@@ -317,6 +317,7 @@ class _EnglishLocalizations extends AppLocalizations {
   String get noConversations => 'No conversations yet';
   @override
   String get newMessage => 'New Message';
+
   @override
   String get settings => 'Settings';
   @override
@@ -331,6 +332,7 @@ class _EnglishLocalizations extends AppLocalizations {
   String get notifications => 'Notifications';
   @override
   String get about => 'About';
+
   @override
   String get error => 'Error';
   @override
@@ -340,7 +342,6 @@ class _EnglishLocalizations extends AppLocalizations {
   @override
   String get loading => 'Loading...';
 
-  // New keys for Home Screen
   @override
   String get activeParking => 'ACTIVE PARKING';
   @override
@@ -376,7 +377,6 @@ class _EnglishLocalizations extends AppLocalizations {
   @override
   String get payNow => 'Pay Now';
 
-  // Added for SPACE Redesign
   @override
   String get selectLanguage => 'Select Language';
   @override
@@ -414,15 +414,17 @@ class _EnglishLocalizations extends AppLocalizations {
   @override
   String get navigatingTo => 'Navigating to';
   @override
+  String get remaining => 'Remaining';
+  @override
   String get unableToGetLocation => 'Unable to get your location';
   @override
   String get startParkingSession => 'Start Parking Session';
   @override
   String get startReservedSession => 'Start Reserved Session';
   @override
-  String get selectVehicle => 'Select Vehicle';
+  String get reservationConfirmed => 'Reservation Confirmed!';
   @override
-  String get selectZone => 'Select Zone';
+  String get selectVehicle => 'Select Vehicle';
   @override
   String get duration => 'Duration';
   @override
@@ -438,8 +440,6 @@ class _EnglishLocalizations extends AppLocalizations {
   @override
   String get cancel => 'Cancel';
   @override
-  String get confirm => 'Confirm';
-  @override
   String get pleaseSelectVehicleAndZone => 'Please select a vehicle and a zone';
   @override
   String get startTimeInFuture => 'Start time must be in the future';
@@ -454,17 +454,18 @@ class _EnglishLocalizations extends AppLocalizations {
   @override
   String get oneClickSuccess => 'One-Click Success!';
   @override
-  String get startReservedSessionPrompt => 'Do you want to start this parking session now?';
+  String get startReservedSessionPrompt =>
+      'Do you want to start this parking session now?';
   @override
   String get bookSpotPrompt => 'Do you want to book this parking spot?';
   @override
-  String get endParking => 'End Parking';
-  @override
-  String get areYouSureEndSession => 'Are you sure you want to end this parking session?';
+  String get areYouSureEndSession =>
+      'Are you sure you want to end this parking session?';
   @override
   String get endSession => 'End Session';
   @override
-  String get sessionEndedSuccess => 'Your parking session has been stopped successfully.';
+  String get sessionEndedSuccess =>
+      'Your parking session has been stopped successfully.';
   @override
   String get extendDuration => 'Extend Duration';
   @override
@@ -474,7 +475,8 @@ class _EnglishLocalizations extends AppLocalizations {
   @override
   String get parkingLocationSaved => 'Parking location saved!';
   @override
-  String get noSavedLocation => 'No saved location found. Tap "Save Spot" first.';
+  String get noSavedLocation =>
+      'No saved location found. Tap "Save Spot" first.';
   @override
   String get viewVerificationQR => 'VIEW VERIFICATION QR';
   @override
@@ -488,11 +490,7 @@ class _EnglishLocalizations extends AppLocalizations {
   @override
   String get until => 'until';
   @override
-  String get remaining => 'Remaining';
-  @override
   String get vehicle => 'Vehicle';
-  @override
-  String get activeSession => 'Active Session';
   @override
   String get extended => 'Extended!';
   @override
@@ -510,15 +508,12 @@ class _EnglishLocalizations extends AppLocalizations {
   @override
   String get spotBooked => 'Your spot has been booked';
   @override
-  String get reservationConfirmed => 'Reservation Confirmed!';
-  @override
   String get spotBookedSuccess => 'Your parking spot has been booked successfully.';
   @override
-  String get canStartNowPrompt => 'You can start your session now since your time is near.';
+  String get canStartNowPrompt =>
+      'You can start your session now since your time is near.';
   @override
   String get ok => 'OK';
-  @override
-  String get startParking => 'Start Parking';
   @override
   String get bookSpot => 'Book a Spot';
   @override
@@ -528,13 +523,9 @@ class _EnglishLocalizations extends AppLocalizations {
   @override
   String get expiresAt => 'Expires at';
   @override
-  String get settings => 'Settings';
-  @override
   String get languagePreferences => 'Language Preferences';
   @override
   String get themeSettings => 'Theme Settings';
-  @override
-  String get system => 'System';
   @override
   String get current => 'Current';
   @override
@@ -547,28 +538,35 @@ class _EnglishLocalizations extends AppLocalizations {
   String get account => 'Account';
   @override
   String get preferences => 'Preferences';
+
   @override
   String get detectingLocation => 'Detecting Your Location';
   @override
-  String get detectingLocationSubtitle => 'We are identifying your country to serve you the best experience.';
+  String get detectingLocationSubtitle =>
+      'We are identifying your country to serve you the best experience.';
   @override
   String get spaceAvailableInCountry => 'SPACE is available in your country!';
   @override
-  String get spaceNotAvailableTitle => 'SPACE is not available in your region yet';
+  String get spaceNotAvailableTitle =>
+      'SPACE is not available in your region yet';
   @override
-  String spaceNotAvailableBody(String countryName) => 'We haven\'t launched in $countryName yet. We are working hard to bring SPACE to your area. Stay tuned!';
+  String spaceNotAvailableBody(String countryName) =>
+      'We haven\'t launched in $countryName yet. We are working hard to bring SPACE to your area. Stay tuned!';
   @override
   String get retryDetection => 'Retry';
   @override
   String get locationDetectionFailed => 'Could Not Detect Location';
   @override
-  String get locationDetectionFailedSubtitle => 'Please check your internet connection and try again.';
+  String get locationDetectionFailedSubtitle =>
+      'Please check your internet connection and try again.';
 }
 
 // Swahili Localizations
 class _SwahiliLocalizations extends AppLocalizations {
   _SwahiliLocalizations();
 
+  @override
+  String get viewOnMap => 'Ona kwenye Ramani';
   @override
   String get appTitle => 'Spave Park';
   @override
@@ -608,6 +606,7 @@ class _SwahiliLocalizations extends AppLocalizations {
   @override
   String get deleteAccountDescription =>
       'Hii itafuta kwa kabisa akaunti yako na data zote zinazohusiana.';
+
   @override
   String get enterOtp => 'Ingiza OTP';
   @override
@@ -618,6 +617,7 @@ class _SwahiliLocalizations extends AppLocalizations {
   String get verifyPhone => 'Thibitisha Nambari ya Simu';
   @override
   String get phoneVerified => 'Simu imethibitishwa kwa mafanikio';
+
   @override
   String get startParking => 'Anza Kueneza';
   @override
@@ -632,6 +632,7 @@ class _SwahiliLocalizations extends AppLocalizations {
   String get zones => 'Maeneo';
   @override
   String get selectZone => 'Chagua Eneo';
+
   @override
   String get payments => 'Malipo';
   @override
@@ -644,6 +645,7 @@ class _SwahiliLocalizations extends AppLocalizations {
   String get topUp => 'Jaza Salio';
   @override
   String get paymentMethod => 'Njia ya Kulipa';
+
   @override
   String get chat => 'Mazungumzo';
   @override
@@ -660,6 +662,7 @@ class _SwahiliLocalizations extends AppLocalizations {
   String get noConversations => 'Hakuna mazungumzo bado';
   @override
   String get newMessage => 'Ujumbe Mpya';
+
   @override
   String get settings => 'Mipangilio';
   @override
@@ -674,6 +677,7 @@ class _SwahiliLocalizations extends AppLocalizations {
   String get notifications => 'Arifa';
   @override
   String get about => 'Kuhusu';
+
   @override
   String get error => 'Kosa';
   @override
@@ -683,7 +687,6 @@ class _SwahiliLocalizations extends AppLocalizations {
   @override
   String get loading => 'Inapakia...';
 
-  // New keys for Home Screen
   @override
   String get activeParking => 'KUENEZA KUNASHUGHULIKA';
   @override
@@ -719,7 +722,6 @@ class _SwahiliLocalizations extends AppLocalizations {
   @override
   String get payNow => 'Lipa Sasa';
 
-  // Added for SPACE Redesign
   @override
   String get selectLanguage => 'Chagua Lugha';
   @override
@@ -751,13 +753,13 @@ class _SwahiliLocalizations extends AppLocalizations {
   @override
   String get directions => 'Maelekezo';
   @override
-  String get viewOnMap => 'Ona kwenye Ramani';
-  @override
   String get nearbyParking => 'Maegesho ya Karibu';
   @override
   String get searchParking => 'Tafuta maegesho...';
   @override
   String get navigatingTo => 'Kuelekea';
+  @override
+  String get remaining => 'zilizobaki';
   @override
   String get unableToGetLocation => 'Haiwezi kupata eneo lako';
   @override
@@ -765,9 +767,9 @@ class _SwahiliLocalizations extends AppLocalizations {
   @override
   String get startReservedSession => 'Anza Kipindi Kilichohifadhiwa';
   @override
-  String get selectVehicle => 'Chagua Gari';
+  String get reservationConfirmed => 'Uhifadhi Umethibitishwa!';
   @override
-  String get selectZone => 'Chagua Eneo';
+  String get selectVehicle => 'Chagua Gari';
   @override
   String get duration => 'Muda';
   @override
@@ -783,8 +785,6 @@ class _SwahiliLocalizations extends AppLocalizations {
   @override
   String get cancel => 'Ghairi';
   @override
-  String get confirm => 'Thibitisha';
-  @override
   String get pleaseSelectVehicleAndZone => 'Tafadhali chagua gari na eneo';
   @override
   String get startTimeInFuture => 'Muda wa kuanza lazima uwe katika siku zijazo';
@@ -799,17 +799,18 @@ class _SwahiliLocalizations extends AppLocalizations {
   @override
   String get oneClickSuccess => 'Mafanikio kwa Mbofyo Mmoja!';
   @override
-  String get startReservedSessionPrompt => 'Je, unataka kuanza kipindi hiki cha maegesho sasa?';
+  String get startReservedSessionPrompt =>
+      'Je, unataka kuanza kipindi hiki cha maegesho sasa?';
   @override
   String get bookSpotPrompt => 'Je, unataka kuhifadhi nafasi hii ya maegesho?';
   @override
-  String get endParking => 'Maliza Maegesho';
-  @override
-  String get areYouSureEndSession => 'Je, una uhakika unataka kumaliza kipindi hiki cha maegesho?';
+  String get areYouSureEndSession =>
+      'Je, una uhakika unataka kumaliza kipindi hiki cha maegesho?';
   @override
   String get endSession => 'Maliza Kipindi';
   @override
-  String get sessionEndedSuccess => 'Kipindi chako cha maegesho kimesimamishwa kwa mafanikio.';
+  String get sessionEndedSuccess =>
+      'Kipindi chako cha maegesho kimesimamishwa kwa mafanikio.';
   @override
   String get extendDuration => 'Ongeza Muda';
   @override
@@ -819,7 +820,8 @@ class _SwahiliLocalizations extends AppLocalizations {
   @override
   String get parkingLocationSaved => 'Eneo la maegesho limehifadhiwa!';
   @override
-  String get noSavedLocation => 'Hakuna eneo lililohifadhiwa lililopatikana. Gusa "Hifadhi Eneo" kwanza.';
+  String get noSavedLocation =>
+      'Hakuna eneo lililohifadhiwa lililopatikana. Gusa "Hifadhi Eneo" kwanza.';
   @override
   String get viewVerificationQR => 'ONA QR YA UHAKIKISHO';
   @override
@@ -833,11 +835,7 @@ class _SwahiliLocalizations extends AppLocalizations {
   @override
   String get until => 'hadi';
   @override
-  String get remaining => 'Zilizobaki';
-  @override
   String get vehicle => 'Gari';
-  @override
-  String get activeSession => 'Kipindi Kinachoendelea';
   @override
   String get extended => 'Imeongezwa!';
   @override
@@ -855,15 +853,13 @@ class _SwahiliLocalizations extends AppLocalizations {
   @override
   String get spotBooked => 'Nafasi yako imehifadhiwa';
   @override
-  String get reservationConfirmed => 'Uhifadhi Umetibitishwa!';
+  String get spotBookedSuccess =>
+      'Nafasi yako ya maegesho imehifadhiwa kwa mafanikio.';
   @override
-  String get spotBookedSuccess => 'Nafasi yako ya maegesho imehifadhiwa kwa mafanikio.';
-  @override
-  String get canStartNowPrompt => 'Unaweza kuanza kipindi chako sasa kwa sababu muda wako uko karibu.';
+  String get canStartNowPrompt =>
+      'Unaweza kuanza kipindi chako sasa kwa sababu muda wako uko karibu.';
   @override
   String get ok => 'Sawa';
-  @override
-  String get startParking => 'Anza Maegesho';
   @override
   String get bookSpot => 'Hifadhi Nafasi';
   @override
@@ -873,13 +869,9 @@ class _SwahiliLocalizations extends AppLocalizations {
   @override
   String get expiresAt => 'Inaisha saa';
   @override
-  String get settings => 'Mipangilio';
-  @override
   String get languagePreferences => 'Mapendeleo ya Lugha';
   @override
   String get themeSettings => 'Mipangilio ya Mandhari';
-  @override
-  String get system => 'Mfumo';
   @override
   String get current => 'Sasa';
   @override
@@ -892,28 +884,35 @@ class _SwahiliLocalizations extends AppLocalizations {
   String get account => 'Akaunti';
   @override
   String get preferences => 'Mapendeleo';
+
   @override
   String get detectingLocation => 'Kutambua Eneo Lako';
   @override
-  String get detectingLocationSubtitle => 'Tunabainisha nchi yako ili kukupa uzoefu bora.';
+  String get detectingLocationSubtitle =>
+      'Tunabainisha nchi yako ili kukupa uzoefu bora.';
   @override
   String get spaceAvailableInCountry => 'SPACE inapatikana katika nchi yako!';
   @override
-  String get spaceNotAvailableTitle => 'SPACE haijapatikana katika eneo lako bado';
+  String get spaceNotAvailableTitle =>
+      'SPACE haijapatikana katika eneo lako bado';
   @override
-  String spaceNotAvailableBody(String countryName) => 'Bado hatujaanzisha katika $countryName. Endelea kutazama!';
+  String spaceNotAvailableBody(String countryName) =>
+      'Bado hatujaanzisha katika $countryName. Endelea kutazama!';
   @override
   String get retryDetection => 'Jaribu Tena';
   @override
   String get locationDetectionFailed => 'Haiwezekani Kutambua Eneo';
   @override
-  String get locationDetectionFailedSubtitle => 'Tafadhali angalia muunganisho wako wa intaneti na ujaribu tena.';
+  String get locationDetectionFailedSubtitle =>
+      'Tafadhali angalia muunganisho wako wa intaneti na ujaribu tena.';
 }
 
 // French Localizations
 class _FrenchLocalizations extends AppLocalizations {
   _FrenchLocalizations();
 
+  @override
+  String get viewOnMap => 'Voir sur la carte';
   @override
   String get appTitle => 'Spave Park';
   @override
@@ -953,6 +952,7 @@ class _FrenchLocalizations extends AppLocalizations {
   @override
   String get deleteAccountDescription =>
       'Cela supprimera définitivement votre compte et toutes les données associées.';
+
   @override
   String get enterOtp => 'Entrez OTP';
   @override
@@ -963,6 +963,7 @@ class _FrenchLocalizations extends AppLocalizations {
   String get verifyPhone => 'Vérifier le Numéro de Téléphone';
   @override
   String get phoneVerified => 'Téléphone vérifié avec succès';
+
   @override
   String get startParking => 'Démarrer le Stationnement';
   @override
@@ -977,6 +978,7 @@ class _FrenchLocalizations extends AppLocalizations {
   String get zones => 'Zones';
   @override
   String get selectZone => 'Sélectionnez une Zone';
+
   @override
   String get payments => 'Paiements';
   @override
@@ -989,6 +991,7 @@ class _FrenchLocalizations extends AppLocalizations {
   String get topUp => 'Recharger';
   @override
   String get paymentMethod => 'Méthode de Paiement';
+
   @override
   String get chat => 'Chat';
   @override
@@ -1005,6 +1008,7 @@ class _FrenchLocalizations extends AppLocalizations {
   String get noConversations => 'Pas encore de conversations';
   @override
   String get newMessage => 'Nouveau Message';
+
   @override
   String get settings => 'Paramètres';
   @override
@@ -1019,6 +1023,7 @@ class _FrenchLocalizations extends AppLocalizations {
   String get notifications => 'Notifications';
   @override
   String get about => 'À Propos';
+
   @override
   String get error => 'Erreur';
   @override
@@ -1028,7 +1033,6 @@ class _FrenchLocalizations extends AppLocalizations {
   @override
   String get loading => 'Chargement...';
 
-  // New keys for Home Screen
   @override
   String get activeParking => 'STATIONNEMENT ACTIF';
   @override
@@ -1044,14 +1048,13 @@ class _FrenchLocalizations extends AppLocalizations {
   @override
   String get lookingForParking => 'Vous cherchez une place?';
   @override
-  String get findSpotsNearYou =>
-      'Trouvez les meilleures places près de chez vous';
+  String get findSpotsNearYou => 'Trouvez les meilleures places près de chez vous';
   @override
   String get searchDestination => 'Rechercher une destination...';
   @override
   String get quickActions => 'Actions Rapides';
   @override
-  String get myVehicles => 'Mes Véhicules';
+  String get myVehicles => 'Mes Véحicules';
   @override
   String get reservations => 'Réservations';
   @override
@@ -1065,7 +1068,6 @@ class _FrenchLocalizations extends AppLocalizations {
   @override
   String get payNow => 'Payer Maintenant';
 
-  // Added for SPACE Redesign
   @override
   String get selectLanguage => 'Choisir la langue';
   @override
@@ -1077,7 +1079,8 @@ class _FrenchLocalizations extends AppLocalizations {
   @override
   String get selectCountry => 'Sélectionnez votre pays';
   @override
-  String get pleaseSelectCountry => 'Veuillez sélectionner votre pays pour continuer';
+  String get pleaseSelectCountry =>
+      'Veuillez sélectionner votre pays pour continuer';
   @override
   String get continueText => 'CONTINUER';
   @override
@@ -1111,9 +1114,9 @@ class _FrenchLocalizations extends AppLocalizations {
   @override
   String get startReservedSession => 'Démarrer la session réservée';
   @override
-  String get selectVehicle => 'Sélectionner le véhicule';
+  String get reservationConfirmed => 'Réservation confirmée !';
   @override
-  String get selectZone => 'Sélectionner la zone';
+  String get selectVehicle => 'Sélectionner le véhicule';
   @override
   String get duration => 'Durée';
   @override
@@ -1129,9 +1132,8 @@ class _FrenchLocalizations extends AppLocalizations {
   @override
   String get cancel => 'Annuler';
   @override
-  String get confirm => 'Confirmer';
-  @override
-  String get pleaseSelectVehicleAndZone => 'Veuillez sélectionner un véhicule et une zone';
+  String get pleaseSelectVehicleAndZone =>
+      'Veuillez sélectionner un véhicule et une zone';
   @override
   String get startTimeInFuture => 'L\'heure de début doit être dans le futur';
   @override
@@ -1145,17 +1147,19 @@ class _FrenchLocalizations extends AppLocalizations {
   @override
   String get oneClickSuccess => 'Succès en un clic !';
   @override
-  String get startReservedSessionPrompt => 'Voulez-vous démarrer cette session de stationnement maintenant ?';
+  String get startReservedSessionPrompt =>
+      'Voulez-vous démarrer cette session de stationnement maintenant ?';
   @override
-  String get bookSpotPrompt => 'Voulez-vous réserver cet emplacement de stationnement ?';
+  String get bookSpotPrompt =>
+      'Voulez-vous réserver cet emplacement de stationnement ?';
   @override
-  String get endParking => 'Terminer le stationnement';
-  @override
-  String get areYouSureEndSession => 'Êtes-vous sûr de vouloir terminer cette session de stationnement ?';
+  String get areYouSureEndSession =>
+      'Êtes-vous sûr de vouloir terminer cette session de stationnement ?';
   @override
   String get endSession => 'Terminer la session';
   @override
-  String get sessionEndedSuccess => 'Votre session de stationnement a été arrêtée avec succès.';
+  String get sessionEndedSuccess =>
+      'Votre session de stationnement a été arrêtée avec succès.';
   @override
   String get extendDuration => 'Prolonger la durée';
   @override
@@ -1165,7 +1169,8 @@ class _FrenchLocalizations extends AppLocalizations {
   @override
   String get parkingLocationSaved => 'Emplacement de stationnement enregistré !';
   @override
-  String get noSavedLocation => 'Aucun emplacement enregistré trouvé. Appuyez d\'abord sur "Enregistrer l\'emplacement".';
+  String get noSavedLocation =>
+      'Aucun emplacement enregistré trouvé. Appuyez d\'abord sur "Enregistrer l\'emplacement".';
   @override
   String get viewVerificationQR => 'VOIR LE QR DE VÉRIFICATION';
   @override
@@ -1179,11 +1184,7 @@ class _FrenchLocalizations extends AppLocalizations {
   @override
   String get until => 'jusqu\'à';
   @override
-  String get remaining => 'Restant';
-  @override
   String get vehicle => 'Véhicule';
-  @override
-  String get activeSession => 'Session active';
   @override
   String get extended => 'Prolongé !';
   @override
@@ -1201,15 +1202,13 @@ class _FrenchLocalizations extends AppLocalizations {
   @override
   String get spotBooked => 'Votre place a été réservée';
   @override
-  String get reservationConfirmed => 'Réservation confirmée !';
+  String get spotBookedSuccess =>
+      'Votre place de stationnement a été réservée avec succès.';
   @override
-  String get spotBookedSuccess => 'Votre place de stationnement a été réservée avec succès.';
-  @override
-  String get canStartNowPrompt => 'Vous pouvez commencer votre session maintenant car votre heure est proche.';
+  String get canStartNowPrompt =>
+      'Vous pouvez commencer votre session maintenant car votre heure est proche.';
   @override
   String get ok => 'OK';
-  @override
-  String get startParking => 'Démarrer le stationnement';
   @override
   String get bookSpot => 'Réserver une place';
   @override
@@ -1219,13 +1218,9 @@ class _FrenchLocalizations extends AppLocalizations {
   @override
   String get expiresAt => 'Expire à';
   @override
-  String get settings => 'Paramètres';
-  @override
   String get languagePreferences => 'Préférences linguistiques';
   @override
   String get themeSettings => 'Paramètres du thème';
-  @override
-  String get system => 'Système';
   @override
   String get current => 'Actuel';
   @override
@@ -1238,28 +1233,35 @@ class _FrenchLocalizations extends AppLocalizations {
   String get account => 'Compte';
   @override
   String get preferences => 'Préférences';
+
   @override
   String get detectingLocation => 'Détection de votre emplacement';
   @override
-  String get detectingLocationSubtitle => 'Nous identifions votre pays pour vous offrir la meilleure expérience.';
+  String get detectingLocationSubtitle =>
+      'Nous identifions votre pays pour vous offrir la meilleure expérience.';
   @override
   String get spaceAvailableInCountry => 'SPACE est disponible dans votre pays!';
   @override
-  String get spaceNotAvailableTitle => 'SPACE n\'est pas encore disponible dans votre région';
+  String get spaceNotAvailableTitle =>
+      'SPACE n\'est pas encore disponible dans votre région';
   @override
-  String spaceNotAvailableBody(String countryName) => 'Nous n\'avons pas encore lancé en $countryName. Restez à l\'affut!';
+  String spaceNotAvailableBody(String countryName) =>
+      'Nous n\'avons pas encore lancé en $countryName. Restez à l\'affut!';
   @override
   String get retryDetection => 'Réessayer';
   @override
   String get locationDetectionFailed => 'Impossible de détecter l\'emplacement';
   @override
-  String get locationDetectionFailedSubtitle => 'Vérifiez votre connexion internet et réessayez.';
+  String get locationDetectionFailedSubtitle =>
+      'Vérifiez votre connexion internet et réessayez.';
 }
 
 // Spanish Localizations
 class _SpanishLocalizations extends AppLocalizations {
   _SpanishLocalizations();
 
+  @override
+  String get viewOnMap => 'Ver en el mapa';
   @override
   String get appTitle => 'Spave Park';
   @override
@@ -1299,6 +1301,7 @@ class _SpanishLocalizations extends AppLocalizations {
   @override
   String get deleteAccountDescription =>
       'Esto eliminará permanentemente tu cuenta y todos los datos asociados.';
+
   @override
   String get enterOtp => 'Ingresa OTP';
   @override
@@ -1309,6 +1312,7 @@ class _SpanishLocalizations extends AppLocalizations {
   String get verifyPhone => 'Verificar Número de Teléfono';
   @override
   String get phoneVerified => 'Teléfono verificado exitosamente';
+
   @override
   String get startParking => 'Comenzar Estacionamiento';
   @override
@@ -1323,6 +1327,7 @@ class _SpanishLocalizations extends AppLocalizations {
   String get zones => 'Zonas';
   @override
   String get selectZone => 'Selecciona una Zona';
+
   @override
   String get payments => 'Pagos';
   @override
@@ -1335,6 +1340,7 @@ class _SpanishLocalizations extends AppLocalizations {
   String get topUp => 'Recargar';
   @override
   String get paymentMethod => 'Método de Pago';
+
   @override
   String get chat => 'Chat';
   @override
@@ -1351,6 +1357,7 @@ class _SpanishLocalizations extends AppLocalizations {
   String get noConversations => 'Sin conversaciones aún';
   @override
   String get newMessage => 'Nuevo Mensaje';
+
   @override
   String get settings => 'Configuración';
   @override
@@ -1365,6 +1372,7 @@ class _SpanishLocalizations extends AppLocalizations {
   String get notifications => 'Notificaciones';
   @override
   String get about => 'Acerca de';
+
   @override
   String get error => 'Error';
   @override
@@ -1374,7 +1382,6 @@ class _SpanishLocalizations extends AppLocalizations {
   @override
   String get loading => 'Cargando...';
 
-  // New keys for Home Screen
   @override
   String get activeParking => 'ESTACIONAMIENTO ACTIVO';
   @override
@@ -1410,7 +1417,6 @@ class _SpanishLocalizations extends AppLocalizations {
   @override
   String get payNow => 'Pagar Ahora';
 
-  // Added for SPACE Redesign
   @override
   String get selectLanguage => 'Seleccionar idioma';
   @override
@@ -1442,8 +1448,6 @@ class _SpanishLocalizations extends AppLocalizations {
   @override
   String get directions => 'Direcciones';
   @override
-  String get viewOnMap => 'Ver en el mapa';
-  @override
   String get nearbyParking => 'Estacionamiento cercano';
   @override
   String get searchParking => 'Buscar estacionamiento...';
@@ -1458,9 +1462,9 @@ class _SpanishLocalizations extends AppLocalizations {
   @override
   String get startReservedSession => 'Iniciar sesión reservada';
   @override
-  String get selectVehicle => 'Seleccionar vehículo';
+  String get reservationConfirmed => '¡Reserva confirmada!';
   @override
-  String get selectZone => 'Seleccionar zona';
+  String get selectVehicle => 'Seleccionar vehículo';
   @override
   String get duration => 'Duración';
   @override
@@ -1468,7 +1472,7 @@ class _SpanishLocalizations extends AppLocalizations {
   @override
   String get startParkingNow => 'ESTACIONAR AHORA';
   @override
-  String get confirmBooking => 'CONFIRMAR RESERVA';
+  String get confirmBooking => 'CONFIRMER RESERVA';
   @override
   String get confirmReservation => 'Confirmar reserva';
   @override
@@ -1476,13 +1480,13 @@ class _SpanishLocalizations extends AppLocalizations {
   @override
   String get cancel => 'Cancelar';
   @override
-  String get confirm => 'Confirmar';
-  @override
-  String get pleaseSelectVehicleAndZone => 'Por favor, seleccione un vehículo y una zona';
+  String get pleaseSelectVehicleAndZone =>
+      'Por favor, seleccione un vehículo y una zona';
   @override
   String get startTimeInFuture => 'La hora de inicio debe ser en el futuro';
   @override
-  String get reservationFailed => 'Error en la reserva. Por favor, compruebe el saldo.';
+  String get reservationFailed =>
+      'Error en la reserva. Por favor, compruebe el saldo.';
   @override
   String get paymentSuccessful => '¡Pago exitoso!';
   @override
@@ -1492,27 +1496,30 @@ class _SpanishLocalizations extends AppLocalizations {
   @override
   String get oneClickSuccess => '¡Éxito en un clic!';
   @override
-  String get startReservedSessionPrompt => '¿Desea iniciar esta sesión de estacionamiento ahora?';
+  String get startReservedSessionPrompt =>
+      '¿Desea iniciar esta sesión de estacionamiento ahora?';
   @override
   String get bookSpotPrompt => '¿Desea reservar este lugar de estacionamiento?';
   @override
-  String get endParking => 'Finalizar estacionamiento';
-  @override
-  String get areYouSureEndSession => '¿Está seguro de que desea finalizar esta sesión de estacionamiento?';
+  String get areYouSureEndSession =>
+      '¿Está seguro de que desea finalizar esta sesión de estacionamiento?';
   @override
   String get endSession => 'Finalizar sesión';
   @override
-  String get sessionEndedSuccess => 'Su sesión de estacionamiento se ha detenido con éxito.';
+  String get sessionEndedSuccess =>
+      'Su sesión de estacionamiento se ha detenido con éxito.';
   @override
   String get extendDuration => 'Extender duración';
   @override
   String get additionalCost => 'Costo adicional';
   @override
-  String get insufficientBalance => 'Saldo de billetera insuficiente. Por favor recargue.';
+  String get insufficientBalance =>
+      'Saldo de billetera insuficiente. Por favor recargue.';
   @override
   String get parkingLocationSaved => '¡Ubicación de estacionamiento guardada!';
   @override
-  String get noSavedLocation => 'No se encontró ninguna ubicación guardada. Toque "Guardar lugar" primero.';
+  String get noSavedLocation =>
+      'No se encontró ninguna ubicación guardada. Toque "Guardar lugar" primero.';
   @override
   String get viewVerificationQR => 'VER QR DE VERIFICACIÓN';
   @override
@@ -1526,11 +1533,7 @@ class _SpanishLocalizations extends AppLocalizations {
   @override
   String get until => 'hasta';
   @override
-  String get remaining => 'Restante';
-  @override
   String get vehicle => 'Vehículo';
-  @override
-  String get activeSession => 'Sesión activa';
   @override
   String get extended => '¡Extendido!';
   @override
@@ -1548,15 +1551,13 @@ class _SpanishLocalizations extends AppLocalizations {
   @override
   String get spotBooked => 'Su lugar ha sido reservado';
   @override
-  String get reservationConfirmed => '¡Reserva confirmada!';
+  String get spotBookedSuccess =>
+      'Su lugar de estacionamiento ha sido reservado con éxito.';
   @override
-  String get spotBookedSuccess => 'Su lugar de estacionamiento ha sido reservado con éxito.';
-  @override
-  String get canStartNowPrompt => 'Puede iniciar su sesión ahora ya que su hora está cerca.';
+  String get canStartNowPrompt =>
+      'Puede iniciar su sesión ahora ya que su hora está cerca.';
   @override
   String get ok => 'OK';
-  @override
-  String get startParking => 'Iniciar estacionamiento';
   @override
   String get bookSpot => 'Reservar un lugar';
   @override
@@ -1565,8 +1566,6 @@ class _SpanishLocalizations extends AppLocalizations {
   String get showToOfficer => 'Muestre esto al oficial de estacionamiento';
   @override
   String get expiresAt => 'Expira a las';
-  @override
-  String get settings => 'Ajustes';
   @override
   String get languagePreferences => 'Preferencias de idioma';
   @override
@@ -1585,28 +1584,34 @@ class _SpanishLocalizations extends AppLocalizations {
   String get account => 'Cuenta';
   @override
   String get preferences => 'Preferencias';
+
   @override
   String get detectingLocation => 'Detectando tu ubicación';
   @override
-  String get detectingLocationSubtitle => 'Estamos identificando tu país para brindarte la mejor experiencia.';
+  String get detectingLocationSubtitle =>
+      'Estamos identificando tu país para brindarte la mejor experiencia.';
   @override
   String get spaceAvailableInCountry => '¡SPACE está disponible en tu país!';
   @override
   String get spaceNotAvailableTitle => 'SPACE aún no está disponible en tu región';
   @override
-  String spaceNotAvailableBody(String countryName) => 'Aún no hemos lanzado en $countryName. ¡Estamos trabajando para llegar a tu área!';
+  String spaceNotAvailableBody(String countryName) =>
+      'Aún no hemos lanzado en $countryName. ¡Estamos trabajando para llegar a tu área!';
   @override
   String get retryDetection => 'Reintentar';
   @override
   String get locationDetectionFailed => 'No se pudo detectar la ubicación';
   @override
-  String get locationDetectionFailedSubtitle => 'Por favor, revisa tu conexión a internet e inténtalo de nuevo.';
+  String get locationDetectionFailedSubtitle =>
+      'Por favor, revisa tu conexión a internet e inténtalo de nuevo.';
 }
 
 // German Localizations
 class _GermanLocalizations extends AppLocalizations {
   _GermanLocalizations();
 
+  @override
+  String get viewOnMap => 'Auf der Karte anzeigen';
   @override
   String get appTitle => 'Spave Park';
   @override
@@ -1646,6 +1651,7 @@ class _GermanLocalizations extends AppLocalizations {
   @override
   String get deleteAccountDescription =>
       'Dies wird Ihr Konto und alle zugehörigen Daten dauerhaft löschen.';
+
   @override
   String get enterOtp => 'OTP eingeben';
   @override
@@ -1656,6 +1662,7 @@ class _GermanLocalizations extends AppLocalizations {
   String get verifyPhone => 'Telefonnummer verifizieren';
   @override
   String get phoneVerified => 'Telefon erfolgreich verifiziert';
+
   @override
   String get startParking => 'Parkvorgang starten';
   @override
@@ -1670,6 +1677,7 @@ class _GermanLocalizations extends AppLocalizations {
   String get zones => 'Zonen';
   @override
   String get selectZone => 'Zone auswählen';
+
   @override
   String get payments => 'Zahlungen';
   @override
@@ -1682,6 +1690,7 @@ class _GermanLocalizations extends AppLocalizations {
   String get topUp => 'Aufladen';
   @override
   String get paymentMethod => 'Zahlungsmethode';
+
   @override
   String get chat => 'Chat';
   @override
@@ -1698,6 +1707,7 @@ class _GermanLocalizations extends AppLocalizations {
   String get noConversations => 'Noch keine Gespräche';
   @override
   String get newMessage => 'Neue Nachricht';
+
   @override
   String get settings => 'Einstellungen';
   @override
@@ -1712,6 +1722,7 @@ class _GermanLocalizations extends AppLocalizations {
   String get notifications => 'Benachrichtigungen';
   @override
   String get about => 'Über uns';
+
   @override
   String get error => 'Fehler';
   @override
@@ -1720,6 +1731,7 @@ class _GermanLocalizations extends AppLocalizations {
   String get tryAgain => 'Erneut versuchen';
   @override
   String get loading => 'Laden...';
+
   @override
   String get activeParking => 'AKTIVES PARKEN';
   @override
@@ -1755,7 +1767,6 @@ class _GermanLocalizations extends AppLocalizations {
   @override
   String get payNow => 'Jetzt bezahlen';
 
-  // Added for SPACE Redesign
   @override
   String get selectLanguage => 'Sprache wählen';
   @override
@@ -1801,9 +1812,9 @@ class _GermanLocalizations extends AppLocalizations {
   @override
   String get startReservedSession => 'Reservierte Sitzung starten';
   @override
-  String get selectVehicle => 'Fahrzeug auswählen';
+  String get reservationConfirmed => 'Reservierung bestätigt!';
   @override
-  String get selectZone => 'Zone auswählen';
+  String get selectVehicle => 'Fahrzeug auswählen';
   @override
   String get duration => 'Dauer';
   @override
@@ -1819,9 +1830,8 @@ class _GermanLocalizations extends AppLocalizations {
   @override
   String get cancel => 'Abbrechen';
   @override
-  String get confirm => 'Bestätigen';
-  @override
-  String get pleaseSelectVehicleAndZone => 'Bitte wählen Sie ein Fahrzeug und eine Zone aus';
+  String get pleaseSelectVehicleAndZone =>
+      'Bitte wählen Sie ein Fahrzeug und eine Zone aus';
   @override
   String get startTimeInFuture => 'Startzeit muss in der Zukunft liegen';
   @override
@@ -1839,9 +1849,8 @@ class _GermanLocalizations extends AppLocalizations {
   @override
   String get bookSpotPrompt => 'Möchten Sie diesen Parkplatz buchen?';
   @override
-  String get endParking => 'Parken beenden';
-  @override
-  String get areYouSureEndSession => 'Sind Sie sicher, dass Sie diese Parksitzung beenden möchten?';
+  String get areYouSureEndSession =>
+      'Sind Sie sicher, dass Sie diese Parksitzung beenden möchten?';
   @override
   String get endSession => 'Sitzung beenden';
   @override
@@ -1855,7 +1864,8 @@ class _GermanLocalizations extends AppLocalizations {
   @override
   String get parkingLocationSaved => 'Parkplatz gespeichert!';
   @override
-  String get noSavedLocation => 'Kein gespeicherter Standort gefunden. Tippen Sie zuerst auf "Parkplatz speichern".';
+  String get noSavedLocation =>
+      'Kein gespeicherter Standort gefunden. Tippen Sie zuerst auf "Parkplatz speichern".';
   @override
   String get viewVerificationQR => 'VERIFIZIERUNGS-QR ANZEIGEN';
   @override
@@ -1869,11 +1879,7 @@ class _GermanLocalizations extends AppLocalizations {
   @override
   String get until => 'bis';
   @override
-  String get remaining => 'Verbleibend';
-  @override
   String get vehicle => 'Fahrzeug';
-  @override
-  String get activeSession => 'Aktive Sitzung';
   @override
   String get extended => 'Verlängert!';
   @override
@@ -1891,15 +1897,12 @@ class _GermanLocalizations extends AppLocalizations {
   @override
   String get spotBooked => 'Ihr Platz wurde gebucht';
   @override
-  String get reservationConfirmed => 'Reservierung bestätigt!';
-  @override
   String get spotBookedSuccess => 'Ihr Parkplatz wurde erfolgreich gebucht.';
   @override
-  String get canStartNowPrompt => 'Sie können Ihre Sitzung jetzt starten, da Ihre Zeit nahe ist.';
+  String get canStartNowPrompt =>
+      'Sie können Ihre Sitzung jetzt starten, da Ihre Zeit nahe ist.';
   @override
   String get ok => 'OK';
-  @override
-  String get startParking => 'Parken starten';
   @override
   String get bookSpot => 'Platz buchen';
   @override
@@ -1909,13 +1912,9 @@ class _GermanLocalizations extends AppLocalizations {
   @override
   String get expiresAt => 'Läuft ab um';
   @override
-  String get settings => 'Einstellungen';
-  @override
   String get languagePreferences => 'Spracheinstellungen';
   @override
   String get themeSettings => 'Theme-Einstellungen';
-  @override
-  String get system => 'System';
   @override
   String get current => 'Aktuell';
   @override
@@ -1928,22 +1927,26 @@ class _GermanLocalizations extends AppLocalizations {
   String get account => 'Konto';
   @override
   String get preferences => 'Einstellungen';
+
   @override
   String get detectingLocation => 'Standort wird ermittelt';
   @override
-  String get detectingLocationSubtitle => 'Wir identifizieren Ihr Land, um Ihnen das beste Erlebnis zu bieten.';
+  String get detectingLocationSubtitle =>
+      'Wir identifizieren Ihr Land, um Ihnen das beste Erlebnis zu bieten.';
   @override
   String get spaceAvailableInCountry => 'SPACE ist in Ihrem Land verfügbar!';
   @override
   String get spaceNotAvailableTitle => 'SPACE ist in Ihrer Region noch nicht verfügbar';
   @override
-  String spaceNotAvailableBody(String countryName) => 'Wir sind noch nicht in $countryName verfügbar. Wir arbeiten hart daran!';
+  String spaceNotAvailableBody(String countryName) =>
+      'Wir sind noch nicht in $countryName verfügbar. Wir arbeiten hart daran!';
   @override
   String get retryDetection => 'Erneut versuchen';
   @override
   String get locationDetectionFailed => 'Standort konnte nicht erkannt werden';
   @override
-  String get locationDetectionFailedSubtitle => 'Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.';
+  String get locationDetectionFailedSubtitle =>
+      'Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.';
 }
 
 // Arabic Localizations
@@ -1951,9 +1954,11 @@ class _ArabicLocalizations extends AppLocalizations {
   _ArabicLocalizations();
 
   @override
-  String get appTitle => 'Space';
+  String get viewOnMap => 'عرض على الخريطة';
   @override
-  String get welcome => 'مرحباً بكم في Space';
+  String get appTitle => 'Spave Park';
+  @override
+  String get welcome => 'مرحباً بكم في Spave Park';
   @override
   String get login => 'تسجيل الدخول';
   @override
@@ -1989,6 +1994,7 @@ class _ArabicLocalizations extends AppLocalizations {
   @override
   String get deleteAccountDescription =>
       'سيؤدي هذا إلى حذف حسابك وجميع البيانات المرتبطة به نهائياً.';
+
   @override
   String get enterOtp => 'أدخل رمز التحقق';
   @override
@@ -1999,6 +2005,7 @@ class _ArabicLocalizations extends AppLocalizations {
   String get verifyPhone => 'التحقق من رقم الهاتف';
   @override
   String get phoneVerified => 'تم التحقق من الهاتف بنجاح';
+
   @override
   String get startParking => 'بدء الوقوف';
   @override
@@ -2013,6 +2020,7 @@ class _ArabicLocalizations extends AppLocalizations {
   String get zones => 'المناطق';
   @override
   String get selectZone => 'اختر المنطقة';
+
   @override
   String get payments => 'المدفوعات';
   @override
@@ -2025,6 +2033,7 @@ class _ArabicLocalizations extends AppLocalizations {
   String get topUp => 'شحن الرصيد';
   @override
   String get paymentMethod => 'طريقة الدفع';
+
   @override
   String get chat => 'المحادثة';
   @override
@@ -2041,6 +2050,7 @@ class _ArabicLocalizations extends AppLocalizations {
   String get noConversations => 'لا توجد محادثات بعد';
   @override
   String get newMessage => 'رسالة جديدة';
+
   @override
   String get settings => 'الإعدادات';
   @override
@@ -2055,6 +2065,7 @@ class _ArabicLocalizations extends AppLocalizations {
   String get notifications => 'التنبيهات';
   @override
   String get about => 'حول التطبيق';
+
   @override
   String get error => 'خطأ';
   @override
@@ -2063,6 +2074,7 @@ class _ArabicLocalizations extends AppLocalizations {
   String get tryAgain => 'إعادة المحاولة';
   @override
   String get loading => 'جاري التحميل...';
+
   @override
   String get activeParking => 'الوقوف النشط';
   @override
@@ -2098,7 +2110,6 @@ class _ArabicLocalizations extends AppLocalizations {
   @override
   String get payNow => 'ادفع الآن';
 
-  // Added for SPACE Redesign
   @override
   String get selectLanguage => 'اختر اللغة';
   @override
@@ -2112,7 +2123,7 @@ class _ArabicLocalizations extends AppLocalizations {
   @override
   String get pleaseSelectCountry => 'يرجى اختيار بلدك للمتابعة';
   @override
-  String get continueText => 'استمرار';
+  String get continueText => 'استمر';
   @override
   String get nearestParking => 'أقرب موقف سيارات';
   @override
@@ -2130,8 +2141,6 @@ class _ArabicLocalizations extends AppLocalizations {
   @override
   String get directions => 'الاتجاهات';
   @override
-  String get viewOnMap => 'عرض على الخريطة';
-  @override
   String get nearbyParking => 'مواقف السيارات القريبة';
   @override
   String get searchParking => 'البحث عن موقف سيارات...';
@@ -2146,9 +2155,9 @@ class _ArabicLocalizations extends AppLocalizations {
   @override
   String get startReservedSession => 'بدء الجلسة المحجوزة';
   @override
-  String get selectVehicle => 'اختر السيارة';
+  String get reservationConfirmed => 'تم تأكيد الحجز!';
   @override
-  String get selectZone => 'اختر المنطقة';
+  String get selectVehicle => 'اختر السيارة';
   @override
   String get duration => 'المدة';
   @override
@@ -2163,8 +2172,6 @@ class _ArabicLocalizations extends AppLocalizations {
   String get date => 'التاريخ';
   @override
   String get cancel => 'إلغاء';
-  @override
-  String get confirm => 'تأكيد';
   @override
   String get pleaseSelectVehicleAndZone => 'يرجى اختيار سيارة ومنطقة';
   @override
@@ -2183,8 +2190,6 @@ class _ArabicLocalizations extends AppLocalizations {
   String get startReservedSessionPrompt => 'هل تريد بدء جلسة وقوف السيارات هذه الآن؟';
   @override
   String get bookSpotPrompt => 'هل تريد حجز موقف السيارات هذا؟';
-  @override
-  String get endParking => 'إنهاء الوقوف';
   @override
   String get areYouSureEndSession => 'هل أنت متأكد أنك تريد إنهاء جلسة وقوف السيارات هذه؟';
   @override
@@ -2214,11 +2219,7 @@ class _ArabicLocalizations extends AppLocalizations {
   @override
   String get until => 'حتى';
   @override
-  String get remaining => 'المتبقي';
-  @override
   String get vehicle => 'السيارة';
-  @override
-  String get activeSession => 'الجلسة النشطة';
   @override
   String get extended => 'تم التمديد!';
   @override
@@ -2236,15 +2237,11 @@ class _ArabicLocalizations extends AppLocalizations {
   @override
   String get spotBooked => 'تم حجز مكانك';
   @override
-  String get reservationConfirmed => 'تم تأكيد الحجز!';
-  @override
   String get spotBookedSuccess => 'تم حجز موقع الوقوف الخاص بك بنجاح.';
   @override
   String get canStartNowPrompt => 'يمكنك بدء جلستك الآن لأن وقتك اقترب.';
   @override
   String get ok => 'موافق';
-  @override
-  String get startParking => 'ابدأ الوقوف';
   @override
   String get bookSpot => 'حجز مكان';
   @override
@@ -2253,8 +2250,6 @@ class _ArabicLocalizations extends AppLocalizations {
   String get showToOfficer => 'أظهر هذا لمسؤول وقوف السيارات';
   @override
   String get expiresAt => 'تنتهي الصلاحية في';
-  @override
-  String get settings => 'الإعدادات';
   @override
   String get languagePreferences => 'تفضيلات اللغة';
   @override
@@ -2273,6 +2268,7 @@ class _ArabicLocalizations extends AppLocalizations {
   String get account => 'الحساب';
   @override
   String get preferences => 'التفضيلات';
+
   @override
   String get detectingLocation => 'تحديد موقعك';
   @override
@@ -2282,7 +2278,8 @@ class _ArabicLocalizations extends AppLocalizations {
   @override
   String get spaceNotAvailableTitle => 'سبيس غير متاح في منطقتك بعد';
   @override
-  String spaceNotAvailableBody(String countryName) => 'لم نطلق بعد في $countryName. نعمل بجد لإحضار سبيس إلى منطقتك!';
+  String spaceNotAvailableBody(String countryName) =>
+      'لم نطلق بعد في $countryName. نعمل بجد لإحضار سبيس إلى منطقتك!';
   @override
   String get retryDetection => 'إعادة المحاولة';
   @override
@@ -2292,8 +2289,7 @@ class _ArabicLocalizations extends AppLocalizations {
 }
 
 // Localizations Delegate
-class _AppLocalizationsDelegate
-    extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override

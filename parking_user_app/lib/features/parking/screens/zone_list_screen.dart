@@ -10,6 +10,7 @@ import 'package:parking_user_app/features/parking/screens/create_reservation_scr
 import 'package:parking_user_app/features/home/screens/home_screen.dart';
 import 'package:parking_user_app/core/localizations.dart';
 import 'package:parking_user_app/core/utils/currency_formatter.dart';
+import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:parking_user_app/widgets/base_scaffold.dart';
 
 class ZoneListScreen extends StatefulWidget {

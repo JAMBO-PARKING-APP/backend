@@ -14,10 +14,15 @@ class SettingsProvider extends ChangeNotifier {
   late SharedPreferences _prefs;
   String? _locale; // Null means follow system
   bool _hasSelectedLanguage = false;
-  ThemeMode _themeMode = ThemeMode.system;
+  ThemeMode _themeMode = ThemeMode.dark;
 
+  List<CountryCode> _activeCountries = [];
+  bool _isLoadingCountries = false;
+  
   String get locale => _locale ?? 'system';
   bool get hasSelectedLanguage => _hasSelectedLanguage;
+  List<CountryCode> get activeCountries => _activeCountries;
+  bool get isLoadingCountries => _isLoadingCountries;
   ThemeMode get themeMode => _themeMode;
   bool get isDarkMode => _themeMode == ThemeMode.dark;
 
@@ -69,7 +74,7 @@ class SettingsProvider extends ChangeNotifier {
         await _prefs.remove(_languageKey);
       } else {
         await _prefs.setString(_languageKey, effectiveLocale);
-        await markLanguageSelected(); // Auto-mark as selected if they set one
+        // Removed: await markLanguageSelected(); // Don't auto-mark, wait for user to press Continue
       }
       notifyListeners();
     }
@@ -157,6 +162,29 @@ class SettingsProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Error fetching system config: $e');
+    }
+  }
+
+  Future<void> fetchActiveCountries() async {
+    _isLoadingCountries = true;
+    notifyListeners();
+    try {
+      final apiClient = ApiClient();
+      final response = await apiClient.get('countries/');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data;
+        _activeCountries = data.map((json) => CountryCode(
+          name: json['name'],
+          code: json['iso_code'],
+          flag: json['flag_emoji'] ?? '🌍',
+          dialCode: json['phone_code'] ?? '',
+        )).toList();
+      }
+    } catch (e) {
+      debugPrint('Error fetching active countries: $e');
+    } finally {
+      _isLoadingCountries = false;
+      notifyListeners();
     }
   }
 }

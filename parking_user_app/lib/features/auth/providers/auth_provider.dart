@@ -4,7 +4,7 @@ import 'package:parking_user_app/features/auth/services/auth_service.dart';
 import 'package:parking_user_app/core/storage_manager.dart';
 import 'package:parking_user_app/core/fcm_service.dart';
 import 'package:parking_user_app/core/websocket_service.dart';
-import 'package:parking_user_app/core/background_service.dart';
+// import 'package:parking_user_app/core/background_service.dart';
 import 'dart:convert';
 
 import 'dart:io';
@@ -76,7 +76,7 @@ class AuthProvider with ChangeNotifier {
         WebSocketService().connect();
         
         // Initialize Background Service
-        initializeBackgroundService();
+        // initializeBackgroundService();
       } catch (e) {
         debugPrint('[AuthProvider] Error parsing cached user: $e');
       }
@@ -97,7 +97,7 @@ class AuthProvider with ChangeNotifier {
           );
           
           // Ensure background service is running
-          initializeBackgroundService();
+          // initializeBackgroundService();
           
           notifyListeners();
         } else if (_user == null) {
@@ -204,7 +204,7 @@ class AuthProvider with ChangeNotifier {
       WebSocketService().connect();
       
       // Initialize Background Service
-      initializeBackgroundService();
+      // initializeBackgroundService();
       
       debugPrint('[AuthProvider] Notified listeners - UI should update now');
       return true;
@@ -251,7 +251,7 @@ class AuthProvider with ChangeNotifier {
       WebSocketService().connect();
       
       // Initialize Background Service
-      initializeBackgroundService();
+      // initializeBackgroundService();
       
       notifyListeners();
       return true;

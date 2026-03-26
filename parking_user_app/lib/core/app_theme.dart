@@ -206,6 +206,16 @@ class AppTheme {
       bodyColor: darkTextPrimary,
       displayColor: darkTextPrimary,
     ),
+    inputDecorationTheme: lightTheme.inputDecorationTheme.copyWith(
+      fillColor: darkCardBackground,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: darkDividerColor, width: 1),
+      ),
+      hintStyle: lightTheme.inputDecorationTheme.hintStyle?.copyWith(
+        color: darkTextPrimary.withOpacity(0.5),
+      ),
+    ),
   );
 }
 

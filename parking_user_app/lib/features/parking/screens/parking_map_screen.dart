@@ -373,7 +373,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                 children: [
                   _buildStatItemModern(
                     Icons.directions_car_filled_rounded,
-                    AppLocalizations.of(context).available,
+                    AppLocalizations.of(context).slots,
                     '${zone.availableSlots}/${zone.totalSlots}',
                     AppTheme.primaryColor,
                   ),
@@ -534,7 +534,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: _getCurrentLocation,
-                        child: Text(AppLocalizations.of(context).retry),
+                        child: Text(AppLocalizations.of(context).tryAgain),
                       ),
                     ],
                   ),
