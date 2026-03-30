@@ -10,7 +10,7 @@ class DeviceHelper {
   static const _storage = FlutterSecureStorage();
   static const String _deviceIdKey = 'device_unique_id';
 
-  async {
+  static Future<String> getDeviceId() async {
     final storedId = await _storage.read(key: _deviceIdKey);
     if (storedId != null && storedId.isNotEmpty) {
       return storedId;

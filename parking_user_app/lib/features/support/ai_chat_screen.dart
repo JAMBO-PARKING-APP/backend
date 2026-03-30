@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'ai_chat_service.dart';
+import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/widgets/base_scaffold.dart';
 import 'package:parking_user_app/features/home/screens/home_screen.dart';
 
@@ -118,8 +119,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
         final homeState = context.findAncestorStateOfType<HomeScreenState>();
         if (homeState != null) homeState.navigateToTab(index);
       },
-      backgroundColor: const Color(0xFFE5DDD5),
-      appBarBackgroundColor: const Color(0xFF075E54),
+      backgroundColor: AppTheme.backgroundColor,
+      appBarBackgroundColor: AppTheme.primaryColor,
       appBarForegroundColor: Colors.white,
       body: Column(
         children: [
@@ -165,7 +166,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isMe ? const Color(0xFFDCF8C6) : Colors.white,
+          color: isMe ? AppTheme.accentColor : Colors.white,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(12),
             topRight: const Radius.circular(12),
@@ -217,7 +218,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
-                fillColor: Colors.grey[100],
+                fillColor: AppTheme.dividerColor,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 20,
                   vertical: 10,
@@ -230,7 +231,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
           ),
           const SizedBox(width: 8),
           CircleAvatar(
-            backgroundColor: const Color(0xFF075E54),
+            backgroundColor: AppTheme.primaryColor,
             radius: 24,
             child: IconButton(
               icon: const Icon(Icons.send, color: Colors.white, size: 20),

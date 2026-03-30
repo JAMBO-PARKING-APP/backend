@@ -2,22 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Light Blue Palette
-  static const Color primaryColor = Color(0xFF4DA3FF); // Soft Light Blue
-  static const Color primaryDark = Color(0xFF1E81E6); // Slightly deeper blue
-  static const Color accentColor = Color(0xFF82C4FF); // Sky blue
+  // Modern Palette: White + Light Blue + Mantis Green
+  static const Color primaryColor = Color(0xFF6BA3FF); // Modern Light Blue
+  static const Color primaryDark = Color(0xFF4A90E2); // Deeper Light Blue
+  static const Color accentColor = Color(0xFF52B788); // Mantis Green
+  static const Color mantisGreen = Color(0xFF52B788); // Primary Green Accent
 
-  static const Color successColor = Color(0xFF22C55E);
+  static const Color successColor = Color(0xFF52B788); // Mantis Green
   static const Color warningColor = Color(0xFFFBBF24);
   static const Color errorColor = Color(0xFFEF4444);
 
-  // Neutral Colors (Light Theme)
-  static const Color textPrimary = Color(0xFF1F2937); // Soft dark gray
-  static const Color textSecondary = Color(0xFF6B7280);
-  static const Color borderColor = Color(0xFFEAF2FF); // Light blue border
-  static const Color dividerColor = Color(0xFFF5F9FF); // Very light blue
-  static const Color backgroundColor = Color(0xFFF8FBFF); // Almost white blue
-  static const Color cardBackground = Colors.white;
+  // Neutral Colors (Light Theme) - Modern White Base
+  static const Color textPrimary = Color(0xFF1A202C); // Dark Gray
+  static const Color textSecondary = Color(0xFF718096);
+  static const Color borderColor = Color(0xFFE2E8F0); // Subtle Light Border
+  static const Color dividerColor = Color(0xFFF0F4F8); // Very light
+  static const Color backgroundColor = Colors.white; // Pure White
+  static const Color cardBackground = Color(0xFFFAFBFC); // Off-white
 
   // Dark Theme (Softened, not harsh)
   static const Color darkBackgroundColor = Color(0xFF0F172A); // Navy-ish
@@ -154,11 +155,11 @@ class AppTheme {
 
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: const Color(0xFFEFF6FF), // Light blue input
+      fillColor: const Color(0xFFF8FAFB), // Light neutral input
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
+        borderSide: const BorderSide(color: borderColor, width: 1),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

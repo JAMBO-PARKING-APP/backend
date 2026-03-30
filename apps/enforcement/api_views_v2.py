@@ -23,12 +23,14 @@ from apps.common.constants import UserRole, ParkingStatus, SlotStatus
 from apps.accounts.models import Vehicle
 from apps.parking.models import ParkingSession
 from apps.notifications.models import NotificationEvent
-from .models import Violation, OfficerStatus, OfficerLog, QRCodeScan
+from .models import Violation, OfficerStatus, OfficerLog, QRCodeScan, GuestParkingSession
 from .serializers_v2 import (
     ViolationListSerializer, ViolationDetailSerializer,
     OfficerStatusSerializer, QRCodeScanSerializer, OfficerActionLogV2Serializer,
     VehicleStatusCheckSerializer
 )
+
+logger = logging.getLogger(__name__)
 
 class UserViolationsListAPIView(generics.ListAPIView):
     """List all violations for user's vehicles"""
@@ -379,6 +381,97 @@ class StartSessionByOfficerAPIView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+
+class CreateGuestParkingSessionAPIView(APIView):
+    """Allow enforcement officers to create parking sessions for non-app users (guests)"""
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request):
+        if request.user.role != UserRole.OFFICER:
+            return Response({'error': 'Only officers can perform this action'}, status=status.HTTP_403_FORBIDDEN)
+            
+        license_plate = request.data.get('license_plate', '').upper()
+        driver_name = request.data.get('driver_name', '').strip()
+        driver_phone = request.data.get('driver_phone', '').strip()
+        zone_id = request.data.get('zone_id')
+        duration_hours = float(request.data.get('duration_hours', 1.0))
+        
+        if not all([license_plate, driver_name, zone_id]):
+            return Response(
+                {'error': 'license_plate, driver_name, and zone_id are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        try:
+            from apps.parking.models import Zone, ParkingSlot
+            
+            zone = Zone.objects.get(id=zone_id, is_active=True)
+            
+            parking_slot = zone.slots.filter(status=SlotStatus.AVAILABLE).first()
+            if not parking_slot:
+                return Response(
+                    {'error': 'No available slots in this zone'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            parking_slot.status = SlotStatus.OCCUPIED
+            parking_slot.save()
+            
+            planned_end = timezone.now() + timezone.timedelta(hours=duration_hours)
+            estimated_cost = zone.hourly_rate * Decimal(str(duration_hours))
+            
+            # Create guest parking session record
+            guest_session = GuestParkingSession.objects.create(
+                license_plate=license_plate,
+                driver_name=driver_name,
+                driver_phone=driver_phone,
+                zone=zone,
+                parking_slot=parking_slot,
+                start_time=timezone.now(),
+                planned_end_time=planned_end,
+                estimated_cost=estimated_cost,
+                status=ParkingStatus.ACTIVE,
+                officer=request.user
+            )
+            
+            logger.info(
+                f"Guest parking session created: plate={license_plate}, "
+                f"driver={driver_name}, zone={zone.name}, officer={request.user.id}"
+            )
+            
+            OfficerLog.objects.create(
+                officer=request.user,
+                action='guest_session_start',
+                details={
+                    'license_plate': license_plate,
+                    'driver_name': driver_name,
+                    'zone_id': str(zone_id),
+                    'duration': duration_hours,
+                    'guest_session_id': str(guest_session.id)
+                }
+            )
+            
+            return Response({
+                'message': 'Guest parking session created successfully',
+                'session': {
+                    'id': str(guest_session.id),
+                    'license_plate': guest_session.license_plate,
+                    'driver_name': guest_session.driver_name,
+                    'driver_phone': guest_session.driver_phone,
+                    'zone_name': zone.name,
+                    'start_time': guest_session.start_time.isoformat(),
+                    'planned_end_time': guest_session.planned_end_time.isoformat(),
+                    'estimated_cost': str(guest_session.estimated_cost),
+                    'status': guest_session.status,
+                }
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            logger.error(f"Failed to create guest parking session: {e}", exc_info=True)
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
 class ScanQRCodeAPIView(APIView):
     """Log QR code scan and optionally end session"""
     permission_classes = [IsAuthenticated]
@@ -389,7 +482,6 @@ class ScanQRCodeAPIView(APIView):
     )
     @transaction.atomic
     def post(self, request):
-        logger = logging.getLogger(__name__)
         officer = request.user
         session_id = request.data.get('session_id')
         qr_data = request.data.get('qr_data')

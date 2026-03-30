@@ -4,6 +4,7 @@ import 'package:parking_officer_app/core/app_theme.dart';
 import 'package:parking_officer_app/core/localizations.dart';
 import 'package:parking_officer_app/features/parking/providers/vehicle_search_provider.dart';
 import 'package:parking_officer_app/features/parking/providers/zone_provider.dart';
+import 'package:parking_officer_app/features/parking/screens/create_guest_session_screen.dart';
 
 class LicensePlateSearchScreen extends StatefulWidget {
   const LicensePlateSearchScreen({super.key});
@@ -91,20 +92,79 @@ class _LicensePlateSearchScreenState extends State<LicensePlateSearchScreen> {
                 }
 
                 if (provider.searchError != null) {
+                  final plateText = _searchController.text.trim().toUpperCase();
                   return Column(
                     children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 64,
-                        color: Colors.red.withValues(alpha: 0.5),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        provider.searchError ?? 'Not found',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodyMedium?.copyWith(color: Colors.red),
-                        textAlign: TextAlign.center,
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: AppTheme.errorColor.withValues(alpha: 0.05),
+                          border: Border.all(
+                            color: AppTheme.errorColor.withValues(alpha: 0.2),
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: AppTheme.errorColor.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.directions_car_filled_rounded,
+                                color: AppTheme.errorColor,
+                                size: 48,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'License Plate Not Found',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Plate "$plateText" is not registered in the system.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => CreateGuestSessionScreen(
+                                        initialPlate: plateText,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.add_circle_outline_rounded),
+                                label: const Text('Create Guest Session'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.primaryColor,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   );

@@ -121,3 +121,57 @@ class QRCodeScan(BaseModel):
 
     def __str__(self):
         return f"QR Scan by {self.officer.phone} - {self.parking_session.vehicle.license_plate}"
+
+
+class GuestParkingSession(RegionalModel, BaseModel):
+    """Parking sessions for non-app users created by officers"""
+    license_plate = models.CharField(max_length=20, db_index=True, verbose_name=_("License Plate"))
+    driver_name = models.CharField(max_length=100, verbose_name=_("Driver Name"))
+    driver_phone = models.CharField(max_length=20, null=True, blank=True, verbose_name=_("Driver Phone"))
+    
+    zone = models.ForeignKey('parking.Zone', on_delete=models.CASCADE, related_name='guest_sessions', verbose_name=_("Zone"))
+    parking_slot = models.ForeignKey('parking.ParkingSlot', on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Parking Slot"))
+    officer = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='created_guest_sessions', verbose_name=_("Officer"))
+    
+    start_time = models.DateTimeField(db_index=True, verbose_name=_("Start Time"))
+    planned_end_time = models.DateTimeField(verbose_name=_("Planned End Time"))
+    actual_end_time = models.DateTimeField(null=True, blank=True, verbose_name=_("Actual End Time"))
+    
+    estimated_cost = models.DecimalField(max_digits=12, decimal_places=2, verbose_name=_("Estimated Cost"))
+    final_cost = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, verbose_name=_("Final Cost"))
+    
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('active', _('Active')),
+            ('ended', _('Ended')),
+            ('overdue', _('Overdue')),
+            ('cancelled', _('Cancelled')),
+        ],
+        default='active',
+        db_index=True,
+        verbose_name=_("Status")
+    )
+    
+    notes = models.TextField(blank=True, verbose_name=_("Officer Notes"))
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['license_plate'], name='enf_guest_plate_idx'),
+            models.Index(fields=['officer', '-created_at'], name='enf_guest_off_cr_idx'),
+            models.Index(fields=['zone', '-created_at'], name='enf_guest_zone_cr_idx'),
+            models.Index(fields=['status'], name='enf_guest_status_idx'),
+            models.Index(fields=['start_time'], name='enf_guest_start_idx'),
+            models.Index(fields=['planned_end_time'], name='enf_guest_end_idx'),
+        ]
+    
+    def __str__(self):
+        return f"Guest Session: {self.license_plate} ({self.driver_name}) - {self.zone.name}"
+    
+    @property
+    def is_overdue(self):
+        """Check if session is overdue"""
+        from django.utils import timezone
+        from apps.common.constants import ParkingStatus
+        return self.status == ParkingStatus.ACTIVE and timezone.now() > self.planned_end_time

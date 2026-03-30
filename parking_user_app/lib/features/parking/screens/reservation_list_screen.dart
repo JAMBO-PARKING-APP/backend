@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/features/parking/providers/reservation_provider.dart';
 import 'package:parking_user_app/features/parking/screens/create_reservation_screen.dart';
 import 'package:parking_user_app/widgets/payment_selection_dialog.dart';
@@ -91,27 +92,27 @@ class _ReservationListScreenState extends State<ReservationListScreen> {
               switch (status) {
                 case 'active':
                 case 'confirmed':
-                  statusColor = Colors.green;
+                  statusColor = AppTheme.accentColor;
                   statusText = 'CONFIRMED';
                   break;
                 case 'pending_payment':
-                  statusColor = Colors.orange;
+                  statusColor = AppTheme.warningColor;
                   statusText = 'PAY NOW';
                   break;
                 case 'expired':
-                  statusColor = Colors.red;
+                  statusColor = AppTheme.errorColor;
                   statusText = 'EXPIRED';
                   break;
                 case 'cancelled':
-                  statusColor = Colors.grey;
+                  statusColor = AppTheme.textSecondary;
                   statusText = 'CANCELLED';
                   break;
                 case 'completed':
-                  statusColor = Colors.blue;
+                  statusColor = AppTheme.primaryColor;
                   statusText = 'COMPLETED';
                   break;
                 default:
-                  statusColor = Colors.grey;
+                  statusColor = AppTheme.textSecondary;
                   statusText = status.toUpperCase();
               }
 

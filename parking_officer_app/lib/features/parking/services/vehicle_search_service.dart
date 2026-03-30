@@ -123,4 +123,43 @@ class VehicleSearchService {
       return {'success': false, 'message': e.toString()};
     }
   }
+
+  Future<Map<String, dynamic>> createGuestSession({
+    required String licensePlate,
+    required String driverName,
+    required String driverPhone,
+    required String zoneId,
+    required double durationHours,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        'officer/parking/guest/',
+        data: {
+          'license_plate': licensePlate,
+          'driver_name': driverName,
+          'driver_phone': driverPhone,
+          'zone_id': zoneId,
+          'duration_hours': durationHours,
+        },
+      );
+
+      if (response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': 'Guest session created successfully',
+          'session': response.data['session'],
+        };
+      }
+      return {
+        'success': false,
+        'message': response.data['error'] ?? 'Failed to create guest session',
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error creating guest session: ${e.toString()}',
+      };
+    }
+  }
 }
+

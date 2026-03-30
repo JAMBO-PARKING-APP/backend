@@ -45,94 +45,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           _buildBody(),
           
-          // Floating Bottom Navigation Bar
-          Positioned(
-            left: 24,
-            right: 24,
-            bottom: 32, 
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(32),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(32),
-                    border: Border.all(
-                      color: AppTheme.borderColor,
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: BottomNavigationBar(
-                    currentIndex: _currentIndex,
-                    onTap: (index) => setState(() => _currentIndex = index),
-                    type: BottomNavigationBarType.fixed,
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    selectedItemColor: AppTheme.primaryColor,
-                    unselectedItemColor: AppTheme.textSecondary,
-                    selectedLabelStyle: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 11,
-                    ),
-                    unselectedLabelStyle: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11,
-                    ),
-                    items: const [
-                      BottomNavigationBarItem(
-                        icon: Padding(
-                          padding: EdgeInsets.only(bottom: 4),
-                          child: Icon(Icons.radar_rounded),
-                        ),
-                        activeIcon: Padding(
-                          padding: EdgeInsets.only(bottom: 4),
-                          child: Icon(Icons.radar_rounded),
-                        ),
-                        label: 'Patrol',
-                      ),
-                      BottomNavigationBarItem(
-                        icon: Padding(
-                          padding: EdgeInsets.only(bottom: 4),
-                          child: Icon(Icons.verified_user_outlined),
-                        ),
-                        activeIcon: Padding(
-                          padding: EdgeInsets.only(bottom: 4),
-                          child: Icon(Icons.verified_user_rounded),
-                        ),
-                        label: 'Verify',
-                      ),
-                      BottomNavigationBarItem(
-                        icon: Padding(
-                          padding: EdgeInsets.only(bottom: 4),
-                          child: Icon(Icons.history_rounded),
-                        ),
-                        label: 'Activity',
-                      ),
-                      BottomNavigationBarItem(
-                        icon: Padding(
-                          padding: EdgeInsets.only(bottom: 4),
-                          child: Icon(Icons.person_outline_rounded),
-                        ),
-                        activeIcon: Padding(
-                          padding: EdgeInsets.only(bottom: 4),
-                          child: Icon(Icons.person_rounded),
-                        ),
-                        label: 'Account',
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Offline Status Overlay / Dialog
           if (!officer.isOnline && _currentIndex != 3) // Don't show on profile tab
             Positioned.fill(
               child: Container(
@@ -140,118 +52,202 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 40),
-                      child: Container(
-                        padding: const EdgeInsets.all(32),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(32),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 30,
-                              offset: const Offset(0, 15),
+                    child: Container(
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(32),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 30,
+                            offset: const Offset(0, 15),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
                             ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
+                            child: const Icon(
+                              Icons.power_settings_new_rounded,
+                              color: AppTheme.primaryColor,
+                              size: 48,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          const Text(
+                            'Shift Inactive',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Go online to see enforcement zones and start your patrol shift.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppTheme.textSecondary,
+                              height: 1.5,
+                            ),
+                          ),
+                          if (officer.errorMessage != null) ...[
+                            const SizedBox(height: 16),
                             Container(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
+                                color: Colors.red.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                               ),
-                              child: const Icon(
-                                Icons.power_settings_new_rounded,
-                                color: AppTheme.primaryColor,
-                                size: 48,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            const Text(
-                              'Shift Inactive',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.textPrimary,
+                              child: Text(
+                                officer.errorMessage!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                             const SizedBox(height: 12),
-                             const Text(
-                               'Go online to see enforcement zones and start your patrol shift.',
-                               textAlign: TextAlign.center,
-                               style: TextStyle(
-                                 fontSize: 14,
-                                 color: AppTheme.textSecondary,
-                                 height: 1.5,
-                               ),
-                             ),
-                             if (officer.errorMessage != null) ...[
-                               const SizedBox(height: 16),
-                               Container(
-                                 padding: const EdgeInsets.all(12),
-                                 decoration: BoxDecoration(
-                                   color: Colors.red.withValues(alpha: 0.1),
-                                   borderRadius: BorderRadius.circular(12),
-                                   border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-                                 ),
-                                 child: Text(
-                                   officer.errorMessage!,
-                                   textAlign: TextAlign.center,
-                                   style: const TextStyle(
-                                     color: Colors.red,
-                                     fontSize: 12,
-                                     fontWeight: FontWeight.w600,
-                                   ),
-                                 ),
-                               ),
-                             ],
-                             const SizedBox(height: 32),
-                             if (officer.isLoading)
-                               const CircularProgressIndicator()
-                             else
-                               ElevatedButton(
-                                 onPressed: () async {
-                                   final pos = await LocationService().getCurrentPosition();
-                                   if (pos != null) {
-                                     officer.toggleOnlineStatus(
-                                       true,
-                                       latitude: pos.latitude,
-                                       longitude: pos.longitude,
-                                     );
-                                   } else {
-                                     officer.toggleOnlineStatus(true);
-                                   }
-                                 },
-                                 style: ElevatedButton.styleFrom(
-                                   backgroundColor: AppTheme.primaryColor,
-                                   minimumSize: const Size(double.infinity, 56),
-                                   shape: RoundedRectangleBorder(
-                                     borderRadius: BorderRadius.circular(16),
-                                   ),
-                                 ),
-                                 child: const Text(
-                                   'GO ONLINE',
-                                   style: TextStyle(
-                                     fontWeight: FontWeight.bold,
-                                     letterSpacing: 1,
-                                   ),
-                                 ),
-                               ),
                           ],
-                        ),
+                          const SizedBox(height: 32),
+                          if (officer.isLoading)
+                            const CircularProgressIndicator()
+                          else
+                            ElevatedButton(
+                              onPressed: () async {
+                                final pos = await LocationService().getCurrentPosition();
+                                if (pos != null) {
+                                  officer.toggleOnlineStatus(
+                                    true,
+                                    latitude: pos.latitude,
+                                    longitude: pos.longitude,
+                                  );
+                                } else {
+                                  officer.toggleOnlineStatus(true);
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primaryColor,
+                                minimumSize: const Size(double.infinity, 56),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              child: const Text(
+                                'GO ONLINE',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),
                 ),
               ),
             ),
+          
+          // Floating Bottom Navigation Bar
+          Positioned(
+            left: 24,
+            right: 24,
+            bottom: 32, 
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(32),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(
+                    color: AppTheme.borderColor,
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: BottomNavigationBar(
+                  currentIndex: _currentIndex,
+                  onTap: (index) => setState(() => _currentIndex = index),
+                  type: BottomNavigationBarType.fixed,
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  selectedItemColor: AppTheme.primaryColor,
+                  unselectedItemColor: AppTheme.textSecondary,
+                  selectedLabelStyle: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 11,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                  ),
+                  items: const [
+                    BottomNavigationBarItem(
+                      icon: Padding(
+                        padding: EdgeInsets.only(bottom: 4),
+                        child: Icon(Icons.radar_rounded),
+                      ),
+                      activeIcon: Padding(
+                        padding: EdgeInsets.only(bottom: 4),
+                        child: Icon(Icons.radar_rounded),
+                      ),
+                      label: 'Patrol',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Padding(
+                        padding: EdgeInsets.only(bottom: 4),
+                        child: Icon(Icons.verified_user_outlined),
+                      ),
+                      activeIcon: Padding(
+                        padding: EdgeInsets.only(bottom: 4),
+                        child: Icon(Icons.verified_user_rounded),
+                      ),
+                      label: 'Verify',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Padding(
+                        padding: EdgeInsets.only(bottom: 4),
+                        child: Icon(Icons.history_rounded),
+                      ),
+                      label: 'Activity',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Padding(
+                        padding: EdgeInsets.only(bottom: 4),
+                        child: Icon(Icons.person_outline_rounded),
+                      ),
+                      activeIcon: Padding(
+                        padding: EdgeInsets.only(bottom: 4),
+                        child: Icon(Icons.person_rounded),
+                      ),
+                      label: 'Account',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
-
 
   Widget _buildBody() {
     switch (_currentIndex) {
@@ -402,32 +398,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-              const Text(
-                'Space Patrol',
-                style: TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 20,
-                ),
-              ),
-              GestureDetector(
-                onTap: () async {
-                  final pos = await LocationService().getCurrentPosition();
-                  if (pos != null) {
-                    officer.toggleOnlineStatus(
-                      !officer.isOnline,
-                      latitude: pos.latitude,
-                      longitude: pos.longitude,
-                    );
-                  } else {
-                    officer.toggleOnlineStatus(!officer.isOnline);
-                  }
-                },
-                child: _buildDutyStatusChip(officer),
-              ),
-            ],
+          const Text(
+            'Space Patrol',
+            style: TextStyle(
+              color: AppTheme.textPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 20,
+            ),
           ),
-        ),
+          GestureDetector(
+            onTap: () async {
+              final pos = await LocationService().getCurrentPosition();
+              if (pos != null) {
+                officer.toggleOnlineStatus(
+                  !officer.isOnline,
+                  latitude: pos.latitude,
+                  longitude: pos.longitude,
+                );
+              } else {
+                officer.toggleOnlineStatus(!officer.isOnline);
+              }
+            },
+            child: _buildDutyStatusChip(officer),
+          ),
+        ],
       ),
     );
   }
@@ -501,67 +495,66 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
-              child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          zone.name.toUpperCase(),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 18,
-                            color: AppTheme.primaryColor,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            zone.name.toUpperCase(),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 18,
+                              color: AppTheme.primaryColor,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                      ],
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ZoneDetailScreen(zone: zone),
+                          const SizedBox(height: 4),
+                        ],
                       ),
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryDark,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ElevatedButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ZoneDetailScreen(zone: zone),
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryDark,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                      child: const Text('DETAILS'),
                     ),
-                    child: const Text('DETAILS'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  _buildMiniStatBox(
-                    'TOTAL',
-                    '${zone.totalSlots}',
-                    Colors.blueGrey,
-                  ),
-                  const SizedBox(width: 12),
-                  _buildMiniStatBox(
-                    'OCCUPIED',
-                    '${zone.occupiedSlots}',
-                    AppTheme.accentColor,
-                  ),
-                  const SizedBox(width: 12),
-                  _buildMiniStatBox(
-                    'OPEN',
-                    '${zone.availableSlots}',
-                    AppTheme.successColor,
-                  ),
-                ],
-              ),
-            ],
-          ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    _buildMiniStatBox(
+                      'TOTAL',
+                      '${zone.totalSlots}',
+                      Colors.blueGrey,
+                    ),
+                    const SizedBox(width: 12),
+                    _buildMiniStatBox(
+                      'OCCUPIED',
+                      '${zone.occupiedSlots}',
+                      AppTheme.accentColor,
+                    ),
+                    const SizedBox(width: 12),
+                    _buildMiniStatBox(
+                      'OPEN',
+                      '${zone.availableSlots}',
+                      AppTheme.successColor,
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         );

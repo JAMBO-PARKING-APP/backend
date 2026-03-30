@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/features/parking/providers/violation_provider.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 
@@ -38,20 +39,20 @@ class _ViolationsScreenState extends State<ViolationsScreen> {
             children: [
               if (provider.unpaidCount > 0)
                 Container(
-                  color: Colors.red.withValues(alpha: 0.1),
+                  color: AppTheme.errorColor.withValues(alpha: 0.1),
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
                       const Icon(
                         Icons.warning_amber_rounded,
-                        color: Colors.red,
+                        color: AppTheme.errorColor,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           'You have ${provider.unpaidCount} unpaid violations totaling ${context.read<AuthProvider>().currencySymbol} ${provider.totalUnpaidAmount.toInt()}',
                           style: const TextStyle(
-                            color: Colors.red,
+                            color: AppTheme.errorColor,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -72,7 +73,7 @@ class _ViolationsScreenState extends State<ViolationsScreen> {
                       child: ListTile(
                         leading: Icon(
                           v.isPaid ? Icons.check_circle : Icons.error,
-                          color: v.isPaid ? Colors.green : Colors.red,
+                          color: v.isPaid ? AppTheme.accentColor : AppTheme.errorColor,
                         ),
                         title: Text(v.type),
                         subtitle: Text(
@@ -93,7 +94,7 @@ class _ViolationsScreenState extends State<ViolationsScreen> {
                               v.isPaid ? 'PAID' : 'UNPAID',
                               style: TextStyle(
                                 fontSize: 10,
-                                color: v.isPaid ? Colors.green : Colors.red,
+                                color: v.isPaid ? AppTheme.accentColor : AppTheme.errorColor,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

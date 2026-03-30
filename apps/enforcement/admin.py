@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Violation, ViolationEvidence, OfficerLog, OfficerStatus, QRCodeScan
+from .models import Violation, ViolationEvidence, OfficerLog, OfficerStatus, QRCodeScan, GuestParkingSession
 
 @admin.register(Violation)
 class ViolationAdmin(admin.ModelAdmin):
@@ -37,3 +37,29 @@ class QRCodeScanAdmin(admin.ModelAdmin):
     search_fields = ('officer__first_name', 'officer__last_name', 'officer__phone', 'parking_session__vehicle__license_plate')
     autocomplete_fields = ['officer', 'parking_session']
     readonly_fields = ('created_at', 'updated_at')
+
+@admin.register(GuestParkingSession)
+class GuestParkingSessionAdmin(admin.ModelAdmin):
+    list_display = ('license_plate', 'driver_name', 'zone', 'officer', 'status', 'start_time', 'planned_end_time', 'estimated_cost')
+    list_filter = ('status', 'zone', 'start_time')
+    search_fields = ('license_plate', 'driver_name', 'driver_phone', 'officer__first_name', 'officer__last_name')
+    autocomplete_fields = ['zone', 'officer', 'parking_slot']
+    readonly_fields = ('created_at', 'updated_at', 'start_time')
+    fieldsets = (
+        ('Vehicle & Driver Info', {
+            'fields': ('license_plate', 'driver_name', 'driver_phone')
+        }),
+        ('Parking Details', {
+            'fields': ('zone', 'parking_slot', 'start_time', 'planned_end_time', 'actual_end_time')
+        }),
+        ('Cost & Status', {
+            'fields': ('estimated_cost', 'final_cost', 'status')
+        }),
+        ('Officer & Notes', {
+            'fields': ('officer', 'notes')
+        }),
+        ('Metadata', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )

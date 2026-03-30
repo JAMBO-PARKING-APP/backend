@@ -5,6 +5,7 @@ import 'package:parking_officer_app/features/parking/models/zone_model.dart';
 import 'package:parking_officer_app/features/parking/screens/scanner_screen.dart';
 import 'package:parking_officer_app/features/violations/screens/violation_form_screen.dart';
 import 'package:parking_officer_app/features/parking/screens/session_detail_screen.dart';
+import 'package:parking_officer_app/features/parking/screens/non_app_user_session_screen.dart';
 import 'package:parking_officer_app/core/app_theme.dart';
 
 class ZoneDetailScreen extends StatefulWidget {
@@ -129,45 +130,71 @@ class _ZoneDetailScreenState extends State<ZoneDetailScreen> {
   Widget _buildActions(BuildContext context, Zone zone) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ScannerScreen(),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.qr_code_scanner),
-              label: const Text('SCAN QR'),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                final plate = await _showSearchDialog(context);
-                if (plate != null && context.mounted) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ViolationFormScreen(
-                        vehiclePlate: plate,
-                        zoneId: zone.id,
+          // First row: Scan QR and Search Plate
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ScannerScreen(),
                       ),
-                    ),
-                  );
-                }
-              },
-              icon: const Icon(Icons.search),
-              label: const Text('SEARCH PLATE'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.accentColor,
-                foregroundColor: Colors.black,
+                    );
+                  },
+                  icon: const Icon(Icons.qr_code_scanner),
+                  label: const Text('SCAN QR'),
+                ),
               ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final plate = await _showSearchDialog(context);
+                    if (plate != null && context.mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ViolationFormScreen(
+                            vehiclePlate: plate,
+                            zoneId: zone.id,
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.search),
+                  label: const Text('SEARCH PLATE'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.accentColor,
+                    foregroundColor: Colors.black,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Second row: Create Non-App User Session
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => NonAppUserSessionScreen(
+                    zoneId: zone.id,
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.person_add),
+            label: const Text('CREATE SESSION (NON-APP USER)'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple,
+              foregroundColor: Colors.white,
             ),
           ),
         ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 // Removed: parking_provider.dart
 
@@ -67,7 +68,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
               const Icon(
                 Icons.security_outlined,
                 size: 80,
-                color: Color(0xFF217150),
+                color: AppTheme.accentColor,
               ),
               const SizedBox(height: 32),
               Text(
@@ -148,17 +149,17 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
             offset: const Offset(0, 4),
           ),
         ],
-        border: isGranted ? Border.all(color: Colors.green, width: 2) : null,
+        border: isGranted ? Border.all(color: AppTheme.accentColor, width: 2) : null,
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF217150).withValues(alpha: 0.1),
+              color: AppTheme.accentColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: const Color(0xFF217150)),
+            child: Icon(icon, color: AppTheme.accentColor),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -181,7 +182,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
             ),
           ),
           if (isGranted)
-            const Icon(Icons.check_circle, color: Colors.green)
+            const Icon(Icons.check_circle, color: AppTheme.accentColor)
           else
             TextButton(onPressed: onTap, child: const Text('Allow')),
         ],

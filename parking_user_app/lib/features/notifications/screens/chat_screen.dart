@@ -5,6 +5,7 @@ import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../../../core/constants.dart';
 import '../../../core/storage_manager.dart';
+import '../../../core/app_theme.dart';
 import '../services/chat_service.dart';
 
 class ChatConversationListScreen extends StatefulWidget {
@@ -77,7 +78,7 @@ class _ChatConversationListScreenState
       appBar: AppBar(
         title: const Text('Support'),
         elevation: 0,
-        backgroundColor: const Color(0xFF075E54),
+        backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
         actions: [
           IconButton(icon: const Icon(Icons.search), onPressed: () {}),
@@ -110,7 +111,7 @@ class _ChatConversationListScreenState
                 height: 1,
                 indent: 80,
                 endIndent: 16,
-                color: Color(0xFFE5E5E5),
+                color: AppTheme.borderColor,
               ),
               itemBuilder: (context, index) {
                 final conversation = conversations[index];
@@ -124,7 +125,7 @@ class _ChatConversationListScreenState
                   onTap: () => _openConversation(conversation),
                   leading: const CircleAvatar(
                     radius: 28,
-                    backgroundColor: Color(0xFFE5E5E5),
+                    backgroundColor: AppTheme.borderColor,
                     child: Icon(Icons.person, color: Colors.white, size: 30),
                   ),
                   title: Text(
@@ -153,7 +154,7 @@ class _ChatConversationListScreenState
                         style: TextStyle(
                           fontSize: 12,
                           color: unreadCount > 0
-                              ? const Color(0xFF25D366)
+                              ? AppTheme.accentColor
                               : Colors.black54,
                           fontWeight: unreadCount > 0
                               ? FontWeight.bold
@@ -165,7 +166,7 @@ class _ChatConversationListScreenState
                         Container(
                           padding: const EdgeInsets.all(6),
                           decoration: const BoxDecoration(
-                            color: Color(0xFF25D366),
+                            color: AppTheme.accentColor,
                             shape: BoxShape.circle,
                           ),
                           child: Text(
@@ -186,7 +187,7 @@ class _ChatConversationListScreenState
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openNewConversation,
-        backgroundColor: const Color(0xFF25D366),
+        backgroundColor: AppTheme.accentColor,
         foregroundColor: Colors.white,
         child: const Icon(Icons.chat),
       ),
@@ -336,7 +337,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE5DDD5), // WhatsApp Background Color
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         titleSpacing: 0,
         leading: IconButton(
@@ -376,7 +377,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           IconButton(icon: const Icon(Icons.call), onPressed: () {}),
           IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
         ],
-        backgroundColor: const Color(0xFF075E54), // WhatsApp Dark Green
+        backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
       ),
       body: Container(

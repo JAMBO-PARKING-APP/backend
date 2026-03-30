@@ -16,6 +16,9 @@ class ParkingSession {
   final String? slotCode;
   final String? slotType;
   final int durationMinutes;
+  final String? zoneId;
+  final double? amount;
+  final String? notes;
 
   ParkingSession({
     required this.id,
@@ -33,6 +36,9 @@ class ParkingSession {
     this.imagePath,
     this.latitude,
     this.longitude,
+    this.zoneId,
+    this.amount,
+    this.notes,
   });
 
   factory ParkingSession.fromJson(Map<String, dynamic> json) {
@@ -62,6 +68,9 @@ class ParkingSession {
         imagePath: json['image_path']?.toString(),
         latitude: double.tryParse(json['latitude']?.toString() ?? ''),
         longitude: double.tryParse(json['longitude']?.toString() ?? ''),
+        zoneId: json['zone_id']?.toString(),
+        amount: double.tryParse(json['amount']?.toString() ?? ''),
+        notes: json['notes']?.toString(),
       );
     } catch (e, stack) {
       debugPrint('ERROR parsing ParkingSession: $e');

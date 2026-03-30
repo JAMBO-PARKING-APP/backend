@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:parking_user_app/core/localizations.dart';
+import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
@@ -145,7 +146,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF3F4F6),
+                    color: AppTheme.dividerColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/features/notifications/providers/notification_provider.dart';
 import 'package:parking_user_app/widgets/base_scaffold.dart';
 import 'package:parking_user_app/features/home/screens/home_screen.dart';
@@ -130,30 +131,30 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Color _getBgColor(String category) {
     switch (category) {
       case 'violations':
-        return Colors.red.shade50;
+        return AppTheme.errorColor.withValues(alpha: 0.1);
       case 'payments':
-        return Colors.green.shade50;
+        return AppTheme.accentColor.withValues(alpha: 0.1);
       case 'promo':
-        return Colors.purple.shade50;
+        return AppTheme.primaryColor.withValues(alpha: 0.1);
       case 'reservations':
-        return Colors.orange.shade50;
+        return AppTheme.warningColor.withValues(alpha: 0.1);
       default:
-        return Colors.blue.shade50;
+        return AppTheme.primaryColor.withValues(alpha: 0.1);
     }
   }
 
   Color _getColor(String category) {
     switch (category) {
       case 'violations':
-        return Colors.red;
+        return AppTheme.errorColor;
       case 'payments':
-        return Colors.green;
+        return AppTheme.accentColor;
       case 'promo':
-        return Colors.purple;
+        return AppTheme.primaryColor;
       case 'reservations':
-        return Colors.orange;
+        return AppTheme.warningColor;
       default:
-        return Colors.blue;
+        return AppTheme.primaryColor;
     }
   }
 
