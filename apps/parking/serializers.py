@@ -21,6 +21,10 @@ class ZoneSerializer(serializers.ModelSerializer):
 
 class ParkingSessionSerializer(serializers.ModelSerializer):
     hourly_rate = serializers.DecimalField(source='zone.hourly_rate', max_digits=12, decimal_places=2, read_only=True)
+    vehicle_plate = serializers.CharField(source='vehicle.license_plate', read_only=True)
+    zone_name = serializers.CharField(source='zone.name', read_only=True)
+    slot_code = serializers.CharField(source='parking_slot.slot_code', read_only=True)
+    duration_minutes = serializers.ReadOnlyField()
 
     class Meta:
         model = ParkingSession
