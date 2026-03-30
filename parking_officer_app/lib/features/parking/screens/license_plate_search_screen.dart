@@ -55,9 +55,7 @@ class _LicensePlateSearchScreenState extends State<LicensePlateSearchScreen> {
               decoration: InputDecoration(
                 hintText: 'Enter license plate',
                 prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                // Custom borders removed to inherit global theme
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear),
@@ -399,9 +397,6 @@ class _LicensePlateSearchScreenState extends State<LicensePlateSearchScreen> {
                 backgroundColor: AppTheme.primaryColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
                 elevation: 0,
               ),
             ),

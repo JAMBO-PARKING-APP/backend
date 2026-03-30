@@ -169,13 +169,11 @@ class ReservationService:
         reservation.save()
         notify_reservation_confirmed(reservation)
         
-        # Trigger attendance check 30 minutes after reserved_from
         from apps.parking.tasks import check_reservation_attendance
         eta = reservation.reserved_from + timedelta(minutes=30)
         if eta > timezone.now():
             check_reservation_attendance.apply_async((reservation.id,), eta=eta)
         else:
-            # If for some reason confirmed after the 30min mark, check in 1 min
             check_reservation_attendance.apply_async((reservation.id,), countdown=60)
         
         return reservation

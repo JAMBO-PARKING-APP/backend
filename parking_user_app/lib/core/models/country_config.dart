@@ -37,7 +37,6 @@ class CountryConfig {
     };
   }
 
-  // Default configuration for fallback
   static CountryConfig get defaultConfig => CountryConfig(
     countryCode: 'UG',
     countryName: 'Uganda',

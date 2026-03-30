@@ -144,11 +144,8 @@ class AccountDeletionView(APIView):
         user.deletion_requested_at = timezone.now()
         user.deletion_planned_at = timezone.now() + timedelta(days=30)
         user.save()
-        
-        # Log out user by clearing the session token
         user.current_session_token = None
         user.save(update_fields=['current_session_token'])
-        
         return Response({
-            'message': 'Account deletion requested. Your account has been deactivated and will be permanently deleted in 30 days.'
+            'message': 'Account deletion requested. Your account has been deactivated and will be permanently deleted in 3 days.'
         }, status=status.HTTP_200_OK)

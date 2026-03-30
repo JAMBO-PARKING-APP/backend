@@ -15,6 +15,7 @@ import 'package:parking_user_app/core/dialog_service.dart';
 import 'package:parking_user_app/features/parking/screens/active_session_screen.dart';
 import 'package:parking_user_app/widgets/base_scaffold.dart';
 import 'package:parking_user_app/features/home/screens/home_screen.dart';
+import 'package:parking_user_app/widgets/time_knob.dart';
 
 class CreateReservationScreen extends StatefulWidget {
   final Zone? initialZone;
@@ -605,36 +606,13 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
               const SizedBox(height: 24),
             ],
 
-            // Duration
-            Text(
-              '${l10n.duration} (${l10n.minutes})',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                IconButton(
-                  onPressed: _durationMinutes > 15
-                      ? () => setState(() => _durationMinutes -= 15)
-                      : null,
-                  icon: const Icon(Icons.remove_circle_outline),
-                ),
-                Text(
-                  '$_durationMinutes ${l10n.minutes}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                IconButton(
-                  onPressed:
-                      _durationMinutes <
-                          720 // Max 12 hours
-                      ? () => setState(() => _durationMinutes += 15)
-                      : null,
-                  icon: const Icon(Icons.add_circle_outline),
-                ),
-              ],
+            // Time Knob
+            const SizedBox(height: 16),
+            Center(
+              child: TimeKnob(
+                initialMinutes: _durationMinutes,
+                onChanged: (val) => setState(() => _durationMinutes = val),
+              ),
             ),
             const SizedBox(height: 40),
 
@@ -642,9 +620,6 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
               onPressed: _handleCreate,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
               ),
               child: Text(
                 widget.isImmediate ? l10n.startParkingNow : l10n.confirmBooking,

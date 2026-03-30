@@ -9,7 +9,6 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         self.stdout.write("Running LoyaltyService Verification...")
         
-        # Setup Data
         user, _ = User.objects.get_or_create(
             email='test_rewards@example.com', 
             defaults={
@@ -19,12 +18,11 @@ class Command(BaseCommand):
             }
         )
         
-        # Reset
+
         LoyaltyAccount.objects.filter(user=user).delete()
 
-        # 1. Award Points
         self.stdout.write("1. Awarding points for parking...")
-        points = LoyaltyService.award_points(user, 5000, "Test Parking") # 5000 UGX = 50 pts
+        points = LoyaltyService.award_points(user, 5000, "Test Parking") 
         
         account = LoyaltyService.get_or_create_account(user)
         self.stdout.write(f"Points awarded: {points}")
@@ -37,9 +35,8 @@ class Command(BaseCommand):
         else:
              self.stdout.write(self.style.ERROR("FAILED: Incorrect point calculation"))
 
-        # 2. Check Tier Upgrade
         self.stdout.write("2. Testing Tier Upgrade...")
-        LoyaltyService.award_points(user, 50000, "Bulk Parking") # 500 pts -> Total 550 -> Silver
+        LoyaltyService.award_points(user, 50000, "Bulk Parking") 
         account.refresh_from_db()
         self.stdout.write(f"New Lifetime Points: {account.lifetime_points}")
         self.stdout.write(f"New Tier: {account.tier}")

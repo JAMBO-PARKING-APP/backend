@@ -134,9 +134,6 @@ class _ScannerScreenState extends State<ScannerScreen>
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
                       ),
                       child: const Text('RESCAN'),
                     ),
@@ -151,9 +148,6 @@ class _ScannerScreenState extends State<ScannerScreen>
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primaryColor,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
                       ),
                       child: const Text('VERIFY'),
                     ),
@@ -169,9 +163,6 @@ class _ScannerScreenState extends State<ScannerScreen>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.errorColor,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
                 ),
                 child: const Text('ISSUE VIOLATION'),
               ),
@@ -351,9 +342,7 @@ class _ScannerScreenState extends State<ScannerScreen>
               labelText: 'Enter License Plate',
               hintText: 'e.g. UBK 123X',
               prefixIcon: const Icon(Icons.directions_car),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+              
             ),
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
@@ -365,9 +354,6 @@ class _ScannerScreenState extends State<ScannerScreen>
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(double.infinity, 56),
               backgroundColor: AppTheme.primaryColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
             ),
             child: const Text(
               'CHECK STATUS',

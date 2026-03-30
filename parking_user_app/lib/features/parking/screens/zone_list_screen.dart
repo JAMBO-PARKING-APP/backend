@@ -119,11 +119,22 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
             padding: const EdgeInsets.all(16),
             itemBuilder: (context, index) {
               final zone = zones[index];
-              return Card(
+              return Container(
                 margin: const EdgeInsets.only(bottom: 16, left: 4, right: 4),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Theme.of(context).dividerColor),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
                 child: InkWell(
                   onTap: () {
-                    // Navigate to Map for this zone instead of instant booking
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -143,12 +154,35 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    zone.name,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                  // Zone Name + Availability Badge Row
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          zone.name,
+                                          style: TextStyle(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(context).textTheme.bodyLarge?.color,
+                                          ),
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: zone.availableSlots > 0 ? AppTheme.successColor.withValues(alpha: 0.12) : AppTheme.errorColor.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          zone.availableSlots > 0 ? '${zone.availableSlots} Open' : 'Full',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 11,
+                                            color: zone.availableSlots > 0 ? AppTheme.successColor : AppTheme.errorColor,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(height: 8),
                                   Consumer<SettingsProvider>(
@@ -176,18 +210,19 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                                   const SizedBox(height: 8),
                                   Row(
                                     children: [
-                                      const Icon(
-                                        Icons.local_parking_rounded,
-                                        size: 16,
-                                        color: AppTheme.textSecondary,
+                                      Icon(
+                                        Icons.near_me_rounded,
+                                        size: 14,
+                                        color: Theme.of(context).textTheme.bodySmall?.color,
                                       ),
                                       const SizedBox(width: 4),
                                       Expanded(
                                         child: Text(
-                                          '${zone.code} • ${zone.availableSlots}/${zone.totalSlots} ${l10n.slots} • ${_calculateDistance(zone.latitude, zone.longitude).toStringAsFixed(1)} ${l10n.km}',
-                                          style: const TextStyle(
+                                          '${zone.code}  •  ${_calculateDistance(zone.latitude, zone.longitude).toStringAsFixed(1)} ${l10n.km} away',
+                                          style: TextStyle(
                                             fontWeight: FontWeight.w500,
-                                            color: AppTheme.textSecondary,
+                                            fontSize: 12,
+                                            color: Theme.of(context).textTheme.bodySmall?.color,
                                           ),
                                         ),
                                       ),
@@ -211,35 +246,40 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                                             Container(
                                               width: 80,
                                               height: 80,
-                                              color: Colors.grey.shade200,
-                                              child: const Icon(
-                                                Icons.image_not_supported,
-                                                color: Colors.grey,
+                                              decoration: BoxDecoration(
+                                                color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                                                borderRadius: BorderRadius.circular(16),
+                                              ),
+                                              child: Icon(
+                                                Icons.local_parking_rounded,
+                                                color: AppTheme.primaryColor,
+                                                size: 32,
                                               ),
                                             ),
                                   ),
                                 ),
-                              ),
-                            IconButton(
-                              icon: Icon(
-                                Icons.directions_car_filled_rounded,
-                                color: AppTheme.primaryColor,
-                              ),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (pushContext) =>
-                                        ParkingMapScreen(initialZone: zone),
+                              )
+                            else
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16.0),
+                                child: Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
-                                );
-                              },
-                              tooltip: l10n.viewOnMap,
-                            ),
+                                  child: const Icon(
+                                    Icons.local_parking_rounded,
+                                    color: AppTheme.primaryColor,
+                                    size: 32,
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                         const SizedBox(height: 16),
-                        const Divider(height: 1, thickness: 1),
+                        Divider(height: 1, thickness: 1, color: Theme.of(context).dividerColor),
                         const SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -247,10 +287,11 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                             TextButton.icon(
                               onPressed: () =>
                                   _launchMaps(zone.latitude, zone.longitude),
-                              icon: const Icon(Icons.directions_outlined, size: 20),
+                              icon: const Icon(Icons.directions_outlined, size: 18),
                               label: Text(l10n.directions),
                               style: TextButton.styleFrom(
                                 foregroundColor: AppTheme.textSecondary,
+                                textStyle: const TextStyle(fontWeight: FontWeight.w600),
                                 padding: const EdgeInsets.symmetric(horizontal: 12),
                               ),
                             ),
@@ -269,6 +310,10 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                                       ),
                                     );
                                   },
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: AppTheme.primaryColor,
+                                    textStyle: const TextStyle(fontWeight: FontWeight.w700),
+                                  ),
                                   child: Text(l10n.bookSpot),
                                 ),
                                 const SizedBox(width: 8),
@@ -286,16 +331,12 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
                                     );
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppTheme.primaryColor,
-                                    foregroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 16,
                                       vertical: 0,
                                     ),
                                     minimumSize: const Size(0, 36),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
+                                    shape: const StadiumBorder(),
                                   ),
                                   child: Text(l10n.startParking),
                                 ),

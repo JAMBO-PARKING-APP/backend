@@ -200,11 +200,9 @@ class PesapalService:
             
             if response.status_code == 401 and retry_on_401:
                 logger.warning("Pesapal: SubmitOrderRequest returned 401. Clearing cache and retrying...")
-                # Clear cached token and IPN ID
                 auth_cache_key = f"pesapal_auth_token_{env}_{self.consumer_key[:8]}"
                 cache.delete(auth_cache_key)
                 cache.delete(cache_key)
-                # Retry once
                 return self.create_payment(amount, merchant_reference, description, user, currency, retry_on_401=False, card_token=card_token)
 
             logger.info(f"Pesapal: Received response status {response.status_code}")

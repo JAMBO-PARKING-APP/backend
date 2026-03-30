@@ -66,8 +66,6 @@ class SystemConfiguration(models.Model):
     default_hourly_rate = models.DecimalField(max_digits=12, decimal_places=2, default=2000.00)
     violation_fine_amount = models.DecimalField(max_digits=12, decimal_places=2, default=50000.00)
     grace_period_minutes = models.IntegerField(default=15)
-    
-    # App Version Control
     min_android_version = models.CharField(max_length=20, default='1.0.0')
     min_ios_version = models.CharField(max_length=20, default='1.0.0')
     app_update_url = models.URLField(blank=True, null=True)

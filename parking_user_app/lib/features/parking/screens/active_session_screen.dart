@@ -315,7 +315,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
     }
 
     return Scaffold(
-      backgroundColor: isLowTime ? AppTheme.errorColor : AppTheme.primaryDark,
+      backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -324,14 +324,14 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+                    icon: const Icon(Icons.arrow_back_ios_new, color: AppTheme.textPrimary),
                     onPressed: () => Navigator.pop(context),
                   ),
                   Expanded(
                     child: Text(
                       AppLocalizations.of(context).activeSession.toUpperCase(),
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppTheme.textPrimary,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
@@ -353,19 +353,26 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.08),
+                        color: AppTheme.cardBackground,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                        border: Border.all(color: AppTheme.borderColor),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppTheme.accentColor.withValues(alpha: 0.15),
+                              color: AppTheme.primaryColor.withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(Icons.location_on, color: AppTheme.accentColor, size: 28),
+                            child: const Icon(Icons.location_on, color: AppTheme.primaryColor, size: 28),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -375,7 +382,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                                 Text(
                                   widget.session.zoneName,
                                   style: const TextStyle(
-                                    color: Colors.white,
+                                    color: AppTheme.textPrimary,
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -383,7 +390,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                                 const SizedBox(height: 4),
                                 Text(
                                   '${AppLocalizations.of(context).vehicle}: ${widget.session.vehiclePlate}',
-                                  style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14),
+                                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
                                 ),
                               ],
                             ),
@@ -407,10 +414,10 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                             width: 260,
                             child: CircularProgressIndicator(
                               value: progress,
-                              strokeWidth: 12,
-                              backgroundColor: Colors.white.withValues(alpha: 0.1),
+                              strokeWidth: 24,
+                              backgroundColor: AppTheme.dividerColor,
                               valueColor: AlwaysStoppedAnimation<Color>(
-                                isLowTime ? Colors.white : AppTheme.accentColor,
+                                isLowTime ? AppTheme.errorColor : AppTheme.primaryColor,
                               ),
                             ),
                           ),
@@ -420,8 +427,8 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                             children: [
                               Text(
                                 AppLocalizations.of(context).remaining.toUpperCase(),
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.5),
+                                style: const TextStyle(
+                                  color: AppTheme.textSecondary,
                                   fontSize: 12,
                                   letterSpacing: 2,
                                   fontWeight: FontWeight.w600,
@@ -431,24 +438,25 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                               Text(
                                 _formatDuration(_remaining),
                                 style: const TextStyle(
-                                  color: Colors.white,
+                                  color: AppTheme.textPrimary,
                                   fontSize: 48,
                                   fontWeight: FontWeight.w900,
+                                  letterSpacing: -1,
                                   fontFeatures: [FontFeature.tabularFigures()],
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: (isLowTime ? Colors.white : AppTheme.accentColor).withValues(alpha: 0.1),
+                                  color: (isLowTime ? AppTheme.errorColor : AppTheme.primaryColor).withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
                                   '${AppLocalizations.of(context).until[0].toUpperCase()}${AppLocalizations.of(context).until.substring(1)} ${widget.session.endTime != null ? _formatTime(widget.session.endTime!) : '--:--'}',
                                   style: TextStyle(
-                                    color: isLowTime ? Colors.white : AppTheme.accentColor,
-                                    fontSize: 12,
+                                    color: isLowTime ? AppTheme.errorColor : AppTheme.primaryColor,
+                                    fontSize: 14,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -471,14 +479,13 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                         context,
                         MaterialPageRoute(builder: (_) => QRCodeViewScreen(session: widget.session)),
                       ),
-                      icon: const Icon(Icons.qr_code_scanner_rounded),
+                      icon: const Icon(Icons.qr_code_scanner_rounded, color: AppTheme.primaryColor),
                       label: Text(AppLocalizations.of(context).viewVerificationQR),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white.withValues(alpha: 0.1),
-                        foregroundColor: Colors.white,
-                        side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                        backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+                        foregroundColor: AppTheme.primaryColor,
+                        side: BorderSide(color: AppTheme.primaryColor.withValues(alpha: 0.2)),
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                         elevation: 0,
                       ),
                     ),
@@ -512,25 +519,24 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                     const SizedBox(height: 60),
                     
                     if (_isLoading)
-                      const CircularProgressIndicator(color: Colors.white)
+                      const CircularProgressIndicator(color: AppTheme.primaryColor)
                     else ...[
                       ElevatedButton(
                         onPressed: _handleExtendParking,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.accentColor,
-                          foregroundColor: AppTheme.primaryDark,
+                          backgroundColor: AppTheme.primaryColor,
+                          foregroundColor: Colors.white,
                           minimumSize: const Size(double.infinity, 64),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                           elevation: 0,
                         ),
-                        child: Text(AppLocalizations.of(context).extendDuration.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                        child: Text(AppLocalizations.of(context).extendDuration.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: 1.2)),
                       ),
                       const SizedBox(height: 16),
                       TextButton(
                         onPressed: _handleEndParking,
                         style: TextButton.styleFrom(
                           minimumSize: const Size(double.infinity, 56),
-                          foregroundColor: Colors.white.withValues(alpha: 0.7),
+                          foregroundColor: AppTheme.textSecondary,
                         ),
                         child: Text(AppLocalizations.of(context).endSessionEarly, style: const TextStyle(fontWeight: FontWeight.w600)),
                       ),
@@ -554,14 +560,21 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: AppTheme.cardBackground,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              border: Border.all(color: AppTheme.borderColor),
+              boxShadow: [
+                 BoxShadow(
+                   color: Colors.black.withValues(alpha: 0.03),
+                   blurRadius: 8,
+                   offset: const Offset(0, 2),
+                 ),
+              ],
             ),
-            child: Icon(icon, color: Colors.white, size: 28),
+            child: Icon(icon, color: AppTheme.primaryColor, size: 28),
           ),
           const SizedBox(height: 8),
-          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500)),
+          Text(label, style: const TextStyle(color: AppTheme.textPrimary, fontSize: 12, fontWeight: FontWeight.w600)),
         ],
       ),
     );

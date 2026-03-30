@@ -33,7 +33,6 @@ class AuthService {
 
         debugPrint('[AuthService] Login successful, saving tokens...');
         await _storageManager.saveTokens(access, refresh);
-        // decode token payload to extract device_session_id if present
         try {
           final parts = access.split('.');
           if (parts.length == 3) {
@@ -48,7 +47,6 @@ class AuthService {
           }
         } catch (_) {}
 
-        // persist user JSON for offline session
         try {
           await _storageManager.saveUserJson(json.encode(userData));
         } catch (_) {}
@@ -103,7 +101,6 @@ class AuthService {
         debugPrint('[AuthService] Registration successful, saving tokens...');
         await _storageManager.saveTokens(access, refresh);
         
-        // persist user JSON for offline session
         try {
           await _storageManager.saveUserJson(json.encode(userData));
         } catch (_) {}

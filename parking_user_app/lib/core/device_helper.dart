@@ -10,24 +10,19 @@ class DeviceHelper {
   static const _storage = FlutterSecureStorage();
   static const String _deviceIdKey = 'device_unique_id';
 
-  /// Get or generate unique device ID
-  static Future<String> getDeviceId() async {
-    // Check if we already have a device ID stored
+  async {
     final storedId = await _storage.read(key: _deviceIdKey);
     if (storedId != null && storedId.isNotEmpty) {
       return storedId;
     }
 
-    // Generate new device ID
     const uuid = Uuid();
     final deviceId = uuid.v4();
 
-    // Store for future use
     await _storage.write(key: _deviceIdKey, value: deviceId);
     return deviceId;
   }
 
-  /// Get device information for logging
   static Future<String> getDeviceInfo() async {
     try {
       if (Platform.isAndroid) {
@@ -43,7 +38,6 @@ class DeviceHelper {
     return 'Unknown Device';
   }
 
-  /// Get app version
   static Future<String> getAppVersion() async {
     try {
       final packageInfo = await PackageInfo.fromPlatform();

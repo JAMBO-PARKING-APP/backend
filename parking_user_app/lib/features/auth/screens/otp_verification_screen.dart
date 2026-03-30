@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_user_app/core/app_theme.dart';
-import 'package:parking_user_app/core/widgets/glass_container.dart';
+// Removed GlassContainer import
 
 class OtpVerificationScreen extends StatefulWidget {
   final String phoneNumber;
@@ -45,20 +45,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: Stack(
-        children: [
-          // Background Gradient Corner
-          Positioned(
-            top: -100,
-            right: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.primaryColor.withValues(alpha: 0.1),
-              ),
-            ),
-          ),
+          // Solid background
 
           SafeArea(
             child: SingleChildScrollView(
@@ -107,9 +94,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   ),
                   const SizedBox(height: 48),
 
-                  GlassContainer(
-                    padding: const EdgeInsets.all(32),
-                    borderRadius: BorderRadius.circular(32),
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 32),
                     child: Column(
                       children: [
                         TextField(
@@ -117,14 +103,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           decoration: InputDecoration(
                             hintText: '000000',
                             hintStyle: TextStyle(
-                              color: Colors.grey.shade300,
+                              color: Colors.grey.shade400,
                               letterSpacing: 8,
                             ),
                             counterText: '',
                             filled: true,
-                            fillColor: Colors.white,
+                            fillColor: const Color(0xFFF3F4F6),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
                             ),
                           ),

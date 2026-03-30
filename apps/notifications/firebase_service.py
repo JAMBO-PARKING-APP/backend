@@ -84,7 +84,6 @@ def send_notification_to_user_sync(
                 priority='high',
                 notification=messaging.AndroidNotification(
                     sound='default',
-                    channel_id='default',
                     icon='launcher_icon',
                     color='#4CAF50',
                 ),
@@ -190,7 +189,6 @@ def send_multicast_sync(
                     priority='high',
                     notification=messaging.AndroidNotification(
                         sound='default',
-                        channel_id='default',
                         icon='launcher_icon',
                         color='#4CAF50',
                     ),
@@ -287,7 +285,6 @@ def send_notification_to_topic(
                 priority='high',
                 notification=messaging.AndroidNotification(
                     sound='default',
-                    channel_id='default',
                     icon='launcher_icon',
                     color='#4CAF50',
                 ),

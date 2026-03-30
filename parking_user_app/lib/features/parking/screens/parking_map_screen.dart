@@ -13,7 +13,7 @@ import 'package:parking_user_app/core/utils/currency_formatter.dart';
 import 'package:parking_user_app/features/parking/providers/zone_provider.dart';
 import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/core/localizations.dart';
-import 'package:parking_user_app/core/widgets/glass_container.dart';
+// Removed GlassContainer
 import 'package:parking_user_app/features/parking/providers/parking_provider.dart';
 import 'package:parking_user_app/features/parking/providers/reservation_provider.dart';
 import 'package:parking_user_app/features/parking/screens/create_reservation_screen.dart';
@@ -301,15 +301,11 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => GlassContainer(
-        borderRadius: BorderRadius.circular(32),
-        blur: 20,
-        opacity: 0.8,
-        padding: EdgeInsets.zero,
-        gradientColors: [
-          Colors.white.withValues(alpha: 0.9),
-          Colors.white.withValues(alpha: 0.8),
-        ],
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
           child: Column(
@@ -605,11 +601,19 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
             top: 60,
             left: 20,
             right: 20,
-            child: GlassContainer(
-              borderRadius: BorderRadius.circular(24),
-              blur: 15,
-              opacity: 0.85,
+            child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(100),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
               child: TextField(
                 decoration: InputDecoration(
                   hintText: AppLocalizations.of(context).searchParking,

@@ -9,7 +9,6 @@ class Command(BaseCommand):
     help = 'Create test data for zones and parking sessions'
 
     def handle(self, *args, **options):
-        # Create test zones if they don't exist
         if not Zone.objects.exists():
             self.stdout.write('Creating test zones...')
             

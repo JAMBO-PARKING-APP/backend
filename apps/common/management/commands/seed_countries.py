@@ -23,38 +23,31 @@ class Command(BaseCommand):
         count = 0
         for data in countries_data:
             try:
-                # Extract fields
                 name = data.get('name', {}).get('common', 'Unknown')
                 iso_code = data.get('cca2')
                 flag_emoji = data.get('flag', '')
                 
-                # Extract Currency
                 currencies = data.get('currencies', {})
                 currency_code = 'USD'
                 currency_symbol = '$'
                 if currencies:
-                    # Take the first currency
                     currency_code = list(currencies.keys())[0]
                     currency_symbol = currencies[currency_code].get('symbol', '$')
                 
-                # Override with our defined symbols if available
                 from apps.common.constants import CURRENCY_SYMBOLS
                 if currency_code in CURRENCY_SYMBOLS:
                     currency_symbol = CURRENCY_SYMBOLS[currency_code]
                 
-                # Extract Phone Code
                 idd = data.get('idd', {})
                 root = idd.get('root', '')
                 suffixes = idd.get('suffixes', [])
                 
                 if not root:
-                    # Skip if no phone code (e.g. Antarctica sometimes)
-                    # continue
                     phone_code = ''
                 elif len(suffixes) == 1:
                     phone_code = f"{root}{suffixes[0]}"
                 else:
-                    phone_code = root # e.g. +1 for US/Canada/etc
+                    phone_code = root 
 
                 if not iso_code:
                     continue

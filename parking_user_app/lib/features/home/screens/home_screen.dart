@@ -16,7 +16,7 @@ import 'package:parking_user_app/features/notifications/providers/notification_p
 import 'package:parking_user_app/features/parking/providers/reservation_provider.dart';
 import 'package:parking_user_app/features/parking/providers/zone_provider.dart';
 import 'package:parking_user_app/features/parking/screens/active_session_screen.dart'; // Added import for ActiveSessionScreen
-import 'package:parking_user_app/core/widgets/glass_container.dart'; // Added import for GlassContainer
+// Removed GlassContainer import
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
@@ -120,15 +120,12 @@ class HomeScreenState extends State<HomeScreen> {
                                 ),
                               ],
                             ),
-                            child: GlassContainer(
-                              borderRadius: BorderRadius.circular(24),
-                              blur: 15,
-                              opacity: 0.95,
+                            child: Container(
                               padding: const EdgeInsets.all(16),
-                              gradientColors: [
-                                AppTheme.primaryColor,
-                                AppTheme.primaryDark,
-                              ],
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryColor,
+                                borderRadius: BorderRadius.circular(24),
+                              ),
                               child: Row(
                                 children: [
                                   Container(
@@ -176,27 +173,17 @@ class HomeScreenState extends State<HomeScreen> {
                     ),
 
                     // Bottom Navigation Bar
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(32),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.85), // Frosted glass overlay
-                            borderRadius: BorderRadius.circular(32),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.3),
-                              width: 1.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).scaffoldBackgroundColor, // Native theme background
+                        border: const Border(
+                          top: BorderSide(
+                            color: AppTheme.borderColor,
+                            width: 1.0,
                           ),
-                          child: BottomNavigationBar(
+                        ),
+                      ),
+                      child: BottomNavigationBar(
                             currentIndex: _currentIndex,
                             onTap: (index) => setState(() => _currentIndex = index),
                             type: BottomNavigationBarType.fixed,
@@ -254,8 +241,6 @@ class HomeScreenState extends State<HomeScreen> {
                                 label: 'Profile',
                               ),
                             ],
-                          ),
-                        ),
                       ),
                     ),
                   ],

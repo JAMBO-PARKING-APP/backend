@@ -339,9 +339,24 @@ class StartSessionByOfficerAPIView(APIView):
                 status=ParkingStatus.ACTIVE
             )
             
+            # Deduct from user wallet
+            try:
+                from django.db import transaction as db_transaction
+                driver = vehicle.user
+                db_transaction.on_commit(lambda: driver.adjust_wallet_balance(
+                    amount=-estimated_cost,
+                    transaction_type='payment',
+                    description=f"Parking payment for {vehicle.license_plate} in {zone.name} (Officer Initiated)",
+                    parking_session=session
+                ))
+                logger.info(f"Queued wallet deduction of {estimated_cost} from user {driver.id} for session {session.id}")
+            except Exception as e:
+                logger.error(f"Failed to queue wallet deduction for officer-started session: {e}")
+
             try:
                 from apps.notifications.notification_triggers import notify_parking_started
-                notify_parking_started(session)
+                from django.db import transaction as db_transaction
+                db_transaction.on_commit(lambda s=session: notify_parking_started(s))
             except Exception as e:
                 logger.error(f"Failed to send parking session notification: {e}")
             

@@ -176,7 +176,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryColor,
                 minimumSize: const Size(double.infinity, 56),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
               child: Text(l10n.ok.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
             ),
@@ -214,11 +213,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppTheme.primaryColor, Color(0xFF38A169)],
-                ),
+                color: AppTheme.primaryDark, // Stark, high-contrast flat header
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(40),
                   bottomRight: Radius.circular(40),
@@ -428,9 +423,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   foregroundColor: AppTheme.errorColor,
                   elevation: 0,
                   minimumSize: const Size(double.infinity, 56),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
                 ),
                 child: Text(
                   l10n.logout.toUpperCase(),
@@ -451,9 +443,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   foregroundColor: AppTheme.errorColor,
                   side: const BorderSide(color: AppTheme.errorColor, width: 1.5),
                   minimumSize: const Size(double.infinity, 56),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
                 ),
                 child: Text(
                   l10n.deleteAccount.toUpperCase(),
@@ -500,13 +489,7 @@ class _ProfileOptionGroup extends StatelessWidget {
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            border: Border.all(color: AppTheme.borderColor),
           ),
           child: Column(
             children: [

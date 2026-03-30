@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/core/localizations.dart';
-import 'package:parking_user_app/core/widgets/glass_container.dart';
 import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
@@ -74,13 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           // Background Gradient
           Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppTheme.backgroundColor, AppTheme.dividerColor],
-              ),
-            ),
+            color: AppTheme.backgroundColor,
           ),
           // City Skyline accent at the bottom
           Positioned(
@@ -131,52 +124,59 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 48),
 
-                  // Login Form Card with Glassmorphism
-                  GlassContainer(
-                    padding: const EdgeInsets.all(24),
-                    borderRadius: BorderRadius.circular(24),
+                  // Login Form Card
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Column(
                       children: [
                         // Phone Input
-                        Row(
-                          children: [
-                            Consumer<SettingsProvider>(
-                              builder: (context, settings, _) {
-                                return CountryCodePicker(
-                                  onChanged: (code) => setState(
-                                    () => _countryCode = code.dialCode!,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF3F4F6),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Consumer<SettingsProvider>(
+                                builder: (context, settings, _) {
+                                  return CountryCodePicker(
+                                    onChanged: (code) => setState(
+                                      () => _countryCode = code.dialCode!,
+                                    ),
+                                    initialSelection:
+                                        settings.isoCountryCode ?? 'UG',
+                                    favorite: const ['UG', 'KE', 'TZ'],
+                                    showCountryOnly: false,
+                                    showOnlyCountryWhenClosed: false,
+                                    alignLeft: false,
+                                    padding: EdgeInsets.zero,
+                                    textStyle: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: TextField(
+                                  controller: _phoneController,
+                                  keyboardType: TextInputType.phone,
+                                  decoration: InputDecoration(
+                                    hintText: l10n.phone,
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    errorBorder: InputBorder.none,
+                                    filled: false,
                                   ),
-                                  initialSelection:
-                                      settings.isoCountryCode ?? 'UG',
-                                  favorite: const ['UG', 'KE', 'TZ'],
-                                  showCountryOnly: false,
-                                  showOnlyCountryWhenClosed: false,
-                                  alignLeft: false,
-                                  padding: EdgeInsets.zero,
-                                  textStyle: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                );
-                              },
-                            ),
-                            const VerticalDivider(),
-                            Expanded(
-                              child: TextField(
-                                controller: _phoneController,
-                                keyboardType: TextInputType.phone,
-                                decoration: InputDecoration(
-                                  hintText: l10n.phone,
-                                  border: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
-                                  filled: false,
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                        const Divider(height: 32),
+                        const SizedBox(height: 16),
                         // Password Input
                         TextField(
                           controller: _passwordController,
@@ -195,10 +195,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 () => _obscurePassword = !_obscurePassword,
                               ),
                             ),
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            filled: false,
+                            // Global theme handles these
                           ),
                         ),
                       ],

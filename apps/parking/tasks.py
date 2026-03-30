@@ -116,18 +116,16 @@ def check_reservation_attendance(reservation_id):
     try:
         reservation = Reservation.objects.get(id=reservation_id, status='confirmed')
         
-        # Check if there is an active session for this vehicle in this zone
         session_exists = ParkingSession.objects.filter(
             vehicle=reservation.vehicle,
             zone=reservation.zone,
             status=ParkingStatus.ACTIVE,
-            start_time__gte=reservation.reserved_from - timedelta(minutes=10) # Buffer
+            start_time__gte=reservation.reserved_from - timedelta(minutes=10) 
         ).exists()
         
         if session_exists:
             return f"Reservation {reservation_id} validated: User arrived."
 
-        # Check location if no session
         user = reservation.vehicle.user
         last_loc = UserLocation.objects.filter(user=user).order_by('-timestamp').first()
         
@@ -137,17 +135,15 @@ def check_reservation_attendance(reservation_id):
                 float(last_loc.latitude), float(last_loc.longitude),
                 float(reservation.zone.latitude), float(reservation.zone.longitude)
             )
-            if dist_km < 0.2: # 200 meters
+            if dist_km < 0.2: 
                 arrived = True
         
         if not arrived:
-            # Mark as expired, no refund logic needed here as it simply stops being 'confirmed'
             reservation.status = 'expired'
             reservation.is_active = False
             reservation.save()
             
             from apps.notifications.notification_triggers import notify_reservation_cancelled
-            # You might want a specific 'expired_no_show' notification
             notify_reservation_cancelled(reservation)
             return f"Reservation {reservation_id} expired: No-show after 30 mins."
             
@@ -274,6 +270,97 @@ def notify_exit_overdue():
             count += 1
             
     return f"Sent exit reminders to {count} users."
+    
+@shared_task(name='apps.parking.tasks.check_vacate_grace_period')
+def check_vacate_grace_period():
+    """
+    Check if users who ended their session 3 minutes ago have vacated the zone.
+    Users get a 3-minute window to leave.
+    """
+    now = timezone.now()
+    three_mins_ago = now - timedelta(minutes=3)
+    five_mins_ago = now - timedelta(minutes=5)
+    
+    # Get sessions that ended between 3 and 5 minutes ago to catch any misses
+    recently_ended = ParkingSession.objects.filter(
+        status__in=[ParkingStatus.COMPLETED, ParkingStatus.EXPIRED, ParkingStatus.CANCELLED],
+        actual_end_time__lte=three_mins_ago,
+        actual_end_time__gt=five_mins_ago
+    ).select_related('vehicle__user', 'zone')
+    
+    count = 0
+    for session in recently_ended:
+        user = session.vehicle.user
+        zone = session.zone
+        
+        # Check if we already sent a vacate penalty for this session
+        from apps.notifications.models import NotificationEvent
+        if NotificationEvent.objects.filter(
+            user=user,
+            type='system_alert',
+            metadata__session_id=str(session.id),
+            metadata__type='vacate_penalty'
+        ).exists():
+            continue
+
+        last_loc = UserLocation.objects.filter(user=user).order_by('-timestamp').first()
+        
+        if last_loc:
+            dist_km = calculate_distance(
+                float(last_loc.latitude), float(last_loc.longitude),
+                float(zone.latitude), float(zone.longitude)
+            )
+            
+            # If user is still within zone radius + small buffer (e.g. 50m)
+            buffer_km = 0.05
+            if dist_km < (zone.radius_meters / 1000.0 + buffer_km):
+                from apps.notifications.notification_triggers import notify_custom, notify_violation_issued
+                from apps.enforcement.models import Violation
+                from apps.common.constants import ViolationType
+                
+                # Issue a lingering violation
+                fine_amount = Decimal('5000.00')  # Configurable flat fee for lingering
+                violation = Violation.objects.create(
+                    vehicle=session.vehicle,
+                    officer=None,
+                    zone=zone,
+                    parking_session=session,
+                    violation_type=ViolationType.OVERDUE_PARKING,
+                    description='Vehicle failed to vacate the parking zone within the 3-minute grace period after session ended.',
+                    fine_amount=fine_amount,
+                    latitude=zone.latitude,
+                    longitude=zone.longitude
+                )
+
+                notify_violation_issued(
+                    violation, 
+                    message=f"You failed to vacate {zone.name} within the 3-minute grace period. A lingering violation fee of {fine_amount} has been issued."
+                )
+
+                # Also automatically attempt to deduct it from their wallet
+                try:
+                    user.adjust_wallet_balance(
+                        -fine_amount,
+                        transaction_type='fine_payment',
+                        description=f'Penalty for failing to vacate {zone.name}',
+                        parking_session=session
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to deduct vacate penalty for user {user.id}: {e}")
+
+                # Record that we've processed this so we don't double charge
+                NotificationEvent.objects.create(
+                    user=user,
+                    title="Vacate Violation Issued",
+                    message="Issued vacate violation penalty",
+                    type="system_alert",
+                    category="parking",
+                    metadata={'session_id': str(session.id), 'type': 'vacate_penalty'}
+                )
+                
+                count += 1
+                
+    return f"Checked {recently_ended.count()} sessions. Issued {count} vacate penalties."
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     """

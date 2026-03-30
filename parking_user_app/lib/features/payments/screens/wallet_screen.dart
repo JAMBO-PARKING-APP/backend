@@ -8,7 +8,7 @@ import 'package:parking_user_app/core/dialog_service.dart';
 import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:parking_user_app/core/utils/currency_formatter.dart';
 import 'package:parking_user_app/core/app_theme.dart';
-import 'package:parking_user_app/core/widgets/glass_container.dart';
+// Removed GlassContainer
 import 'package:parking_user_app/features/payments/models/payment_method_model.dart';
 import 'package:parking_user_app/widgets/payment_selection_dialog.dart';
 
@@ -202,13 +202,19 @@ class _WalletScreenState extends State<WalletScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Premium Balance Card
-                  GlassContainer(
+                  Container(
                     padding: const EdgeInsets.all(32),
-                    gradientColors: [
-                      AppTheme.primaryColor,
-                      const Color(0xFF38A169),
-                    ],
-                    borderRadius: BorderRadius.circular(24),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryDark, // Distinct premium dark header card
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 10,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
                     child: Column(
                       children: [
                         Row(
@@ -419,7 +425,7 @@ class _WalletScreenState extends State<WalletScreen> {
                       decoration: BoxDecoration(
                         color: Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade100),
+                        border: Border.all(color: Theme.of(context).dividerColor),
                       ),
                       child: const Column(
                         children: [
@@ -445,7 +451,7 @@ class _WalletScreenState extends State<WalletScreen> {
                         decoration: BoxDecoration(
                           color: Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.grey.shade50),
+                          border: Border.all(color: Theme.of(context).dividerColor),
                         ),
                         child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(

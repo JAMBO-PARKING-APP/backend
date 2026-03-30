@@ -7,15 +7,12 @@ import types
 import inspect
 import builtins
 
-# Python 3.11 compatibility shim for legacy libraries (like django-suit)
 if not hasattr(inspect, 'getargspec'):
     inspect.getargspec = inspect.getfullargspec
 
-# Python 3 compatibility for legacy 'basestring'
 if not hasattr(builtins, 'basestring'):
     builtins.basestring = str
 
-# Django 4.x compatibility shim for legacy libraries (like django-suit)
 if not hasattr(django.utils.translation, 'ugettext'):
     django.utils.translation.ugettext = django.utils.translation.gettext
 if not hasattr(django.utils.translation, 'ugettext_lazy'):
@@ -25,12 +22,10 @@ if not hasattr(django.utils.translation, 'ugettext_noop'):
 if not hasattr(django.utils.translation, 'ungettext'):
     django.utils.translation.ungettext = django.utils.translation.ngettext
 
-# Shim for removed django.utils.six
 try:
     import six
     sys.modules['django.utils.six'] = six
 except ImportError:
-    # Create a minimal six shim if not installed
     six_mod = types.ModuleType('six')
     six_mod.string_types = (str,)
     six_mod.text_type = str
@@ -39,7 +34,6 @@ except ImportError:
     sys.modules['six'] = six_mod
     sys.modules['django.utils.six'] = six_mod
 
-# Shim for removed admin_static module in Django 3.0+
 try:
     from django.templatetags.static import static
     admin_static_mod = types.ModuleType('django.contrib.admin.templatetags.admin_static')
@@ -58,6 +52,8 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lamb
 
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='http://localhost:8000,http://127.0.0.1:8000', cast=lambda v: [s.strip() for s in v.split(',')])
 
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=True, cast=bool)
+CORS_ALLOW_CREDENTIALS = True
 DJANGO_APPS = [
     'grappelli',
     'daphne',
@@ -178,10 +174,8 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Grappelli settings
 GRAPPELLI_ADMIN_TITLE = 'SpacePark Admin'
 
-# WhiteNoise settings
 WHITENOISE_USE_FINDERS = True
 WHITENOISE_AUTOREFRESH = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -294,8 +288,6 @@ PESAPAL_SANDBOX = config('PESAPAL_SANDBOX', default=True, cast=bool)
 PESAPAL_CALLBACK_URL = config('PESAPAL_CALLBACK_URL', default='https://curtis-unmobilized-clarence.ngrok-free.dev/api/user/payments/pesapal/callback/')
 PESAPAL_IPN_ID = config('PESAPAL_IPN_ID', default='')
 PESAPAL_USD_EXCHANGE_RATE = config('PESAPAL_USD_EXCHANGE_RATE', default=3700, cast=int)
-
-# Email Settings
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
@@ -325,6 +317,10 @@ CELERY_BEAT_SCHEDULE = {
     'notify-exit-overdue': {
         'task': 'apps.parking.tasks.notify_exit_overdue',
         'schedule': crontab(minute='*/5'),  
+    },
+    'check-vacate-grace-period': {
+        'task': 'apps.parking.tasks.check_vacate_grace_period',
+        'schedule': crontab(minute='*/1'),  
     },
     'validate-active-session-location': {
         'task': 'apps.parking.tasks.validate_active_session_location',

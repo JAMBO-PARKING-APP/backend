@@ -471,7 +471,6 @@ class PesapalUserCallbackView(APIView):
                     from apps.notifications.notification_triggers import notify_payment_success
                     notify_payment_success(trans)
                 
-                # Handle tokenization
                 payment_token = status_response.get('payment_token')
                 card_details = status_response.get('card_details', {})
                 if payment_token:
@@ -580,8 +579,6 @@ class PesapalIPNAPIView(APIView):
                 else:
                     from apps.notifications.notification_triggers import notify_payment_success
                     notify_payment_success(trans)
-                
-                # Handle tokenization
                 payment_token = status_response.get('payment_token')
                 card_details = status_response.get('card_details', {})
                 if payment_token:
@@ -633,11 +630,6 @@ class ExecutePesapalTokenPaymentAPIView(APIView):
             pesapal = PesapalService(config_obj=config_obj) if config_obj else PesapalService()
             
             merchant_reference = str(uuid.uuid4())
-            # For direct charging, we'd use SubmitOrderRequest with payment_method set to TOKEN
-            # However, standard Pesapal V3 usually still requires some user interaction for the first time
-            # or uses a specific flow. Here we initiate it.
-            
-            # Conversion logic (same as InitiatePesapalPaymentAPIView)
             charge_amount = Decimal(str(amount))
             exchange_rate = getattr(settings, 'PESAPAL_USD_EXCHANGE_RATE', 3700)
             charge_amount_usd = round(charge_amount / Decimal(str(exchange_rate)), 2)
@@ -653,8 +645,6 @@ class ExecutePesapalTokenPaymentAPIView(APIView):
                 status='pending'
             )
             
-            # Note: Direct token charging often requires specific white-label permissions from Pesapal.
-            # If standard, this returns a redirect URL that might auto-submit if the token is valid.
             response = pesapal.create_payment(
                 amount=charge_amount_usd,
                 merchant_reference=merchant_reference,
@@ -670,10 +660,6 @@ class ExecutePesapalTokenPaymentAPIView(APIView):
                 return Response({'error': 'Failed to initiate token payment'}, status=status.HTTP_400_BAD_REQUEST)
                 
             trans.pesapal_order_tracking_id = response.get('order_tracking_id')
-            
-            # Check for immediate success (some tokenized charges might complete immediately)
-            # In Pesapal V3, this usually shows up as status 200 and a redirect_url.
-            # However, if white-label is enabled, it might return a specific status.
             p_status = response.get('status')
             if p_status == '200' and not response.get('redirect_url'):
                  trans.status = 'completed'

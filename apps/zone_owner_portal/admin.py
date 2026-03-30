@@ -13,12 +13,11 @@ def approve_applications(modeladmin, request, queryset):
     """Bulk approve action — generates credentials in the same transaction."""
     count = 0
     for app in queryset.filter(status='pending'):
-        # Generate & persist password NOW (same transaction → visible immediately)
         if not app.demo_password:
             app.demo_password = generate_temp_password()
             app.demo_email = app.applicant_email
         app.status = 'approved'
-        app.save()   # triggers post_save → on_commit schedules user+zone creation
+        app.save()   
         count += 1
     modeladmin.message_user(request, f"✅ Approved {count} application(s).")
 
@@ -79,7 +78,7 @@ class ZoneApplicationPublicAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
     def demo_credentials_display(self, obj):
-        portal_url = 'http://localhost:5173/login'
+        portal_url = 'https://p-space.ai/login'
 
         if obj.demo_email and obj.demo_password:
             return format_html(
@@ -221,7 +220,6 @@ class ZoneOwnerAdmin(admin.ModelAdmin):
         amount = WalletTransaction.objects.filter(
             user=obj, transaction_type='payout', status='completed'
         ).aggregate(total=Sum('amount'))['total'] or 0
-        # Payouts are stored as negative adjustments usually, but let's show as positive total paid
         return f"{obj.country.currency_symbol if obj.country else ''} {abs(amount):,.2f}"
 
     @admin.display(description=_('Current Balance'))
@@ -236,7 +234,6 @@ class ZoneOwnerAdmin(admin.ModelAdmin):
         payout_amount = form.cleaned_data.get('record_payout_amount')
         if payout_amount and payout_amount > 0:
             description = form.cleaned_data.get('payout_description', 'Manual Payout')
-            # Adjust wallet balance (passing negative amount for payout)
             obj.adjust_wallet_balance(
                 -payout_amount, 
                 transaction_type='payout', 

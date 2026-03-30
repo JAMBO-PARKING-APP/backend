@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:parking_user_app/core/localizations.dart';
+import 'package:parking_user_app/core/app_theme.dart';
+import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 
 import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:parking_user_app/widgets/base_scaffold.dart';
@@ -29,10 +31,6 @@ class SettingsScreen extends StatelessWidget {
             children: [
               // Language Section
               Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -124,10 +122,6 @@ class SettingsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -167,10 +161,6 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 16),
               // Partner Program
               Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
                 child: Column(
                   children: [
                     ListTile(
@@ -193,10 +183,6 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 16),
               // Help & Support
               Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
                 child: Column(
                   children: [
                     ListTile(

@@ -35,7 +35,7 @@ class BaseScaffold extends StatelessWidget {
       backgroundColor: backgroundColor,
       appBar: AppBar(
         leading: (showDrawer && !Navigator.canPop(context))
-            ? null // Scaffold will automatically add the drawer icon
+            ? null 
             : (Navigator.canPop(context) ? const BackButton() : null),
         title: titleWidget ?? Text(title ?? ''),
         actions: actions,
@@ -48,8 +48,7 @@ class BaseScaffold extends StatelessWidget {
               onTabChanged:
                   onTabChanged ??
                   (index) {
-                    // Default behavior if no callback provided:
-                    // Navigation logic might need to be handled by the parent or a provider.
+                  
                   },
             )
           : null,

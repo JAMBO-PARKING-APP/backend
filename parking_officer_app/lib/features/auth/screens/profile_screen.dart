@@ -70,11 +70,7 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppTheme.primaryColor, Color(0xFF38A169)],
-            ),
+            color: AppTheme.primaryDark,
           ),
           child: Stack(
             children: [
@@ -165,13 +161,7 @@ class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: AppTheme.borderColor),
       ),
       child: Column(
         children: [

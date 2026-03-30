@@ -118,10 +118,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 48),
 
-                  Card(
-                    elevation: 1,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: CountryCodePicker(
                       onChanged: (code) =>
@@ -151,9 +151,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               ).hasMatch(_phoneController.text)
                           ? 'Enter 9 digits'
                           : null,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      // Using global input theme
+
                     ),
                     keyboardType: TextInputType.phone,
                     onChanged: (_) => setState(() {}),
@@ -175,9 +174,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           () => _obscurePassword = !_obscurePassword,
                         ),
                       ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      // Using global input theme
+
                     ),
                     obscureText: _obscurePassword,
                   ),

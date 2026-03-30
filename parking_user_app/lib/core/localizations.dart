@@ -1967,6 +1967,8 @@ class _GermanLocalizations extends AppLocalizations {
   @override
   String get confirm => 'Bestätigen';
   @override
+  String get areYouSure => 'Sind Sie sicher?';
+  @override
   String get preferences => 'Einstellungen';
 
   @override
@@ -2339,8 +2341,6 @@ class _GermanLocalizations extends AppLocalizations {
   String get lastUpdated => 'Zuletzt aktualisiert';
   @override
   String get account => 'Konto';
-  @override
-  String get preferences => 'Einstellungen';
 }
 
 // Arabic Localizations

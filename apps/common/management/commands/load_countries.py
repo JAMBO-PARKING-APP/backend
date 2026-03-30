@@ -41,8 +41,7 @@ class Command(BaseCommand):
             
             flag_emoji = item.get('flag', '')
             
-            # Default timezone based on country or fallback
-            timezone = 'UTC' # Rely on user modifying this if needed since JSON doesn't contain granular TZ
+            timezone = 'UTC' 
 
             if name and iso_code:
                 country, created = Country.objects.update_or_create(

@@ -102,41 +102,75 @@ class _VehicleListScreenState extends State<VehicleListScreen> {
             itemCount: provider.vehicles.length,
             itemBuilder: (context, index) {
               final vehicle = provider.vehicles[index];
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Theme.of(context).dividerColor),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
                 child: ListTile(
-                  leading: const Icon(Icons.directions_car),
-                  title: Text(vehicle.licensePlate),
-                  subtitle: Text(
-                    '${vehicle.color} ${vehicle.make} ${vehicle.model}',
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  leading: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.directions_car_rounded, color: Theme.of(context).primaryColor),
                   ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () async {
-                      final confirmed = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Delete Vehicle'),
-                          content: const Text(
-                            'Are you sure you want to remove this vehicle?',
+                  title: Text(
+                    vehicle.licensePlate,
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 1),
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: Text(
+                      '${vehicle.color} ${vehicle.make} ${vehicle.model}',
+                      style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  trailing: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                      onPressed: () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Delete Vehicle'),
+                            content: const Text(
+                              'Are you sure you want to remove this vehicle?',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Cancel'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                child: const Text('Remove'),
+                              ),
+                            ],
                           ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text('No'),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              child: const Text('Yes'),
-                            ),
-                          ],
-                        ),
-                      );
+                        );
 
-                      if (confirmed == true && mounted) {
-                        await provider.removeVehicle(vehicle.id);
-                      }
-                    },
+                        if (confirmed == true && mounted) {
+                          await provider.removeVehicle(vehicle.id);
+                        }
+                      },
+                    ),
                   ),
                 ),
               );
