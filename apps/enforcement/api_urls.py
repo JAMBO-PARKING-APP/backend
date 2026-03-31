@@ -15,4 +15,7 @@ urlpatterns = [
     path('status/', api_views_v2.OfficerStatusAPIView.as_view(), name='officer-status'),
     path('status/toggle/', api_views_v2.OfficerStatusToggleAPIView.as_view(), name='status-toggle'),
     path('scans/', api_views_v2.OfficerQRScansAPIView.as_view(), name='qr-scans'),
+    path('sessions/non-app-user/', api_views_v2.CreateGuestParkingSessionAPIView.as_view(), name='create-guest-session'),
+    path('sessions/<uuid:session_id>/confirm-payment/', api_views_v2.ConfirmGuestSessionPaymentAPIView.as_view(), name='confirm-guest-payment'),
+    path('payments/pesapal/initiate/', api_views_v2.OfficerInitiatePesaPalPaymentAPIView.as_view(), name='officer-initiate-pesapal'),
 ]

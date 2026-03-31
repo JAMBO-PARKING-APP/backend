@@ -11,6 +11,7 @@ Officer API Endpoints
 
 from decimal import Decimal
 import logging
+import uuid
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import generics, status, serializers
@@ -567,6 +568,106 @@ class ConfirmGuestSessionPaymentAPIView(APIView):
                 'session_status': guest_session.status,
                 'payment_status': guest_session.payment_status,
             }, status=status.HTTP_200_OK)
+
+
+class OfficerInitiatePesaPalPaymentAPIView(APIView):
+    """Initiate PesaPal payment for guest parking session"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if request.user.role != UserRole.OFFICER:
+            return Response({'error': 'Only officers can initiate payment'}, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            session_id = request.data.get('session_id')
+            phone_number = request.data.get('phone_number')
+            
+            if not session_id or not phone_number:
+                return Response(
+                    {'error': 'session_id and phone_number are required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get the guest parking session
+            guest_session = GuestParkingSession.objects.get(id=session_id, officer=request.user)
+            
+            if guest_session.payment_status == 'completed':
+                return Response({
+                    'error': 'Payment already completed for this session',
+                    'payment_status': guest_session.payment_status
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Import PesaPal service
+            from apps.payments.pesapal_service import PesapalService
+            from apps.payments.models import Transaction
+            from apps.common.constants import TransactionStatus
+            
+            # Create a transaction record for tracking
+            merchant_reference = str(uuid.uuid4())
+            transaction_record = Transaction.objects.create(
+                user=request.user,
+                amount=guest_session.estimated_cost,
+                pesapal_merchant_reference=merchant_reference,
+                status=TransactionStatus.PENDING,
+                idempotency_key=merchant_reference
+            )
+            
+            # Get zone's country and use PesaPal service
+            pesapal = PesapalService()
+            response = pesapal.create_payment(
+                amount=str(guest_session.estimated_cost),
+                merchant_reference=merchant_reference,
+                description=f'Guest Parking: {guest_session.license_plate}',
+                user=request.user,
+                currency='UGX'
+            )
+            
+            if response and response.get('redirect_url'):
+                # Store transaction reference on guest session
+                guest_session.payment_transaction = transaction_record
+                guest_session.save()
+                
+                transaction_record.pesapal_order_tracking_id = response.get('order_tracking_id')
+                transaction_record.processor_response = response
+                transaction_record.save()
+                
+                logger.info(
+                    f"PesaPal payment initiated for guest session {session_id}: "
+                    f"amount={guest_session.estimated_cost}, plate={guest_session.license_plate}"
+                )
+                
+                OfficerLog.objects.create(
+                    officer=request.user,
+                    action='guest_session_payment_initiated',
+                    details={
+                        'session_id': str(session_id),
+                        'merchant_reference': merchant_reference,
+                        'amount': str(guest_session.estimated_cost)
+                    }
+                )
+                
+                return Response({
+                    'success': True,
+                    'redirect_url': response.get('redirect_url'),
+                    'payment_url': response.get('redirect_url'),  # Support both keys
+                    'order_id': response.get('order_tracking_id'),
+                    'order_tracking_id': response.get('order_tracking_id'),  # Support both keys
+                    'merchant_reference': merchant_reference,
+                }, status=status.HTTP_200_OK)
+            else:
+                transaction_record.status = TransactionStatus.FAILED
+                transaction_record.save()
+                logger.error(f"PesaPal payment creation failed for session {session_id}")
+                return Response({
+                    'error': 'Failed to initiate PesaPal payment',
+                    'details': str(response) if response else 'No response from PesaPal'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        except GuestParkingSession.DoesNotExist:
+            return Response({'error': 'Guest parking session not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error initiating PesaPal payment: {e}", exc_info=True)
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ScanQRCodeAPIView(APIView):
