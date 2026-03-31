@@ -31,7 +31,6 @@ class PublicZonePaymentLandingView(View):
         pesapal = PesapalService()
         callback_url = request.build_absolute_uri(reverse('public-payment-callback'))
         
-        # Create a mock user for the guest payment
         class GuestUser:
             def __init__(self, phone, email):
                 self.id = uuid.uuid4()

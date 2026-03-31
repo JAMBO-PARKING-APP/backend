@@ -17,8 +17,6 @@ class DownloadInvoiceView(APIView):
 
     def get(self, request, session_id):
         session = get_object_or_404(ParkingSession, id=session_id)
-        
-        # The session ID is a UUID, which is secure enough for sharing the invoice link.
 
         context = {
             'session': session,

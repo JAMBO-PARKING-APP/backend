@@ -113,8 +113,6 @@ class CountryDetectAPIView(APIView):
 
     def get(self, request):
         client_ip = self._get_client_ip(request)
-
-        # Allow manual override via query param (useful for testing)
         iso_code_override = request.query_params.get('iso_code')
         if iso_code_override:
             try:
@@ -132,8 +130,6 @@ class CountryDetectAPIView(APIView):
                 })
             except Country.DoesNotExist:
                 return Response({'detected': False, 'is_active': False, 'iso_code': iso_code_override.upper()})
-
-        # Use ip-api.com for free IP geolocation (no API key needed, 1000 req/min free)
         detected_iso = None
         detected_name = None
         try:
@@ -147,7 +143,7 @@ class CountryDetectAPIView(APIView):
                     detected_iso = geo_data.get('countryCode', '').upper()
                     detected_name = geo_data.get('country', '')
         except Exception:
-            pass  # Graceful fallback if geo service is unreachable
+            pass 
 
         if not detected_iso:
             return Response({
@@ -156,7 +152,6 @@ class CountryDetectAPIView(APIView):
                 'message': 'Could not determine your location. Please check your connection.',
             })
 
-        # Check if detected country exists AND is active in our system
         try:
             country = Country.objects.get(iso_code=detected_iso)
             return Response({
@@ -171,7 +166,6 @@ class CountryDetectAPIView(APIView):
                 'is_active': country.is_active,
             })
         except Country.DoesNotExist:
-            # Country detected but not in our system → treat as inactive
             return Response({
                 'detected': True,
                 'is_active': False,

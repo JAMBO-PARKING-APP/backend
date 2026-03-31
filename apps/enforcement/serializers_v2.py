@@ -60,7 +60,7 @@ class VehicleStatusCheckSerializer(serializers.Serializer):
     model = serializers.CharField(required=False)
     color = serializers.CharField(required=False)
     owner_name = serializers.CharField()
-    status = serializers.CharField() # e.g. 'parked', 'overdue', 'no_active_session'
+    status = serializers.CharField()
     active_session_id = serializers.UUIDField(allow_null=True)
     zone_name = serializers.CharField(allow_null=True)
     planned_end = serializers.DateTimeField(allow_null=True)

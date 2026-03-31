@@ -28,7 +28,6 @@ void main() async {
       },
     );
 
-    // Initialize FCM without blocking UI if registration is slow
     unawaited(
       FCMService().initialize().catchError((e) {
         debugPrint('[Main] Error initializing FCM: $e');
@@ -60,7 +59,6 @@ void main() async {
   }
 }
 
-// Helper to make unawaited calls explicit
 void unawaited(Future<void> future) {}
 
 class SpaceOfficerApp extends StatelessWidget {

@@ -62,3 +62,24 @@ class OwnerZoneSerializer(serializers.ModelSerializer):
                  'total_slots', 'is_active', 'latitude', 'longitude', 'commission_rate',
                  'available_slots_count', 'active_sessions_count')
         read_only_fields = ('id', 'commission_rate', 'active_sessions_count', 'available_slots_count')
+
+class OwnerParkingSessionSerializer(serializers.ModelSerializer):
+    vehicle_plate = serializers.CharField(source='vehicle.license_plate', read_only=True)
+    is_overdue = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = ParkingSession
+        fields = ('id', 'vehicle_plate', 'start_time', 'planned_end_time', 
+                 'actual_end_time', 'status', 'estimated_cost', 'final_cost', 'is_overdue')
+
+class OwnerParkingSlotSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ParkingSlot
+        fields = ('id', 'slot_code', 'status', 'slot_type')
+        read_only_fields = ('id', 'slot_code')
+
+class OwnerViolationReportSerializer(serializers.Serializer):
+    session_id = serializers.UUIDField(required=True)
+    violation_type = serializers.ChoiceField(choices=[('overdue_parking', 'Overdue Parking'), ('other', 'Other')])
+    description = serializers.CharField(required=False, allow_blank=True)
+    fine_amount = serializers.DecimalField(max_digits=8, decimal_places=2, required=False)

@@ -5,7 +5,7 @@ from apps.common.constants import ViolationType
 
 class Violation(RegionalModel, BaseModel):
     vehicle = models.ForeignKey('accounts.Vehicle', on_delete=models.CASCADE, related_name='violations', verbose_name=_("Vehicle"))
-    officer = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='issued_violations', verbose_name=_("Officer"))
+    officer = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='issued_violations', verbose_name=_("Officer"))
     zone = models.ForeignKey('parking.Zone', on_delete=models.CASCADE, related_name='violations', verbose_name=_("Zone"))
     parking_session = models.ForeignKey('parking.ParkingSession', on_delete=models.SET_NULL, 
                                        null=True, blank=True, related_name='violations', verbose_name=_("Parking Session"))

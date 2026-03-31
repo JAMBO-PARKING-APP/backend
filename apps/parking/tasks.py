@@ -281,7 +281,6 @@ def check_vacate_grace_period():
     three_mins_ago = now - timedelta(minutes=3)
     five_mins_ago = now - timedelta(minutes=5)
     
-    # Get sessions that ended between 3 and 5 minutes ago to catch any misses
     recently_ended = ParkingSession.objects.filter(
         status__in=[ParkingStatus.COMPLETED, ParkingStatus.EXPIRED, ParkingStatus.CANCELLED],
         actual_end_time__lte=three_mins_ago,
@@ -293,7 +292,6 @@ def check_vacate_grace_period():
         user = session.vehicle.user
         zone = session.zone
         
-        # Check if we already sent a vacate penalty for this session
         from apps.notifications.models import NotificationEvent
         if NotificationEvent.objects.filter(
             user=user,
@@ -311,15 +309,13 @@ def check_vacate_grace_period():
                 float(zone.latitude), float(zone.longitude)
             )
             
-            # If user is still within zone radius + small buffer (e.g. 50m)
             buffer_km = 0.05
             if dist_km < (zone.radius_meters / 1000.0 + buffer_km):
                 from apps.notifications.notification_triggers import notify_custom, notify_violation_issued
                 from apps.enforcement.models import Violation
                 from apps.common.constants import ViolationType
-                
-                # Issue a lingering violation
-                fine_amount = Decimal('5000.00')  # Configurable flat fee for lingering
+            
+                fine_amount = Decimal('100.00')  
                 violation = Violation.objects.create(
                     vehicle=session.vehicle,
                     officer=None,
@@ -337,7 +333,7 @@ def check_vacate_grace_period():
                     message=f"You failed to vacate {zone.name} within the 3-minute grace period. A lingering violation fee of {fine_amount} has been issued."
                 )
 
-                # Also automatically attempt to deduct it from their wallet
+               
                 try:
                     user.adjust_wallet_balance(
                         -fine_amount,
@@ -348,7 +344,6 @@ def check_vacate_grace_period():
                 except Exception as e:
                     logger.error(f"Failed to deduct vacate penalty for user {user.id}: {e}")
 
-                # Record that we've processed this so we don't double charge
                 NotificationEvent.objects.create(
                     user=user,
                     title="Vacate Violation Issued",

@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/core/localizations.dart';
+import 'package:parking_user_app/core/widgets/modern_widgets.dart';
 import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
-import 'package:parking_user_app/features/auth/screens/register_screen.dart';
+import 'package:parking_user_app/features/auth/screens/register_screen.dart' as reg;
 import 'package:parking_user_app/features/auth/screens/terms_of_service_screen.dart';
 import 'package:parking_user_app/features/auth/screens/privacy_policy_screen.dart';
 
@@ -29,7 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final l10n = AppLocalizations.of(context);
     if (phone.isEmpty) {
-      _showError(l10n.errorOccurred); // Using generic error for now, or specific if added
+      _showError(l10n.errorOccurred);
       return;
     }
 
@@ -60,7 +61,10 @@ class _LoginScreenState extends State<LoginScreen> {
         content: Text(message),
         backgroundColor: AppTheme.errorColor,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTheme.radiusS),
+        ),
+        elevation: 4,
       ),
     );
   }
@@ -69,257 +73,392 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       body: Stack(
         children: [
-          // Background Gradient
-          Container(
-            color: AppTheme.backgroundColor,
-          ),
-          // City Skyline accent at the bottom
+          // Modern Gradient Accent (top-right)
           Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Opacity(
-              opacity: 0.1,
-              child: Image.asset(
-                'assets/images/skyline_splash.png',
-                height: 200,
-                fit: BoxFit.cover,
+            top: -100,
+            right: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  colors: [
+                    AppTheme.primaryColor.withValues(alpha: 0.15),
+                    AppTheme.primaryColor.withValues(alpha: 0),
+                  ],
+                ),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          // Bottom accent
+          Positioned(
+            bottom: -50,
+            left: -50,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  colors: [
+                    AppTheme.accentColor.withValues(alpha: 0.1),
+                    AppTheme.accentColor.withValues(alpha: 0),
+                  ],
+                ),
+                shape: BoxShape.circle,
               ),
             ),
           ),
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.spacingL,
+                vertical: AppTheme.spacingM,
+              ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          padding: const EdgeInsets.all(12),
-                        ),
+                  // Back Button
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                      border: Border.all(
+                        color: AppTheme.borderColor,
+                        width: 1,
                       ),
-                    ],
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+                      style: IconButton.styleFrom(
+                        padding: const EdgeInsets.all(AppTheme.spacingM),
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: AppTheme.spacingXL),
+
+                  // Header
                   Text(
                     l10n.welcome,
                     style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w800,
                       color: AppTheme.textPrimary,
+                      letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppTheme.spacingS),
                   Text(
                     l10n.loginToYourAccount,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: AppTheme.textSecondary,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
-                  const SizedBox(height: 48),
+                  const SizedBox(height: AppTheme.spacingXXL),
 
-                  // Login Form Card
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Column(
-                      children: [
-                        // Phone Input
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF3F4F6),
-                            borderRadius: BorderRadius.circular(12),
+                  // Phone Input with Country Picker
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.phone,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: AppTheme.spacingS),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceLight,
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.radiusS),
+                          border: Border.all(
+                            color: AppTheme.borderColor,
+                            width: 1,
                           ),
-                          child: Row(
-                            children: [
-                              Consumer<SettingsProvider>(
-                                builder: (context, settings, _) {
-                                  return CountryCodePicker(
-                                    onChanged: (code) => setState(
-                                      () => _countryCode = code.dialCode!,
-                                    ),
-                                    initialSelection:
-                                        settings.isoCountryCode ?? 'UG',
-                                    favorite: const ['UG', 'KE', 'TZ'],
-                                    showCountryOnly: false,
-                                    showOnlyCountryWhenClosed: false,
-                                    alignLeft: false,
-                                    padding: EdgeInsets.zero,
-                                    textStyle: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: TextField(
-                                  controller: _phoneController,
-                                  keyboardType: TextInputType.phone,
-                                  decoration: InputDecoration(
-                                    hintText: l10n.phone,
-                                    border: InputBorder.none,
-                                    enabledBorder: InputBorder.none,
-                                    focusedBorder: InputBorder.none,
-                                    errorBorder: InputBorder.none,
-                                    filled: false,
+                        ),
+                        child: Row(
+                          children: [
+                            Consumer<SettingsProvider>(
+                              builder: (context, settings, _) {
+                                return CountryCodePicker(
+                                  onChanged: (code) => setState(
+                                    () => _countryCode = code.dialCode!,
                                   ),
+                                  initialSelection:
+                                      settings.isoCountryCode ?? 'UG',
+                                  favorite: const ['UG', 'KE', 'TZ'],
+                                  showCountryOnly: false,
+                                  showOnlyCountryWhenClosed: false,
+                                  alignLeft: false,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppTheme.spacingM,
+                                  ),
+                                  textStyle: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                );
+                              },
+                            ),
+                            Container(
+                              height: 28,
+                              width: 1,
+                              color: AppTheme.borderColor,
+                            ),
+                            const SizedBox(width: AppTheme.spacingS),
+                            Expanded(
+                              child: TextField(
+                                controller: _phoneController,
+                                keyboardType: TextInputType.phone,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge,
+                                decoration: InputDecoration(
+                                  hintText: l10n.phone,
+                                  hintStyle: Theme.of(context)
+                                      .textTheme
+                                      .bodyLarge
+                                      ?.copyWith(
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  contentPadding: EdgeInsets.zero,
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Password Input
-                        TextField(
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
-                          decoration: InputDecoration(
-                            hintText: l10n.password,
-                            prefixIcon: const Icon(Icons.lock_outline),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_off_outlined
-                                    : Icons.visibility_outlined,
-                                size: 20,
-                              ),
-                              onPressed: () => setState(
-                                () => _obscurePassword = !_obscurePassword,
-                              ),
                             ),
-                            // Global theme handles these
+                            const SizedBox(width: AppTheme.spacingM),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppTheme.spacingL),
+
+                  // Password Input
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.password,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: AppTheme.spacingS),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                        decoration: InputDecoration(
+                          hintText: '••••••••',
+                          prefixIcon: Padding(
+                            padding:
+                                const EdgeInsets.all(AppTheme.spacingM),
+                            child: Icon(
+                              Icons.lock_outline,
+                              color: AppTheme.textSecondary,
+                              size: 20,
+                            ),
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              size: 20,
+                              color: AppTheme.textSecondary,
+                            ),
+                            onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppTheme.spacingS),
+
+                  // Forgot Password Link
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(
-                              l10n.passwordResetSoon,
-                            ),
-                          ),
-                        );
-                      },
-                      child: Text(l10n.forgotPassword),
-                    ),
-                  ),
-
-                  Row(
-                    children: [
-                      Checkbox(
-                        value: _acceptTerms,
-                        activeColor: AppTheme.primaryColor,
-                        onChanged: (val) => setState(() => _acceptTerms = val!),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Text(
-                              l10n.iAcceptThe,
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            GestureDetector(
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const TermsOfServiceScreen(),
-                                ),
-                              ),
-                              child: Text(
-                                l10n.terms,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppTheme.primaryColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const Text(' & ', style: TextStyle(fontSize: 12)),
-                            GestureDetector(
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const PrivacyPolicyScreen(),
-                                ),
-                              ),
-                              child: Text(
-                                l10n.privacyPolicy,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppTheme.primaryColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  Consumer<AuthProvider>(
-                    builder: (context, auth, _) {
-                      return ElevatedButton(
-                        onPressed: auth.status == AuthStatus.authenticating
-                            ? null
-                            : _handleLogin,
-                        child: auth.status == AuthStatus.authenticating
-                            ? const CircularProgressIndicator(
-                                color: Colors.white,
-                              )
-                            : Text(l10n.login),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 48),
-
-                  const SizedBox(height: 40),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                    Text("${l10n.dontHaveAccount} "),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const RegisterScreen(),
+                            content: Text(l10n.passwordResetSoon),
+                            behavior: SnackBarBehavior.floating,
                           ),
                         );
                       },
                       child: Text(
-                        l10n.register,
-                        style: const TextStyle(
+                        l10n.forgotPassword,
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: AppTheme.primaryColor,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-                    ],
                   ),
+
+                  const SizedBox(height: AppTheme.spacingL),
+
+                  // Terms & Privacy Checkbox
+                  ModernCard(
+                    backgroundColor: AppTheme.surfaceLight,
+                    padding: const EdgeInsets.all(AppTheme.spacingM),
+                    hasShadow: false,
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: Checkbox(
+                            value: _acceptTerms,
+                            activeColor: AppTheme.primaryColor,
+                            onChanged: (val) =>
+                                setState(() => _acceptTerms = val!),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppTheme.spacingM),
+                        Expanded(
+                          child: Wrap(
+                            spacing: 4,
+                            runSpacing: 4,
+                            children: [
+                              Text(
+                                l10n.iAcceptThe,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall,
+                              ),
+                              GestureDetector(
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const TermsOfServiceScreen(),
+                                  ),
+                                ),
+                                child: Text(
+                                  l10n.terms,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                    color: AppTheme.primaryColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '&',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall,
+                              ),
+                              GestureDetector(
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const PrivacyPolicyScreen(),
+                                  ),
+                                ),
+                                child: Text(
+                                  l10n.privacyPolicy,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                    color: AppTheme.primaryColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: AppTheme.spacingXL),
+
+                  // Login Button
+                  Consumer<AuthProvider>(
+                    builder: (context, auth, _) {
+                      return ModernButton(
+                        label: l10n.login,
+                        onPressed: _handleLogin,
+                        isLoading:
+                            auth.status == AuthStatus.authenticating,
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: AppTheme.spacingXL),
+
+                  // Register Link
+                  Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          l10n.dontHaveAccount,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(width: AppTheme.spacingS),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const reg.RegisterScreen(),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            l10n.register,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                              color: AppTheme.primaryColor,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: AppTheme.spacingL),
                 ],
               ),
             ),
