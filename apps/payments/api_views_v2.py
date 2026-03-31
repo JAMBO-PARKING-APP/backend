@@ -775,8 +775,8 @@ class OfficerInitiatePesapalPaymentAPIView(APIView):
 
         return Response({
             'success': True,
-            'redirect_url': response.get('redirect_url'),
-            'order_tracking_id': response.get('order_tracking_id'),
+            'payment_url': response.get('redirect_url'),
+            'order_id': response.get('order_tracking_id'),
             'merchant_reference': merchant_reference,
             'amount': str(guest_session.estimated_cost),
             'currency': currency

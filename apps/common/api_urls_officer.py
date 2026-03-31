@@ -7,6 +7,7 @@ from apps.parking.api_views_officer import (
 )
 from apps.accounts import api_views_v2 as accounts_views
 from apps.enforcement import api_views_v2
+from apps.payments import api_views_v2 as payments_views
 
 urlpatterns = [
     path('verify-qr/', verify_qr_code, name='officer-verify-qr'),
@@ -16,6 +17,11 @@ urlpatterns = [
     path('parking/start/', api_views_v2.StartSessionByOfficerAPIView.as_view(), name='officer-start-session'),
     path('parking/guest/', api_views_v2.CreateGuestParkingSessionAPIView.as_view(), name='officer-create-guest-session'),
     path('sessions/non-app-user/', api_views_v2.CreateGuestParkingSessionAPIView.as_view(), name='officer-create-non-app-session'),
+    path('sessions/<uuid:session_id>/confirm-payment/', api_views_v2.ConfirmGuestSessionPaymentAPIView.as_view(), name='officer-confirm-payment'),
     path('search/plate/', api_views_v2.OfficerVehicleStatusAPIView.as_view(), name='officer-search-plate'),
     path('location/', accounts_views.UserLocationAPIView.as_view(), name='officer-location'),
+    
+    # Officer Payment Endpoints
+    path('payments/pesapal/initiate/', payments_views.OfficerInitiatePesapalPaymentAPIView.as_view(), name='officer-pesapal-initiate'),
+    path('payments/pesapal/callback/', payments_views.OfficerPesapalCallbackAPIView.as_view(), name='officer-pesapal-callback'),
 ]

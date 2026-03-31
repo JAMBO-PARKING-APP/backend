@@ -499,6 +499,76 @@ class CreateGuestParkingSessionAPIView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
+class ConfirmGuestSessionPaymentAPIView(APIView):
+    """Confirm payment for guest parking session and activate it"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, session_id):
+        if request.user.role != UserRole.OFFICER:
+            return Response({'error': 'Only officers can confirm payments'}, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            guest_session = GuestParkingSession.objects.get(id=session_id, officer=request.user)
+        except GuestParkingSession.DoesNotExist:
+            return Response({'error': 'Guest parking session not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if session is already active or if payment is pending
+        if guest_session.status == 'active' and guest_session.payment_status == 'completed':
+            return Response({
+                'status': 'success',
+                'message': 'Session is already active',
+                'session_id': str(guest_session.id),
+                'status_code': guest_session.status,
+            }, status=status.HTTP_200_OK)
+        
+        # Check if there's a related transaction that's been completed
+        if guest_session.payment_transaction:
+            trans = guest_session.payment_transaction
+            if trans.status == 'completed':
+                guest_session.payment_status = 'completed'
+                guest_session.status = 'active'
+                guest_session.save()
+                logger.info(f"Guest session {session_id} confirmed and activated")
+                
+                OfficerLog.objects.create(
+                    officer=request.user,
+                    action='guest_session_payment_confirmed',
+                    details={'session_id': str(session_id)}
+                )
+                
+                return Response({
+                    'status': 'success',
+                    'message': 'Payment confirmed and session activated',
+                    'session_id': str(guest_session.id),
+                    'session_status': guest_session.status,
+                    'payment_status': guest_session.payment_status,
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'error': f'Payment not confirmed. Status: {trans.status}',
+                    'payment_status': trans.status
+                }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            # No payment transaction means session is free
+            guest_session.payment_status = 'free'
+            guest_session.status = 'active'
+            guest_session.save()
+            
+            OfficerLog.objects.create(
+                officer=request.user,
+                action='guest_session_activated',
+                details={'session_id': str(session_id), 'is_free': True}
+            )
+            
+            return Response({
+                'status': 'success',
+                'message': 'Session activated (free parking)',
+                'session_id': str(guest_session.id),
+                'session_status': guest_session.status,
+                'payment_status': guest_session.payment_status,
+            }, status=status.HTTP_200_OK)
+
+
 class ScanQRCodeAPIView(APIView):
     """Log QR code scan and optionally end session"""
     permission_classes = [IsAuthenticated]
