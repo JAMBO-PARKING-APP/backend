@@ -4,6 +4,7 @@ import 'package:parking_officer_app/core/app_theme.dart';
 import 'package:parking_officer_app/core/localizations.dart';
 import 'package:parking_officer_app/features/parking/providers/vehicle_search_provider.dart';
 import 'package:parking_officer_app/features/parking/providers/zone_provider.dart';
+import 'package:parking_officer_app/features/parking/providers/non_app_user_session_provider.dart';
 import 'package:parking_officer_app/features/parking/screens/create_guest_session_screen.dart';
 
 class LicensePlateSearchScreen extends StatefulWidget {
@@ -145,8 +146,11 @@ class _LicensePlateSearchScreenState extends State<LicensePlateSearchScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => CreateGuestSessionScreen(
-                                        initialPlate: plateText,
+                                      builder: (_) => ChangeNotifierProvider(
+                                        create: (_) => NonAppUserSessionProvider(),
+                                        child: CreateGuestSessionScreen(
+                                          initialPlate: plateText,
+                                        ),
                                       ),
                                     ),
                                   );

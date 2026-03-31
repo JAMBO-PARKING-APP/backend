@@ -15,6 +15,7 @@ urlpatterns = [
     path('zones/<uuid:zone_id>/overdue-users/', overdue_users, name='officer-overdue-users'),
     path('parking/start/', api_views_v2.StartSessionByOfficerAPIView.as_view(), name='officer-start-session'),
     path('parking/guest/', api_views_v2.CreateGuestParkingSessionAPIView.as_view(), name='officer-create-guest-session'),
+    path('sessions/non-app-user/', api_views_v2.CreateGuestParkingSessionAPIView.as_view(), name='officer-create-non-app-session'),
     path('search/plate/', api_views_v2.OfficerVehicleStatusAPIView.as_view(), name='officer-search-plate'),
     path('location/', accounts_views.UserLocationAPIView.as_view(), name='officer-location'),
 ]

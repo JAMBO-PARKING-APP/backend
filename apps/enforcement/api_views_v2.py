@@ -390,16 +390,33 @@ class CreateGuestParkingSessionAPIView(APIView):
     def post(self, request):
         if request.user.role != UserRole.OFFICER:
             return Response({'error': 'Only officers can perform this action'}, status=status.HTTP_403_FORBIDDEN)
-            
-        license_plate = request.data.get('license_plate', '').upper()
+        
+        # Accept both field name variations
+        license_plate = (request.data.get('license_plate') or request.data.get('vehicle_plate', '')).upper()
         driver_name = request.data.get('driver_name', '').strip()
         driver_phone = request.data.get('driver_phone', '').strip()
         zone_id = request.data.get('zone_id')
-        duration_hours = float(request.data.get('duration_hours', 1.0))
+        
+        # Handle duration in both minutes and hours
+        duration_minutes = request.data.get('duration_minutes')
+        duration_hours = request.data.get('duration_hours')
+        
+        if duration_minutes is not None:
+            try:
+                duration_hours = float(duration_minutes) / 60.0
+            except (ValueError, TypeError):
+                return Response(
+                    {'error': 'duration_minutes must be a number'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        elif duration_hours is not None:
+            duration_hours = float(duration_hours)
+        else:
+            duration_hours = 1.0
         
         if not all([license_plate, driver_name, zone_id]):
             return Response(
-                {'error': 'license_plate, driver_name, and zone_id are required'},
+                {'error': 'license_plate (or vehicle_plate), driver_name, and zone_id are required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
             
@@ -454,11 +471,15 @@ class CreateGuestParkingSessionAPIView(APIView):
             
             return Response({
                 'message': 'Guest parking session created successfully',
+                'session_id': str(guest_session.id),
+                'amount_due': float(estimated_cost),
+                'requires_payment': float(estimated_cost) > 0,
+                'payment_url': None,
                 'session': {
                     'id': str(guest_session.id),
                     'license_plate': guest_session.license_plate,
                     'driver_name': guest_session.driver_name,
-                    'driver_phone': guest_session.driver_phone,
+                    'driver_phone': guest_session.driver_phone or '',
                     'zone_name': zone.name,
                     'start_time': guest_session.start_time.isoformat(),
                     'planned_end_time': guest_session.planned_end_time.isoformat(),
@@ -467,6 +488,8 @@ class CreateGuestParkingSessionAPIView(APIView):
                 }
             }, status=status.HTTP_201_CREATED)
             
+        except Zone.DoesNotExist:
+            return Response({'error': 'Zone not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(f"Failed to create guest parking session: {e}", exc_info=True)
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
