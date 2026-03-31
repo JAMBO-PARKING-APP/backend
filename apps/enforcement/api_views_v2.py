@@ -391,10 +391,14 @@ class CreateGuestParkingSessionAPIView(APIView):
         if request.user.role != UserRole.OFFICER:
             return Response({'error': 'Only officers can perform this action'}, status=status.HTTP_403_FORBIDDEN)
         
+        # Guard against None request data
+        if request.data is None:
+            return Response({'error': 'Invalid request body'}, status=status.HTTP_400_BAD_REQUEST)
+        
         # Accept both field name variations
         license_plate = (request.data.get('license_plate') or request.data.get('vehicle_plate', '')).upper()
-        driver_name = request.data.get('driver_name', '').strip()
-        driver_phone = request.data.get('driver_phone', '').strip()
+        driver_name = (request.data.get('driver_name') or '').strip()
+        driver_phone = (request.data.get('driver_phone') or '').strip()
         zone_id = request.data.get('zone_id')
         
         # Handle duration in both minutes and hours
