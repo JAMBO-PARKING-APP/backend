@@ -140,6 +140,28 @@ class GuestParkingSession(RegionalModel, BaseModel):
     estimated_cost = models.DecimalField(max_digits=12, decimal_places=2, verbose_name=_("Estimated Cost"))
     final_cost = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, verbose_name=_("Final Cost"))
     
+    payment_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', _('Pending Payment')),
+            ('completed', _('Payment Completed')),
+            ('failed', _('Payment Failed')),
+            ('free', _('Free Session')),
+        ],
+        default='pending',
+        db_index=True,
+        verbose_name=_("Payment Status")
+    )
+    
+    payment_transaction = models.OneToOneField(
+        'payments.Transaction',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='guest_parking_session',
+        verbose_name=_("Payment Transaction")
+    )
+    
     status = models.CharField(
         max_length=20,
         choices=[
@@ -162,6 +184,7 @@ class GuestParkingSession(RegionalModel, BaseModel):
             models.Index(fields=['officer', '-created_at'], name='enf_guest_off_cr_idx'),
             models.Index(fields=['zone', '-created_at'], name='enf_guest_zone_cr_idx'),
             models.Index(fields=['status'], name='enf_guest_status_idx'),
+            models.Index(fields=['payment_status'], name='enf_guest_pay_idx'),
             models.Index(fields=['start_time'], name='enf_guest_start_idx'),
             models.Index(fields=['planned_end_time'], name='enf_guest_end_idx'),
         ]

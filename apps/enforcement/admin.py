@@ -40,10 +40,10 @@ class QRCodeScanAdmin(admin.ModelAdmin):
 
 @admin.register(GuestParkingSession)
 class GuestParkingSessionAdmin(admin.ModelAdmin):
-    list_display = ('license_plate', 'driver_name', 'zone', 'officer', 'status', 'start_time', 'planned_end_time', 'estimated_cost')
-    list_filter = ('status', 'zone', 'start_time')
+    list_display = ('license_plate', 'driver_name', 'zone', 'officer', 'status', 'payment_status', 'start_time', 'planned_end_time', 'estimated_cost')
+    list_filter = ('status', 'payment_status', 'zone', 'start_time')
     search_fields = ('license_plate', 'driver_name', 'driver_phone', 'officer__first_name', 'officer__last_name')
-    autocomplete_fields = ['zone', 'officer', 'parking_slot']
+    autocomplete_fields = ['zone', 'officer', 'parking_slot', 'payment_transaction']
     readonly_fields = ('created_at', 'updated_at', 'start_time')
     fieldsets = (
         ('Vehicle & Driver Info', {
@@ -52,8 +52,8 @@ class GuestParkingSessionAdmin(admin.ModelAdmin):
         ('Parking Details', {
             'fields': ('zone', 'parking_slot', 'start_time', 'planned_end_time', 'actual_end_time')
         }),
-        ('Cost & Status', {
-            'fields': ('estimated_cost', 'final_cost', 'status')
+        ('Cost & Payment', {
+            'fields': ('estimated_cost', 'final_cost', 'status', 'payment_status', 'payment_transaction')
         }),
         ('Officer & Notes', {
             'fields': ('officer', 'notes')

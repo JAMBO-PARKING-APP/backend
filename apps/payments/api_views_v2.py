@@ -687,3 +687,178 @@ class AvailablePaymentGatewaysAPIView(generics.ListAPIView):
             country=country,
             is_active=True
         ).order_by('-priority', 'name')
+
+
+class OfficerInitiatePesapalPaymentAPIView(APIView):
+    """Initiate PesaPal payment for guest parking sessions by officers"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from apps.accounts.models import User
+        from apps.common.constants import UserRole
+        
+        # Check if user is officer
+        user_role = getattr(request.user, 'role', None)
+        if user_role != UserRole.OFFICER:
+            return Response(
+                {'error': 'Only officers can create guest session payments'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        session_id = request.data.get('session_id')
+        phone_number = request.data.get('phone_number')
+        
+        if not session_id:
+            return Response(
+                {'error': 'session_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            from apps.enforcement.models import GuestParkingSession
+            guest_session = GuestParkingSession.objects.get(id=session_id, officer=request.user)
+        except GuestParkingSession.DoesNotExist:
+            return Response(
+                {'error': 'Guest parking session not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Create transaction for guest session
+        merchant_reference = str(uuid.uuid4())
+        idempotency_key = merchant_reference
+
+        with transaction.atomic():
+            trans = Transaction.objects.create(
+                user=request.user,
+                amount=guest_session.estimated_cost,
+                pesapal_merchant_reference=merchant_reference,
+                idempotency_key=idempotency_key,
+                status='pending',
+                processor_response={
+                    'guest_session_id': str(guest_session.id),
+                    'is_guest_session': True
+                }
+            )
+
+            # Update guest session payment status
+            guest_session.payment_status = 'pending'
+            guest_session.payment_transaction = trans
+            guest_session.save()
+
+        # Initiate PesaPal payment
+        country = getattr(request.user, 'country', None)
+        pesapal_config = PesapalService.get_config_for_country(country)
+        pesapal = PesapalService(config_obj=pesapal_config) if pesapal_config else PesapalService()
+
+        currency = country.currency if country else "UGX"
+        response = pesapal.create_payment(
+            amount=guest_session.estimated_cost,
+            merchant_reference=merchant_reference,
+            description=f"Parking Session: {guest_session.license_plate} - {guest_session.zone.name}",
+            user=request.user,
+            currency=currency
+        )
+
+        if not response or 'order_tracking_id' not in response:
+            trans.status = 'failed'
+            trans.save()
+            guest_session.payment_status = 'failed'
+            guest_session.save()
+            return Response(
+                {'error': 'Failed to initiate payment with PesaPal'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        trans.pesapal_order_tracking_id = response.get('order_tracking_id')
+        trans.processor_response = response
+        trans.save()
+
+        return Response({
+            'success': True,
+            'redirect_url': response.get('redirect_url'),
+            'order_tracking_id': response.get('order_tracking_id'),
+            'merchant_reference': merchant_reference,
+            'amount': str(guest_session.estimated_cost),
+            'currency': currency
+        }, status=status.HTTP_200_OK)
+
+
+class OfficerPesapalCallbackAPIView(APIView):
+    """Handle PesaPal payment callback for guest parking sessions"""
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        order_tracking_id = request.query_params.get('OrderTrackingId')
+        merchant_reference = request.query_params.get('OrderMerchantReference')
+
+        if not order_tracking_id:
+            return Response(
+                {'error': 'OrderTrackingId is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Get transaction
+        try:
+            trans = Transaction.objects.get(pesapal_merchant_reference=merchant_reference)
+        except Transaction.DoesNotExist:
+            logger.error(f"Officer payment transaction not found: {merchant_reference}")
+            return Response(
+                {'error': 'Payment transaction not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Check payment status with PesaPal
+        pesapal = PesapalService()
+        status_response = pesapal.get_transaction_status(order_tracking_id)
+
+        if not status_response:
+            return Response(
+                {'error': 'Could not verify payment status'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        payment_status = status_response.get('payment_status_description')
+
+        with transaction.atomic():
+            if payment_status == "Completed":
+                trans.status = 'completed'
+                
+                # Update guest session payment
+                if trans.processor_response and trans.processor_response.get('is_guest_session'):
+                    from apps.enforcement.models import GuestParkingSession
+                    try:
+                        guest_session = GuestParkingSession.objects.get(
+                            id=trans.processor_response['guest_session_id']
+                        )
+                        guest_session.payment_status = 'completed'
+                        guest_session.status = 'active'  # Activate session after payment
+                        guest_session.save()
+                        logger.info(f"Guest session {guest_session.id} activated after payment")
+                    except GuestParkingSession.DoesNotExist:
+                        logger.error(f"Guest session not found for transaction {trans.id}")
+                        
+            elif payment_status == "Failed":
+                trans.status = 'failed'
+                if trans.processor_response and trans.processor_response.get('is_guest_session'):
+                    from apps.enforcement.models import GuestParkingSession
+                    try:
+                        guest_session = GuestParkingSession.objects.get(
+                            id=trans.processor_response['guest_session_id']
+                        )
+                        guest_session.payment_status = 'failed'
+                        guest_session.status = 'cancelled'
+                        guest_session.save()
+                    except GuestParkingSession.DoesNotExist:
+                        pass
+
+            trans.processor_response = status_response
+            trans.save()
+
+        return Response({
+            'status': 'success',
+            'payment_status': payment_status,
+            'merchant_reference': merchant_reference
+        })
