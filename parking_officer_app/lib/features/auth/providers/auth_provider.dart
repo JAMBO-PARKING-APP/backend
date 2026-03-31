@@ -27,16 +27,26 @@ class AuthProvider with ChangeNotifier {
       if (userJson != null) {
         try {
           _user = User.fromJson(json.decode(userJson));
+          print('✅ AuthProvider: User restored from storage');
+          print('   - User ID: ${_user?.id}');
+          print('   - Phone: ${_user?.phone}');
+          print('   - Role: ${_user?.role}');
+          print('   - Country: ${_user?.country}');
+          print('   - Country Name: ${_user?.countryName}');
+          print('   - Country Identifier: ${_user?.countryIdentifier}');
           _status = AuthStatus.authenticated;
         } catch (e) {
           debugPrint('[AuthProvider] Error parsing user JSON: $e');
+          print('❌ AuthProvider: Failed to parse stored user data - $e');
           _status = AuthStatus.unauthenticated;
         }
       } else {
+        print('ℹ️ AuthProvider: No stored user data');
         _status = AuthStatus.unauthenticated;
       }
     } catch (e) {
       debugPrint('[AuthProvider] Error in checkAuth: $e');
+      print('💥 AuthProvider: Exception in checkAuth - $e');
       _status = AuthStatus.unauthenticated;
     }
     notifyListeners();
@@ -52,12 +62,20 @@ class AuthProvider with ChangeNotifier {
 
       if (result['success']) {
         _user = result['user'];
+        print('✅ AuthProvider: User logged in successfully');
+        print('   - User ID: ${_user?.id}');
+        print('   - Phone: ${_user?.phone}');
+        print('   - Role: ${_user?.role}');
+        print('   - Country: ${_user?.country}');
+        print('   - Country Name: ${_user?.countryName}');
+        print('   - Country Identifier: ${_user?.countryIdentifier}');
         _status = AuthStatus.authenticated;
         notifyListeners();
         return true;
       } else {
         _status = AuthStatus.unauthenticated;
         _errorMessage = result['message'];
+        print('❌ AuthProvider: Login failed - ${result['message']}');
         notifyListeners();
         return false;
       }
@@ -65,6 +83,7 @@ class AuthProvider with ChangeNotifier {
       debugPrint('[AuthProvider] Error in login: $e');
       _status = AuthStatus.unauthenticated;
       _errorMessage = 'An error occurred during login. Please try again.';
+      print('💥 AuthProvider: Exception during login - $e');
       notifyListeners();
       return false;
     }
