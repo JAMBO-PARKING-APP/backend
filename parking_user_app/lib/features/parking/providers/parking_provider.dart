@@ -9,6 +9,7 @@ import 'package:parking_user_app/features/parking/services/parking_service.dart'
 import 'package:parking_user_app/features/parking/providers/zone_provider.dart';
 import 'package:parking_user_app/core/websocket_service.dart';
 import 'package:parking_user_app/core/notification_dialog_service.dart';
+import 'package:parking_user_app/core/services/parking_background_service.dart';
 import 'package:provider/provider.dart';
 // Removed: flutter_overlay_window
 
@@ -38,6 +39,9 @@ class ParkingProvider with ChangeNotifier {
     _startTimer();
     // Initialize notifications
     initNotifications();
+    
+    // Start background service for session management
+    ParkingBackgroundService().startBackgroundService();
 
     // Listen to WebSocket updates
     WebSocketService().updates.listen((update) {
@@ -58,20 +62,27 @@ class ParkingProvider with ChangeNotifier {
 
   void _startTimer() {
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
-      // Periodic fallback refresh every 30 seconds
-      if (timer.tick % 30 == 0) {
+    _timer = Timer.periodic(const Duration(seconds: 10), (timer) async {
+      // Reduced frequency to every 10 seconds instead of every second
+      // Background service handles more frequent checks
+      
+      // Periodic fallback refresh every 60 seconds (reduced from 30)
+      if (timer.tick % 6 == 0) {
         await fetchSessions(showLoader: false);
       }
 
       final active = activeSessions;
       if (active.isNotEmpty) {
         final session = active.first;
-        // Every second, update the local notifications
-        await updateNotifications(session);
+        // Update notifications less frequently
+        if (timer.tick % 6 == 0) {
+          await updateNotifications(session);
+        }
 
-        // Notify UI every second for the timer countdown
-        notifyListeners();
+        // Notify UI less frequently for performance
+        if (timer.tick % 3 == 0) {
+          notifyListeners();
+        }
       }
     });
   }
@@ -79,6 +90,8 @@ class ParkingProvider with ChangeNotifier {
   @override
   void dispose() {
     _timer?.cancel();
+    // Stop background service when provider is disposed
+    ParkingBackgroundService().stopBackgroundService();
     super.dispose();
   }
 
@@ -154,6 +167,79 @@ class ParkingProvider with ChangeNotifier {
     return success;
   }
 
+  Future<void> sendSessionEndNotification(ParkingSession session) async {
+    try {
+      const androidDetails = AndroidNotificationDetails(
+        'parking_sessions',
+        'Parking Sessions',
+        channelDescription: 'Notifications for parking session updates',
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: true,
+        autoCancel: false,
+      );
+
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+
+      const details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      await _notificationsPlugin.show(
+        session.id.hashCode,
+        'Parking Session Ended',
+        'Your parking session at ${session.zoneName} has ended. Total charge: ${session.totalCost}',
+        details,
+        payload: 'session_ended_${session.id}',
+      );
+
+      debugPrint('[ParkingProvider] Session end notification sent for session ${session.id}');
+    } catch (e) {
+      debugPrint('[ParkingProvider] Error sending session end notification: $e');
+    }
+  }
+
+  Future<void> sendSessionExpiringNotification(ParkingSession session, Duration timeRemaining) async {
+    try {
+      const androidDetails = AndroidNotificationDetails(
+        'parking_sessions',
+        'Parking Sessions',
+        channelDescription: 'Notifications for parking session updates',
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: true,
+      );
+
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+
+      const details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      await _notificationsPlugin.show(
+        session.id.hashCode + 1000,
+        'Parking Session Expiring Soon',
+        'Your session at ${session.zoneName} expires in ${timeRemaining.inMinutes} minutes',
+        details,
+        payload: 'session_expiring_${session.id}',
+      );
+
+      debugPrint('[ParkingProvider] Session expiring notification sent for session ${session.id}');
+    } catch (e) {
+      debugPrint('[ParkingProvider] Error sending session expiring notification: $e');
+    }
+  }
+
   Future<bool> endParking(String sessionId) async {
     if (_isEndingSession) return false;
     _isEndingSession = true;
@@ -161,6 +247,10 @@ class ParkingProvider with ChangeNotifier {
 
     try {
       final success = await _parkingService.endParking(sessionId);
+      if (success) {
+        await fetchSessions();
+        await sendSessionEndNotification(_sessions.firstWhere((session) => session.id == sessionId));
+      }
       if (success) await fetchSessions();
       return success;
     } finally {
@@ -226,7 +316,7 @@ class ParkingProvider with ChangeNotifier {
         await _notificationsPlugin.show(
           100,
           'Parking Session Ended',
-          'Please vacate the premises immediately.',
+          'Your session at ${session.zoneName} has ended. Total: ${session.totalCost ?? "Processing..."}',
           const NotificationDetails(
             android: AndroidNotificationDetails(
               'parking_timer',
@@ -234,6 +324,8 @@ class ParkingProvider with ChangeNotifier {
               importance: Importance.max,
               priority: Priority.high,
               ongoing: false,
+              autoCancel: false,
+              playSound: true,
             ),
           ),
         );

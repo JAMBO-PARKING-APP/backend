@@ -2,9 +2,10 @@ from django.utils import timezone
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from .models import Country, SystemConfiguration
 from .serializers import CountrySerializer, SystemConfigurationSerializer
+from .services.country_terms_service import CountryTermsService
 
 class AdminCountryListAPIView(generics.ListCreateAPIView):
     """List and create countries for admin management"""
@@ -173,3 +174,58 @@ class CountryDetectAPIView(APIView):
                 'name': detected_name or detected_iso,
                 'flag_emoji': '',
             })
+
+
+class CountryTermsAPIView(APIView):
+    """Get country-specific terms and conditions"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        user_country = getattr(request.user, 'country', None)
+        language = request.GET.get('language', 'en')
+        
+        if not user_country:
+            # Return default terms if no country set
+            terms = CountryTermsService._get_default_terms()
+        else:
+            terms = CountryTermsService.get_country_specific_terms(user_country)
+        
+        # Get privacy policy
+        privacy_policy = CountryTermsService.get_privacy_policy_for_country(user_country)
+        
+        return Response({
+            'terms': terms,
+            'privacy_policy': privacy_policy,
+            'country': {
+                'name': user_country.name if user_country else None,
+                'iso_code': user_country.iso_code if user_country else None,
+                'currency': user_country.currency if user_country else None,
+                'currency_symbol': user_country.currency_symbol if user_country else None,
+            },
+            'language': language
+        })
+
+
+class CountryListAPIView(APIView):
+    """Get list of all supported countries"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        countries = Country.objects.filter(is_active=True).order_by('name')
+        country_data = []
+        
+        for country in countries:
+            country_data.append({
+                'id': str(country.id),
+                'name': country.name,
+                'iso_code': country.iso_code,
+                'currency': country.currency,
+                'currency_symbol': country.currency_symbol,
+                'phone_code': country.phone_code,
+                'flag_emoji': country.flag_emoji,
+            })
+        
+        return Response({
+            'countries': country_data,
+            'count': len(country_data)
+        })

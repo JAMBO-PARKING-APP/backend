@@ -54,13 +54,5 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/logo.png
-    - assets/images/skyline_splash.png
+    - assets/images/welcome_image.png
     - assets/animations/splash_animation.gif
-
-flutter_icons:
-  android: "launcher_icon"
-  ios: true
-  image_path: "assets/images/logo.png"
-  min_sdk_android: 21
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/images/logo.png"

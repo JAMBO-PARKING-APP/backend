@@ -59,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: AppTheme.errorColor,
+        backgroundColor: Theme.of(context).colorScheme.error,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.radiusS),
@@ -73,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Modern Gradient Accent (top-right)
@@ -86,8 +86,8 @@ class _LoginScreenState extends State<LoginScreen> {
               decoration: BoxDecoration(
                 gradient: RadialGradient(
                   colors: [
-                    AppTheme.primaryColor.withValues(alpha: 0.15),
-                    AppTheme.primaryColor.withValues(alpha: 0),
+                    Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                    Theme.of(context).colorScheme.primary.withValues(alpha: 0),
                   ],
                 ),
                 shape: BoxShape.circle,
@@ -104,8 +104,8 @@ class _LoginScreenState extends State<LoginScreen> {
               decoration: BoxDecoration(
                 gradient: RadialGradient(
                   colors: [
-                    AppTheme.accentColor.withValues(alpha: 0.1),
-                    AppTheme.accentColor.withValues(alpha: 0),
+                    Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
+                    Theme.of(context).colorScheme.secondary.withValues(alpha: 0),
                   ],
                 ),
                 shape: BoxShape.circle,
@@ -152,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     l10n.welcome,
                     style: Theme.of(context).textTheme.displaySmall?.copyWith(
                       fontWeight: FontWeight.w800,
-                      color: AppTheme.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -160,7 +160,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text(
                     l10n.loginToYourAccount,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppTheme.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                       fontWeight: FontWeight.w400,
                     ),
                   ),
@@ -179,11 +179,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: AppTheme.spacingS),
                       Container(
                         decoration: BoxDecoration(
-                          color: AppTheme.surfaceLight,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius:
                               BorderRadius.circular(AppTheme.radiusS),
                           border: Border.all(
-                            color: AppTheme.borderColor,
+                            color: Theme.of(context).colorScheme.outline,
                             width: 1,
                           ),
                         ),
@@ -216,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             Container(
                               height: 28,
                               width: 1,
-                              color: AppTheme.borderColor,
+                              color: Theme.of(context).colorScheme.outline,
                             ),
                             const SizedBox(width: AppTheme.spacingS),
                             Expanded(
@@ -232,7 +232,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       .textTheme
                                       .bodyLarge
                                       ?.copyWith(
-                                    color: AppTheme.textSecondary,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                   ),
                                   border: InputBorder.none,
                                   enabledBorder: InputBorder.none,
@@ -271,7 +271,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 const EdgeInsets.all(AppTheme.spacingM),
                             child: Icon(
                               Icons.lock_outline,
-                              color: AppTheme.textSecondary,
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                               size: 20,
                             ),
                           ),
@@ -281,7 +281,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ? Icons.visibility_off_outlined
                                   : Icons.visibility_outlined,
                               size: 20,
-                              color: AppTheme.textSecondary,
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                             ),
                             onPressed: () => setState(
                               () => _obscurePassword = !_obscurePassword,
@@ -321,7 +321,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   // Terms & Privacy Checkbox
                   ModernCard(
-                    backgroundColor: AppTheme.surfaceLight,
+                    backgroundColor: Theme.of(context).colorScheme.surface,
                     padding: const EdgeInsets.all(AppTheme.spacingM),
                     hasShadow: false,
                     child: Row(
@@ -331,7 +331,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           height: 24,
                           child: Checkbox(
                             value: _acceptTerms,
-                            activeColor: AppTheme.primaryColor,
+                            activeColor: Theme.of(context).colorScheme.primary,
                             onChanged: (val) =>
                                 setState(() => _acceptTerms = val!),
                             shape: RoundedRectangleBorder(
@@ -365,7 +365,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       .textTheme
                                       .bodySmall
                                       ?.copyWith(
-                                    color: AppTheme.primaryColor,
+                                    color: Theme.of(context).colorScheme.primary,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -390,7 +390,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       .textTheme
                                       .bodySmall
                                       ?.copyWith(
-                                    color: AppTheme.primaryColor,
+                                    color: Theme.of(context).colorScheme.primary,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -429,7 +429,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               .textTheme
                               .bodyMedium
                               ?.copyWith(
-                            color: AppTheme.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                           ),
                         ),
                         const SizedBox(width: AppTheme.spacingS),
@@ -449,7 +449,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 .textTheme
                                 .bodyMedium
                                 ?.copyWith(
-                              color: AppTheme.primaryColor,
+                              color: Theme.of(context).colorScheme.primary,
                               fontWeight: FontWeight.w700,
                             ),
                           ),

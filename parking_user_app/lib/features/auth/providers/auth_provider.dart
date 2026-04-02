@@ -41,6 +41,7 @@ class AuthProvider with ChangeNotifier {
     if (needsUpdate) {
       _status = AuthStatus.needsUpdate;
       notifyListeners();
+      setInitialLoadComplete();
       return;
     }
 
@@ -57,6 +58,7 @@ class AuthProvider with ChangeNotifier {
     if (!_hasRequestedPermissions) {
       _status = AuthStatus.unauthenticated;
       notifyListeners();
+      setInitialLoadComplete();
       return;
     }
 
@@ -121,28 +123,51 @@ class AuthProvider with ChangeNotifier {
       _status = AuthStatus.unauthenticated;
       notifyListeners();
     }
+    
+    // Always mark initial load as complete to prevent hanging on splash screen
+    setInitialLoadComplete();
+  }
+
+  void skipVersionCheck() {
+    _status = AuthStatus.unauthenticated;
+    notifyListeners();
   }
 
   Future<bool> _checkVersion() async {
     try {
-      
-      // We rely on SettingsProvider having fetched the config already in SplashScreen
-      // But we can double check here or use a safe default
-      final settings = SettingsProvider();
-      await settings.fetchSystemConfig();
-      final config = settings.systemConfig;
+      // Add timeout to prevent hanging
+      await Future.delayed(const Duration(seconds: 1));
       
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
       
+      // We rely on SettingsProvider having fetched the config already in SplashScreen
+      // But we can double check here or use a safe default
+      final settings = SettingsProvider();
+      
+      // Try to fetch system config with timeout
+      try {
+        await settings.fetchSystemConfig().timeout(const Duration(seconds: 3));
+      } catch (e) {
+        debugPrint('[AuthProvider] System config fetch timeout, using fallback: $e');
+        // Continue with default values if fetch fails
+      }
+      
+      final config = settings.systemConfig;
       final targetVersion = Platform.isAndroid 
           ? config.minAndroidVersion 
           : config.minIosVersion;
 
-      if (_isVersionLower(currentVersion, targetVersion)) {
+      debugPrint('[AuthProvider] Version check: current=$currentVersion, target=$targetVersion');
+      debugPrint('[AuthProvider] Force update: ${config.forceUpdate}');
+
+      // Only check version if force update is true
+      if (config.forceUpdate && _isVersionLower(currentVersion, targetVersion)) {
         debugPrint('[AuthProvider] Version check failed: $currentVersion < $targetVersion');
         return true;
       }
+      
+      debugPrint('[AuthProvider] Version check passed');
     } catch (e) {
       debugPrint('[AuthProvider] Version check error: $e');
     }

@@ -247,7 +247,7 @@ class PaymentSummaryAPIView(APIView):
         }, status=status.HTTP_200_OK)
 
 class WalletBalanceAPIView(APIView):
-    """Get user's current wallet balance"""
+    """Get user's current wallet balance with country-specific currency"""
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
@@ -255,7 +255,10 @@ class WalletBalanceAPIView(APIView):
         if not country:
             return Response({
                 'balance': float(request.user.wallet_balance_legacy),
-                'currency': 'UGX'
+                'currency': 'UGX',
+                'currency_symbol': 'UGX',
+                'country_name': 'Uganda',
+                'country_code': 'UG'
             }, status=status.HTTP_200_OK)
             
         from apps.accounts.models import Wallet
@@ -263,8 +266,70 @@ class WalletBalanceAPIView(APIView):
         
         return Response({
             'balance': float(wallet.balance),
-            'currency': country.currency
+            'currency': country.currency,
+            'currency_symbol': country.currency_symbol,
+            'country_name': country.name,
+            'country_code': country.iso_code,
+            'exchange_rate': float(country.payment_config.exchange_rate_to_base) if hasattr(country, 'payment_config') else 1.0
         }, status=status.HTTP_200_OK)
+
+class WalletTopUpAPIView(APIView):
+    """Top up wallet using PesaPal payment"""
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        serializer = PesapalPaymentSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        amount = serializer.validated_data['amount']
+        payment_type = serializer.validated_data.get('payment_type', 'MOBILE_MONEY')
+        
+        # Create a wallet top-up payment
+        country = getattr(request.user, 'country', None)
+        config_obj = PesapalService.get_config_for_country(country)
+        
+        if config_obj:
+            pesapal = PesapalService(config_obj=config_obj)
+        else:
+            pesapal = PesapalService()
+            
+        merchant_reference = str(uuid.uuid4())
+        currency = country.currency if country else "UGX"
+        
+        try:
+            response = pesapal.create_payment(
+                amount=amount,
+                currency=currency,
+                description=f'Wallet top-up - {merchant_reference}',
+                payment_type=payment_type,
+                merchant_reference=merchant_reference,
+                callback_url=f"{settings.BASE_URL}/api/payments/pesapal/callback/",
+                idempotency_key=merchant_reference,
+                charge_amount_processor=amount,
+                charge_currency_processor=currency,
+                status='pending',
+                processor_response={'is_wallet_topup': True}
+            )
+            
+            if response and 'redirect_url' in response:
+                return Response({
+                    'success': True,
+                    'redirect_url': response['redirect_url'],
+                    'order_tracking_id': response.get('order_tracking_id', merchant_reference),
+                    'merchant_reference': merchant_reference
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'success': False,
+                    'message': 'Failed to initiate payment'
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            return Response({
+                'success': False,
+                'message': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class WalletTransactionsListAPIView(generics.ListAPIView):
     """List user's wallet transactions"""

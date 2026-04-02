@@ -11,12 +11,14 @@ class SettingsProvider extends ChangeNotifier {
   static const String _languageKey = 'app_language';
   static const String _hasSelectedLanguageKey = 'has_selected_language';
   static const String _hasSelectedCountryKey = 'has_selected_country';
+  static const String _countryKey = 'app_country';
   static const String _themeKey = 'app_theme_mode';
 
   late SharedPreferences _prefs;
   String? _locale; // Null means follow system
   bool _hasSelectedLanguage = false;
   ThemeMode _themeMode = ThemeMode.dark;
+  String? _isoCountryCode;
 
   List<CountryCode> _activeCountries = [];
   bool _isLoadingCountries = false;
@@ -25,6 +27,7 @@ class SettingsProvider extends ChangeNotifier {
   String get locale => _locale ?? 'system';
   bool get hasSelectedLanguage => _hasSelectedLanguage;
   bool get hasSelectedCountry => _hasSelectedCountry;
+  String? get isoCountryCode => _isoCountryCode;
   List<CountryCode> get activeCountries => _activeCountries;
   bool get isLoadingCountries => _isLoadingCountries;
   ThemeMode get themeMode => _themeMode;
@@ -45,6 +48,7 @@ class SettingsProvider extends ChangeNotifier {
     }
     _hasSelectedLanguage = _prefs.getBool(_hasSelectedLanguageKey) ?? false;
     _hasSelectedCountry = _prefs.getBool(_hasSelectedCountryKey) ?? false;
+    _isoCountryCode = _prefs.getString(_countryKey);
     final savedTheme = _prefs.getString(_themeKey);
     if (savedTheme != null) {
       _themeMode = ThemeMode.values.firstWhere(
@@ -67,9 +71,6 @@ class SettingsProvider extends ChangeNotifier {
       await fetchCountryConfig(detectedCountry);
     }
   }
-
-  String? _isoCountryCode;
-  String? get isoCountryCode => _isoCountryCode;
 
   Future<void> setLocale(String? localeCode) async {
     final effectiveLocale = localeCode == 'system' ? null : localeCode;
@@ -94,6 +95,12 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> markCountrySelected() async {
     _hasSelectedCountry = true;
     await _prefs.setBool(_hasSelectedCountryKey, true);
+    notifyListeners();
+  }
+
+  Future<void> setCountry(String countryCode) async {
+    _isoCountryCode = countryCode;
+    await _prefs.setString(_countryKey, countryCode);
     notifyListeners();
   }
 

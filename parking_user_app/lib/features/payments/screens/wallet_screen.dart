@@ -1,16 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import 'package:parking_user_app/features/payments/providers/payment_provider.dart';
-import 'package:parking_user_app/features/payments/screens/pesapal_webview_screen.dart';
-import 'package:parking_user_app/features/payments/screens/transaction_history_screen.dart';
-import 'package:parking_user_app/core/dialog_service.dart';
 import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:parking_user_app/core/utils/currency_formatter.dart';
 import 'package:parking_user_app/core/app_theme.dart';
-// Removed GlassContainer
-import 'package:parking_user_app/features/payments/models/payment_method_model.dart';
-import 'package:parking_user_app/widgets/payment_selection_dialog.dart';
+import 'package:parking_user_app/core/localizations.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -23,496 +17,445 @@ class _WalletScreenState extends State<WalletScreen> {
   final TextEditingController _amountController = TextEditingController();
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<PaymentProvider>().fetchWalletData();
-    });
-  }
-
-  void _handleTopUp() async {
-    final amountText = _amountController.text;
-    if (amountText.isEmpty) return;
-
-    final amount = double.tryParse(amountText);
-    if (amount == null || amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid amount')),
-      );
-      return;
-    }
-
-    final balance = context.read<PaymentProvider>().balance;
-
-    showDialog(
-      context: context,
-      builder: (context) => PaymentSelectionDialog(
-        amount: amount,
-        walletBalance: balance,
-        onWalletSelected: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Cannot top up wallet using wallet!')),
-          );
-        },
-        onPesapalSelected: (paymentType) async {
-          _executeTopUp(amount, paymentType);
-        },
-        onTokenSelected: (method) async {
-          _executeTokenTopUp(amount, method);
-        },
-      ),
-    );
-  }
-
-  void _executeTokenTopUp(double amount, dynamic method) async {
-     showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (c) => const Center(child: CircularProgressIndicator()),
-    );
-
-    try {
-      final result = await context.read<PaymentProvider>().executePesapalTokenPayment(
-            amount: amount,
-            paymentMethodId: method.id,
-            description: 'Wallet Top-up (One-click)',
-          );
-
-      if (mounted) Navigator.pop(context);
-
-      if (result['success'] && mounted) {
-        final url = result['redirect_url'];
-        if (url != null && url.isNotEmpty) {
-           final success = await Navigator.push<bool>(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PesapalWebViewScreen(
-                url: url,
-                orderTrackingId: result['order_tracking_id'],
-              ),
-            ),
-          );
-          if (success == true && mounted) {
-             context.read<PaymentProvider>().fetchWalletData();
-             DialogService.showSuccessDialog(
-              title: 'Top-up Successful!',
-              message: 'Your wallet has been credited.',
-            );
-            _amountController.clear();
-          }
-        } else {
-          context.read<PaymentProvider>().fetchWalletData();
-          DialogService.showSuccessDialog(
-            title: 'Top-up Successful!',
-            message: 'Your wallet has been credited via one-click payment.',
-          );
-          _amountController.clear();
-        }
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? 'Token payment failed'),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) Navigator.pop(context);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    }
-  }
-
-  void _executeTopUp(double amount, String paymentType) async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (c) => const Center(child: CircularProgressIndicator()),
-    );
-
-    try {
-      final result = await context.read<PaymentProvider>().initiatePesapalPayment(
-            amount: amount,
-            description: 'Wallet Top-up',
-            paymentType: paymentType,
-          );
-
-      if (mounted) Navigator.pop(context);
-
-      if (result['success'] && mounted) {
-        final success = await Navigator.push<bool>(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PesapalWebViewScreen(
-              url: result['redirect_url'],
-              orderTrackingId: result['order_tracking_id'],
-            ),
-          ),
-        );
-
-        if (success == true && mounted) {
-          context.read<PaymentProvider>().fetchWalletData();
-          DialogService.showSuccessDialog(
-            title: 'Top-up Successful!',
-            message: 'Your wallet has been credited.',
-          );
-          _amountController.clear();
-        }
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? 'Failed to initiate payment'),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) Navigator.pop(context);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error initiating top-up: $e')));
-      }
-    }
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
-          'My Wallet',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          'Wallet',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF121212),
+          ),
         ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         elevation: 0,
-        foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF121212)),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: Consumer<PaymentProvider>(
         builder: (context, provider, _) {
-          return RefreshIndicator(
-            onRefresh: () => provider.fetchWalletData(),
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Premium Balance Card
-                  Container(
-                    padding: const EdgeInsets.all(32),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryDark, // Distinct premium dark header card
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 10,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Available Balance',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
-                            ),
-                            Icon(
-                              Icons.account_balance_wallet,
-                              color: Colors.white.withValues(alpha: 0.5),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Consumer<SettingsProvider>(
-                          builder: (context, settings, _) => Text(
-                            CurrencyFormatter.formatCurrency(
-                              provider.balance,
-                              settings.countryConfig,
-                            ),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 40,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -1,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            'Space Park Wallet',
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Premium Balance Card
+                Container(
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0078D4),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.12),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Available Balance',
                             style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontSize: 14,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Top-up Section
-                  Text(
-                    'Quick Top-up',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).textTheme.bodyLarge?.color,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: TextField(
-                      controller: _amountController,
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryColor,
+                          Icon(
+                            Icons.account_balance_wallet,
+                            color: Colors.white.withValues(alpha: 0.5),
+                          ),
+                        ],
                       ),
-                      decoration: InputDecoration(
-                        hintText: '0.00',
-                        hintStyle: TextStyle(color: Colors.grey.shade300),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.all(20),
-                        prefixIcon: Center(
-                          widthFactor: 1,
-                          child: Consumer<SettingsProvider>(
-                            builder: (context, settings, _) => Text(
-                              settings.countryConfig.currencySymbol,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                                color: Colors.grey,
+                      const SizedBox(height: 12),
+                      Consumer<PaymentProvider>(
+                        builder: (context, provider, _) {
+                          final walletBalance = provider.walletBalance;
+                          if (walletBalance == null) {
+                            return const Center(
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0078D4)),
                               ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: 50,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: [1000, 5000, 10000, 20000, 50000]
-                          .map(
-                            (amt) => Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: ActionChip(
-                                label: Text(
-                                  amt.toString(),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
+                            );
+                          }
+
+                          return Column(
+                            children: [
+                              // Balance Amount
+                              Text(
+                                '${walletBalance.currencySymbol}${walletBalance.balance.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFF0078D4),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+
+                              // Currency and Country
+                              Text(
+                                '${walletBalance.currency} • ${walletBalance.countryName}',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+
+                              // Exchange Rate (if not base currency)
+                              if (walletBalance.exchangeRate != 1.0) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  '1 UGX = ${walletBalance.exchangeRate.toStringAsFixed(2)} ${walletBalance.currency}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white.withValues(alpha: 0.6),
                                   ),
                                 ),
-                                onPressed: () =>
-                                    _amountController.text = amt.toString(),
-                                backgroundColor: Theme.of(context).cardColor,
-                                elevation: 0,
-                                side: BorderSide(color: Colors.grey.shade200),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 10,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _handleTopUp,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 56),
-                      backgroundColor: AppTheme.primaryColor,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                              ],
+                            ],
+                          );
+                        },
                       ),
-                    ),
-                    child: const Text(
-                      'TOP UP NOW',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 40),
-
-                  // Recent Transactions Header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Recent Transactions',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
                         ),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                const TransactionHistoryScreen(),
-                          ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Text(
-                          'View All',
+                        child: Text(
+                          'Space Park Wallet',
                           style: TextStyle(
-                            color: AppTheme.primaryColor,
-                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                ),
 
-                  if (provider.isLoading)
-                    const Padding(
-                      padding: EdgeInsets.all(32.0),
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  else if (provider.transactions.isEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(40),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Theme.of(context).dividerColor),
+                const SizedBox(height: 32),
+
+                // Quick Top-up Section
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                      child: const Column(
-                        children: [
-                          Icon(
-                            Icons.receipt_long_outlined,
-                            size: 48,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(height: 12),
-                          Text(
-                            'No transactions yet',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    ...provider.transactions.take(5).map((tx) {
-                      final isCredit =
-                          tx.type == 'credit' || tx.type == 'topup';
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Theme.of(context).dividerColor),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Quick Top-up',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF121212),
                         ),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Amount Input
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8F9FA),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                        ),
+                        child: TextField(
+                          controller: _amountController,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0078D4),
                           ),
-                          leading: Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color:
-                                  (isCredit
-                                          ? AppTheme.successColor
-                                          : AppTheme.errorColor)
-                                      .withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              isCredit
-                                  ? Icons.arrow_downward
-                                  : Icons.arrow_upward,
-                              color: isCredit
-                                  ? AppTheme.successColor
-                                  : AppTheme.errorColor,
-                              size: 20,
-                            ),
-                          ),
-                          title: Text(
-                            tx.description,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                              color: Theme.of(context).textTheme.bodyLarge?.color,
-                            ),
-                          ),
-                          subtitle: Text(
-                            DateFormat('MMM dd, HH:mm').format(tx.timestamp),
-                            style: TextStyle(
-                              color: Colors.grey.shade400,
-                              fontSize: 12,
-                            ),
-                          ),
-                          trailing: Consumer<SettingsProvider>(
-                            builder: (context, settings, _) => Text(
-                              '${isCredit ? "+" : "-"} ${CurrencyFormatter.formatCurrency(tx.amount, settings.countryConfig)}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                                color: isCredit
-                                    ? AppTheme.successColor
-                                    : AppTheme.errorColor,
+                          decoration: InputDecoration(
+                            hintText: '0.00',
+                            hintStyle: const TextStyle(color: Color(0xFF64748B)),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.all(20),
+                            prefixIcon: Center(
+                              widthFactor: 1,
+                              child: Consumer<SettingsProvider>(
+                                builder: (context, settings, _) => Text(
+                                  settings.countryConfig.currencySymbol,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      );
-                    }),
-                ],
-              ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Quick Amount Buttons
+                      Row(
+                        children: [
+                          _buildQuickAmountButton('5,000'),
+                          const SizedBox(width: 12),
+                          _buildQuickAmountButton('10,000'),
+                          const SizedBox(width: 12),
+                          _buildQuickAmountButton('20,000'),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Top-up Button
+                      SizedBox(
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            if (_amountController.text.isNotEmpty) {
+                              try {
+                                final amount = double.parse(_amountController.text);
+                                final provider = Provider.of<PaymentProvider>(context, listen: false);
+                                
+                                final result = await provider.topUpWallet(amount: amount);
+                                
+                                if (result['success'] == true) {
+                                  _amountController.clear();
+                                  
+                                  // Show success message and redirect to payment
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Redirecting to payment...'),
+                                        backgroundColor: const Color(0xFF10B981),
+                                      ),
+                                    );
+                                    
+                                    // TODO: Open payment URL in webview or browser
+                                    // For now, just show success
+                                    await provider.fetchWalletData(); // Refresh balance
+                                  }
+                                } else {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(result['message'] ?? 'Failed to top up wallet'),
+                                        backgroundColor: const Color(0xFFEF4444),
+                                      ),
+                                    );
+                                  }
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Invalid amount or payment failed'),
+                                      backgroundColor: const Color(0xFFEF4444),
+                                    ),
+                                  );
+                                }
+                              }
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0078D4),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Top Up Wallet',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                // Recent Transactions
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Recent Transactions',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF121212),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    if (provider.isLoading)
+                      const Center(child: CircularProgressIndicator())
+                    else if (provider.transactions.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(40),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.receipt_long_outlined,
+                              size: 48,
+                              color: const Color(0xFF64748B),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'No transactions yet',
+                              style: TextStyle(color: Color(0xFF64748B)),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ...provider.transactions.take(5).map((tx) {
+                        final isCredit =
+                            tx.type == 'credit' || tx.type == 'topup';
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFE5E7EB)),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: (isCredit
+                                          ? const Color(0xFF10B981)
+                                          : const Color(0xFFEF4444))
+                                      .withValues(alpha: 0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  isCredit
+                                      ? Icons.arrow_downward
+                                      : Icons.arrow_upward,
+                                  color: isCredit
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFFEF4444),
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      tx.description ??
+                                          (isCredit
+                                              ? 'Top Up'
+                                              : 'Payment'),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF121212),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      tx.timestamp != null 
+                                          ? '${tx.timestamp!.day}/${tx.timestamp!.month}/${tx.timestamp!.year}'
+                                          : 'Unknown date',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                '${isCredit ? '+' : '-'}UGX ${tx.amount?.toString() ?? '0'}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: isCredit
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFFEF4444),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                  ],
+                ),
+              ],
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildQuickAmountButton(String amount) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          _amountController.text = amount;
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8F9FA),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+          ),
+          child: Text(
+            amount,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF0078D4),
+            ),
+          ),
+        ),
       ),
     );
   }

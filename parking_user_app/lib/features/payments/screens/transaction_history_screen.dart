@@ -75,7 +75,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
               itemBuilder: (context, index) {
                 final tx = provider.transactions[index];
                 final isCredit = tx.type == 'credit' || tx.type == 'topup';
-                final txColor = isCredit ? AppTheme.successColor : AppTheme.errorColor;
+                final txColor = isCredit ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error;
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),

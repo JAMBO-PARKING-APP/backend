@@ -2,20 +2,57 @@ import 'package:parking_user_app/core/api_client.dart';
 import 'package:parking_user_app/features/payments/models/transaction_model.dart';
 import 'package:parking_user_app/features/payments/models/payment_method_model.dart';
 
-class PaymentService {
-  final ApiClient _apiClient = ApiClient();
+class WalletBalance {
+  final double balance;
+  final String currency;
+  final String currencySymbol;
+  final String countryName;
+  final String countryCode;
+  final double exchangeRate;
 
-  Future<double> getWalletBalance() async {
+  WalletBalance({
+    required this.balance,
+    required this.currency,
+    required this.currencySymbol,
+    required this.countryName,
+    required this.countryCode,
+    required this.exchangeRate,
+  });
+
+  factory WalletBalance.fromJson(Map<String, dynamic> json) {
+    return WalletBalance(
+      balance: double.tryParse(json['balance']?.toString() ?? '0') ?? 0.0,
+      currency: json['currency'] ?? 'UGX',
+      currencySymbol: json['currency_symbol'] ?? json['currency'] ?? 'UGX',
+      countryName: json['country_name'] ?? 'Uganda',
+      countryCode: json['country_code'] ?? 'UG',
+      exchangeRate: double.tryParse(json['exchange_rate']?.toString() ?? '1') ?? 1.0,
+    );
+  }
+}
+
+class PaymentService {
+  final ApiClient _apiClient;
+
+  PaymentService(this._apiClient);
+
+  Future<WalletBalance> getWalletBalance() async {
     try {
       final response = await _apiClient.get('wallet/balance/');
       if (response.statusCode == 200) {
-        return double.tryParse(response.data['balance']?.toString() ?? '0') ??
-            0.0;
+        return WalletBalance.fromJson(response.data);
       }
     } catch (e) {
-      return 0.0;
+      print('Error fetching wallet balance: $e');
     }
-    return 0.0;
+    return WalletBalance(
+      balance: 0.0,
+      currency: 'UGX',
+      currencySymbol: 'UGX',
+      countryName: 'Uganda',
+      countryCode: 'UG',
+      exchangeRate: 1.0,
+    );
   }
 
   Future<List<Transaction>> getTransactions() async {
@@ -29,6 +66,31 @@ class PaymentService {
       return [];
     }
     return [];
+  }
+
+  Future<Map<String, dynamic>> topUpWallet({
+    required double amount,
+    String paymentType = 'MOBILE_MONEY',
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        'wallet/topup/',
+        data: {
+          'amount': amount,
+          'payment_type': paymentType,
+        },
+      );
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'redirect_url': response.data['redirect_url'],
+          'order_tracking_id': response.data['order_tracking_id'],
+        };
+      }
+      return {'success': false, 'message': 'Wallet top-up initiation failed'};
+    } catch (e) {
+      return {'success': false, 'message': 'Wallet top-up initiation failed'};
+    }
   }
 
   Future<Map<String, dynamic>> initiatePesapalPayment({

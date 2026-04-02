@@ -32,7 +32,7 @@ class Zone {
       longitude: double.tryParse(json['longitude']?.toString() ?? '0') ?? 0.0,
       hourlyRate:
           double.tryParse(json['hourly_rate']?.toString() ?? '0') ?? 0.0,
-      totalSlots: json['total_slots'] ?? 0,
+      totalSlots: json['total_slots'] ?? json['capacity'] ?? 0,
       availableSlots: json['available_slots'] ?? 0,
       description: json['description'],
       imageUrl: json['zone_image'],

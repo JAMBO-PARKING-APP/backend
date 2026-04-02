@@ -75,13 +75,14 @@ class HomeScreenState extends State<HomeScreen> {
         }
 
         final List<Widget> pages = [
-          const DashboardScreen(),
+          DashboardScreen(),
           const ZoneListScreen(),
           const WalletScreen(),
           const ProfileScreen(),
         ];
 
         return Scaffold(
+          backgroundColor: Colors.white,
           extendBody: true,
           body: Stack(
             children: [
@@ -114,7 +115,7 @@ class HomeScreenState extends State<HomeScreen> {
                               borderRadius: BorderRadius.circular(24),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppTheme.primaryColor.withValues(alpha: 0.3),
+                                  color: const Color(0xFF0078D4).withValues(alpha: 0.3),
                                   blurRadius: 15,
                                   offset: const Offset(0, 5),
                                 ),
@@ -123,7 +124,7 @@ class HomeScreenState extends State<HomeScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: AppTheme.primaryColor,
+                                color: const Color(0xFF0078D4),
                                 borderRadius: BorderRadius.circular(24),
                               ),
                               child: Row(
@@ -156,12 +157,12 @@ class HomeScreenState extends State<HomeScreen> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                     decoration: BoxDecoration(
-                                      color: AppTheme.accentColor,
+                                      color: const Color(0xFF10B981),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: const Text(
                                       'VIEW',
-                                      style: TextStyle(color: AppTheme.primaryDark, fontWeight: FontWeight.bold, fontSize: 12),
+                                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                                     ),
                                   ),
                                 ],
@@ -175,72 +176,77 @@ class HomeScreenState extends State<HomeScreen> {
                     // Bottom Navigation Bar
                     Container(
                       decoration: BoxDecoration(
-                        color: Theme.of(context).scaffoldBackgroundColor, // Native theme background
-                        border: const Border(
-                          top: BorderSide(
-                            color: AppTheme.borderColor,
-                            width: 1.0,
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, -2),
                           ),
-                        ),
+                        ],
                       ),
-                      child: BottomNavigationBar(
-                            currentIndex: _currentIndex,
-                            onTap: (index) => setState(() => _currentIndex = index),
-                            type: BottomNavigationBarType.fixed,
-                            backgroundColor: Colors.transparent,
-                            elevation: 0,
-                            selectedItemColor: AppTheme.primaryColor,
-                            unselectedItemColor: AppTheme.textSecondary.withValues(alpha: 0.5),
-                            showSelectedLabels: true,
-                            showUnselectedLabels: true,
-                            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-                            unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
-                            items: [
-                              const BottomNavigationBarItem(
-                                icon: Padding(
-                                  padding: EdgeInsets.only(bottom: 4),
-                                  child: Icon(Icons.home_outlined),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: BottomNavigationBar(
+                              currentIndex: _currentIndex,
+                              onTap: (index) => setState(() => _currentIndex = index),
+                              type: BottomNavigationBarType.fixed,
+                              backgroundColor: Colors.transparent,
+                              elevation: 0,
+                              selectedItemColor: const Color(0xFF0078D4),
+                              unselectedItemColor: const Color(0xFF64748B),
+                              showSelectedLabels: true,
+                              showUnselectedLabels: true,
+                              selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
+                              items: [
+                                const BottomNavigationBarItem(
+                                  icon: Padding(
+                                    padding: EdgeInsets.only(bottom: 4),
+                                    child: Icon(Icons.home_outlined),
+                                  ),
+                                  activeIcon: Padding(
+                                    padding: EdgeInsets.only(bottom: 4),
+                                    child: Icon(Icons.home_rounded),
+                                  ),
+                                  label: 'Home',
                                 ),
-                                activeIcon: Padding(
-                                  padding: EdgeInsets.only(bottom: 4),
-                                  child: Icon(Icons.home_rounded),
+                                const BottomNavigationBarItem(
+                                  icon: Padding(
+                                    padding: EdgeInsets.only(bottom: 4),
+                                    child: Icon(Icons.map_outlined),
+                                  ),
+                                  activeIcon: Padding(
+                                    padding: EdgeInsets.only(bottom: 4),
+                                    child: Icon(Icons.map_rounded),
+                                  ),
+                                  label: 'Zones',
                                 ),
-                                label: 'Home',
-                              ),
-                              const BottomNavigationBarItem(
-                                icon: Padding(
-                                  padding: EdgeInsets.only(bottom: 4),
-                                  child: Icon(Icons.map_outlined),
+                                const BottomNavigationBarItem(
+                                  icon: Padding(
+                                    padding: EdgeInsets.only(bottom: 4),
+                                    child: Icon(Icons.account_balance_wallet_outlined),
+                                  ),
+                                  activeIcon: Padding(
+                                    padding: EdgeInsets.only(bottom: 4),
+                                    child: Icon(Icons.account_balance_wallet_rounded),
+                                  ),
+                                  label: 'Wallet',
                                 ),
-                                activeIcon: Padding(
-                                  padding: EdgeInsets.only(bottom: 4),
-                                  child: Icon(Icons.map_rounded),
+                                const BottomNavigationBarItem(
+                                  icon: Padding(
+                                    padding: EdgeInsets.only(bottom: 4),
+                                    child: Icon(Icons.person_outline_rounded),
+                                  ),
+                                  activeIcon: Padding(
+                                    padding: EdgeInsets.only(bottom: 4),
+                                    child: Icon(Icons.person_rounded),
+                                  ),
+                                  label: 'Profile',
                                 ),
-                                label: 'Map',
-                              ),
-                              const BottomNavigationBarItem(
-                                icon: Padding(
-                                  padding: EdgeInsets.only(bottom: 4),
-                                  child: Icon(Icons.account_balance_wallet_outlined),
-                                ),
-                                activeIcon: Padding(
-                                  padding: EdgeInsets.only(bottom: 4),
-                                  child: Icon(Icons.account_balance_wallet_rounded),
-                                ),
-                                label: 'Wallet',
-                              ),
-                              const BottomNavigationBarItem(
-                                icon: Padding(
-                                  padding: EdgeInsets.only(bottom: 4),
-                                  child: Icon(Icons.person_outline_rounded),
-                                ),
-                                activeIcon: Padding(
-                                  padding: EdgeInsets.only(bottom: 4),
-                                  child: Icon(Icons.person_rounded),
-                                ),
-                                label: 'Profile',
-                              ),
-                            ],
+                              ],
+                        ),
                       ),
                     ),
                   ],

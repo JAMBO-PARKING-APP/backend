@@ -21,6 +21,164 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   if (kDebugMode) {
     print('Handling background message: ${message.messageId}');
   }
+
+  // Initialize local notifications for background
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+  
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/launcher_icon');
+  const DarwinInitializationSettings initializationSettingsIOS =
+      DarwinInitializationSettings();
+  const InitializationSettings initializationSettings =
+      InitializationSettings(
+        android: initializationSettingsAndroid,
+        iOS: initializationSettingsIOS,
+      );
+  
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
+  // Process the background message
+  await _processBackgroundMessage(message, flutterLocalNotificationsPlugin);
+}
+
+Future<void> _processBackgroundMessage(
+  RemoteMessage message,
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin,
+) async {
+  try {
+    final notification = message.notification;
+    final data = message.data;
+
+    // Show local notification for background message
+    if (notification != null) {
+      const androidDetails = AndroidNotificationDetails(
+        'default',
+        'Default Notifications',
+        channelDescription: 'Default notification channel for Spave Park',
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: true,
+      );
+
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+
+      const details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      await flutterLocalNotificationsPlugin.show(
+        notification.hashCode,
+        notification.title,
+        notification.body,
+        details,
+        payload: jsonEncode(data),
+      );
+    }
+
+    // Handle specific parking events in background
+    if (data.containsKey('type')) {
+      switch (data['type']) {
+        case 'parking_ended':
+          // Schedule session end notification
+          if (data.containsKey('session_id')) {
+            await _scheduleSessionEndNotification(data, flutterLocalNotificationsPlugin);
+          }
+          break;
+        case 'parking_expiring':
+          // Schedule expiration reminder
+          if (data.containsKey('session_id')) {
+            await _scheduleExpirationReminder(data, flutterLocalNotificationsPlugin);
+          }
+          break;
+      }
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      print('Error processing background message: $e');
+    }
+  }
+}
+
+Future<void> _scheduleSessionEndNotification(
+  Map<String, dynamic> data,
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin,
+) async {
+  try {
+    const androidDetails = AndroidNotificationDetails(
+      'parking_sessions',
+      'Parking Sessions',
+      channelDescription: 'Notifications for parking session updates',
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: true,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await flutterLocalNotificationsPlugin.show(
+      DateTime.now().millisecondsSinceEpoch.remainder(100000),
+      'Parking Session Ended',
+      'Your parking session has ended. You have been charged accordingly.',
+      details,
+    );
+  } catch (e) {
+    if (kDebugMode) {
+      print('Error scheduling session end notification: $e');
+    }
+  }
+}
+
+Future<void> _scheduleExpirationReminder(
+  Map<String, dynamic> data,
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin,
+) async {
+  try {
+    const androidDetails = AndroidNotificationDetails(
+      'parking_sessions',
+      'Parking Sessions',
+      channelDescription: 'Notifications for parking session updates',
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: true,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await flutterLocalNotificationsPlugin.show(
+      DateTime.now().millisecondsSinceEpoch.remainder(100000) + 1,
+      'Parking Session Expiring Soon',
+      'Your parking session will expire soon. Extend your session to avoid additional charges.',
+      details,
+    );
+  } catch (e) {
+    if (kDebugMode) {
+      print('Error scheduling expiration reminder: $e');
+    }
+  }
 }
 
 class FCMService {

@@ -241,6 +241,22 @@ abstract class AppLocalizations {
   String get account;
   String get preferences;
 
+  // Language selection
+  String get chooseYourLanguage;
+  String get selectPreferredLanguage;
+  String get selectLanguageForBestExperience;
+  String get continueText;
+  
+  // Terms and Privacy
+  String get terms;
+  String get privacyPolicy;
+  String get iAcceptThe;
+  String get termsAndConditions;
+  String get termsDescription;
+  String get privacyDescription;
+  String get countrySpecificTerms;
+  String get localLawsNotice;
+  
   // Country detection
   String get detectingLocation;
   String get detectingLocationSubtitle;
@@ -259,9 +275,9 @@ class _EnglishLocalizations extends AppLocalizations {
   @override
   String get viewOnMap => 'View on Map';
   @override
-  String get appTitle => 'Spave Park';
+  String get appTitle => 'SPACE';
   @override
-  String get welcome => 'Welcome to Spave Park';
+  String get welcome => 'Welcome to SPACE';
   @override
   String get login => 'Login';
   @override
@@ -648,6 +664,32 @@ class _EnglishLocalizations extends AppLocalizations {
   String get preferences => 'Preferences';
 
   @override
+  String get chooseYourLanguage => 'Choose Your Language';
+  @override
+  String get selectPreferredLanguage => 'Select your preferred language for the best experience';
+  @override
+  String get selectLanguageForBestExperience => 'Select your preferred language for the best experience';
+  @override
+  String get continueText => 'Continue';
+
+  @override
+  String get terms => 'Terms';
+  @override
+  String get privacyPolicy => 'Privacy Policy';
+  @override
+  String get iAcceptThe => 'I accept the ';
+  @override
+  String get termsAndConditions => 'Terms and Conditions';
+  @override
+  String get termsDescription => 'By using SPACE, you agree to our terms of service and comply with local parking regulations in your country.';
+  @override
+  String get privacyDescription => 'We respect your privacy and handle your data according to applicable privacy laws in your region.';
+  @override
+  String get countrySpecificTerms => 'Country-specific terms may apply based on your location.';
+  @override
+  String get localLawsNotice => 'Usage must comply with local parking laws and regulations.';
+
+  @override
   String get detectingLocation => 'Detecting Your Location';
   @override
   String get detectingLocationSubtitle =>
@@ -676,9 +718,9 @@ class _SwahiliLocalizations extends AppLocalizations {
   @override
   String get viewOnMap => 'Ona kwenye Ramani';
   @override
-  String get appTitle => 'Spave Park';
+  String get appTitle => 'SPACE';
   @override
-  String get welcome => 'Karibu kwenye Spave Park';
+  String get welcome => 'Karibu kwenye SPACE';
   @override
   String get login => 'Ingia';
   @override
@@ -1094,9 +1136,9 @@ class _FrenchLocalizations extends AppLocalizations {
   @override
   String get viewOnMap => 'Voir sur la carte';
   @override
-  String get appTitle => 'Spave Park';
+  String get appTitle => 'SPACE';
   @override
-  String get welcome => 'Bienvenue à Spave Park';
+  String get welcome => 'Bienvenue à SPACE';
   @override
   String get login => 'Connexion';
   @override
@@ -1484,10 +1526,19 @@ class _FrenchLocalizations extends AppLocalizations {
   @override
   String get account => 'Compte';
   @override
-  String get preferences => 'Préférences';
+  String get preferences => 'Mapendekezo';
 
   @override
-  String get detectingLocation => 'Détection de votre emplacement';
+  String get chooseYourLanguage => 'Chagua Lugha Yako';
+  @override
+  String get selectPreferredLanguage => 'Chagua lugha yako unayopendeleza kwa uzoefu bora';
+  @override
+  String get selectLanguageForBestExperience => 'Chagua lugha yako unayopendeleza kwa uzoefu bora';
+  @override
+  String get continueText => 'Endelea';
+
+  @override
+  String get detectingLocation => 'Kutambua Mahali Panako';
   @override
   String get detectingLocationSubtitle =>
       'Nous identifions votre pays pour vous offrir la meilleure expérience.';
@@ -1515,9 +1566,9 @@ class _SpanishLocalizations extends AppLocalizations {
   @override
   String get viewOnMap => 'Ver en el mapa';
   @override
-  String get appTitle => 'Spave Park';
+  String get appTitle => 'SPACE';
   @override
-  String get welcome => 'Bienvenido a Spave Park';
+  String get welcome => 'Bienvenido a SPACE';
   @override
   String get login => 'Iniciar Sesión';
   @override
@@ -1905,15 +1956,14 @@ class _SpanishLocalizations extends AppLocalizations {
   @override
   String get account => 'Cuenta';
   @override
-  String get preferences => 'Preferencias';
+  String get preferences => 'Mapendekezo';
 
   @override
-  String get detectingLocation => 'Detectando tu ubicación';
+  String get chooseYourLanguage => 'Chagua Lugha Yako';
   @override
-  String get detectingLocationSubtitle =>
-      'Estamos identificando tu país para brindarte la mejor experiencia.';
+  String get selectPreferredLanguage => 'Chagua lugha yako unayopendeleza kwa uzoefu bora';
   @override
-  String get spaceAvailableInCountry => '¡SPACE está disponible en tu país!';
+  String get selectLanguageForBestExperience => 'Chagua lugha yako unayopendeleza kwa uzoefu bora';
   @override
   String get spaceNotAvailableTitle => 'SPACE aún no está disponible en tu región';
   @override
@@ -1935,9 +1985,9 @@ class _GermanLocalizations extends AppLocalizations {
   @override
   String get viewOnMap => 'Auf der Karte anzeigen';
   @override
-  String get appTitle => 'Spave Park';
+  String get appTitle => 'SPACE';
   @override
-  String get welcome => 'Willkommen bei Spave Park';
+  String get welcome => 'Willkommen bei SPACE';
   @override
   String get login => 'Anmelden';
   @override
@@ -2350,9 +2400,9 @@ class _ArabicLocalizations extends AppLocalizations {
   @override
   String get viewOnMap => 'عرض على الخريطة';
   @override
-  String get appTitle => 'Spave Park';
+  String get appTitle => 'SPACE';
   @override
-  String get welcome => 'مرحباً بكم في Spave Park';
+  String get welcome => 'مرحباً بكم في SPACE';
   @override
   String get login => 'تسجيل الدخول';
   @override

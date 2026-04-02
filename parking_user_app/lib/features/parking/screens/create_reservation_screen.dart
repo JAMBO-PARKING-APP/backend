@@ -610,8 +610,8 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
             const SizedBox(height: 16),
             Center(
               child: TimeKnob(
-                initialMinutes: _durationMinutes,
-                onChanged: (val) => setState(() => _durationMinutes = val),
+                initialTime: Duration(minutes: _durationMinutes),
+                onChanged: (val) => setState(() => _durationMinutes = val.inMinutes),
               ),
             ),
             const SizedBox(height: 40),

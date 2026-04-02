@@ -119,8 +119,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
         final homeState = context.findAncestorStateOfType<HomeScreenState>();
         if (homeState != null) homeState.navigateToTab(index);
       },
-      backgroundColor: AppTheme.backgroundColor,
-      appBarBackgroundColor: AppTheme.primaryColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBarBackgroundColor: Theme.of(context).colorScheme.primary,
       appBarForegroundColor: Colors.white,
       body: Column(
         children: [
@@ -166,7 +166,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isMe ? AppTheme.accentColor : Colors.white,
+          color: isMe ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(12),
             topRight: const Radius.circular(12),
@@ -218,7 +218,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
-                fillColor: AppTheme.dividerColor,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 20,
                   vertical: 10,
@@ -231,7 +231,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
           ),
           const SizedBox(width: 8),
           CircleAvatar(
-            backgroundColor: AppTheme.primaryColor,
+            backgroundColor: Theme.of(context).colorScheme.primary,
             radius: 24,
             child: IconButton(
               icon: const Icon(Icons.send, color: Colors.white, size: 20),

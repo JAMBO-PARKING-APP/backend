@@ -117,7 +117,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorColor),
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
             child: Text(l10n.endSession),
           ),
         ],
@@ -146,7 +146,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: BoxDecoration(
-          color: AppTheme.primaryDark,
+          color: Theme.of(context).colorScheme.primary,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
         child: StatefulBuilder(
@@ -200,7 +200,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                         final currency = auth.user?.countryDetails?.currencySymbol ?? 'UGX';
                         return Text(
                           '$currency $total',
-                          style: const TextStyle(color: AppTheme.accentColor, fontWeight: FontWeight.bold, fontSize: 18),
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
                         );
                       },
                     ),
@@ -237,8 +237,8 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                   },
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 56),
-                    backgroundColor: AppTheme.accentColor,
-                    foregroundColor: AppTheme.primaryDark,
+                    backgroundColor: Theme.of(context).colorScheme.secondary,
+                    foregroundColor: Theme.of(context).colorScheme.onSecondary,
                   ),
                   child: Text(AppLocalizations.of(context).payAndExtendNow.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
@@ -315,7 +315,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -324,14 +324,14 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new, color: AppTheme.textPrimary),
+                    icon: Icon(Icons.arrow_back_ios_new, color: Theme.of(context).colorScheme.onSurface),
                     onPressed: () => Navigator.pop(context),
                   ),
                   Expanded(
                     child: Text(
                       AppLocalizations.of(context).activeSession.toUpperCase(),
-                      style: const TextStyle(
-                        color: AppTheme.textPrimary,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
@@ -353,9 +353,9 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: AppTheme.cardBackground,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppTheme.borderColor),
+                        border: Border.all(color: Theme.of(context).colorScheme.outline),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.05),
@@ -369,10 +369,10 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.location_on, color: AppTheme.primaryColor, size: 28),
+                            child: Icon(Icons.location_on, color: Theme.of(context).colorScheme.primary, size: 28),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -381,16 +381,16 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                               children: [
                                 Text(
                                   widget.session.zoneName,
-                                  style: const TextStyle(
-                                    color: AppTheme.textPrimary,
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onSurface,
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                SizedBox(height: 4),
                                 Text(
                                   '${AppLocalizations.of(context).vehicle}: ${widget.session.vehiclePlate}',
-                                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+                                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7), fontSize: 14),
                                 ),
                               ],
                             ),
@@ -415,9 +415,9 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                             child: CircularProgressIndicator(
                               value: progress,
                               strokeWidth: 24,
-                              backgroundColor: AppTheme.dividerColor,
+                              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                               valueColor: AlwaysStoppedAnimation<Color>(
-                                isLowTime ? AppTheme.errorColor : AppTheme.primaryColor,
+                                isLowTime ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary,
                               ),
                             ),
                           ),
@@ -427,8 +427,8 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                             children: [
                               Text(
                                 AppLocalizations.of(context).remaining.toUpperCase(),
-                                style: const TextStyle(
-                                  color: AppTheme.textSecondary,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                   fontSize: 12,
                                   letterSpacing: 2,
                                   fontWeight: FontWeight.w600,
@@ -437,8 +437,8 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                               const SizedBox(height: 8),
                               Text(
                                 _formatDuration(_remaining),
-                                style: const TextStyle(
-                                  color: AppTheme.textPrimary,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface,
                                   fontSize: 48,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: -1,

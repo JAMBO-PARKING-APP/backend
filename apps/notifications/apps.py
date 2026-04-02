@@ -7,5 +7,6 @@ class NotificationsConfig(AppConfig):
     def ready(self):
         try:
             import apps.notifications.tasks
+            import apps.notifications.signals
         except ImportError:
             pass

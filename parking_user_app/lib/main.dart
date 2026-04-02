@@ -20,7 +20,6 @@ import 'package:parking_user_app/features/notifications/providers/notification_p
 import 'package:parking_user_app/features/auth/screens/permissions_screen.dart';
 import 'package:parking_user_app/features/auth/screens/language_selection_screen.dart';
 import 'package:parking_user_app/features/auth/screens/country_selection_screen.dart';
-import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:parking_user_app/core/fcm_service.dart';
@@ -95,7 +94,7 @@ class MyApp extends StatelessWidget {
             builder: (context, auth, _) {
               // 1. Always show splash until initialization is explicitly marked as complete
               if (!auth.isInitialLoadComplete) {
-                return const SplashScreen();
+                return SplashScreen();
               }
 
               switch (auth.status) {
@@ -109,7 +108,7 @@ class MyApp extends StatelessWidget {
                   return const HomeScreen();
                 case AuthStatus.unauthenticated:
                   if (!settings.hasSelectedLanguage) {
-                    return const LanguageSelectionScreen();
+                    return const SplashScreen(); // Will show language selection
                   }
                   if (!auth.hasRequestedPermissions) {
                     return const PermissionsScreen();
@@ -117,11 +116,11 @@ class MyApp extends StatelessWidget {
                   if (!settings.hasSelectedCountry) {
                     return CountrySelectionScreen();
                   }
-                  return const WelcomeScreen();
+                  return WelcomeScreen();
                 case AuthStatus.initial:
                 case AuthStatus.authenticating:
 
-                  return const SplashScreen();
+                  return SplashScreen();
               }
             },
           ),

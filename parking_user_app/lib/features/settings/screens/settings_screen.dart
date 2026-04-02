@@ -164,7 +164,7 @@ class SettingsScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     ListTile(
-                      leading: const Icon(Icons.business_center, color: AppTheme.primaryColor),
+                      leading: const Icon(Icons.business_center, color: Theme.of(context).colorScheme.primary),
                       title: Text(l10n.hostParkingSpace, style: const TextStyle(fontWeight: FontWeight.bold)),
                       subtitle: Text(l10n.hostParkingSpaceSubtitle),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),

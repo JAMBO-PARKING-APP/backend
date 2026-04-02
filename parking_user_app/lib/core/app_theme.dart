@@ -3,37 +3,41 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // ============= PRIMARY COLORS =============
-  // Professional Blue - Primary brand color
-  static const Color primaryColor = Color(0xFF0066CC); // Deep Professional Blue
+  // Professional Blue - Primary brand color (matching officer app)
+  static const Color primaryColor = Color(0xFF0078D4); // Windows Blue (matching officer app)
   static const Color primaryLight = Color(0xFFCCE5FF); // Light Blue background
-  static const Color primaryDark = Color(0xFF004499); // Dark Blue for depth
+  static const Color primaryDark = Color(0xFF005A9E); // Dark Blue for depth (matching officer app)
 
   // ============= SECONDARY COLORS =============
-  // Modern Green - Secondary brand color (for success/confirmation)
-  static const Color accentColor = Color(0xFF00B386); // Modern Teal Green
-  static const Color successColor = Color(0xFF00B386); // Same as accent
-  static const Color mantisGreen = Color(0xFF00B386); // Primary Green Accent
+  // Modern Blue - Secondary brand color (matching officer app)
+  static const Color accentColor = Color(0xFF00B4F0); // Light Blue (matching officer app)
+  static const Color successColor = Color(0xFF10B981); // Success Green (matching officer app)
+  static const Color mantisGreen = Color(0xFF10B981); // Primary Green Accent (matching officer app)
   static const Color secondaryLight = Color(0xFFCCF5EE); // Light Green background
 
   // ============= STATUS COLORS =============
-  static const Color warningColor = Color(0xFFFF9500); // Warm Orange
-  static const Color infoColor = Color(0xFF0066CC); // Same as primary
-  static const Color errorColor = Color(0xFFCC0000); // Bright Red
-  static const Color tertiary = Color(0xFFCC0000); // Modern Red/Coral
+  static const Color warningColor = Color(0xFFF59E0B); // Warm Orange (matching officer app)
+  static const Color infoColor = Color(0xFF0078D4); // Same as primary (matching officer app)
+  static const Color errorColor = Color(0xFFEF4444); // Bright Red (matching officer app)
+  static const Color tertiary = Color(0xFFEF4444); // Modern Red/Coral (matching officer app)
   static const Color tertiaryLight = Color(0xFFFFCCCC); // Light Coral
 
   // ============= TEXT COLORS =============
-  static const Color textPrimary = Color(0xFF1A1A1A); // Almost black - highest contrast
-  static const Color textSecondary = Color(0xFF666666); // Medium gray
+  static const Color textPrimary = Color(0xFF121212); // True Black (matching officer app)
+  static const Color textSecondary = Color(0xFF64748B); // Medium gray (matching officer app)
   static const Color textTertiary = Color(0xFF999999); // Light gray (for hints)
   static const Color textPlaceholder = Color(0xFFCCCCCC); // Placeholder text
 
   // ============= BACKGROUND & SURFACE COLORS =============
-  static const Color backgroundColor = Color(0xFFFAFAFA); // Off-white background
-  static const Color cardBackground = Color(0xFFFFFFFF); // Pure white cards
-  static const Color surfaceLight = Color(0xFFF5F5F5); // Light surface
-  static const Color borderColor = Color(0xFFE0E0E0); // Border color
+  static const Color backgroundColor = Colors.white; // Pure white background (matching officer app)
+  static const Color cardBackground = Colors.white; // Pure white cards (matching officer app)
+  static const Color surfaceLight = Color(0xFFF9FAFB); // Light surface (matching officer app)
+  static const Color borderColor = Color(0xFFE5E7EB); // Border color (matching officer app)
   static const Color dividerColor = Color(0xFFF0F0F0); // Divider color
+  
+  // Additional surface colors for better contrast
+  static const Color surfaceColor = Color(0xFFF8F9FA); // Very light gray surface
+  static const Color surfaceVariant = Color(0xFFF1F3F4); // Light variant surface
 
   // ============= DARK THEME COLORS =============
   static const Color darkBackgroundColor = Color(0xFF121212); // Dark background
@@ -160,16 +164,10 @@ class AppTheme {
       style: ElevatedButton.styleFrom(
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
-        minimumSize: const Size(double.infinity, 56),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(radiusS),
-        ),
-        elevation: 2,
-        shadowColor: primaryColor.withValues(alpha: 0.3),
-        textStyle: GoogleFonts.inter(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+        shape: const StadiumBorder(),
+        textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold),
       ),
     ),
 
@@ -177,14 +175,9 @@ class AppTheme {
       style: OutlinedButton.styleFrom(
         foregroundColor: primaryColor,
         minimumSize: const Size(double.infinity, 56),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(radiusS),
-        ),
+        shape: const StadiumBorder(),
         side: const BorderSide(color: primaryColor, width: 1.5),
-        textStyle: GoogleFonts.inter(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       ),
     ),
 
@@ -200,64 +193,42 @@ class AppTheme {
 
     cardTheme: CardThemeData(
       color: cardBackground,
-      elevation: 1,
-      shadowColor: Colors.black.withValues(alpha: 0.08),
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(radiusM),
-        side: const BorderSide(
-          color: borderColor,
-          width: 1,
-        ),
+        side: const BorderSide(color: borderColor, width: 1),
       ),
       margin: EdgeInsets.zero,
     ),
 
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: surfaceLight,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: spacingL,
-        vertical: spacingM,
-      ),
+      fillColor: surfaceColor,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(radiusS),
-        borderSide: const BorderSide(color: borderColor, width: 1),
+        borderRadius: BorderRadius.circular(radiusM),
+        borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(radiusS),
-        borderSide: const BorderSide(color: borderColor, width: 1),
+        borderRadius: BorderRadius.circular(radiusM),
+        borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(radiusS),
+        borderRadius: BorderRadius.circular(radiusM),
         borderSide: const BorderSide(color: primaryColor, width: 2),
       ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(radiusS),
-        borderSide: const BorderSide(color: errorColor, width: 1),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(radiusS),
-        borderSide: const BorderSide(color: errorColor, width: 2),
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       hintStyle: GoogleFonts.inter(
-        fontSize: 14,
-        color: textSecondary,
+        fontSize: 15,
         fontWeight: FontWeight.w400,
-      ),
-      labelStyle: GoogleFonts.inter(
-        fontSize: 14,
-        color: textPrimary,
-        fontWeight: FontWeight.w500,
+        color: textSecondary,
       ),
     ),
 
     floatingActionButtonTheme: FloatingActionButtonThemeData(
       backgroundColor: primaryColor,
       foregroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radiusM)),
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(radiusL),
-      ),
     ),
 
     chipTheme: ChipThemeData(

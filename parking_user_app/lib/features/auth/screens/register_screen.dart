@@ -140,7 +140,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             controller: _firstNameController,
                             label: l10n.firstName,
                             hint: 'John',
-                            prefixIcon: Icons.person_outline,
+                            prefixIcon: Icon(Icons.person_outline),
                             validator: (val) =>
                                 val!.isEmpty ? l10n.errorOccurred : null,
                           ),
@@ -164,7 +164,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       controller: _emailController,
                       label: l10n.email,
                       hint: 'john@example.com',
-                      prefixIcon: Icons.email_outlined,
+                      prefixIcon: Icon(Icons.email_outlined),
                       keyboardType: TextInputType.emailAddress,
                       validator: (val) => val!.isEmpty || !val.contains('@')
                           ? l10n.errorOccurred
@@ -256,10 +256,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       controller: _passwordController,
                       label: l10n.password,
                       hint: '••••••••',
-                      prefixIcon: Icons.lock_outline,
-                      suffixIcon: _obscurePassword
+                      prefixIcon: Icon(Icons.lock_outline),
+                      suffixIcon: Icon(_obscurePassword
                           ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
+                          : Icons.visibility_outlined),
                       onSuffixTap: () => setState(
                         () => _obscurePassword = !_obscurePassword,
                       ),
@@ -274,10 +274,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       controller: _confirmPasswordController,
                       label: l10n.confirmPassword,
                       hint: '••••••••',
-                      prefixIcon: Icons.lock_outline,
-                      suffixIcon: _obscureConfirmPassword
+                      prefixIcon: Icon(Icons.lock_outline),
+                      suffixIcon: Icon(_obscureConfirmPassword
                           ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
+                          : Icons.visibility_outlined),
                       onSuffixTap: () => setState(
                         () => _obscureConfirmPassword = !_obscureConfirmPassword,
                       ),
