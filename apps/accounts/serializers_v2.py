@@ -17,7 +17,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source='get_full_name', read_only=True)
     vehicles = VehicleSerializer(many=True, read_only=True)
     profile_photo = serializers.SerializerMethodField()
-    country_details = CountrySerializer(source='country', read_only=True, allow_null=True)
+    country_details = serializers.SerializerMethodField()
     
     class Meta:
         model = User
@@ -35,6 +35,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.profile_photo.url)
             from django.conf import settings
             return f"{settings.SITE_URL}{obj.profile_photo.url}" if hasattr(settings, 'SITE_URL') else obj.profile_photo.url
+        return None
+
+    def get_country_details(self, obj):
+        """Return full country details if country is set"""
+        if obj.country:
+            return CountrySerializer(obj.country).data
         return None
 
 class UpdateProfileSerializer(serializers.ModelSerializer):

@@ -31,7 +31,11 @@ class AuthService {
         final refresh = response.data['refresh'];
         final userData = response.data['user'];
 
-        debugPrint('[AuthService] Login successful, saving tokens...');
+        debugPrint('[AuthService] ✅ Login response received (200)');
+        debugPrint('[AuthService] Response keys: ${response.data.keys}');
+        debugPrint('[AuthService] User data: $userData');
+        
+        debugPrint('[AuthService] Saving tokens...');
         await _storageManager.saveTokens(access, refresh);
         
         // Extract jti (JWT ID) from token payload for reference
@@ -43,18 +47,32 @@ class AuthService {
             final decoded = utf8.decode(base64Url.decode(payload));
             final map = json.decode(decoded);
             // Log the jti for debugging purposes
-            debugPrint('[AuthService] Token JTI: ${map['jti']}');
+            debugPrint('[AuthService] ✅ Token JTI: ${map['jti']}');
           }
         } catch (e) {
-          debugPrint('[AuthService] Could not extract token payload: $e');
+          debugPrint('[AuthService] ⚠️ Could not extract token payload: $e');
         }
 
         try {
           await _storageManager.saveUserJson(json.encode(userData));
-        } catch (_) {}
+          debugPrint('[AuthService] ✅ User data saved to storage');
+        } catch (e) {
+          debugPrint('[AuthService] ⚠️ Could not save user JSON: $e');
+        }
 
-        debugPrint('[AuthService] Returning success with user data');
-        return {'success': true, 'user': User.fromJson(userData)};
+        // Parse user data - this is critical
+        try {
+          final user = User.fromJson(userData);
+          debugPrint('[AuthService] ✅ User parsed successfully: ${user.firstName} ${user.lastName}');
+          return {'success': true, 'user': user};
+        } catch (e) {
+          debugPrint('[AuthService] ❌ FAILED to parse user JSON: $e');
+          debugPrint('[AuthService] User JSON was: ${json.encode(userData)}');
+          return {
+            'success': false,
+            'message': 'Failed to process user data: $e',
+          };
+        }
       }
     } on DioException catch (e) {
       debugPrint('[AuthService] Login DioException: ${e.message}');

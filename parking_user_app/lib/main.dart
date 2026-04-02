@@ -32,6 +32,25 @@ import 'package:parking_user_app/features/rewards/providers/rewards_provider.dar
 import 'package:parking_user_app/core/api_client.dart';
 import 'package:parking_user_app/core/services/local_notification_service.dart';
 
+// NEW: Location tracking imports
+import 'package:parking_user_app/features/location/services/location_service.dart';
+import 'package:parking_user_app/features/location/providers/location_provider.dart';
+
+// NEW: Profile management imports
+import 'package:parking_user_app/features/profile/providers/profile_provider.dart';
+import 'package:parking_user_app/features/profile/screens/profile_screen.dart'
+    as new_profile;
+import 'package:parking_user_app/features/auth/models/user_model.dart';
+
+// NEW: Reservations management imports
+import 'package:parking_user_app/features/reservations/providers/reservation_provider.dart'
+    as reservations_provider;
+import 'package:parking_user_app/features/reservations/screens/reservations_list_screen.dart';
+
+// NEW: Host parking imports
+import 'package:parking_user_app/features/host_parking/providers/host_provider.dart';
+import 'package:parking_user_app/features/host_parking/screens/host_parking_screen.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -50,15 +69,57 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        // API Client - provide first so others can use it
+        ChangeNotifierProvider(create: (_) => ApiClient()),
+        
         ChangeNotifierProvider(create: (_) => AuthProvider()..checkAuth()),
         ChangeNotifierProvider(create: (_) => ZoneProvider()),
         ChangeNotifierProvider(create: (_) => ParkingProvider()),
-        ChangeNotifierProvider(create: (_) => PaymentProvider(PaymentService(ApiClient()))),
+        ChangeNotifierProvider(create: (context) => PaymentProvider(PaymentService(context.read<ApiClient>()))),
         ChangeNotifierProvider(create: (_) => VehicleProvider()),
         ChangeNotifierProvider(create: (_) => ReservationProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
-        ChangeNotifierProvider(create: (_) => RewardsProvider(ApiClient())),
+        ChangeNotifierProvider(create: (context) => RewardsProvider(context.read<ApiClient>())),
+        
+        // NEW: Location Service & Provider
+        ChangeNotifierProvider(
+          create: (_) => LocationService(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => LocationProvider(
+            apiClient: context.read<ApiClient>(),
+            locationService: context.read<LocationService>(),
+          ),
+        ),
+        
+        // NEW: Profile Provider
+        ChangeNotifierProvider(
+          create: (context) => ProfileProvider(
+            apiClient: context.read<ApiClient>(),
+            getCurrentUser: () {
+              try {
+                return context.read<AuthProvider>().user ?? UserModel.empty();
+              } catch (e) {
+                return UserModel.empty();
+              }
+            },
+          ),
+        ),
+        
+        // NEW: Reservations Provider (from features/reservations)
+        ChangeNotifierProvider(
+          create: (context) => reservations_provider.ReservationProvider(
+            apiClient: context.read<ApiClient>(),
+          ),
+        ),
+        
+        // NEW: Host Provider
+        ChangeNotifierProvider(
+          create: (context) => HostProvider(
+            apiClient: context.read<ApiClient>(),
+          ),
+        ),
       ],
       child: const MyApp(),
     ),

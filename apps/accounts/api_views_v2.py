@@ -205,14 +205,18 @@ class LoginAPIView(APIView):
             user.last_login_device = device_info or request.META.get('HTTP_USER_AGENT', '')[:255]
             user.save()
             
-            logger.info(f"✅ User {user.phone} logged in successfully. "
-                       f"Session JTI set to {token_jti[:20]}... "
-                       f"Device: {user.device_model} ({user.device_os})")
+            # Log what we're returning
+            user_data = UserProfileSerializer(user).data
+            logger.info(f"✅ Login successful for {user.phone}")
+            logger.info(f"  JTI: {token_jti[:30]}...")
+            logger.info(f"  User data fields: {list(user_data.keys())}")
+            logger.info(f"  Has country_details: {'country_details' in user_data}")
+            logger.debug(f"  Full response: {user_data}")
             
             return Response({
                 'access': str(access_token),
                 'refresh': str(refresh),
-                'user': UserProfileSerializer(user).data,
+                'user': user_data,
                 'message': 'Login successful'
             }, status=status.HTTP_200_OK)
         try:
@@ -237,23 +241,23 @@ class ProfileAPIView(APIView):
     @extend_schema(responses={200: UserProfileSerializer})
     
     def get(self, request):
-        logger.info(f"📋 Profile GET request from user {request.user.phone}")
+        logger.info(f"Profile GET request from user {request.user.phone}")
         serializer = UserProfileSerializer(request.user, context={'request': request})
-        logger.info(f"✅ Profile returned for user {request.user.phone}")
+        logger.info(f"Profile returned for user {request.user.phone}")
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def put(self, request):
-        logger.info(f"📝 Profile PUT request from user {request.user.phone}")
+        logger.info(f"Profile PUT request from user {request.user.phone}")
         serializer = UpdateProfileSerializer(request.user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            logger.info(f"✅ Profile updated for user {request.user.phone}")
+            logger.info(f"Profile updated for user {request.user.phone}")
             return Response({
                 'message': 'Profile updated successfully',
                 'user': UserProfileSerializer(request.user, context={'request': request}).data
             }, status=status.HTTP_200_OK)
         
-        logger.warning(f"❌ Profile update failed for user {request.user.phone}: {serializer.errors}")
+        logger.warning(f"Profile update failed for user {request.user.phone}: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def patch(self, request):

@@ -18,6 +18,18 @@ import 'package:parking_user_app/features/parking/providers/zone_provider.dart';
 import 'package:parking_user_app/features/parking/screens/active_session_screen.dart'; // Added import for ActiveSessionScreen
 // Removed GlassContainer import
 
+// NEW: Import new location, profile, host providers
+import 'package:parking_user_app/features/location/providers/location_provider.dart';
+import 'package:parking_user_app/features/profile/providers/profile_provider.dart';
+import 'package:parking_user_app/features/profile/screens/profile_screen.dart'
+    as new_profile;
+import 'package:parking_user_app/features/host_parking/providers/host_provider.dart';
+import 'package:parking_user_app/features/host_parking/screens/host_parking_screen.dart';
+import 'package:parking_user_app/features/reservations/providers/reservation_provider.dart'
+    as reservations_provider;
+import 'package:parking_user_app/features/reservations/screens/reservations_list_screen.dart';
+import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
+
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
   const HomeScreen({super.key, this.initialIndex = 0});
@@ -47,6 +59,24 @@ class HomeScreenState extends State<HomeScreen> {
 
       // Start Location Tracking
       LocationService().startTracking();
+
+      // NEW: Initialize location provider
+      final locationProvider = context.read<LocationProvider>();
+      locationProvider.initialize();
+      locationProvider.startTracking();
+      locationProvider.detectCountry();
+
+      // NEW: Load profile data
+      context.read<ProfileProvider>().fetchProfile(refresh: true);
+      context.read<ProfileProvider>().fetchNotifications(refresh: true);
+
+      // NEW: Load reservations
+      context
+          .read<reservations_provider.ReservationProvider>()
+          .fetchReservations(refresh: true);
+
+      // NEW: Load host dashboard (if user is host)
+      context.read<HostProvider>().fetchDashboard(refresh: true);
 
       // Auto-navigation to active session on startup
       _checkForActiveSession();
@@ -84,6 +114,47 @@ class HomeScreenState extends State<HomeScreen> {
         return Scaffold(
           backgroundColor: Colors.white,
           extendBody: true,
+          appBar: AppBar(
+            title: const Text('Jambo Parking'),
+            elevation: 0,
+            actions: [
+              // NEW: Profile button
+              IconButton(
+                icon: const Icon(Icons.person),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const new_profile.ProfileScreen()),
+                ),
+                tooltip: 'New Profile',
+              ),
+              // NEW: Reservations button
+              IconButton(
+                icon: const Icon(Icons.bookmark),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ReservationsListScreen()),
+                ),
+                tooltip: 'Reservations',
+              ),
+              // NEW: Host dashboard button (if user is host)
+              Consumer<HostProvider>(
+                builder: (context, hostProvider, _) {
+                  return hostProvider.isHost
+                      ? IconButton(
+                          icon: const Icon(Icons.business),
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const HostParkingScreen(),
+                            ),
+                          ),
+                          tooltip: 'Host Dashboard',
+                        )
+                      : const SizedBox();
+                },
+              ),
+            ],
+          ),
           body: Stack(
             children: [
               IndexedStack(index: _currentIndex, children: pages),

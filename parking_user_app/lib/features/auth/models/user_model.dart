@@ -27,23 +27,105 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      id: json['id'] ?? '',
-      phone: json['phone'] ?? '',
-      firstName: json['first_name'] ?? '',
-      lastName: json['last_name'] ?? '',
-      email: json['email'],
-      role: json['role'] ?? '',
-      profilePhoto: json['profile_photo'],
-      walletBalance:
-          double.tryParse(json['wallet_balance']?.toString() ?? '0') ?? 0.0,
-      vehicles: (json['vehicles'] as List? ?? [])
-          .map((v) => Vehicle.fromJson(v))
-          .toList(),
-      countryDetails: json['country_details'] != null
-          ? Country.fromJson(json['country_details'])
-          : null,
-    );
+    try {
+      // Parse id field
+      final id = json['id'] ?? '';
+      print('[User.fromJson] Parsed id: $id');
+
+      // Parse phone field
+      final phone = json['phone'] ?? '';
+      print('[User.fromJson] Parsed phone: $phone');
+
+      // Parse firstName field
+      final firstName = json['first_name'] ?? '';
+      print('[User.fromJson] Parsed firstName: $firstName');
+
+      // Parse lastName field
+      final lastName = json['last_name'] ?? '';
+      print('[User.fromJson] Parsed lastName: $lastName');
+
+      // Parse email field (nullable)
+      final email = json['email'] as String?;
+      print('[User.fromJson] Parsed email: $email');
+
+      // Parse role field
+      final role = json['role'] ?? '';
+      print('[User.fromJson] Parsed role: $role');
+
+      // Parse profilePhoto field (nullable)
+      final profilePhoto = json['profile_photo'] as String?;
+      print('[User.fromJson] Parsed profilePhoto: $profilePhoto');
+
+      // Parse walletBalance field with safe conversion
+      final walletBalance = double.tryParse(json['wallet_balance']?.toString() ?? '0') ?? 0.0;
+      print('[User.fromJson] Parsed walletBalance: $walletBalance');
+
+      // Parse vehicles list with error handling
+      final List<Vehicle> vehicles = [];
+      try {
+        final vehiclesList = json['vehicles'] as List?;
+        if (vehiclesList != null && vehiclesList.isNotEmpty) {
+          for (int i = 0; i < vehiclesList.length; i++) {
+            try {
+              final vehicle = Vehicle.fromJson(vehiclesList[i] as Map<String, dynamic>);
+              vehicles.add(vehicle);
+              print('[User.fromJson] Successfully parsed vehicle at index $i');
+            } catch (e) {
+              print('[User.fromJson] Error parsing vehicle at index $i: $e');
+              // Skip malformed vehicle entry
+              continue;
+            }
+          }
+        }
+        print('[User.fromJson] Parsed vehicles: ${vehicles.length} vehicle(s)');
+      } catch (e) {
+        print('[User.fromJson] Error parsing vehicles list: $e');
+        // Fallback to empty list
+      }
+
+      // Parse countryDetails with error handling
+      Country? countryDetails;
+      try {
+        if (json['country_details'] != null) {
+          countryDetails = Country.fromJson(json['country_details']);
+          print('[User.fromJson] Successfully parsed countryDetails');
+        } else {
+          print('[User.fromJson] countryDetails is null');
+        }
+      } catch (e) {
+        print('[User.fromJson] Error parsing countryDetails: $e');
+        countryDetails = null;
+        // Fallback to null
+      }
+
+      return User(
+        id: id,
+        phone: phone,
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        role: role,
+        profilePhoto: profilePhoto,
+        walletBalance: walletBalance,
+        vehicles: vehicles,
+        countryDetails: countryDetails,
+      );
+    } catch (e) {
+      print('[User.fromJson] Critical error parsing User from JSON: $e');
+      // Return a default User object with safe defaults
+      return User(
+        id: '',
+        phone: '',
+        firstName: 'Unknown',
+        lastName: 'User',
+        email: null,
+        role: 'user',
+        profilePhoto: null,
+        walletBalance: 0.0,
+        vehicles: [],
+        countryDetails: null,
+      );
+    }
   }
 
   String get fullName => '$firstName $lastName';

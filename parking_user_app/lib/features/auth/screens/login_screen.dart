@@ -9,6 +9,7 @@ import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_user_app/features/auth/screens/register_screen.dart' as reg;
 import 'package:parking_user_app/features/auth/screens/terms_of_service_screen.dart';
 import 'package:parking_user_app/features/auth/screens/privacy_policy_screen.dart';
+import 'package:parking_user_app/features/home/screens/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -49,8 +50,12 @@ class _LoginScreenState extends State<LoginScreen> {
     final success = await authProvider.login(fullPhone, password);
 
     if (success && mounted) {
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      debugPrint('[LoginScreen] ✅ Login successful, navigating to HomeScreen');
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
     } else if (!success && mounted) {
+      debugPrint('[LoginScreen] ❌ Login failed: ${authProvider.errorMessage}');
       _showError(authProvider.errorMessage ?? 'Login failed');
     }
   }
