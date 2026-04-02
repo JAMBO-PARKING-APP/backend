@@ -7,18 +7,21 @@ import 'package:provider/provider.dart';
 import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/core/localizations.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
-import 'package:parking_user_app/features/parking/providers/zone_provider.dart';
-import 'package:parking_user_app/features/parking/providers/parking_provider.dart';
-import 'package:parking_user_app/features/payments/providers/payment_provider.dart';
 import 'package:parking_user_app/features/auth/providers/vehicle_provider.dart';
-import 'package:parking_user_app/features/parking/providers/violation_provider.dart';
+import 'package:parking_user_app/features/parking/providers/parking_provider.dart';
+import 'package:parking_user_app/features/parking/providers/zone_provider.dart';
 import 'package:parking_user_app/features/parking/providers/reservation_provider.dart';
-import 'package:parking_user_app/features/auth/screens/welcome_screen.dart';
-import 'package:parking_user_app/features/auth/screens/splash_screen.dart';
+import 'package:parking_user_app/features/payments/providers/payment_provider.dart';
+import 'package:parking_user_app/features/payments/services/payment_service.dart';
+import 'package:parking_user_app/features/notifications/providers/notification_provider.dart';
+import 'package:parking_user_app/features/rewards/providers/rewards_provider.dart';
+import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:parking_user_app/features/home/screens/home_screen.dart';
 import 'package:parking_user_app/features/notifications/providers/notification_provider.dart';
 import 'package:parking_user_app/features/auth/screens/permissions_screen.dart';
 import 'package:parking_user_app/features/auth/screens/language_selection_screen.dart';
+import 'package:parking_user_app/features/auth/screens/splash_screen.dart';
+import 'package:parking_user_app/features/auth/screens/welcome_screen.dart';
 import 'package:parking_user_app/features/auth/screens/country_selection_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -50,9 +53,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AuthProvider()..checkAuth()),
         ChangeNotifierProvider(create: (_) => ZoneProvider()),
         ChangeNotifierProvider(create: (_) => ParkingProvider()),
-        ChangeNotifierProvider(create: (_) => PaymentProvider()),
+        ChangeNotifierProvider(create: (_) => PaymentProvider(PaymentService(ApiClient()))),
         ChangeNotifierProvider(create: (_) => VehicleProvider()),
-        ChangeNotifierProvider(create: (_) => ViolationProvider()),
         ChangeNotifierProvider(create: (_) => ReservationProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
@@ -108,7 +110,7 @@ class MyApp extends StatelessWidget {
                   return const HomeScreen();
                 case AuthStatus.unauthenticated:
                   if (!settings.hasSelectedLanguage) {
-                    return const SplashScreen(); // Will show language selection
+                    return SplashScreen(); // Will show language selection
                   }
                   if (!auth.hasRequestedPermissions) {
                     return const PermissionsScreen();

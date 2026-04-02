@@ -245,12 +245,8 @@ abstract class AppLocalizations {
   String get chooseYourLanguage;
   String get selectPreferredLanguage;
   String get selectLanguageForBestExperience;
-  String get continueText;
   
-  // Terms and Privacy
-  String get terms;
-  String get privacyPolicy;
-  String get iAcceptThe;
+  // Country-specific terms
   String get termsAndConditions;
   String get termsDescription;
   String get privacyDescription;
@@ -514,8 +510,6 @@ class _EnglishLocalizations extends AppLocalizations {
   @override
   String get pleaseSelectCountry => 'Please select your country to continue';
   @override
-  String get continueText => 'CONTINUE';
-  @override
   String get nearestParking => 'Nearest Parking';
   @override
   String get km => 'km';
@@ -673,12 +667,6 @@ class _EnglishLocalizations extends AppLocalizations {
   String get continueText => 'Continue';
 
   @override
-  String get terms => 'Terms';
-  @override
-  String get privacyPolicy => 'Privacy Policy';
-  @override
-  String get iAcceptThe => 'I accept the ';
-  @override
   String get termsAndConditions => 'Terms and Conditions';
   @override
   String get termsDescription => 'By using SPACE, you agree to our terms of service and comply with local parking regulations in your country.';
@@ -714,6 +702,25 @@ class _EnglishLocalizations extends AppLocalizations {
 // Swahili Localizations
 class _SwahiliLocalizations extends AppLocalizations {
   _SwahiliLocalizations();
+
+  @override
+  String get chooseYourLanguage => 'Chagua Lugha Yako';
+  @override
+  String get selectPreferredLanguage => 'Chagua lugha yako unayopendeleza kwa uzoefu bora';
+  @override
+  String get selectLanguageForBestExperience => 'Chagua lugha yako unayopendeleza kwa uzoefu bora';
+  @override
+  String get continueText => 'Endelea';
+  @override
+  String get termsAndConditions => 'Masharti na Hali';
+  @override
+  String get termsDescription => 'Kwa kutumia SPACE, unakubaliana na masharti yetu ya huduma na kufuata sheria za maegesho za ndani ya nchi yako.';
+  @override
+  String get privacyDescription => 'Tunaheshimu faragha yako na tunashughulikia data yako kulingana na sheria za faragha zinazotumika katika mkoa wako.';
+  @override
+  String get countrySpecificTerms => 'Masharti ya kipekee ya nchi yanaweza kutumika kulingana na mahali ulipo.';
+  @override
+  String get localLawsNotice => 'Matumizi yanapaswa kufuata sheria na kanuni za maegesho za ndini.';
 
   @override
   String get viewOnMap => 'Ona kwenye Ramani';
@@ -956,8 +963,6 @@ class _SwahiliLocalizations extends AppLocalizations {
   String get selectCountry => 'Chagua Nchi Yako';
   @override
   String get pleaseSelectCountry => 'Tafadhali chagua nchi yako ili kuendelea';
-  @override
-  String get continueText => 'ENDELEA';
   @override
   String get nearestParking => 'Maegesho ya Karibu';
   @override
@@ -1375,8 +1380,7 @@ class _FrenchLocalizations extends AppLocalizations {
   @override
   String get pleaseSelectCountry =>
       'Veuillez sélectionner votre pays pour continuer';
-  @override
-  String get continueText => 'CONTINUER';
+
   @override
   String get nearestParking => 'Parking le plus proche';
   @override
@@ -1524,7 +1528,7 @@ class _FrenchLocalizations extends AppLocalizations {
   @override
   String get lastUpdated => 'Dernière mise à jour';
   @override
-  String get account => 'Compte';
+  String get account => 'Akaunti';
   @override
   String get preferences => 'Mapendekezo';
 
@@ -1536,6 +1540,16 @@ class _FrenchLocalizations extends AppLocalizations {
   String get selectLanguageForBestExperience => 'Chagua lugha yako unayopendeleza kwa uzoefu bora';
   @override
   String get continueText => 'Endelea';
+  @override
+  String get termsAndConditions => 'Masharti na Hali';
+  @override
+  String get termsDescription => 'Kwa kutumia SPACE, unakubaliana na masharti yetu ya huduma na kufuata sheria za maegesho za ndani ya nchi yako.';
+  @override
+  String get privacyDescription => 'Tunaheshimu faragha yako na tunashughulikia data yako kulingana na sheria za faragha zinazotumika katika mkoa wako.';
+  @override
+  String get countrySpecificTerms => 'Masharti ya kipekee ya nchi yanaweza kutumika kulingana na mahali ulipo.';
+  @override
+  String get localLawsNotice => 'Matumizi yanapaswa kufuata sheria na kanuni za maegesho za ndini.';
 
   @override
   String get detectingLocation => 'Kutambua Mahali Panako';
@@ -1806,6 +1820,24 @@ class _SpanishLocalizations extends AppLocalizations {
   String get pleaseSelectCountry => 'Por favor, selecciona tu país para continuar';
   @override
   String get continueText => 'CONTINUAR';
+
+  @override
+  String get termsAndConditions => 'Términos y Condiciones';
+  @override
+  String get termsDescription => 'Al usar SPACE, aceptas nuestros términos de servicio y cumples con las regulaciones de estacionamiento locales de tu país.';
+  @override
+  String get privacyDescription => 'Respetamos tu privacidad y manejamos tus datos según las leyes de privacidad aplicables en tu región.';
+  @override
+  String get countrySpecificTerms => 'Pueden aplicarse términos específicos del país según tu ubicación.';
+  @override
+  String get localLawsNotice => 'El uso debe cumplir con las leyes y regulaciones locales de estacionamiento.';
+  
+  @override
+  String get detectingLocation => 'Detectando Tu Ubicación';
+  @override
+  String get detectingLocationSubtitle => 'Estamos identificando tu país para brindarte la mejor experiencia.';
+  @override
+  String get spaceAvailableInCountry => '¡SPACE está disponible en tu país!';
   @override
   String get nearestParking => 'Estacionamiento más cercano';
   @override
@@ -2247,6 +2279,23 @@ class _GermanLocalizations extends AppLocalizations {
   String get pleaseSelectCountry => 'Bitte wählen Sie Ihr Land aus, um fortzufahren';
   @override
   String get continueText => 'WEITER';
+
+  @override
+  String get chooseYourLanguage => 'Wählen Sie Ihre Sprache aus';
+  @override
+  String get selectPreferredLanguage => 'Wählen Sie Ihre bevorzugte Sprache für die beste Erfahrung';
+  @override
+  String get selectLanguageForBestExperience => 'Wählen Sie Ihre bevorzugte Sprache für die beste Erfahrung';
+  @override
+  String get termsAndConditions => 'Allgemeine Geschäftsbedingungen';
+  @override
+  String get termsDescription => 'Durch die Nutzung von SPACE stimmen Sie unseren Nutzungsbedingungen zu und halten sich an lokale Parkvorschriften in Ihrem Land.';
+  @override
+  String get privacyDescription => 'Wir respektieren Ihre Privatsphäre und verarbeiten Ihre Daten gemäß den geltenden Datenschutzgesetzen Ihrer Region.';
+  @override
+  String get countrySpecificTerms => 'Länderspezifische Bedingungen können je nach Standort gelten.';
+  @override
+  String get localLawsNotice => 'Die Nutzung muss lokalen Parkgesetzen und -vorschriften entsprechen.';
   @override
   String get nearestParking => 'Nächster Parkplatz';
   @override
@@ -2640,6 +2689,23 @@ class _ArabicLocalizations extends AppLocalizations {
   String get pleaseSelectCountry => 'يرجى اختيار بلدك للمتابعة';
   @override
   String get continueText => 'استمر';
+
+  @override
+  String get chooseYourLanguage => 'اختر لغتك';
+  @override
+  String get selectPreferredLanguage => 'اختر لغتك المفضلة للحصول على أفضل تجربة';
+  @override
+  String get selectLanguageForBestExperience => 'اختر لغتك المفضلة للحصول على أفضل تجربة';
+  @override
+  String get termsAndConditions => 'الشروط والأحكام';
+  @override
+  String get termsDescription => 'باستخدام SPACE، فإنك توافق على شروط الخدمة الخاصة بنا وتلتزم باللوائح المحلية للوقوف في بلدك.';
+  @override
+  String get privacyDescription => 'نحترم خصوصيتك ونعالج بياناتك وفقاً لقوانين الخصوصية المعمول بها في منطقتك.';
+  @override
+  String get countrySpecificTerms => 'قد تنطبق شروط خاصة بالبلد بناءً على موقعك.';
+  @override
+  String get localLawsNotice => 'يجب أن تلتزم الاستخدام بقوانين ولوائح الوقوف المحلية.';
   @override
   String get nearestParking => 'أقرب موقف سيارات';
   @override

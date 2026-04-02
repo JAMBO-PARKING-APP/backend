@@ -370,13 +370,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   icon: Icons.help_outline,
                   label: 'Help & Support',
                   onTap: () async {
-                    final Uri emailLaunchUri = Uri(
+                    final Uri emailUri = Uri(
                       scheme: 'mailto',
-                      path: 'support@jamboparking.com',
-                      subject: 'Support Request - ${user.fullName}',
+                      path: 'support@spacepark.com',
+                      query: 'subject=Support Request - ${user.fullName}',
                     );
-                    if (await canLaunchUrl(emailLaunchUri)) {
-                      await launchUrl(emailLaunchUri);
+                    if (await canLaunchUrl(emailUri)) {
+                      await launchUrl(emailUri);
                     }
                   },
                 ),

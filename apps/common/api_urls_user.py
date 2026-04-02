@@ -68,6 +68,7 @@ urlpatterns = [
     path('notifications/<uuid:pk>/', notifications_views.NotificationDetailAPIView.as_view(), name='notification-detail'),
     path('notifications/summary/', notifications_views.NotificationSummaryAPIView.as_view(), name='notification-summary'),
     path('notifications/mark-all-as-read/', notifications_views.MarkAllNotificationsAsReadAPIView.as_view(), name='mark-all-as-read'),
+    path('notifications/fcm/register-token/', notifications_views.RegisterFCMTokenAPIView.as_view(), name='fcm-register-token'),
     path('notifications/fcm/unregister-token/', notifications_views.UnregisterFCMTokenAPIView.as_view(), name='fcm-unregister-token'),
     path('', include('apps.notifications.urls')),
     path('rewards/', include('apps.rewards.urls')),

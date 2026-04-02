@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_user_app/features/auth/providers/vehicle_provider.dart';
 import 'package:parking_user_app/features/parking/providers/reservation_provider.dart';
 import 'package:parking_user_app/features/parking/providers/parking_provider.dart';
 import 'package:parking_user_app/features/parking/models/zone_model.dart';
-import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
+import 'package:parking_user_app/features/parking/models/reservation_model.dart';
+import 'package:parking_user_app/features/payments/services/payment_service.dart';
+import 'package:parking_user_app/core/api_client.dart';
 import 'package:parking_user_app/widgets/payment_selection_dialog.dart';
 import 'package:parking_user_app/features/payments/services/payment_service.dart';
 import 'package:parking_user_app/features/payments/providers/payment_provider.dart';
@@ -193,7 +196,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
           try {
             if (widget.isImmediate) {
                // Direct session start with Pesapal
-               final paymentService = PaymentService();
+               final paymentService = PaymentService(ApiClient());
               final result = await paymentService.initiatePesapalPayment(
                 amount: cost,
                 description: "Parking Session: ${zone.name}",
@@ -256,7 +259,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
                 return;
               }
 
-              final paymentService = PaymentService();
+              final paymentService = PaymentService(ApiClient());
               final result = await paymentService.initiatePesapalPayment(
                 amount: cost,
                 description: "Reservation Payment: ${reservation.id}",
@@ -308,7 +311,7 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
           DialogService.showLoading(message: l10n.processingPayment);
 
           try {
-            final paymentService = PaymentService();
+            final paymentService = PaymentService(ApiClient());
             final result = await paymentService.executePesapalTokenPayment(
               amount: cost,
               paymentMethodId: method.id,
