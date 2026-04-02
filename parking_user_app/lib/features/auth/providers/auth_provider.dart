@@ -20,6 +20,7 @@ class AuthProvider with ChangeNotifier {
   AuthStatus _status = AuthStatus.initial;
   String? _errorMessage;
   bool _isInitialLoadComplete = false;
+  bool _isCheckingAuth = false; // Add this flag to prevent race conditions
 
   User? get user => _user;
   AuthStatus get status => _status;
@@ -36,21 +37,32 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> checkAuth() async {
-    // 0. Version Check
-    final needsUpdate = await _checkVersion();
-    if (needsUpdate) {
-      _status = AuthStatus.needsUpdate;
-      notifyListeners();
-      setInitialLoadComplete();
+    // Prevent multiple simultaneous auth checks
+    if (_isCheckingAuth) {
+      debugPrint('[AuthProvider] Auth check already in progress, skipping...');
       return;
     }
+    
+    _isCheckingAuth = true;
+    
+    try {
+      debugPrint('[AuthProvider] ====== STARTING AUTH CHECK ======');
+      
+      // 0. Version Check
+      final needsUpdate = await _checkVersion();
+      if (needsUpdate) {
+        _status = AuthStatus.needsUpdate;
+        notifyListeners();
+        setInitialLoadComplete();
+        return;
+      }
 
-    // Only show global loading if we are NOT already authenticated
-    if (_status != AuthStatus.authenticated &&
-        _status != AuthStatus.authenticating) {
-      _status = AuthStatus.authenticating;
-      notifyListeners();
-    }
+      // Only show global loading if we are NOT already authenticated
+      if (_status != AuthStatus.authenticated &&
+          _status != AuthStatus.authenticating) {
+        _status = AuthStatus.authenticating;
+        notifyListeners();
+      }
 
     final storage = StorageManager();
     _hasRequestedPermissions = await storage.hasRequestedPermissions();
@@ -86,9 +98,11 @@ class AuthProvider with ChangeNotifier {
 
     // 2. Refresh from network (Background update)
     if (token != null) {
+      debugPrint('[AuthProvider] Checking profile from network...');
       try {
         final user = await _authService.getProfile();
         if (user != null) {
+          debugPrint('[AuthProvider] ✅ Network profile fetch successful');
           _user = user;
           _status = AuthStatus.authenticated;
 
@@ -98,34 +112,37 @@ class AuthProvider with ChangeNotifier {
             '[AuthProvider] Updated profile from network and saved to storage',
           );
           
-          // Ensure background service is running
-          // initializeBackgroundService();
-          
           notifyListeners();
         } else if (_user == null) {
-          // Only set to unauthenticated if we defined no user from storage AND network failed
-          // But if network failed with 401, AuthService.getProfile returns null
-          // We might want to check validity of token?
-          // For now, if we have cached user, we stay authenticated even if network fails (offline mode)
-          // If we had no cached user and network fails, we are unauthenticated
+          debugPrint('[AuthProvider] ❌ Network profile fetch returned null and no cached user - setting unauthenticated');
           _status = AuthStatus.unauthenticated;
           notifyListeners();
+        } else {
+          debugPrint('[AuthProvider] ⚠️ Network profile fetch returned null but using cached user (offline mode)');
         }
       } catch (e) {
-        debugPrint('[AuthProvider] Network profile fetch failed: $e');
+        debugPrint('[AuthProvider] ❌ Network profile fetch exception: $e');
         // If we have _user from storage, we stay authenticated (Offline mode)
         if (_user == null) {
+          debugPrint('[AuthProvider] No cached user, setting to unauthenticated');
           _status = AuthStatus.unauthenticated;
           notifyListeners();
+        } else {
+          debugPrint('[AuthProvider] Using cached user data (offline mode)');
         }
       }
     } else {
+      debugPrint('[AuthProvider] No token found, setting to unauthenticated');
       _status = AuthStatus.unauthenticated;
       notifyListeners();
     }
     
     // Always mark initial load as complete to prevent hanging on splash screen
     setInitialLoadComplete();
+    } finally {
+      _isCheckingAuth = false; // Reset the flag
+      debugPrint('[AuthProvider] ====== AUTH CHECK COMPLETE ======');
+    }
   }
 
   void skipVersionCheck() {
@@ -219,11 +236,14 @@ class AuthProvider with ChangeNotifier {
       debugPrint('[AuthProvider] User: ${_user?.firstName} ${_user?.lastName}');
       debugPrint('[AuthProvider] Status changed to: $_status');
 
-      // Register FCM token after successful login
+      // Register FCM token after successful login - don't wait for completion
       FCMService().registerToken().then((success) {
         debugPrint('[AuthProvider] FCM token registration: $success');
+      }).catchError((error) {
+        debugPrint('[AuthProvider] FCM token registration failed: $error');
+        // Don't let FCM registration failure affect login status
       });
-
+      
       notifyListeners();
       // Connect WebSocket after login
       WebSocketService().connect();

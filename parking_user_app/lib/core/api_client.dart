@@ -68,8 +68,9 @@ class ApiClient {
 
           if (e.response?.statusCode == 401) {
             debugPrint(
-              '[ApiClient] 401 Unauthorized for ${e.requestOptions.path}',
+              '[ApiClient] 🔴 401 Unauthorized for ${e.requestOptions.path}',
             );
+            debugPrint('[ApiClient] Response body: ${e.response?.data}');
 
             // Check if session was invalidated (logged in from another device)
             final sessionInvalidated = e.response?.headers.value(
@@ -82,6 +83,8 @@ class ApiClient {
               // Clear local storage and navigate to login
               await _storageManager.clearAuthData();
               // The app will handle navigation to login via auth state listener
+            } else {
+              debugPrint('[ApiClient] 401 error but session not explicitly invalidated. Token may be expired or invalid.');
             }
           }
           return handler.next(e);

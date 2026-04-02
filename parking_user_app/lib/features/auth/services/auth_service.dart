@@ -33,19 +33,21 @@ class AuthService {
 
         debugPrint('[AuthService] Login successful, saving tokens...');
         await _storageManager.saveTokens(access, refresh);
+        
+        // Extract jti (JWT ID) from token payload for reference
+        // The backend uses this to enforce single-device login
         try {
           final parts = access.split('.');
           if (parts.length == 3) {
             final payload = base64Url.normalize(parts[1]);
             final decoded = utf8.decode(base64Url.decode(payload));
             final map = json.decode(decoded);
-            if (map['device_session_id'] != null) {
-              await _storageManager.saveDeviceSession(
-                map['device_session_id'].toString(),
-              );
-            }
+            // Log the jti for debugging purposes
+            debugPrint('[AuthService] Token JTI: ${map['jti']}');
           }
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('[AuthService] Could not extract token payload: $e');
+        }
 
         try {
           await _storageManager.saveUserJson(json.encode(userData));
@@ -140,19 +142,19 @@ class AuthService {
         final userData = response.data['user'];
 
         await _storageManager.saveTokens(access, refresh);
+        
+        // Extract and log jti for debugging
         try {
           final parts = access.split('.');
           if (parts.length == 3) {
             final payload = base64Url.normalize(parts[1]);
             final decoded = utf8.decode(base64Url.decode(payload));
             final map = json.decode(decoded);
-            if (map['device_session_id'] != null) {
-              await _storageManager.saveDeviceSession(
-                map['device_session_id'].toString(),
-              );
-            }
+            debugPrint('[AuthService] OTP Verification - Token JTI: ${map['jti']}');
           }
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('[AuthService] Could not extract OTP token payload: $e');
+        }
 
         try {
           await _storageManager.saveUserJson(json.encode(userData));

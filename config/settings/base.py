@@ -100,7 +100,6 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'apps.common.middleware.RegionalContextMiddleware',
-    'apps.accounts.middleware.SingleDeviceLoginMiddleware',  
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -200,6 +199,7 @@ REST_FRAMEWORK = {
         'user': '1000/hour'
     },
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'EXCEPTION_HANDLER': 'apps.accounts.exceptions.custom_exception_handler',
 }
 
 from datetime import timedelta

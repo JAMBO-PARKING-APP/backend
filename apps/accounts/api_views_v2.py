@@ -205,6 +205,10 @@ class LoginAPIView(APIView):
             user.last_login_device = device_info or request.META.get('HTTP_USER_AGENT', '')[:255]
             user.save()
             
+            logger.info(f"✅ User {user.phone} logged in successfully. "
+                       f"Session JTI set to {token_jti[:20]}... "
+                       f"Device: {user.device_model} ({user.device_os})")
+            
             return Response({
                 'access': str(access_token),
                 'refresh': str(refresh),
@@ -212,15 +216,17 @@ class LoginAPIView(APIView):
                 'message': 'Login successful'
             }, status=status.HTTP_200_OK)
         try:
-            print(f"LoginAPIView: serializer.errors = {serializer.errors}")
+            logger.warning(f"LoginAPIView: serializer.errors = {serializer.errors}")
         except Exception:
-            print("LoginAPIView: could not print serializer.errors")
+            logger.warning("LoginAPIView: could not log serializer.errors")
         errors = serializer.errors
         if isinstance(errors, dict) and errors.get('detail'):
             detail = errors.get('detail')
             message = detail[0] if isinstance(detail, (list, tuple)) else detail
+            logger.warning(f"❌ Login failed for {request.data.get('phone')}: {message}")
             return Response({'error': message}, status=status.HTTP_403_FORBIDDEN)
 
+        logger.warning(f"❌ Login validation failed: {errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ProfileAPIView(APIView):
