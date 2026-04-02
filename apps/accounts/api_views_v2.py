@@ -237,18 +237,23 @@ class ProfileAPIView(APIView):
     @extend_schema(responses={200: UserProfileSerializer})
     
     def get(self, request):
+        logger.info(f"📋 Profile GET request from user {request.user.phone}")
         serializer = UserProfileSerializer(request.user, context={'request': request})
+        logger.info(f"✅ Profile returned for user {request.user.phone}")
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def put(self, request):
+        logger.info(f"📝 Profile PUT request from user {request.user.phone}")
         serializer = UpdateProfileSerializer(request.user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            logger.info(f"✅ Profile updated for user {request.user.phone}")
             return Response({
                 'message': 'Profile updated successfully',
                 'user': UserProfileSerializer(request.user, context={'request': request}).data
             }, status=status.HTTP_200_OK)
         
+        logger.warning(f"❌ Profile update failed for user {request.user.phone}: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def patch(self, request):

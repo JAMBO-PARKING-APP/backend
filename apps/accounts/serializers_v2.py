@@ -4,6 +4,7 @@ from .models import User, Vehicle, OTPCode
 from apps.parking.models import ParkingSession, Zone, Reservation
 from apps.enforcement.models import Violation
 from apps.payments.models import Transaction, PaymentMethod
+from apps.common.serializers import CountrySerializer
 from drf_spectacular.utils import extend_schema_field
 
 class VehicleSerializer(serializers.ModelSerializer):
@@ -16,14 +17,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source='get_full_name', read_only=True)
     vehicles = VehicleSerializer(many=True, read_only=True)
     profile_photo = serializers.SerializerMethodField()
-    country_name = serializers.CharField(source='country.name', read_only=True, allow_null=True)
+    country_details = CountrySerializer(source='country', read_only=True, allow_null=True)
     
     class Meta:
         model = User
         fields = ['id', 'phone', 'email', 'first_name', 'last_name', 'full_name', 
                   'role', 'profile_photo', 'is_verified', 'created_at', 'vehicles', 'wallet_balance',
-                  'app_version', 'device_model', 'device_os', 'country', 'country_name']
-        read_only_fields = ['id', 'role', 'is_verified', 'created_at', 'wallet_balance', 'country', 'country_name']
+                  'app_version', 'device_model', 'device_os', 'country', 'country_details']
+        read_only_fields = ['id', 'role', 'is_verified', 'created_at', 'wallet_balance', 'country', 'country_details']
     
     @extend_schema_field(serializers.URLField(allow_null=True))
     def get_profile_photo(self, obj):

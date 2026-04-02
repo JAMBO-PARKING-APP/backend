@@ -96,11 +96,19 @@ class AuthProvider with ChangeNotifier {
       }
     }
 
-    // 2. Refresh from network (Background update)
+    // 2. Refresh from network (Background update) - with timeout to prevent hanging
     if (token != null) {
-      debugPrint('[AuthProvider] Checking profile from network...');
+      debugPrint('[AuthProvider] Attempting to fetch profile from network...');
       try {
-        final user = await _authService.getProfile();
+        // Use timeout to prevent hanging on network issues  
+        final user = await _authService.getProfile().timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            debugPrint('[AuthProvider] ⏱️ Profile fetch timed out after 5 seconds');
+            return null;
+          },
+        );
+        
         if (user != null) {
           debugPrint('[AuthProvider] ✅ Network profile fetch successful');
           _user = user;
@@ -128,7 +136,7 @@ class AuthProvider with ChangeNotifier {
           _status = AuthStatus.unauthenticated;
           notifyListeners();
         } else {
-          debugPrint('[AuthProvider] Using cached user data (offline mode)');
+          debugPrint('[AuthProvider] ⚠️ Using cached user data despite network error (offline mode)');
         }
       }
     } else {

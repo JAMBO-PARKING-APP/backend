@@ -105,7 +105,11 @@ class AuthService {
         
         try {
           await _storageManager.saveUserJson(json.encode(userData));
-        } catch (_) {}
+          debugPrint('[AuthService] ✅ User data saved to storage');
+        } catch (e) {
+          debugPrint('[AuthService] ⚠️ ERROR saving user data to storage: $e');
+          // Still return success if tokens were saved
+        }
 
         debugPrint('[AuthService] Returning success with user data');
         return {'success': true, 'user': User.fromJson(userData)};
@@ -158,7 +162,11 @@ class AuthService {
 
         try {
           await _storageManager.saveUserJson(json.encode(userData));
-        } catch (_) {}
+          debugPrint('[AuthService] ✅ User data saved to storage');
+        } catch (e) {
+          debugPrint('[AuthService] ⚠️ ERROR saving user data to storage: $e');
+          // Still return success if tokens were saved
+        }
 
         return {'success': true, 'user': User.fromJson(userData)};
       }
