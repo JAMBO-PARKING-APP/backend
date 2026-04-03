@@ -13,7 +13,7 @@ from rest_framework.views import APIView
 
 from .models import User
 from .serializers_v2 import UserProfileSerializer
-from apps.parking.models import UserLocation
+from apps.accounts.models import UserLocation
 from apps.common.models import Country
 from apps.common.serializers import CountrySerializer
 
