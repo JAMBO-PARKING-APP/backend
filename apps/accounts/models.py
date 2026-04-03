@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models, transaction
 from phonenumber_field.modelfields import PhoneNumberField
-from apps.common.models import BaseModel
+from apps.common.models import BaseModel, RegionalModel
 from apps.common.constants import UserRole
 from django.utils.translation import gettext_lazy as _
 from .managers import UserManager
