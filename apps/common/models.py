@@ -78,8 +78,13 @@ class SystemConfiguration(RegionalModel, models.Model):
         verbose_name_plural = 'System Configuration'
     
     def save(self, *args, **kwargs):
-        if not self.pk and SystemConfiguration.objects.exists():
-            raise ValueError('Only one system configuration instance is allowed')
+        # Allow one configuration per country
+        if not self.pk:
+            country = self.country or get_current_country()
+            if country and SystemConfiguration.all_objects.filter(country=country).exists():
+                raise ValueError(f'System configuration for {country.name} already exists.')
+            elif not country and SystemConfiguration.all_objects.filter(country__isnull=True).exists():
+                raise ValueError('Global system configuration already exists.')
         super().save(*args, **kwargs)
     
     @classmethod

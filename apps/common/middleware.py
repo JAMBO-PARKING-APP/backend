@@ -1,4 +1,7 @@
-from .models import set_current_country
+from .models import set_current_country, get_current_country
+import logging
+
+logger = logging.getLogger(__name__)
 
 class RegionalContextMiddleware:
     """Middleware to set the regional context (Country) for the current thread.
@@ -12,21 +15,20 @@ class RegionalContextMiddleware:
     def __call__(self, request):
         set_current_country(None)
         
-        # 1. Check for explicit header override (Prioritize this)
         country_id = request.headers.get('X-Country-ID') or request.headers.get('X-Country-Code')
         if country_id:
             from .models import Country
             try:
-                if len(country_id) == 2: # ISO Code
+                if len(country_id) == 2:
                     country = Country.objects.get(iso_code=country_id.upper(), is_active=True)
                 else: # UUID
                     country = Country.objects.get(id=country_id, is_active=True)
                 set_current_country(country)
-            except (Country.DoesNotExist, Exception):
-                pass
+                logger.debug(f"RegionalContext: Set country to {country.name} via header {country_id}")
+            except (Country.DoesNotExist, Exception) as e:
+                logger.warning(f"RegionalContext: Failed to set country via header {country_id}: {e}")
         
         if request.user.is_authenticated:
-            # 2. Check for session override (e.g., for superusers/admins)
             if not get_current_country():
                 session_country_id = request.session.get('selected_country_id')
                 if session_country_id:
@@ -37,11 +39,11 @@ class RegionalContextMiddleware:
                     except Country.DoesNotExist:
                         pass
             
-            # 3. Fallback to User Profile
             if not get_current_country():
                 country = getattr(request.user, 'country', None)
                 if country:
                     set_current_country(country)
+                    logger.debug(f"RegionalContext: Set country to {country.name} via user profile")
         
         response = self.get_response(request)
         

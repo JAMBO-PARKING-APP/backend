@@ -145,9 +145,8 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
 
         super().save(*args, **kwargs)
 
-class Wallet(BaseModel):
+class Wallet(RegionalModel, BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='wallets')
-    country = models.ForeignKey('common.Country', on_delete=models.CASCADE, related_name='wallets')
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, verbose_name=_("Balance"))
 
     class Meta:
