@@ -13,7 +13,9 @@ class AppTheme {
   static const Color surfaceColor = Color(0xFFF9FAFB); 
   static const Color textPrimary = Color(0xFF121212); // True Black
   static const Color textSecondary = Color(0xFF64748B); 
-  static const Color borderColor = Color(0xFFE5E7EB); 
+  static const Color borderColor = Color(0xFFE5E7EB);
+  /// Slightly cool off-white — reads “premium” without heavy contrast.
+  static const Color scaffoldMuted = Color(0xFFF8FAFC);
 
   static ThemeData officerTheme = ThemeData(
     useMaterial3: true,
@@ -30,7 +32,7 @@ class AppTheme {
       onSurface: textPrimary,
       brightness: Brightness.light,
     ),
-    scaffoldBackgroundColor: backgroundColor,
+    scaffoldBackgroundColor: scaffoldMuted,
     textTheme: GoogleFonts.interTextTheme().copyWith(
       headlineLarge: GoogleFonts.inter(
         fontSize: 28,
@@ -59,6 +61,18 @@ class AppTheme {
         color: textSecondary,
       ),
     ),
+    dividerTheme: DividerThemeData(
+      color: borderColor.withValues(alpha: 0.9),
+      thickness: 1,
+      space: 1,
+    ),
+    listTileTheme: ListTileThemeData(
+      iconColor: primaryColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    ),
     appBarTheme: AppBarTheme(
       backgroundColor: Colors.white,
       foregroundColor: textPrimary,
@@ -73,11 +87,17 @@ class AppTheme {
       ),
       iconTheme: const IconThemeData(color: textPrimary, size: 24),
     ),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
+    ),
     cardTheme: CardThemeData(
       color: cardColor,
-      elevation: 0,
+      elevation: 1,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         side: const BorderSide(color: borderColor, width: 1),
       ),
       margin: EdgeInsets.zero,
@@ -86,9 +106,9 @@ class AppTheme {
       style: ElevatedButton.styleFrom(
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
-        elevation: 0,
+        elevation: 1,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-        shape: const StadiumBorder(),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold),
       ),
     ),
@@ -96,7 +116,7 @@ class AppTheme {
       style: OutlinedButton.styleFrom(
         foregroundColor: primaryColor,
         minimumSize: const Size(double.infinity, 56),
-        shape: const StadiumBorder(),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         side: const BorderSide(color: primaryColor, width: 1.5),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       ),
@@ -128,6 +148,28 @@ class AppTheme {
       foregroundColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 4,
+    ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      backgroundColor: const Color(0xFF0F172A),
+      contentTextStyle: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600),
+    ),
+    dialogTheme: DialogThemeData(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: Colors.white,
+      titleTextStyle: GoogleFonts.inter(
+        fontSize: 20,
+        fontWeight: FontWeight.w800,
+        color: textPrimary,
+      ),
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      showDragHandle: true,
     ),
   );
 }

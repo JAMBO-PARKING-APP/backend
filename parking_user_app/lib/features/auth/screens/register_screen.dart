@@ -5,6 +5,7 @@ import 'package:parking_officer_app/core/app_theme.dart';
 import 'package:parking_officer_app/core/user_strings.dart';
 import 'package:parking_officer_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_officer_app/features/legal/screens/legal_document_screen.dart';
+import 'package:parking_officer_app/core/ui/space_ui.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -129,21 +130,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
       appBar: AppBar(title: Text(UserStrings.t(context, 'createAccountTitle'))),
       body: Consumer<AuthProvider>(
         builder: (context, auth, _) {
-          return Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 8),
-                  Text(
-                    UserStrings.t(context, 'appTitle'),
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryColor,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
+          return SpacePageBackground(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 8),
+                    Text(
+                      UserStrings.t(context, 'appTitle'),
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryColor,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
                   const SizedBox(height: 8),
                   Text(
                     UserStrings.t(context, 'driverSignup'),
@@ -310,6 +312,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                   ),
                 ],
+                ),
               ),
             ),
           );

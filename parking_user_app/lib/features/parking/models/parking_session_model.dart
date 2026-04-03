@@ -13,6 +13,7 @@ class ParkingSession {
 
   final DateTime? actualEndTime;
   final String? zoneName;
+  final String? qrCodeData;
 
   ParkingSession({
     required this.id,
@@ -28,6 +29,7 @@ class ParkingSession {
     this.driverName,
     this.driverPhone,
     this.zoneName,
+    this.qrCodeData,
   });
 
   factory ParkingSession.fromJson(Map<String, dynamic> json) {
@@ -56,6 +58,7 @@ class ParkingSession {
           json['driver_name'] ?? json['vehicle']?['owner']?['full_name'],
       driverPhone: json['driver_phone'] ?? json['vehicle']?['owner']?['phone'],
       zoneName: json['zone_name'],
+      qrCodeData: json['qr_code_data']?.toString(),
     );
   }
 }

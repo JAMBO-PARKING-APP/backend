@@ -3,12 +3,13 @@ from django.db.models import Q
 from django.utils import timezone
 from datetime import timedelta
 from decimal import Decimal
+import uuid
 import logging
 from typing import Optional
 
 from apps.parking.models import Zone, Reservation, ParkingSession, ParkingSlot
 from apps.common.constants import ParkingStatus, SlotStatus, TransactionStatus
-from apps.payments.models import WalletTransaction
+from apps.payments.models import WalletTransaction, Transaction, Invoice
 from apps.notifications.notification_triggers import notify_reservation_confirmed, notify_reservation_cancelled
 
 logger = logging.getLogger(__name__)
@@ -106,19 +107,33 @@ class ReservationService:
             if country:
                 from apps.accounts.models import Wallet
                 wallet, _ = Wallet.objects.get_or_create(user=user, country=country)
-                wallet.balance = F('balance') - cost
+                wallet.balance = F('balance') - total_cost
                 wallet.save(update_fields=['balance'])
             else:
-                user.wallet_balance_legacy = F('wallet_balance_legacy') - cost
+                user.wallet_balance_legacy = F('wallet_balance_legacy') - total_cost
                 user.save(update_fields=['wallet_balance_legacy'])
             
             WalletTransaction.objects.create(
                 user=user,
-                amount=cost,
+                amount=total_cost,
                 transaction_type='payment',
                 status=TransactionStatus.COMPLETED,
                 description=f"Immediate reservation for {zone.name}",
                 metadata={'reservation_id': str(reservation.id)}
+            )
+            trans = Transaction.objects.create(
+                user=user,
+                reservation=reservation,
+                amount=total_cost,
+                status=TransactionStatus.COMPLETED,
+                idempotency_key=str(uuid.uuid4()),
+                processor_response={'source': 'reservation_wallet_immediate'},
+            )
+            Invoice.objects.get_or_create(
+                transaction=trans,
+                defaults={
+                    'invoice_number': f"INV-{str(trans.id).replace('-', '')[:12].upper()}",
+                },
             )
             
             reservation.payment_reference = 'WALLET'
@@ -160,6 +175,20 @@ class ReservationService:
                 status=TransactionStatus.COMPLETED,
                 description=f"Reservation for {reservation.zone.name}",
                 metadata={'reservation_id': str(reservation.id)}
+            )
+            trans = Transaction.objects.create(
+                user=user,
+                reservation=reservation,
+                amount=reservation.cost,
+                status=TransactionStatus.COMPLETED,
+                idempotency_key=str(uuid.uuid4()),
+                processor_response={'source': 'reservation_wallet_confirm'},
+            )
+            Invoice.objects.get_or_create(
+                transaction=trans,
+                defaults={
+                    'invoice_number': f"INV-{str(trans.id).replace('-', '')[:12].upper()}",
+                },
             )
             
             reservation.payment_reference = 'WALLET'

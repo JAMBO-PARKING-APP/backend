@@ -26,6 +26,18 @@ from .pesapal_service import PesapalService
 from apps.enforcement.models import Violation
 from apps.parking.models import ParkingSession, ParkingStatus, Reservation
 
+
+def _ensure_invoice(transaction_obj):
+    """Create an invoice if it does not already exist."""
+    if not transaction_obj:
+        return None
+    invoice_number = f"INV-{str(transaction_obj.id).replace('-', '')[:12].upper()}"
+    invoice, _ = Invoice.objects.get_or_create(
+        transaction=transaction_obj,
+        defaults={'invoice_number': invoice_number},
+    )
+    return invoice
+
 class PesapalPreWarmView(APIView):
     """
     Pre-warm Pesapal cache by fetching auth token and registering IPN in background.
@@ -298,19 +310,35 @@ class WalletTopUpAPIView(APIView):
         currency = country.currency if country else "UGX"
         
         try:
-            response = pesapal.create_payment(
+            trans = Transaction.objects.create(
+                user=request.user,
                 amount=amount,
-                currency=currency,
-                description=f'Wallet top-up - {merchant_reference}',
-                payment_type=payment_type,
-                merchant_reference=merchant_reference,
-                callback_url=f"{settings.BASE_URL}/api/payments/pesapal/callback/",
                 idempotency_key=merchant_reference,
+                pesapal_merchant_reference=merchant_reference,
                 charge_amount_processor=amount,
                 charge_currency_processor=currency,
                 status='pending',
-                processor_response={'is_wallet_topup': True}
+                processor_response={
+                    'is_wallet_topup': True,
+                    'payment_type': payment_type,
+                },
             )
+
+            response = pesapal.create_payment(
+                amount=amount,
+                merchant_reference=merchant_reference,
+                description=f'Wallet top-up - {merchant_reference}',
+                user=request.user,
+                currency=currency,
+            )
+
+            if response and response.get('order_tracking_id'):
+                trans.pesapal_order_tracking_id = response.get('order_tracking_id')
+                trans.processor_response = {
+                    **(trans.processor_response or {}),
+                    **(response if isinstance(response, dict) else {}),
+                }
+                trans.save(update_fields=['pesapal_order_tracking_id', 'processor_response'])
             
             if response and 'redirect_url' in response:
                 return Response({
@@ -320,9 +348,15 @@ class WalletTopUpAPIView(APIView):
                     'merchant_reference': merchant_reference
                 }, status=status.HTTP_200_OK)
             else:
+                trans.status = 'failed'
+                trans.processor_response = {
+                    **(trans.processor_response or {}),
+                    **(response if isinstance(response, dict) else {'error': 'No redirect_url from Pesapal'}),
+                }
+                trans.save(update_fields=['status', 'processor_response'])
                 return Response({
                     'success': False,
-                    'message': 'Failed to initiate payment'
+                    'message': response.get('error', 'Failed to initiate payment') if isinstance(response, dict) else 'Failed to initiate payment'
                 }, status=status.HTTP_400_BAD_REQUEST)
                 
         except Exception as e:
@@ -535,6 +569,7 @@ class PesapalUserCallbackView(APIView):
                 else:
                     from apps.notifications.notification_triggers import notify_payment_success
                     notify_payment_success(trans)
+                _ensure_invoice(trans)
                 
                 payment_token = status_response.get('payment_token')
                 card_details = status_response.get('card_details', {})
@@ -644,6 +679,7 @@ class PesapalIPNAPIView(APIView):
                 else:
                     from apps.notifications.notification_triggers import notify_payment_success
                     notify_payment_success(trans)
+                _ensure_invoice(trans)
                 payment_token = status_response.get('payment_token')
                 card_details = status_response.get('card_details', {})
                 if payment_token:
@@ -727,7 +763,8 @@ class ExecutePesapalTokenPaymentAPIView(APIView):
             trans.pesapal_order_tracking_id = response.get('order_tracking_id')
             p_status = response.get('status')
             if p_status == '200' and not response.get('redirect_url'):
-                 trans.status = 'completed'
+                trans.status = 'completed'
+                _ensure_invoice(trans)
             
             trans.save()
             

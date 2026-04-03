@@ -6,6 +6,7 @@ import 'package:parking_officer_app/core/app_theme.dart';
 import 'package:parking_officer_app/features/auth/screens/register_screen.dart';
 import 'package:parking_officer_app/features/legal/screens/legal_document_screen.dart';
 import 'package:parking_officer_app/core/user_strings.dart';
+import 'package:parking_officer_app/core/ui/space_ui.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -90,10 +91,11 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Consumer<AuthProvider>(
         builder: (context, auth, _) {
-          return Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
+          return SpacePageBackground(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -293,6 +295,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                 ],
               ),
+            ),
             ),
           );
         },

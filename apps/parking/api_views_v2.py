@@ -145,7 +145,7 @@ class ZoneAvailabilityAPIView(APIView):
             zone = Zone.objects.get(id=zone_id, is_active=True)
             
             available_slots = zone.available_slots_count
-            occupied_slots = zone.occupied_slots_count
+            occupied_slots = zone.occupied_slots
             reserved_slots = zone.slots.filter(status=SlotStatus.RESERVED).count()
             disabled_slots = zone.slots.filter(status=SlotStatus.DISABLED).count()
             total_slots = zone.capacity
@@ -209,7 +209,7 @@ class StartParkingAPIView(APIView):
             
             if slot_id:
                 try:
-                    parking_slot = ParkingSlot.objects.get(
+                    parking_slot = ParkingSlot.objects.select_for_update().get(
                         id=slot_id,
                         zone=zone,
                         status=SlotStatus.AVAILABLE
@@ -219,14 +219,12 @@ class StartParkingAPIView(APIView):
                         'error': 'Selected parking slot is not available'
                     }, status=status.HTTP_400_BAD_REQUEST)
             else:
-                parking_slot = zone.slots.filter(status=SlotStatus.AVAILABLE).first()
+                parking_slot = zone.slots.select_for_update().filter(status=SlotStatus.AVAILABLE).first()
                 if not parking_slot:
                     return Response({
                         'error': 'No available slots in this zone'
                     }, status=status.HTTP_400_BAD_REQUEST)
-            
-            parking_slot.status = SlotStatus.OCCUPIED
-            parking_slot.save()
+
             planned_end = timezone.now() + timedelta(hours=duration_hours)
             estimated_cost = zone.hourly_rate * Decimal(str(duration_hours))
             logger.debug("Starting parking: user=%s vehicle=%s zone=%s duration_hours=%s planned_end=%s estimated_cost=%s",
@@ -247,6 +245,7 @@ class StartParkingAPIView(APIView):
                         description=f'Parking payment for zone {zone.name}'
                     )
                     
+                    # Mark slot occupied only when session actually starts.
                     parking_slot.status = SlotStatus.OCCUPIED
                     parking_slot.save()
                     

@@ -60,6 +60,7 @@ dependencies:
   web_socket_channel: ^3.0.1
   country_code_picker: ^3.0.0
   webview_flutter: ^4.7.0
+  qr_flutter: ^4.1.0
 
 dev_dependencies:
   flutter_test:

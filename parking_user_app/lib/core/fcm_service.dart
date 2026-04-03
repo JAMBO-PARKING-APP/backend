@@ -70,6 +70,18 @@ class FCMService {
     }
   }
 
+  /// Call after login to ensure token is registered with auth context.
+  Future<void> syncTokenWithBackend() async {
+    try {
+      _fcmToken ??= await _firebaseMessaging.getToken();
+      if (_fcmToken != null) {
+        await _registerTokenWithBackend(_fcmToken!);
+      }
+    } catch (e) {
+      debugPrint('Error syncing FCM token: $e');
+    }
+  }
+
   Future<void> _initializeLocalNotifications() async {
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',

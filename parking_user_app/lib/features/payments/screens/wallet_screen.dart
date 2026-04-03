@@ -8,6 +8,7 @@ import 'package:parking_officer_app/features/payments/screens/payment_summary_sc
 import 'package:parking_officer_app/features/payments/screens/transactions_list_screen.dart';
 import 'package:parking_officer_app/features/payments/screens/invoices_list_screen.dart';
 import 'package:parking_officer_app/features/payments/screens/wallet_transactions_list_screen.dart';
+import 'package:parking_officer_app/core/ui/space_ui.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -52,44 +53,83 @@ class _WalletScreenState extends State<WalletScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(UserStrings.t(context, 'walletTitle'))),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              UserStrings.t(context, 'walletBalance'),
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-            ),
-            const SizedBox(height: 12),
+      body: SpacePageBackground(
+        child: SingleChildScrollView(
+          padding: kSpacePagePadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SpaceSectionTitle(
+                title: UserStrings.t(context, 'walletBalance'),
+                subtitle: UserStrings.t(context, 'walletBalanceHint'),
+              ),
             if (_isLoading)
-              const Center(child: CircularProgressIndicator())
+              const Center(child: Padding(
+                padding: EdgeInsets.all(32),
+                child: CircularProgressIndicator(),
+              ))
             else if (_error != null)
-              Text(
-                _error!,
-                style: const TextStyle(color: Colors.red),
+              SpaceSurfaceCard(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  _error!,
+                  style: const TextStyle(color: AppTheme.errorColor),
+                ),
               )
             else
-              Container(
-                padding: const EdgeInsets.all(16),
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppTheme.borderColor),
-                ),
-                child: Text(
-                  '${_currencySymbol} ${_balance?.toStringAsFixed(2) ?? '0.00'}',
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                    color: AppTheme.primaryColor,
-                  ),
+              SpaceSurfaceCard(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+                color: AppTheme.primaryColor.withValues(alpha: 0.06),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.account_balance_wallet_rounded,
+                        color: AppTheme.primaryColor,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _currency,
+                            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                  color: AppTheme.textSecondary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${_currencySymbol} ${_balance?.toStringAsFixed(2) ?? '0.00'}',
+                            style: const TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w900,
+                              color: AppTheme.primaryColor,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -166,6 +206,7 @@ class _WalletScreenState extends State<WalletScreen> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

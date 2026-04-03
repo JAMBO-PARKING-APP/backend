@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:parking_officer_app/features/auth/models/user_model.dart';
 import 'package:parking_officer_app/features/auth/services/auth_service.dart';
 import 'package:parking_officer_app/core/storage_manager.dart';
+import 'package:parking_officer_app/core/fcm_service.dart';
 import 'dart:convert';
 
 enum AuthStatus { authenticated, unauthenticated, authenticating, initial }
@@ -70,6 +71,7 @@ class AuthProvider with ChangeNotifier {
         print('   - Country Name: ${_user?.countryName}');
         print('   - Country Identifier: ${_user?.countryIdentifier}');
         _status = AuthStatus.authenticated;
+        await FCMService().syncTokenWithBackend();
         notifyListeners();
         return true;
       } else {
@@ -114,6 +116,7 @@ class AuthProvider with ChangeNotifier {
       if (result['success'] == true) {
         _user = result['user'];
         _status = AuthStatus.authenticated;
+        await FCMService().syncTokenWithBackend();
         notifyListeners();
         return true;
       }
