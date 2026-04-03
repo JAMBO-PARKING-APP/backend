@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
+import 'package:parking_officer_app/core/location_service.dart';
 import 'package:parking_officer_app/core/constants.dart';
 import 'package:parking_officer_app/core/storage_manager.dart';
 
@@ -42,20 +43,35 @@ class ApiClient {
           }
 
           // Attach Country header to all requests for regional isolation
-          final userJson = await _storageManager.getUserJson();
-          if (userJson != null) {
-            try {
-              final userMap = json.decode(userJson);
-              final country = userMap['country']?.toString();
-              if (country != null && country.isNotEmpty && country != 'null') {
-                if (country.length == 2) {
-                   options.headers['X-Country-Code'] = country;
-                } else {
-                   options.headers['X-Country-ID'] = country;
-                }
-              }
-            } catch (_) {}
+          // 1. Prioritize manual user selection
+          String? country = await _storageManager.getSelectedCountryCode();
+          
+          // 2. Fallback to profile country if no manual selection
+          if (country == null || country.isEmpty || country == 'null') {
+            final userJson = await _storageManager.getUserJson();
+            if (userJson != null) {
+              try {
+                final userMap = json.decode(userJson);
+                country = userMap['country']?.toString();
+              } catch (_) {}
+            }
           }
+
+          if (country != null && country.isNotEmpty && country != 'null') {
+            if (country.length == 2) {
+               options.headers['X-Country-Code'] = country;
+            } else {
+               options.headers['X-Country-ID'] = country;
+            }
+          }
+
+          // 3. Inject GPS Location for automatic regional isolation
+          final pos = LocationService.currentPosition;
+          if (pos != null) {
+            options.headers['X-Latitude'] = pos.latitude.toString();
+            options.headers['X-Longitude'] = pos.longitude.toString();
+          }
+
           debugPrint('[ApiClient] ${options.method} ${options.path}');
           return handler.next(options);
         },

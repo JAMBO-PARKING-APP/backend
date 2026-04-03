@@ -11,7 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'phone', 'first_name', 'last_name', 'full_name', 'email', 
             'role', 'profile_photo', 'is_verified', 'country', 'wallet_balance',
-            'app_version', 'device_model', 'device_os'
+            'app_version', 'device_model', 'device_os', 'fcm_device_token'
         ]
         read_only_fields = ['id', 'phone', 'role', 'is_verified', 'wallet_balance']
 

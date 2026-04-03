@@ -67,9 +67,11 @@ class ZoneListAPIView(generics.ListAPIView):
             from apps.common.models import get_current_country
             cache = caches['default']
             country = get_current_country()
-            country_id = str(country.id) if country else 'none'
+            
+            # Use country ID for cache key to ensure strict isolation
+            country_id = str(country.id) if country else 'global'
             is_staff = request.user.is_staff
-            cache_key = f"zone_list_country_{country_id}_staff_{is_staff}_{available_only}_v2"
+            cache_key = f"zone_list_v3_country_{country_id}_staff_{is_staff}_{available_only}"
             cached_data = cache.get(cache_key)
             if cached_data:
                 return Response(cached_data)

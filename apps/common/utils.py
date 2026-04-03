@@ -16,14 +16,16 @@ def truncate_coord(coord):
         return coord
 
 logger = logging.getLogger(__name__)
-
 def calculate_distance(lat1, lon1, lat2, lon2):
     """
     Calculate the great circle distance between two points 
     on the earth (specified in decimal degrees) using Haversine formula.
     Returns distance in meters.
     """
-    lat1, lon1, lat2, lon2 = map(math.radians, [float(lat1), float(lon1), float(lat2), float(lon2)])
+    try:
+        lat1, lon1, lat2, lon2 = map(math.radians, [float(lat1), float(lon1), float(lat2), float(lon2)])
+    except (TypeError, ValueError):
+        return float('inf')
 
     dlon = lon2 - lon1 
     dlat = lat2 - lat1 
@@ -32,31 +34,34 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     r = 6371000 
     return c * r
 
+_cached_countries_data = None
+
 def get_country_from_coords(latitude, longitude):
     """
     Lookup country based on coordinates using global_countries.json.
-    This is a local fallback for reverse geocoding.
+    Caches the JSON file to ensure high performance in middleware.
     """
+    global _cached_countries_data
     try:
-        data_path = settings.BASE_DIR / 'global_countries.json'
-        with open(data_path, 'r', encoding='utf-8') as f:
-            countries_data = json.load(f)
+        if _cached_countries_data is None:
+            data_path = settings.BASE_DIR / 'global_countries.json'
+            with open(data_path, 'r', encoding='utf-8') as f:
+                _cached_countries_data = json.load(f)
         
-        closest_country = None
+        closest_country_iso = None
         min_distance = float('inf')
         
-        for country in countries_data:
+        for country in _cached_countries_data:
             if 'latlng' in country and len(country['latlng']) == 2:
                 c_lat, c_lng = country['latlng']
                 dist = calculate_distance(latitude, longitude, c_lat, c_lng)
                 if dist < min_distance:
                     min_distance = dist
-                    closest_country = country
-        
-        if closest_country and min_distance < 500000: 
-            iso_code = closest_country.get('cca2')
-            if iso_code:
-                return Country.objects.filter(iso_code=iso_code, is_active=True).first()
+                    closest_country_iso = country.get('cca2')
+
+        # Limit to 500km radius for a sensible match
+        if closest_country_iso and min_distance < 500000: 
+             return Country.objects.filter(iso_code=closest_country_iso.upper(), is_active=True).first()
                 
     except Exception as e:
         logger.error(f"Error in get_country_from_coords: {str(e)}")

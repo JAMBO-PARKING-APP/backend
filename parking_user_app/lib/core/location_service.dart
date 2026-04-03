@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:parking_officer_app/core/api_client.dart';
+import 'package:parking_officer_app/core/websocket_service.dart';
 
 class LocationService {
   static final LocationService _instance = LocationService._internal();
@@ -11,6 +12,7 @@ class LocationService {
   final ApiClient _apiClient = ApiClient();
   StreamSubscription<Position>? _positionStreamSubscription;
   DateTime? _lastUpdateTime;
+  static Position? currentPosition;
 
   static const int _updateIntervalSeconds = 60;
   static const int _distanceFilterMeters =
@@ -69,6 +71,10 @@ class LocationService {
 
     _sendLocationUpdate(position);
     _lastUpdateTime = now;
+    currentPosition = position;
+    
+    // Also send via WebSocket if connected
+    WebSocketService().sendLocation(position.latitude, position.longitude);
   }
 
   Future<void> _sendLocationUpdate(Position position) async {
@@ -89,9 +95,11 @@ class LocationService {
 
   Future<Position?> getCurrentPosition() async {
     try {
-      return await Geolocator.getCurrentPosition(
+      final pos = await Geolocator.getCurrentPosition(
         timeLimit: const Duration(seconds: 10),
       );
+      if (pos != null) currentPosition = pos;
+      return pos;
     } catch (e) {
       debugPrint('Error getting current position: $e');
       return null;

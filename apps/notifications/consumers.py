@@ -1,6 +1,11 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
+from django.utils import timezone
+from apps.common.utils import calculate_distance
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -78,6 +83,70 @@ class ParkingConsumer(AsyncWebsocketConsumer):
                 self.user_group_name,
                 self.channel_name
             )
+
+    async def receive(self, text_data):
+        """Handle incoming location updates from the User app"""
+        try:
+            data = json.loads(text_data)
+            if data.get('type') == 'location_update':
+                lat = float(data.get('latitude'))
+                lon = float(data.get('longitude'))
+                
+                # 1. Update UserLocation record (Async safe)
+                await self.save_user_location(lat, lon)
+                
+                # 2. Check for zone entry
+                zone_data = await self.check_zone_proximity(lat, lon)
+                if zone_data:
+                    await self.send(text_data=json.dumps({
+                        'type': 'zone_entry',
+                        'zone': zone_data,
+                        'message': f"You are in {zone_data['name']}. Start parking?"
+                    }))
+                    
+                    # 3. Trigger a push notification if they aren't looking at the app
+                    await self.trigger_entry_push(zone_data)
+
+        except Exception as e:
+            logger.error(f"Error in ParkingConsumer receive: {e}")
+
+    @database_sync_to_async
+    def save_user_location(self, lat, lon):
+        from apps.accounts.models import UserLocation
+        UserLocation.objects.create(
+            user=self.user,
+            latitude=lat,
+            longitude=lon,
+            is_driver_app=True
+        )
+
+    @database_sync_to_async
+    def check_zone_proximity(self, lat, lon):
+        from apps.parking.models import Zone
+        from apps.parking.serializers_v2 import ZoneSerializer
+        from apps.common.models import get_current_country
+        
+        # Get active zones in user's current country
+        country = get_current_country() or self.user.country
+        zones = Zone.objects.filter(is_active=True, country=country)
+        
+        for zone in zones:
+            dist = calculate_distance(lat, lon, zone.latitude, zone.longitude)
+            # If user is within the zone radius (default 50m if not set)
+            radius = getattr(zone, 'radius_meters', 50)
+            if dist <= radius:
+                return ZoneSerializer(zone).data
+        return None
+
+    @database_sync_to_async
+    def trigger_entry_push(self, zone_data):
+        from apps.notifications.firebase_service import send_notification_to_user
+        send_notification_to_user(
+            self.user,
+            title="Parking Zone Detected",
+            body=f"You have entered {zone_data['name']}. Start your parking session now to avoid violations.",
+            data={"type": "zone_entry", "zone_id": str(zone_data['id'])}
+        )
 
     async def parking_update(self, event):
         await self.send(text_data=json.dumps({

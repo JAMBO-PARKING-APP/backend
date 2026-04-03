@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:parking_officer_app/core/location_service.dart';
+import 'package:parking_officer_app/core/websocket_service.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:parking_officer_app/core/app_theme.dart';
@@ -194,6 +196,10 @@ class _AuthenticatedShellState extends State<_AuthenticatedShell> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CountryPaymentConfigProvider>().refresh();
+      
+      // Initialize real-time location tracking services
+      WebSocketService().connect();
+      LocationService().startTracking();
     });
   }
 
