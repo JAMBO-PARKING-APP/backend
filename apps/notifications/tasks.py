@@ -15,7 +15,7 @@ def _run_async_safe(func, *args, **kwargs):
     finally:
         pass
 
-@shared_task
+@shared_task(ignore_result=True)
 def send_firebase_notification_task(user_id, title, body, data=None, notification_event_id=None):
     """
     Async task to send Firebase notification to a user.
@@ -47,7 +47,7 @@ def send_firebase_notification_task(user_id, title, body, data=None, notificatio
     except Exception as e:
         logger.error(f"Error in send_firebase_notification_task: {e}")
 
-@shared_task
+@shared_task(ignore_result=True)
 def send_twilio_verification_task(to_phone, channel='sms'):
     """
     Async task to send Twilio verification.
@@ -57,7 +57,7 @@ def send_twilio_verification_task(to_phone, channel='sms'):
     except Exception as e:
         logger.error(f"Error in send_twilio_verification_task: {e}")
 
-@shared_task
+@shared_task(ignore_result=True)
 def send_multicast_notification_task(user_ids, title, body, data=None):
     """
     Batch send notifications to multiple users in a single FCM request.
@@ -79,7 +79,7 @@ def send_multicast_notification_task(user_ids, title, body, data=None):
         logger.error(f"Error in send_multicast_notification_task: {e}")
         return False
 
-@shared_task
+@shared_task(ignore_result=True)
 def broadcast_websocket_update_task(user_id, data):
     """
     Async task to broadcast WebSocket update to a user.
@@ -101,7 +101,7 @@ def broadcast_websocket_update_task(user_id, data):
     except Exception as e:
         logger.error(f"Failed to broadcast WebSocket update in task: {str(e)}")
 
-@shared_task
+@shared_task(ignore_result=True)
 def notify_parking_ended_task(session_id):
     """
     Async task to handle parking ended notifications and location checks.

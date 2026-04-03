@@ -64,7 +64,7 @@ class ZoneListAPIView(generics.ListAPIView):
         available_only = request.query_params.get('available_only', 'false').lower() == 'true'
         
         if not search:
-            cache = caches['zones_cache']
+            cache = caches['default']
             country_id = getattr(request.user, 'country_id', 'none')
             is_staff = request.user.is_staff
             cache_key = f"zone_list_country_{country_id}_staff_{is_staff}_{available_only}"

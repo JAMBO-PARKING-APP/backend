@@ -29,7 +29,7 @@ class FCMService {
 
   Future<void> initialize() async {
     try {
- 
+      await _firebaseMessaging.setAutoInitEnabled(true);
       await Firebase.initializeApp();
 
       await _initializeLocalNotifications();
@@ -42,15 +42,14 @@ class FCMService {
             provisional: false,
           );
 
-      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional) {
         debugPrint('User app: User granted notification permission');
 
         _fcmToken = await _firebaseMessaging.getToken();
         debugPrint('User FCM Token: $_fcmToken');
 
-        if (_fcmToken != null) {
-          await _registerTokenWithBackend(_fcmToken!);
-        }
+        if (_fcmToken != null) await _registerTokenWithBackend(_fcmToken!);
 
         _firebaseMessaging.onTokenRefresh.listen((newToken) {
           _fcmToken = newToken;
@@ -216,7 +215,10 @@ class FCMService {
   Future<void> unregisterToken() async {
     try {
       final apiClient = ApiClient();
-      await apiClient.post('user/notifications/fcm/unregister-token/');
+      await apiClient.post(
+        'user/notifications/fcm/unregister-token/',
+        data: {'token': _fcmToken},
+      );
       debugPrint('User FCM token unregistered');
     } catch (e) {
       debugPrint('Error unregistering FCM token: $e');

@@ -36,6 +36,7 @@ class AuthProvider with ChangeNotifier {
           print('   - Country Name: ${_user?.countryName}');
           print('   - Country Identifier: ${_user?.countryIdentifier}');
           _status = AuthStatus.authenticated;
+          await FCMService().syncTokenWithBackend();
         } catch (e) {
           debugPrint('[AuthProvider] Error parsing user JSON: $e');
           print('❌ AuthProvider: Failed to parse stored user data - $e');

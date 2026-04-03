@@ -4,10 +4,16 @@ from apps.common.models import BaseModel, RegionalModel
 from apps.common.constants import TransactionStatus
 
 class PaymentGateway(models.TextChoices):
-    PESAPAL = 'pesapal', _('Pesapal')
+    """Per-country integrations configured in Django admin (Payment gateway configs)."""
+    PESAPAL = 'pesapal', _('Pesapal (cards, mobile money — Africa)')
     STRIPE = 'stripe', _('Stripe')
-    CASH = 'cash', _('Cash')
-    WALLET = 'wallet', _('Wallet')
+    PAYPAL = 'paypal', _('PayPal')
+    MPESA = 'mpesa', _('M-Pesa (Safaricom)')
+    FLUTTERWAVE = 'flutterwave', _('Flutterwave')
+    PAYSTACK = 'paystack', _('Paystack')
+    RAZORPAY = 'razorpay', _('Razorpay')
+    CASH = 'cash', _('Cash (in-person)')
+    WALLET = 'wallet', _('In-app wallet')
 
 class PaymentGatewayConfig(RegionalModel, BaseModel):
     """Configuration for payment gateways per country"""

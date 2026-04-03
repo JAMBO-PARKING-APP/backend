@@ -138,7 +138,10 @@ DATABASES = {
         'PASSWORD': config('DB_PASSWORD', default='password'),
         'HOST': config('DB_HOST', default='localhost'),
         'PORT': config('DB_PORT', default='5432'),
-        'CONN_MAX_AGE': 60,  
+        'CONN_MAX_AGE': int(config('DB_CONN_MAX_AGE', default=120)),
+        'OPTIONS': {
+            'connect_timeout': int(config('DB_CONNECT_TIMEOUT', default=10)),
+        },
     }
 }
 
@@ -172,9 +175,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-
 GRAPPELLI_ADMIN_TITLE = 'SpacePark Admin'
-
 WHITENOISE_USE_FINDERS = True
 WHITENOISE_AUTOREFRESH = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -212,20 +213,53 @@ SIMPLE_JWT = {
     'JTI_CLAIM': 'jti',  
 }
 
+from config.redis_urls import redis_url_for_database
+
 REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
 
-CELERY_BROKER_URL = REDIS_URL
-CELERY_RESULT_BACKEND = REDIS_URL
+# Optional workload isolation: set REDIS_CACHE_DB / REDIS_CHANNELS_DB / REDIS_CELERY_RESULT_DB
+# (integers) or full REDIS_CACHE_URL / REDIS_CHANNELS_URL / CELERY_RESULT_BACKEND.
+_redis_cache_db = config('REDIS_CACHE_DB', default='').strip()
+REDIS_CACHE_URL = config('REDIS_CACHE_URL', default='').strip() or (
+    redis_url_for_database(REDIS_URL, int(_redis_cache_db)) if _redis_cache_db else REDIS_URL
+)
+_redis_channels_db = config('REDIS_CHANNELS_DB', default='').strip()
+REDIS_CHANNELS_URL = config('REDIS_CHANNELS_URL', default='').strip() or (
+    redis_url_for_database(REDIS_URL, int(_redis_channels_db)) if _redis_channels_db else REDIS_URL
+)
+_redis_celery_result_db = config('REDIS_CELERY_RESULT_DB', default='').strip()
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='').strip() or (
+    redis_url_for_database(REDIS_URL, int(_redis_celery_result_db))
+    if _redis_celery_result_db else REDIS_URL
+)
+
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default=REDIS_URL)
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
+# Throughput and reliability (tune via env in production).
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = int(config('CELERY_TASK_TIME_LIMIT', default=300))
+CELERY_TASK_SOFT_TIME_LIMIT = int(config('CELERY_TASK_SOFT_TIME_LIMIT', default=280))
+CELERY_RESULT_EXPIRES = timedelta(hours=int(config('CELERY_RESULT_EXPIRES_HOURS', default=24)))
+CELERY_TASK_ACKS_LATE = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = int(config('CELERY_WORKER_PREFETCH_MULTIPLIER', default=2))
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    'visibility_timeout': int(config('CELERY_VISIBILITY_TIMEOUT', default=43200)),
+    'retry_on_timeout': True,
+}
+
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [REDIS_URL],
+            'hosts': [REDIS_CHANNELS_URL],
+            'capacity': int(config('CHANNEL_LAYER_CAPACITY', default=3000)),
+            'expiry': int(config('CHANNEL_LAYER_MESSAGE_EXPIRY', default=10)),
         },
     },
 }
@@ -244,37 +278,28 @@ SPECTACULAR_SETTINGS = {
     },
 }
 
+# Single default cache (one connection pool). Zone list keys use distinct prefixes.
+DJANGO_REDIS_OPTIONS = {
+    'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+    'CONNECTION_POOL_KWARGS': {
+        'max_connections': int(config('REDIS_MAX_CONNECTIONS', default=80)),
+        'retry_on_timeout': True,
+        'socket_keepalive': True,
+        'socket_connect_timeout': 5,
+        'health_check_interval': 30,
+    },
+    'SERIALIZER': 'django_redis.serializers.json.JSONSerializer',
+    'IGNORE_EXCEPTIONS': True,
+}
+
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL,
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'CONNECTION_POOL_KWARGS': {'max_connections': 100},
-        },
+        'LOCATION': REDIS_CACHE_URL,
+        'OPTIONS': DJANGO_REDIS_OPTIONS,
         'KEY_PREFIX': 'jambo_park',
-        'TIMEOUT': 300,  
+        'TIMEOUT': 300,
     },
-    'zones_cache': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL,
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'CONNECTION_POOL_KWARGS': {'max_connections': 100},
-        },
-        'KEY_PREFIX': 'zones',
-        'TIMEOUT': 1800,  
-    },
-    'help_cache': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL,
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            'CONNECTION_POOL_KWARGS': {'max_connections': 100},
-        },
-        'KEY_PREFIX': 'help',
-        'TIMEOUT': 86400,  
-    }
 }
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'

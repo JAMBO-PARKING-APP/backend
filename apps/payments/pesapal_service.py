@@ -33,23 +33,30 @@ class PesapalService:
 
     @staticmethod
     def get_config_for_country(country):
-        """Helper to get Pesapal config for a country"""
+        """Resolve Pesapal credentials from admin (PaymentGatewayConfig) for this country.
+
+        Uses ``all_objects`` so Celery/IPN/middleware without thread-local country still
+        resolve the correct row. Prefer highest ``priority`` when multiple exist.
+        """
         from .models import PaymentGatewayConfig, PaymentGateway
-        
+
         if not country:
             return None
-            
-        filter_kwargs = {
-            'gateway': PaymentGateway.PESAPAL,
-            'is_active': True
-        }
-        
+
+        qs = PaymentGatewayConfig.all_objects.filter(
+            gateway=PaymentGateway.PESAPAL,
+            is_active=True,
+        )
         if isinstance(country, str):
-            filter_kwargs['country__name'] = country
+            s = country.strip()
+            if len(s) == 2:
+                qs = qs.filter(country__iso_code__iexact=s.upper())
+            else:
+                qs = qs.filter(country__name__iexact=s)
         else:
-            filter_kwargs['country'] = country
-            
-        return PaymentGatewayConfig.objects.filter(**filter_kwargs).first()
+            qs = qs.filter(country=country)
+
+        return qs.order_by('-priority', '-updated_at').first()
 
     def get_token(self, force_refresh=False):
         """Get authentication token from PesaPal V3 with caching"""

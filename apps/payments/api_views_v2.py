@@ -10,6 +10,7 @@ import uuid
 from decimal import Decimal
 from django.db import transaction
 from django.conf import settings
+from django.core.cache import cache
 from rest_framework import generics, status
 from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -22,9 +23,91 @@ from .serializers_v2 import (
     PaymentGatewayConfigSerializer
 )
 from .models import Transaction, PaymentMethod, Invoice, WalletTransaction, PaymentGatewayConfig, PaymentGateway
+from apps.common.serializers import CountrySerializer
+from apps.common.models import CountryConfig
 from .pesapal_service import PesapalService
 from apps.enforcement.models import Violation
 from apps.parking.models import ParkingSession, ParkingStatus, Reservation
+
+
+def _gateway_credentials_configured(gateway: str, creds: dict) -> bool:
+    if not creds:
+        return False
+    if gateway == PaymentGateway.PESAPAL:
+        return bool(creds.get('consumer_key') and creds.get('consumer_secret'))
+    if gateway == PaymentGateway.STRIPE:
+        return bool(creds.get('secret_key') or creds.get('publishable_key'))
+    if gateway in (PaymentGateway.PAYSTACK, PaymentGateway.FLUTTERWAVE):
+        return bool(creds.get('secret_key') or creds.get('public_key'))
+    if gateway == PaymentGateway.MPESA:
+        return bool(creds.get('consumer_key') and creds.get('consumer_secret'))
+    if gateway == PaymentGateway.PAYPAL:
+        return bool(creds.get('client_id') and creds.get('client_secret'))
+    if gateway == PaymentGateway.RAZORPAY:
+        return bool(creds.get('key_id') and creds.get('key_secret'))
+    return bool(creds)
+
+
+class UserPaymentCountryConfigAPIView(APIView):
+    """
+    Single call for the mobile app: CountryConfig payment_methods + active PaymentGatewayConfig rows.
+    Keys are never returned — only whether each gateway is configured in admin.
+    """
+    permission_classes = [IsAuthenticated]
+    CACHE_TTL_SECONDS = 45
+
+    def get(self, request):
+        user = request.user
+        cache_key = f'user_payment_country_config:{user.id}'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+
+        country = getattr(user, 'country', None)
+        if not country:
+            body = {
+                'country': None,
+                'payment_methods': ['wallet'],
+                'exchange_rate_to_base': '1.0000',
+                'gateways': [],
+                'needs_country': True,
+            }
+            cache.set(cache_key, body, self.CACHE_TTL_SECONDS)
+            return Response(body)
+
+        try:
+            cc = CountryConfig.objects.get(country=country, is_active=True)
+            methods = list(cc.payment_methods) if cc.payment_methods else ['wallet']
+            exchange_rate = str(cc.exchange_rate_to_base)
+        except CountryConfig.DoesNotExist:
+            methods = ['wallet']
+            if country.iso_code == 'UG':
+                methods.append('pesapal')
+            exchange_rate = '1.0000'
+
+        gateways = []
+        for cfg in PaymentGatewayConfig.all_objects.filter(
+            country=country,
+            is_active=True,
+        ).order_by('-priority', 'name'):
+            creds = cfg.credentials or {}
+            gateways.append({
+                'gateway': cfg.gateway,
+                'name': cfg.name,
+                'priority': cfg.priority,
+                'is_sandbox': cfg.is_sandbox,
+                'is_configured': _gateway_credentials_configured(cfg.gateway, creds),
+            })
+
+        body = {
+            'country': CountrySerializer(country).data,
+            'payment_methods': methods,
+            'exchange_rate_to_base': exchange_rate,
+            'gateways': gateways,
+            'needs_country': False,
+        }
+        cache.set(cache_key, body, self.CACHE_TTL_SECONDS)
+        return Response(body)
 
 
 def _ensure_invoice(transaction_obj):
@@ -785,9 +868,9 @@ class AvailablePaymentGatewaysAPIView(generics.ListAPIView):
     
     def get_queryset(self):
         country = getattr(self.request.user, 'country', None)
-        return PaymentGatewayConfig.objects.filter(
+        return PaymentGatewayConfig.all_objects.filter(
             country=country,
-            is_active=True
+            is_active=True,
         ).order_by('-priority', 'name')
 
 
@@ -825,7 +908,6 @@ class OfficerInitiatePesapalPaymentAPIView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # Create transaction for guest session
         merchant_reference = str(uuid.uuid4())
         idempotency_key = merchant_reference
 
@@ -842,12 +924,10 @@ class OfficerInitiatePesapalPaymentAPIView(APIView):
                 }
             )
 
-            # Update guest session payment status
             guest_session.payment_status = 'pending'
             guest_session.payment_transaction = trans
             guest_session.save()
 
-        # Initiate PesaPal payment
         country = getattr(request.user, 'country', None)
         pesapal_config = PesapalService.get_config_for_country(country)
         pesapal = PesapalService(config_obj=pesapal_config) if pesapal_config else PesapalService()
@@ -902,7 +982,6 @@ class OfficerPesapalCallbackAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Get transaction
         try:
             trans = Transaction.objects.get(pesapal_merchant_reference=merchant_reference)
         except Transaction.DoesNotExist:
@@ -912,7 +991,6 @@ class OfficerPesapalCallbackAPIView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # Check payment status with PesaPal
         pesapal = PesapalService()
         status_response = pesapal.get_transaction_status(order_tracking_id)
 
@@ -928,7 +1006,6 @@ class OfficerPesapalCallbackAPIView(APIView):
             if payment_status == "Completed":
                 trans.status = 'completed'
                 
-                # Update guest session payment
                 if trans.processor_response and trans.processor_response.get('is_guest_session'):
                     from apps.enforcement.models import GuestParkingSession
                     try:
@@ -936,7 +1013,7 @@ class OfficerPesapalCallbackAPIView(APIView):
                             id=trans.processor_response['guest_session_id']
                         )
                         guest_session.payment_status = 'completed'
-                        guest_session.status = 'active'  # Activate session after payment
+                        guest_session.status = 'active'
                         guest_session.save()
                         logger.info(f"Guest session {guest_session.id} activated after payment")
                     except GuestParkingSession.DoesNotExist:

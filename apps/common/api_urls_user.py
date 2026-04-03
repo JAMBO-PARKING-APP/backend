@@ -61,6 +61,7 @@ urlpatterns = [
     path('transactions/<uuid:pk>/', payments_views.TransactionDetailAPIView.as_view(), name='transaction-detail'),
     path('invoices/', payments_views.InvoiceListAPIView.as_view(), name='invoices'),
     path('payments/summary/', payments_views.PaymentSummaryAPIView.as_view(), name='payment-summary'),
+    path('payment-country-config/', payments_views.UserPaymentCountryConfigAPIView.as_view(), name='user-payment-country-config'),
     path('wallet/balance/', payments_views.WalletBalanceAPIView.as_view(), name='wallet-balance'),
     path('wallet/topup/', payments_views.WalletTopUpAPIView.as_view(), name='wallet-topup'),
     path('wallet/transactions/', payments_views.WalletTransactionsListAPIView.as_view(), name='wallet-transactions'),

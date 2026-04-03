@@ -48,5 +48,17 @@ class VehicleService {
       type: DioExceptionType.badResponse,
     );
   }
+
+  Future<void> deleteVehicle(String vehicleId) async {
+    final response = await _apiClient.delete('user/vehicles/$vehicleId/');
+    if (response.statusCode == 204 || response.statusCode == 200) {
+      return;
+    }
+    throw DioException(
+      requestOptions: response.requestOptions,
+      response: response,
+      type: DioExceptionType.badResponse,
+    );
+  }
 }
 

@@ -14,6 +14,7 @@ import 'package:parking_officer_app/core/constants.dart';
 import 'package:parking_officer_app/features/parking/providers/zone_provider.dart';
 import 'package:parking_officer_app/features/parking/screens/user_dashboard_screen.dart';
 import 'package:parking_officer_app/core/settings_provider.dart';
+import 'package:parking_officer_app/core/country_payment_config_provider.dart';
 import 'package:parking_officer_app/core/localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -45,6 +46,7 @@ void main() async {
           ChangeNotifierProvider(create: (_) => VehicleProvider()),
           ChangeNotifierProvider(create: (_) => ReservationProvider()),
           ChangeNotifierProvider(create: (_) => SettingsProvider()),
+          ChangeNotifierProvider(create: (_) => CountryPaymentConfigProvider()),
         ],
         child: const SpaceUserApp(),
       ),
@@ -178,6 +180,29 @@ class _AppBootstrapperState extends State<AppBootstrapper> {
   }
 }
 
+/// Loads country + payment gateway metadata once after login (Django admin driven).
+class _AuthenticatedShell extends StatefulWidget {
+  const _AuthenticatedShell();
+
+  @override
+  State<_AuthenticatedShell> createState() => _AuthenticatedShellState();
+}
+
+class _AuthenticatedShellState extends State<_AuthenticatedShell> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CountryPaymentConfigProvider>().refresh();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const UserDashboardScreen();
+  }
+}
+
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
 
@@ -204,7 +229,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
     }
 
     if (auth.status == AuthStatus.authenticated) {
-      return const UserDashboardScreen();
+      return const _AuthenticatedShell();
     }
 
     return const LoginScreen();

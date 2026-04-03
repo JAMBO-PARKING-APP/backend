@@ -27,5 +27,18 @@ class VehicleProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> deleteVehicle(String vehicleId) async {
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      await _vehicleService.deleteVehicle(vehicleId);
+      _vehicles.removeWhere((v) => v.id == vehicleId);
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      notifyListeners();
+    }
+  }
 }
 

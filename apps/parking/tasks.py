@@ -398,7 +398,7 @@ def update_zone_availability_cache():
         )
     )
     
-    cache = caches['zones_cache']
+    cache = caches['default']
     count = 0
     for zone in zones:
         serializer = ZoneListSerializer(zone)
