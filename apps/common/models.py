@@ -48,7 +48,7 @@ class RegionalManager(models.Manager):
 
 class RegionalModel(models.Model):
     """Mixin to add country field to regional models with automatic filtering"""
-    country = models.ForeignKey(Country, on_delete=models.PROTECT, related_name="%(class)s_related", null=True, blank=True)
+    country = models.ForeignKey(Country, on_delete=models.CASCADE, related_name="%(class)s_related", null=True, blank=True)
     
     objects = RegionalManager()
     all_objects = models.Manager() 
@@ -56,8 +56,10 @@ class RegionalModel(models.Model):
     class Meta:
         abstract = True
 
-class SystemConfiguration(RegionalModel, BaseModel):
+class SystemConfiguration(RegionalModel, models.Model):
     """System-wide configuration settings (Per Country)"""
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     currency = models.CharField(max_length=3, choices=Currency.choices, default=DEFAULT_CURRENCY)
     timezone = models.CharField(max_length=50, default='Africa/Kampala')
     company_name = models.CharField(max_length=100, default='JAMBO PARK')
