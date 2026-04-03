@@ -75,11 +75,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: AppTheme.surfaceLight,
       appBar: AppBar(
         title: Text(l10n.register),
         elevation: 0,
-        backgroundColor: AppTheme.backgroundColor,
+        backgroundColor: Colors.white,
+        scrolledUnderElevation: 0,
       ),
       body: Stack(
         children: [

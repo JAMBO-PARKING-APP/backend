@@ -27,7 +27,7 @@ class _WalletScreenState extends State<WalletScreen> {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF6F8FB),
       appBar: AppBar(
         title: const Text(
           'Wallet',
@@ -54,7 +54,11 @@ class _WalletScreenState extends State<WalletScreen> {
                 Container(
                   padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0078D4),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF0B67C2), Color(0xFF0087F6)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
@@ -100,9 +104,9 @@ class _WalletScreenState extends State<WalletScreen> {
                               Text(
                                 '${walletBalance.currencySymbol}${walletBalance.balance.toStringAsFixed(2)}',
                                 style: const TextStyle(
-                                  fontSize: 48,
+                                  fontSize: 42,
                                   fontWeight: FontWeight.w900,
-                                  color: Color(0xFF0078D4),
+                                  color: Colors.white,
                                 ),
                               ),
                               const SizedBox(height: 8),

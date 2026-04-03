@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import 'package:provider/provider.dart';
 import 'package:parking_user_app/features/parking/screens/parking_map_screen.dart';
 import 'package:parking_user_app/features/parking/screens/zone_list_screen.dart';
@@ -112,11 +111,13 @@ class HomeScreenState extends State<HomeScreen> {
         ];
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: AppTheme.surfaceLight,
           extendBody: true,
           appBar: AppBar(
-            title: const Text('Jambo Parking'),
+            title: const Text('SPACE Parking'),
             elevation: 0,
+            scrolledUnderElevation: 0,
+            backgroundColor: Colors.white,
             actions: [
               // NEW: Profile button
               IconButton(
@@ -246,14 +247,16 @@ class HomeScreenState extends State<HomeScreen> {
 
                     // Bottom Navigation Bar
                     Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, -2),
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 16,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),

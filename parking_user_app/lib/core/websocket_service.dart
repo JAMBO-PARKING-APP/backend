@@ -66,8 +66,6 @@ class WebSocketService {
   void _handleDisconnect() {
     _isConnected = false;
     _channel = null;
-
-    // Attempt reconnection
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(const Duration(seconds: 5), () {
       debugPrint('[WebSocket] Reconnecting...');

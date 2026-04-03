@@ -49,10 +49,18 @@ class _NotificationScreenState extends State<NotificationScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.notifications_none,
-                    size: 64,
-                    color: Colors.grey.shade300,
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Icon(
+                      Icons.notifications_none,
+                      size: 42,
+                      color: Colors.grey.shade400,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   const Text(
@@ -76,6 +84,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
                 return Card(
                   elevation: 0,
+                  color: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                     side: BorderSide(

@@ -25,10 +25,28 @@ class SettingsScreen extends StatelessWidget {
       },
       body: Consumer<SettingsProvider>(
         builder: (context, settings, _) => SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF0B67C2), Color(0xFF0087F6)],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Text(
+                  'Personalize your experience',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               // Language Section
               Card(
                 child: Padding(

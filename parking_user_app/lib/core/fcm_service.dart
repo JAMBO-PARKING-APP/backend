@@ -12,6 +12,9 @@ import 'package:provider/provider.dart';
 import 'package:parking_user_app/core/dialog_service.dart';
 import 'package:parking_user_app/features/parking/providers/parking_provider.dart';
 import 'package:parking_user_app/features/parking/screens/active_session_screen.dart';
+import 'package:parking_user_app/features/payments/screens/wallet_screen.dart';
+import 'package:parking_user_app/features/parking/screens/violations_screen.dart';
+import 'package:parking_user_app/features/notifications/screens/notification_screen.dart';
 import 'api_client.dart';
 import 'notification_dialog_service.dart';
 
@@ -22,7 +25,6 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     print('Handling background message: ${message.messageId}');
   }
 
-  // Initialize local notifications for background
   FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
   
@@ -38,7 +40,6 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
-  // Process the background message
   await _processBackgroundMessage(message, flutterLocalNotificationsPlugin);
 }
 
@@ -50,12 +51,11 @@ Future<void> _processBackgroundMessage(
     final notification = message.notification;
     final data = message.data;
 
-    // Show local notification for background message
     if (notification != null) {
       const androidDetails = AndroidNotificationDetails(
         'default',
         'Default Notifications',
-        channelDescription: 'Default notification channel for Spave Park',
+        channelDescription: 'Default notification channel for Space Park',
         importance: Importance.high,
         priority: Priority.high,
         playSound: true,
@@ -81,17 +81,14 @@ Future<void> _processBackgroundMessage(
       );
     }
 
-    // Handle specific parking events in background
     if (data.containsKey('type')) {
       switch (data['type']) {
         case 'parking_ended':
-          // Schedule session end notification
           if (data.containsKey('session_id')) {
             await _scheduleSessionEndNotification(data, flutterLocalNotificationsPlugin);
           }
           break;
         case 'parking_expiring':
-          // Schedule expiration reminder
           if (data.containsKey('session_id')) {
             await _scheduleExpirationReminder(data, flutterLocalNotificationsPlugin);
           }
@@ -331,7 +328,7 @@ class FCMService {
     const androidDetails = AndroidNotificationDetails(
       'default',
       'Default Notifications',
-      channelDescription: 'Default notification channel for Spave Park',
+      channelDescription: 'Default notification channel for Space Park',
       importance: Importance.high,
       priority: Priority.high,
       playSound: true,
@@ -401,9 +398,24 @@ class FCMService {
         });
         break;
       case 'payment_success':
+        DialogService.navigatorKey.currentState?.push(
+          MaterialPageRoute(builder: (context) => const WalletScreen()),
+        );
+        break;
       case 'payment_failed':
+        DialogService.navigatorKey.currentState?.push(
+          MaterialPageRoute(builder: (context) => const WalletScreen()),
+        );
         break;
       case 'violation_issued':
+        DialogService.navigatorKey.currentState?.push(
+          MaterialPageRoute(builder: (context) => const ViolationsScreen()),
+        );
+        break;
+      case 'notification':
+        DialogService.navigatorKey.currentState?.push(
+          MaterialPageRoute(builder: (context) => const NotificationScreen()),
+        );
         break;
       default:
         break;

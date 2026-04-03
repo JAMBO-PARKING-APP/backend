@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/features/home/screens/sidebar_navigation.dart';
 
 class BaseScaffold extends StatelessWidget {
@@ -32,15 +33,17 @@ class BaseScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: backgroundColor ?? AppTheme.surfaceLight,
       appBar: AppBar(
         leading: (showDrawer && !Navigator.canPop(context))
             ? null 
             : (Navigator.canPop(context) ? const BackButton() : null),
         title: titleWidget ?? Text(title ?? ''),
         actions: actions,
-        backgroundColor: appBarBackgroundColor,
-        foregroundColor: appBarForegroundColor,
+        backgroundColor: appBarBackgroundColor ?? Colors.white,
+        foregroundColor: appBarForegroundColor ?? AppTheme.textPrimary,
+        elevation: 0,
+        scrolledUnderElevation: 0,
       ),
       drawer: showDrawer
           ? SidebarNavigation(

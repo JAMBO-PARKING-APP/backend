@@ -26,15 +26,16 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: AppTheme.surfaceLight,
       appBar: AppBar(
         title: const Text(
           'Transaction History',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
         foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
       ),
       body: Consumer<PaymentProvider>(

@@ -315,7 +315,7 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: AppTheme.surfaceLight,
       body: SafeArea(
         child: Column(
           children: [
@@ -353,13 +353,13 @@ class _ActiveSessionScreenState extends State<ActiveSessionScreen> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Theme.of(context).colorScheme.outline),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 10,
+                            color: Colors.black.withValues(alpha: 0.07),
+                            blurRadius: 14,
                             offset: const Offset(0, 4),
                           ),
                         ],

@@ -29,7 +29,7 @@ class _ParkingHistoryScreenState extends State<ParkingHistoryScreen> {
     final l10n = AppLocalizations.of(context);
     
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.surfaceLight,
       appBar: AppBar(
         title: const Text(
           'Parking History',
@@ -40,6 +40,7 @@ class _ParkingHistoryScreenState extends State<ParkingHistoryScreen> {
         ),
         backgroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF121212)),
           onPressed: () => Navigator.pop(context),
@@ -110,7 +111,7 @@ class _ParkingHistoryScreenState extends State<ParkingHistoryScreen> {
             onRefresh: () => provider.fetchSessions(),
             color: const Color(0xFF0078D4),
             child: ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(18),
               itemCount: sessions.length,
               itemBuilder: (context, index) {
                 final session = sessions[index];
@@ -132,10 +133,10 @@ class _ParkingHistoryScreenState extends State<ParkingHistoryScreen> {
         : DateTime.now().difference(startTime!);
     
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isActive
               ? const Color(0xFF0078D4).withValues(alpha: 0.3)
@@ -143,16 +144,16 @@ class _ParkingHistoryScreenState extends State<ParkingHistoryScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           onTap: () {
             Navigator.push(
               context,

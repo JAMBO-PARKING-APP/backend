@@ -22,7 +22,13 @@ class _RewardsScreenState extends State<RewardsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('My Rewards')),
+      backgroundColor: AppTheme.surfaceLight,
+      appBar: AppBar(
+        title: const Text('My Rewards'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
       body: Consumer<RewardsProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {

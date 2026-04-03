@@ -27,7 +27,7 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
     final l10n = AppLocalizations.of(context);
     
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.surfaceLight,
       appBar: AppBar(
         title: const Text(
           'Parking Zones',
@@ -38,6 +38,7 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
         ),
         backgroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF121212)),
           onPressed: () => Navigator.pop(context),
@@ -117,8 +118,8 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
               Container(
                 margin: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8F9FA),
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: const Color(0xFFE5E7EB)),
                 ),
                 child: TextField(
@@ -166,20 +167,20 @@ class _ZoneListScreenState extends State<ZoneListScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           onTap: () {
             // TODO: Navigate to zone detail screen when implemented
             // For now, show a snackbar

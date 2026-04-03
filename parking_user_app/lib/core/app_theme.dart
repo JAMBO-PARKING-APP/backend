@@ -165,8 +165,11 @@ class AppTheme {
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-        shape: const StadiumBorder(),
+        minimumSize: const Size(double.infinity, 54),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusM),
+        ),
         textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold),
       ),
     ),
@@ -174,10 +177,12 @@ class AppTheme {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: primaryColor,
-        minimumSize: const Size(double.infinity, 56),
-        shape: const StadiumBorder(),
+        minimumSize: const Size(double.infinity, 54),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusM),
+        ),
         side: const BorderSide(color: primaryColor, width: 1.5),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       ),
     ),
 

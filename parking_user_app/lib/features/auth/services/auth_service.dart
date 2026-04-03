@@ -62,7 +62,7 @@ class AuthService {
 
         // Parse user data - this is critical
         try {
-          final user = User.fromJson(userData);
+          final user = UserModel.fromJson(userData);
           debugPrint('[AuthService] ✅ User parsed successfully: ${user.firstName} ${user.lastName}');
           return {'success': true, 'user': user};
         } catch (e) {
@@ -130,7 +130,7 @@ class AuthService {
         }
 
         debugPrint('[AuthService] Returning success with user data');
-        return {'success': true, 'user': User.fromJson(userData)};
+        return {'success': true, 'user': UserModel.fromJson(userData)};
       }
     } on DioException catch (e) {
       debugPrint('[AuthService] Registration DioException: ${e.message}');
@@ -186,7 +186,7 @@ class AuthService {
           // Still return success if tokens were saved
         }
 
-        return {'success': true, 'user': User.fromJson(userData)};
+        return {'success': true, 'user': UserModel.fromJson(userData)};
       }
     } on DioException catch (e) {
       debugPrint('[AuthService] verifyOtp DioException: ${e.message}');
@@ -224,11 +224,11 @@ class AuthService {
     await _storageManager.clearAuthData();
   }
 
-  Future<User?> getProfile() async {
+  Future<UserModel?> getProfile() async {
     try {
       final response = await _apiClient.get('profile/');
       if (response.statusCode == 200) {
-        return User.fromJson(response.data);
+        return UserModel.fromJson(response.data);
       }
     } on DioException catch (e) {
       debugPrint('[AuthService] getProfile DioException: ${e.message}');

@@ -9,6 +9,7 @@ class ChatService {
       3; // Poll every 3 seconds for real-time updates
 
   ChatService({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
+  static const String _chatBase = '/api/notifications/chat/conversations/';
 
   /// Start polling for new messages (real-time simulation)
   void startPolling(
@@ -45,7 +46,7 @@ class ChatService {
       }
 
       final response = await _apiClient.get(
-        'chat/conversations/',
+        _chatBase,
         queryParameters: queryParams,
       );
 
@@ -67,7 +68,7 @@ class ChatService {
   }) async {
     try {
       final response = await _apiClient.post(
-        'chat/conversations/',
+        _chatBase,
         data: {'subject': subject, 'category': category, 'priority': priority},
       );
 
@@ -87,7 +88,7 @@ class ChatService {
   }) async {
     try {
       final response = await _apiClient.get(
-        'chat/conversations/$conversationId/messages/',
+        '$_chatBase$conversationId/messages/',
         queryParameters: {'page': page},
       );
 
@@ -108,7 +109,7 @@ class ChatService {
   }) async {
     try {
       final response = await _apiClient.post(
-        'chat/conversations/$conversationId/send_message/',
+        '$_chatBase$conversationId/send_message/',
         data: {'content': content, 'message_type': messageType},
       );
 
@@ -126,7 +127,7 @@ class ChatService {
   }) async {
     try {
       final response = await _apiClient.post(
-        'chat/conversations/$conversationId/mark_messages_read/',
+        '$_chatBase$conversationId/mark_messages_read/',
       );
 
       if (response.statusCode == 200) {
@@ -143,7 +144,7 @@ class ChatService {
   }) async {
     try {
       final response = await _apiClient.post(
-        'chat/conversations/$conversationId/close/',
+        '$_chatBase$conversationId/close/',
       );
 
       if (response.statusCode == 200) {
@@ -158,7 +159,7 @@ class ChatService {
   /// Get unread message count
   Future<Map<String, dynamic>> getUnreadCount() async {
     try {
-      final response = await _apiClient.get('chat/conversations/unread_count/');
+      final response = await _apiClient.get('${_chatBase}unread_count/');
 
       if (response.statusCode == 200) {
         return {'success': true, 'data': response.data};

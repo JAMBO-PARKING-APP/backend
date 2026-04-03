@@ -16,13 +16,13 @@ enum AuthStatus { authenticated, unauthenticated, authenticating, initial, needs
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
-  User? _user;
+  UserModel? _user;
   AuthStatus _status = AuthStatus.initial;
   String? _errorMessage;
   bool _isInitialLoadComplete = false;
   bool _isCheckingAuth = false; // Add this flag to prevent race conditions
 
-  User? get user => _user;
+  UserModel? get user => _user;
   AuthStatus get status => _status;
   String? get errorMessage => _errorMessage;
   bool get isInitialLoadComplete => _isInitialLoadComplete;
@@ -80,7 +80,7 @@ class AuthProvider with ChangeNotifier {
 
     if (token != null && userJson != null) {
       try {
-        _user = User.fromJson(json.decode(userJson));
+        _user = UserModel.fromJson(json.decode(userJson));
         _status = AuthStatus.authenticated;
         notifyListeners(); // Validate immediately with cached data
         debugPrint(
@@ -104,13 +104,13 @@ class AuthProvider with ChangeNotifier {
         final user = await _authService.getProfile().timeout(
           const Duration(seconds: 5),
           onTimeout: () {
-            debugPrint('[AuthProvider] ⏱️ Profile fetch timed out after 5 seconds');
+            debugPrint('[AuthProvider]Profile fetch timed out after 5 seconds');
             return null;
           },
         );
         
         if (user != null) {
-          debugPrint('[AuthProvider] ✅ Network profile fetch successful');
+          debugPrint('[AuthProvider] Network profile fetch successful');
           _user = user;
           _status = AuthStatus.authenticated;
 
@@ -122,21 +122,21 @@ class AuthProvider with ChangeNotifier {
           
           notifyListeners();
         } else if (_user == null) {
-          debugPrint('[AuthProvider] ❌ Network profile fetch returned null and no cached user - setting unauthenticated');
+          debugPrint('[AuthProvider] Network profile fetch returned null and no cached user - setting unauthenticated');
           _status = AuthStatus.unauthenticated;
           notifyListeners();
         } else {
-          debugPrint('[AuthProvider] ⚠️ Network profile fetch returned null but using cached user (offline mode)');
+          debugPrint('[AuthProvider] Network profile fetch returned null but using cached user (offline mode)');
         }
       } catch (e) {
-        debugPrint('[AuthProvider] ❌ Network profile fetch exception: $e');
+        debugPrint('[AuthProvider] Network profile fetch exception: $e');
         // If we have _user from storage, we stay authenticated (Offline mode)
         if (_user == null) {
           debugPrint('[AuthProvider] No cached user, setting to unauthenticated');
           _status = AuthStatus.unauthenticated;
           notifyListeners();
         } else {
-          debugPrint('[AuthProvider] ⚠️ Using cached user data despite network error (offline mode)');
+          debugPrint('[AuthProvider] Using cached user data despite network error (offline mode)');
         }
       }
     } else {

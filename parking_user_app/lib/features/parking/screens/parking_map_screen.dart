@@ -491,6 +491,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
     }
 
     return Scaffold(
+      backgroundColor: AppTheme.surfaceLight,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(
@@ -501,6 +502,7 @@ class _ParkingMapScreenState extends State<ParkingMapScreen> {
           ),
         ),
         elevation: 0,
+        scrolledUnderElevation: 0,
         backgroundColor: Colors.white.withValues(alpha: 0.8),
         automaticallyImplyLeading: false,
         leading: null, // Ensure no drawer icon

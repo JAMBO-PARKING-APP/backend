@@ -101,4 +101,16 @@ class ParkingService {
       return false;
     }
   }
+
+  Future<bool> cancelParking(String sessionId) async {
+    try {
+      final response = await _apiClient.post(
+        'parking/cancel/',
+        data: {'session_id': sessionId},
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
 }

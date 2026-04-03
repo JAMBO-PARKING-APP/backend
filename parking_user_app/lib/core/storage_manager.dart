@@ -14,8 +14,6 @@ class StorageManager {
     debugPrint('[StorageManager] Saving tokens...');
     await _storage.write(key: _tokenKey, value: access);
     await _storage.write(key: _refreshTokenKey, value: refresh);
-    
-    // Also save to SharedPreferences for Background Service access
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('auth_token', access);

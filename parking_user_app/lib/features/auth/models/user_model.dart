@@ -1,7 +1,7 @@
 import 'package:parking_user_app/features/common/models/country_model.dart';
 import 'vehicle_model.dart';
 
-class User {
+class UserModel {
   final String id;
   final String phone;
   final String firstName;
@@ -12,8 +12,10 @@ class User {
   final double walletBalance;
   final List<Vehicle> vehicles;
   final Country? countryDetails;
+  final DateTime? createdAt;
+  final bool isPhoneVerified;
 
-  User({
+  UserModel({
     required this.id,
     required this.phone,
     required this.firstName,
@@ -24,17 +26,37 @@ class User {
     this.walletBalance = 0.0,
     this.vehicles = const [],
     this.countryDetails,
+    this.createdAt,
+    this.isPhoneVerified = false,
   });
 
-  factory User.fromJson(Map<String, dynamic> json) {
+  /// Create an empty user instance
+  factory UserModel.empty() {
+    return UserModel(
+      id: '',
+      phone: '',
+      firstName: '',
+      lastName: '',
+      email: null,
+      role: 'user',
+      profilePhoto: null,
+      walletBalance: 0.0,
+      vehicles: [],
+      countryDetails: null,
+      createdAt: null,
+      isPhoneVerified: false,
+    );
+  }
+
+  factory UserModel.fromJson(Map<String, dynamic> json) {
     try {
       // Parse id field
       final id = json['id'] ?? '';
-      print('[User.fromJson] Parsed id: $id');
+      print('[UserModel.fromJson] Parsed id: $id');
 
       // Parse phone field
       final phone = json['phone'] ?? '';
-      print('[User.fromJson] Parsed phone: $phone');
+      print('[UserModel.fromJson] Parsed phone: $phone');
 
       // Parse firstName field
       final firstName = json['first_name'] ?? '';
@@ -56,11 +78,9 @@ class User {
       final profilePhoto = json['profile_photo'] as String?;
       print('[User.fromJson] Parsed profilePhoto: $profilePhoto');
 
-      // Parse walletBalance field with safe conversion
       final walletBalance = double.tryParse(json['wallet_balance']?.toString() ?? '0') ?? 0.0;
       print('[User.fromJson] Parsed walletBalance: $walletBalance');
 
-      // Parse vehicles list with error handling
       final List<Vehicle> vehicles = [];
       try {
         final vehiclesList = json['vehicles'] as List?;
@@ -80,10 +100,8 @@ class User {
         print('[User.fromJson] Parsed vehicles: ${vehicles.length} vehicle(s)');
       } catch (e) {
         print('[User.fromJson] Error parsing vehicles list: $e');
-        // Fallback to empty list
       }
 
-      // Parse countryDetails with error handling
       Country? countryDetails;
       try {
         if (json['country_details'] != null) {
@@ -95,10 +113,20 @@ class User {
       } catch (e) {
         print('[User.fromJson] Error parsing countryDetails: $e');
         countryDetails = null;
-        // Fallback to null
       }
 
-      return User(
+      DateTime? createdAt;
+      try {
+        if (json['created_at'] != null) {
+          createdAt = DateTime.parse(json['created_at'] as String);
+        }
+      } catch (e) {
+        print('[User.fromJson] Error parsing createdAt: $e');
+      }
+
+      bool isPhoneVerified = json['is_phone_verified'] ?? false;
+
+      return UserModel(
         id: id,
         phone: phone,
         firstName: firstName,
@@ -109,11 +137,12 @@ class User {
         walletBalance: walletBalance,
         vehicles: vehicles,
         countryDetails: countryDetails,
+        createdAt: createdAt,
+        isPhoneVerified: isPhoneVerified,
       );
     } catch (e) {
-      print('[User.fromJson] Critical error parsing User from JSON: $e');
-      // Return a default User object with safe defaults
-      return User(
+      print('[UserModel.fromJson] Critical error parsing UserModel from JSON: $e');
+      return UserModel(
         id: '',
         phone: '',
         firstName: 'Unknown',
@@ -124,11 +153,16 @@ class User {
         walletBalance: 0.0,
         vehicles: [],
         countryDetails: null,
+        createdAt: null,
+        isPhoneVerified: false,
       );
     }
   }
 
   String get fullName => '$firstName $lastName';
+
+  /// Get full name (alternative method name)
+  String getFullName() => fullName;
 
   Map<String, dynamic> toJson() {
     return {
@@ -142,6 +176,8 @@ class User {
       'wallet_balance': walletBalance,
       'vehicles': vehicles.map((v) => v.toJson()).toList(),
       'country_details': countryDetails?.toJson(),
+      'created_at': createdAt?.toIso8601String(),
+      'is_phone_verified': isPhoneVerified,
     };
   }
 }

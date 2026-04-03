@@ -75,11 +75,13 @@ class _ChatConversationListScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.surfaceLight,
       appBar: AppBar(
         title: const Text('Support'),
         elevation: 0,
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
+        scrolledUnderElevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: AppTheme.textPrimary,
         actions: [
           IconButton(icon: const Icon(Icons.search), onPressed: () {}),
           IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
@@ -187,7 +189,7 @@ class _ChatConversationListScreenState
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openNewConversation,
-        backgroundColor: AppTheme.accentColor,
+        backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
         child: const Icon(Icons.chat),
       ),

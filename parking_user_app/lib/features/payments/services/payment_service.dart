@@ -178,4 +178,51 @@ class PaymentService {
       return {'success': false, 'message': 'Payment failed'};
     }
   }
+
+  Future<Map<String, dynamic>> verifyPesapalPayment({
+    required String orderTrackingId,
+    int retries = 5,
+    Duration interval = const Duration(seconds: 2),
+  }) async {
+    for (var i = 0; i < retries; i++) {
+      try {
+        final response = await _apiClient.get(
+          'transactions/',
+          queryParameters: {'search': orderTrackingId},
+        );
+
+        if (response.statusCode == 200) {
+          final List data = response.data is List
+              ? response.data
+              : (response.data['results'] ?? []);
+
+          final match = data.cast<Map<String, dynamic>?>().firstWhere(
+            (item) =>
+                item?['pesapal_order_tracking_id']?.toString() ==
+                orderTrackingId,
+            orElse: () => null,
+          );
+
+          if (match != null) {
+            final status = (match['status'] ?? '').toString().toLowerCase();
+            if (status == 'completed' || status == 'successful') {
+              return {'success': true, 'status': status, 'transaction': match};
+            }
+            if (status == 'failed' || status == 'cancelled') {
+              return {'success': false, 'status': status, 'transaction': match};
+            }
+          }
+        }
+      } catch (_) {
+        // Best-effort polling; retry until timeout.
+      }
+      await Future.delayed(interval);
+    }
+
+    return {
+      'success': false,
+      'status': 'pending',
+      'message': 'Payment verification timed out',
+    };
+  }
 }

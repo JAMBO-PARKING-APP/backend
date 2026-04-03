@@ -10,7 +10,6 @@ import 'package:parking_user_app/features/parking/models/reservation_model.dart'
 import 'package:parking_user_app/features/payments/services/payment_service.dart';
 import 'package:parking_user_app/core/api_client.dart';
 import 'package:parking_user_app/widgets/payment_selection_dialog.dart';
-import 'package:parking_user_app/features/payments/services/payment_service.dart';
 import 'package:parking_user_app/features/payments/providers/payment_provider.dart';
 import 'package:parking_user_app/features/payments/screens/pesapal_webview_screen.dart';
 import 'package:parking_user_app/core/localizations.dart';
@@ -19,6 +18,7 @@ import 'package:parking_user_app/features/parking/screens/active_session_screen.
 import 'package:parking_user_app/widgets/base_scaffold.dart';
 import 'package:parking_user_app/features/home/screens/home_screen.dart';
 import 'package:parking_user_app/widgets/time_knob.dart';
+import 'package:parking_user_app/core/app_theme.dart';
 
 class CreateReservationScreen extends StatefulWidget {
   final Zone? initialZone;
@@ -479,10 +479,46 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0B67C2), Color(0xFF0087F6)],
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.isImmediate ? 'Start Session' : 'Reserve in Advance',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    widget.isImmediate
+                        ? 'Pick a vehicle, choose a zone, and pay securely.'
+                        : 'Plan your parking ahead and secure your slot.',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.88),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
             // Vehicle Selection
             Text(
               l10n.selectVehicle,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
             ),
             const SizedBox(height: 8),
             Consumer<VehicleProvider>(
@@ -499,8 +535,19 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
                       .toList(),
                   onChanged: (val) => setState(() => _selectedVehicleId = val),
                   decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: AppTheme.primaryColor, width: 1.6),
                     ),
                   ),
                 );
@@ -511,7 +558,10 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
             // Zone Selection
             Text(
               l10n.selectZone,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
             ),
             const SizedBox(height: 8),
             Consumer<ParkingProvider>(
@@ -526,8 +576,19 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
                       .toList(),
                   onChanged: (val) => setState(() => _selectedZoneId = val),
                   decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: AppTheme.primaryColor, width: 1.6),
                     ),
                   ),
                 );
@@ -563,8 +624,9 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey),
-                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.white,
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                              borderRadius: BorderRadius.circular(14),
                             ),
                             child: Text(
                               DateFormat('yyyy-MM-dd').format(_startDate),
@@ -595,8 +657,9 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey),
-                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.white,
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                              borderRadius: BorderRadius.circular(14),
                             ),
                             child: Text(_startTime.format(context)),
                           ),
@@ -623,6 +686,9 @@ class _CreateReservationScreenState extends State<CreateReservationScreen> {
               onPressed: _handleCreate,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               child: Text(
                 widget.isImmediate ? l10n.startParkingNow : l10n.confirmBooking,
