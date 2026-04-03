@@ -56,13 +56,13 @@ class RegionalModel(models.Model):
     class Meta:
         abstract = True
 
-class SystemConfiguration(models.Model):
-    """System-wide configuration settings"""
+class SystemConfiguration(RegionalModel, BaseModel):
+    """System-wide configuration settings (Per Country)"""
     currency = models.CharField(max_length=3, choices=Currency.choices, default=DEFAULT_CURRENCY)
-    timezone = models.CharField(max_length=50, default='UTC')
-    company_name = models.CharField(max_length=100, default='Smart Parking System')
-    contact_email = models.EmailField(default='admin@smartparking.com')
-    contact_phone = models.CharField(max_length=20, default='+1234567890')
+    timezone = models.CharField(max_length=50, default='Africa/Kampala')
+    company_name = models.CharField(max_length=100, default='JAMBO PARK')
+    contact_email = models.EmailField(default='admin@jambopark.com')
+    contact_phone = models.CharField(max_length=20, default='+256000000000')
     default_hourly_rate = models.DecimalField(max_digits=12, decimal_places=2, default=2000.00)
     violation_fine_amount = models.DecimalField(max_digits=12, decimal_places=2, default=50000.00)
     grace_period_minutes = models.IntegerField(default=15)
@@ -82,8 +82,16 @@ class SystemConfiguration(models.Model):
     
     @classmethod
     def get_config(cls):
-        """Get or create system configuration"""
-        config, created = cls.objects.get_or_create(pk=1)
+        """Get or create system configuration for the current country"""
+        country = get_current_country()
+        if not country:
+            # Fallback to the first found configuration or create a global one
+            config = cls.all_objects.first()
+            if not config:
+                config = cls.all_objects.create(pk=1)
+            return config
+            
+        config, created = cls.objects.get_or_create(country=country)
         return config
 
 

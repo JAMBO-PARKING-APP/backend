@@ -16,8 +16,8 @@ class ZoneSerializer(serializers.ModelSerializer):
         model = Zone
         fields = ('id', 'name', 'code', 'description', 'hourly_rate', 'max_duration_hours', 
                  'total_slots', 'is_active', 'latitude', 'longitude', 'radius_meters',
-                 'country', 'country_name', 'available_slots_count', 'slots',
-                 'zone_image', 'diagram_image')
+                 'country', 'country_name', 'google_maps_url', 'available_slots_count', 
+                 'slots', 'zone_image', 'diagram_image')
 
 class ParkingSessionSerializer(serializers.ModelSerializer):
     hourly_rate = serializers.DecimalField(source='zone.hourly_rate', max_digits=12, decimal_places=2, read_only=True)

@@ -96,6 +96,14 @@ class Zone(RegionalModel, BaseModel):
             return 0
         occupied = self.occupied_slots
         return (occupied / capacity) * 100
+    
+    @property
+    def google_maps_url(self):
+        """Returns a Google Maps navigation URL for this zone."""
+        if self.latitude and self.longitude:
+            # Use navigation intent for better mobile experience
+            return f"https://www.google.com/maps/dir/?api=1&destination={self.latitude},{self.longitude}"
+        return None
 
     class Meta:
         ordering = ['name']

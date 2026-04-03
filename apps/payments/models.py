@@ -105,10 +105,15 @@ class Refund(RegionalModel, BaseModel):
             self.country = self.original_transaction.country
         super().save(*args, **kwargs)
 
-class Invoice(BaseModel):
+class Invoice(RegionalModel, BaseModel):
     transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name='invoice')
     invoice_number = models.CharField(max_length=20, unique=True)
     pdf_file = models.FileField(upload_to='invoices/', null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.transaction and not self.country:
+            self.country = self.transaction.country
+        super().save(*args, **kwargs)
 
     class Meta:
         indexes = [
@@ -119,7 +124,7 @@ class Invoice(BaseModel):
     def __str__(self):
         return self.invoice_number
 
-class WalletTransaction(BaseModel):
+class WalletTransaction(RegionalModel, BaseModel):
     TRANSACTION_TYPES = [
         ('topup', _('Top-up')),
         ('payment', _('Parking Payment')),
@@ -140,6 +145,11 @@ class WalletTransaction(BaseModel):
     opening_balance = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     closing_balance = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.user and not self.country:
+            self.country = self.user.country
+        super().save(*args, **kwargs)
 
     class Meta:
         indexes = [

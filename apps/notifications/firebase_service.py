@@ -18,26 +18,30 @@ _firebase_initialized = False
 
 def initialize_firebase():
     """Initialize Firebase Admin SDK with service account credentials"""
-    global _firebase_initialized
-    
-    if _firebase_initialized:
-        return
-    
     if not settings.FIREBASE_ENABLED:
         logger.info("Firebase is disabled in settings")
         return
     
     try:
-        cred = credentials.Certificate(str(settings.FIREBASE_CREDENTIALS_PATH))
+        # Check if app is already initialized to avoid ValueError
+        try:
+            firebase_admin.get_app()
+            logger.debug("Firebase Admin SDK already initialized")
+            return
+        except ValueError:
+            # App not yet initialized, proceed
+            pass
+
+        cred_path = str(settings.FIREBASE_CREDENTIALS_PATH)
+        cred = credentials.Certificate(cred_path)
         firebase_admin.initialize_app(cred)
-        _firebase_initialized = True
         logger.info("Firebase Admin SDK initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize Firebase Admin SDK: {e}")
-        raise
+        # Don't re-raise in production to prevent crashing the whole process
+        if settings.DEBUG:
+            raise
 
-
-from . import tasks
 
 def send_notification_to_user_sync(
     user,
@@ -145,6 +149,7 @@ def send_notification_to_user(
     """
     notification_event_id = str(notification_event.id) if notification_event else None
     
+    from . import tasks
     from django.db import transaction
     transaction.on_commit(lambda: tasks.send_firebase_notification_task.delay(
         user.id,
@@ -153,6 +158,7 @@ def send_notification_to_user(
         data,
         notification_event_id
     ))
+
     return True
 
 
@@ -236,6 +242,7 @@ def send_notification_to_multiple_users(
     if not user_ids:
         return False
         
+    from . import tasks
     from django.db import transaction
     transaction.on_commit(lambda: tasks.send_multicast_notification_task.delay(
         user_ids,
@@ -243,6 +250,7 @@ def send_notification_to_multiple_users(
         body,
         data
     ))
+
     return True
 
 

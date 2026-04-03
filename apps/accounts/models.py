@@ -107,6 +107,7 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
                 transaction_type=transaction_type,
                 description=description or f"Wallet adjustment: {amount}",
                 parking_session=parking_session,
+                country=target_country,
                 opening_balance=opening_balance,
                 closing_balance=closing_balance,
                 status='completed'
