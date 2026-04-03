@@ -1,140 +1,83 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:parking_user_app/features/splash/screens/version_check_screen.dart';
-import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:parking_user_app/core/app_theme.dart';
-import 'package:parking_user_app/core/localizations.dart';
-import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
-import 'package:parking_user_app/features/auth/providers/vehicle_provider.dart';
-import 'package:parking_user_app/features/parking/providers/parking_provider.dart';
-import 'package:parking_user_app/features/parking/providers/zone_provider.dart';
-import 'package:parking_user_app/features/parking/providers/reservation_provider.dart';
-import 'package:parking_user_app/features/payments/providers/payment_provider.dart';
-import 'package:parking_user_app/features/payments/services/payment_service.dart';
-import 'package:parking_user_app/features/notifications/providers/notification_provider.dart';
-import 'package:parking_user_app/features/rewards/providers/rewards_provider.dart';
-import 'package:parking_user_app/features/home/screens/home_screen.dart';
-import 'package:parking_user_app/features/auth/screens/permissions_screen.dart';
-import 'package:parking_user_app/features/auth/screens/splash_screen.dart';
-import 'package:parking_user_app/features/auth/screens/welcome_screen.dart';
-import 'package:parking_user_app/features/auth/screens/country_selection_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:parking_user_app/core/fcm_service.dart';
-import 'package:parking_user_app/core/notification_dialog_service.dart';
-import 'package:parking_user_app/core/dialog_service.dart';
-import 'package:parking_user_app/core/api_client.dart';
-import 'package:parking_user_app/core/services/local_notification_service.dart';
-
-// NEW: Location tracking imports
-import 'package:parking_user_app/features/location/services/location_service.dart';
-import 'package:parking_user_app/features/location/providers/location_provider.dart';
-
-// NEW: Profile management imports
-import 'package:parking_user_app/features/profile/providers/profile_provider.dart';
-import 'package:parking_user_app/features/auth/models/user_model.dart';
-
-// NEW: Reservations management imports
-import 'package:parking_user_app/features/reservations/providers/reservation_provider.dart'
-    as reservations_provider;
-
-// NEW: Host parking imports
-import 'package:parking_user_app/features/host_parking/providers/host_provider.dart';
+import 'package:parking_officer_app/core/app_theme.dart';
+import 'package:parking_officer_app/core/fcm_service.dart';
+import 'package:parking_officer_app/features/auth/providers/auth_provider.dart';
+import 'package:parking_officer_app/features/auth/providers/vehicle_provider.dart';
+import 'package:parking_officer_app/features/parking/providers/reservation_provider.dart';
+import 'package:parking_officer_app/features/auth/screens/login_screen.dart';
+import 'package:parking_officer_app/features/settings/screens/language_selection_screen.dart';
+import 'package:parking_officer_app/features/settings/screens/force_update_screen.dart';
+import 'package:parking_officer_app/core/system_config_service.dart';
+import 'package:parking_officer_app/core/constants.dart';
+import 'package:parking_officer_app/features/parking/providers/zone_provider.dart';
+import 'package:parking_officer_app/features/parking/screens/user_dashboard_screen.dart';
+import 'package:parking_officer_app/core/settings_provider.dart';
+import 'package:parking_officer_app/core/localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    debugPrint('[Main] WidgetsFlutterBinding initialized');
 
-  await Firebase.initializeApp();
+    // Initialize Firebase first (mandatory for Firebase services)
+    await Firebase.initializeApp().timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        debugPrint('[Main] Firebase initialization timed out');
+        throw Exception('Firebase initialization timed out');
+      },
+    );
 
+    unawaited(
+      FCMService().initialize().catchError((e) {
+        debugPrint('[Main] Error initializing FCM: $e');
+      }),
+    );
 
-  // Set up background message handler
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-
-  // Initialize FCM Service (Non-blocking)
-  FCMService().initialize();
-
-  // Initialize Local Notifications
-  await LocalNotificationService.init();
-
-  runApp(
-    MultiProvider(
-      providers: [
-        // API Client - provide first so others can use it
-        Provider(create: (_) => ApiClient()),
-        
-        ChangeNotifierProvider(create: (_) => AuthProvider()..checkAuth()),
-        ChangeNotifierProvider(create: (_) => ZoneProvider()),
-        ChangeNotifierProvider(create: (_) => ParkingProvider()),
-        ChangeNotifierProvider(create: (context) => PaymentProvider(PaymentService(context.read<ApiClient>()))),
-        ChangeNotifierProvider(create: (_) => VehicleProvider()),
-        ChangeNotifierProvider(create: (_) => ReservationProvider()),
-        ChangeNotifierProvider(create: (_) => NotificationProvider()),
-        ChangeNotifierProvider(create: (_) => SettingsProvider()),
-        ChangeNotifierProvider(create: (context) => RewardsProvider(context.read<ApiClient>())),
-        
-        // NEW: Location Service & Provider
-        Provider(
-          create: (_) => LocationService(),
-        ),
-        ChangeNotifierProvider(
-          create: (context) => LocationProvider(
-            apiClient: context.read<ApiClient>(),
-            locationService: context.read<LocationService>(),
-          ),
-        ),
-        
-        // NEW: Profile Provider
-        ChangeNotifierProvider(
-          create: (context) => ProfileProvider(
-            apiClient: context.read<ApiClient>(),
-            getCurrentUser: () {
-              try {
-                return context.read<AuthProvider>().user ?? UserModel.empty();
-              } catch (e) {
-                return UserModel.empty();
-              }
-            },
-          ),
-        ),
-        
-        // NEW: Reservations Provider (from features/reservations)
-        ChangeNotifierProvider(
-          create: (context) => reservations_provider.ReservationProvider(
-            apiClient: context.read<ApiClient>(),
-          ),
-        ),
-        
-        // NEW: Host Provider
-        ChangeNotifierProvider(
-          create: (context) => HostProvider(
-            apiClient: context.read<ApiClient>(),
-          ),
-        ),
-      ],
-      child: const MyApp(),
-    ),
-  );
+    runApp(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProvider(create: (_) => ZoneProvider()),
+          ChangeNotifierProvider(create: (_) => VehicleProvider()),
+          ChangeNotifierProvider(create: (_) => ReservationProvider()),
+          ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ],
+        child: const SpaceUserApp(),
+      ),
+    );
+  } catch (e, stack) {
+    debugPrint('[Main] FATAL ERROR: $e');
+    debugPrint(stack.toString());
+    // Fallback if something fails before runApp
+    runApp(
+      MaterialApp(
+        home: Scaffold(body: Center(child: Text('Error starting app: $e'))),
+      ),
+    );
+  }
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+void unawaited(Future<void> future) {}
+
+class SpaceUserApp extends StatelessWidget {
+  const SpaceUserApp({super.key});
+
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {
     return Consumer<SettingsProvider>(
       builder: (context, settings, _) {
-        // Set context for notification dialogs
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          NotificationDialogService().setContext(context);
-        });
-
         return MaterialApp(
-          navigatorKey: DialogService.navigatorKey,
+          navigatorKey: navigatorKey,
           title: 'SPACE',
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: settings.themeMode,
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.officerTheme,
           locale: settings.currentLocale,
           supportedLocales: settings.supportedLocales,
           localizationsDelegates: [
@@ -143,43 +86,127 @@ class MyApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          debugShowCheckedModeBanner: false,
-          home: Consumer<AuthProvider>(
-            builder: (context, auth, _) {
-              // 1. Always show splash until initialization is explicitly marked as complete
-              if (!auth.isInitialLoadComplete) {
-                return SplashScreen();
-              }
-
-              switch (auth.status) {
-                case AuthStatus.needsUpdate:
-                  final settings = context.read<SettingsProvider>();
-                  return VersionCheckScreen(
-                    updateUrl: settings.systemConfig.appUpdateUrl,
-                    isMandatory: settings.systemConfig.forceUpdate,
-                  );
-                case AuthStatus.authenticated:
-                  return const HomeScreen();
-                case AuthStatus.unauthenticated:
-                  if (!settings.hasSelectedLanguage) {
-                    return SplashScreen(); // Will show language selection
-                  }
-                  if (!auth.hasRequestedPermissions) {
-                    return const PermissionsScreen();
-                  }
-                  if (!settings.hasSelectedCountry) {
-                    return CountrySelectionScreen();
-                  }
-                  return WelcomeScreen();
-                case AuthStatus.initial:
-                case AuthStatus.authenticating:
-
-                  return SplashScreen();
-              }
-            },
-          ),
+          home: const AppBootstrapper(),
         );
       },
     );
+  }
+}
+
+class AppBootstrapper extends StatefulWidget {
+  const AppBootstrapper({super.key});
+
+  @override
+  State<AppBootstrapper> createState() => _AppBootstrapperState();
+}
+
+class _AppBootstrapperState extends State<AppBootstrapper> {
+  bool _checkingUpdate = false;
+  bool _updateChecked = false;
+  bool _updateRequired = false;
+  Map<String, dynamic>? _systemConfig;
+
+  bool _isLanguageValid(Locale? locale) {
+    if (locale == null) return false;
+    return const ['en', 'fr', 'de'].contains(locale.languageCode);
+  }
+
+  Future<void> _checkForUpdate() async {
+    if (_checkingUpdate) return;
+    setState(() => _checkingUpdate = true);
+    try {
+      final config = await SystemConfigService().fetchSystemConfig();
+      final forceUpdate = config['force_update'] == true;
+      final minAndroid = config['min_android_version']?.toString();
+
+      // Wording: show update screen when API version doesn't match current version.
+      final current = AppConstants.appVersion;
+      final requiredVersion = minAndroid;
+
+      final required = forceUpdate ||
+          (requiredVersion != null &&
+              requiredVersion.isNotEmpty &&
+              current != requiredVersion);
+
+      setState(() {
+        _systemConfig = config;
+        _updateRequired = required;
+        _updateChecked = true;
+      });
+    } catch (e) {
+      // If the config call fails, don't block login.
+      setState(() {
+        _updateRequired = false;
+        _updateChecked = true;
+      });
+    } finally {
+      setState(() => _checkingUpdate = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
+
+    if (!settings.isInitialized) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (!_isLanguageValid(settings.currentLocale)) {
+      return const LanguageSelectionScreen();
+    }
+
+    if (!_updateChecked && !_checkingUpdate) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdate());
+    }
+
+    if (!_updateChecked) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_updateRequired) {
+      return ForceUpdateScreen(
+        systemConfig: _systemConfig ?? const {},
+      );
+    }
+
+    return const AuthWrapper();
+  }
+}
+
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AuthProvider>().checkAuth();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
+    if (auth.status == AuthStatus.initial ||
+        auth.status == AuthStatus.authenticating) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (auth.status == AuthStatus.authenticated) {
+      return const UserDashboardScreen();
+    }
+
+    return const LoginScreen();
   }
 }

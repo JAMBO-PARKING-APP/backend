@@ -1,28 +1,34 @@
-class Transaction {
+class TransactionModel {
   final String id;
-  final String type;
-  final double amount;
-  final DateTime timestamp;
+  final num amount;
   final String status;
-  final String description;
+  final DateTime createdAt;
 
-  Transaction({
+  final String? paymentMethodDisplay;
+  final String? pesapalOrderTrackingId;
+
+  TransactionModel({
     required this.id,
-    required this.type,
     required this.amount,
-    required this.timestamp,
     required this.status,
-    required this.description,
+    required this.createdAt,
+    this.paymentMethodDisplay,
+    this.pesapalOrderTrackingId,
   });
 
-  factory Transaction.fromJson(Map<String, dynamic> json) {
-    return Transaction(
-      id: json['id'] ?? '',
-      type: json['transaction_type'] ?? 'debit',
-      amount: double.tryParse(json['amount']?.toString() ?? '0') ?? 0.0,
-      timestamp: DateTime.parse(json['created_at']),
-      status: json['status'] ?? 'completed',
-      description: json['description'] ?? '',
+  factory TransactionModel.fromJson(Map<String, dynamic> json) {
+    final amountRaw = json['amount'];
+    final amount = amountRaw is num
+        ? amountRaw
+        : num.tryParse(amountRaw?.toString() ?? '') ?? 0;
+    return TransactionModel(
+      id: json['id']?.toString() ?? '',
+      amount: amount,
+      status: json['status']?.toString() ?? '',
+      createdAt: DateTime.parse(json['created_at']?.toString() ?? DateTime.now().toIso8601String()),
+      paymentMethodDisplay: json['payment_method_display']?.toString(),
+      pesapalOrderTrackingId: json['pesapal_order_tracking_id']?.toString(),
     );
   }
 }
+

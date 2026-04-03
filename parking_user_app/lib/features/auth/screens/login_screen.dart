@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:parking_user_app/core/app_theme.dart';
-import 'package:parking_user_app/core/localizations.dart';
-import 'package:parking_user_app/core/widgets/modern_widgets.dart';
-import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
 import 'package:country_code_picker/country_code_picker.dart';
-import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
-import 'package:parking_user_app/features/auth/screens/register_screen.dart' as reg;
-import 'package:parking_user_app/features/auth/screens/terms_of_service_screen.dart';
-import 'package:parking_user_app/features/auth/screens/privacy_policy_screen.dart';
-import 'package:parking_user_app/features/home/screens/home_screen.dart';
+import 'package:parking_officer_app/features/auth/providers/auth_provider.dart';
+import 'package:parking_officer_app/core/app_theme.dart';
+import 'package:parking_officer_app/features/auth/screens/register_screen.dart';
+import 'package:parking_officer_app/features/legal/screens/legal_document_screen.dart';
+import 'package:parking_officer_app/core/user_strings.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,457 +15,313 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  String _countryCode = '+256';
-  bool _acceptTerms = false;
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _phoneFocusNode = FocusNode();
   bool _obscurePassword = true;
+  String _countryCode = '+254';
+  bool _acceptedTerms = false;
 
-  void _handleLogin() async {
-    final phone = _phoneController.text.trim();
-    final password = _passwordController.text;
+  @override
+  void initState() {
+    super.initState();
+    _countryCode = '+256';
+  }
 
-    final l10n = AppLocalizations.of(context);
-    if (phone.isEmpty) {
-      _showError(l10n.errorOccurred);
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    _passwordController.dispose();
+    _phoneFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _login() async {
+    if (!_acceptedTerms) {
+      _showError('Please accept the Terms and Conditions to continue.');
       return;
     }
 
-    if (password.isEmpty) {
-      _showError(l10n.errorOccurred);
+    if (_phoneController.text.isEmpty) {
+      _showError('Please enter your phone number');
+      return;
+    }
+    if (_passwordController.text.isEmpty) {
+      _showError('Please enter your password');
       return;
     }
 
-    if (!_acceptTerms) {
-      _showError(l10n.errorOccurred);
+    final phoneRegex = RegExp(r'^[0-9]{9}$');
+    if (!phoneRegex.hasMatch(_phoneController.text.replaceAll(' ', ''))) {
+      _showError('Please enter a valid phone number (9 digits)');
       return;
     }
 
-    final authProvider = context.read<AuthProvider>();
-    final fullPhone = '$_countryCode$phone';
-    final success = await authProvider.login(fullPhone, password);
+    final fullPhone = '$_countryCode${_phoneController.text}';
 
-    if (success && mounted) {
-      debugPrint('[LoginScreen] ✅ Login successful, navigating to HomeScreen');
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
-    } else if (!success && mounted) {
-      debugPrint('[LoginScreen] ❌ Login failed: ${authProvider.errorMessage}');
-      _showError(authProvider.errorMessage ?? 'Login failed');
+    final success = await context.read<AuthProvider>().login(
+      fullPhone,
+      _passwordController.text,
+    );
+
+    if (!success && mounted) {
+      _showError(context.read<AuthProvider>().errorMessage ?? 'Login failed');
     }
   }
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: Theme.of(context).colorScheme.error,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radiusS),
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
         ),
-        elevation: 4,
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 4),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: AppTheme.surfaceLight,
-      body: Stack(
-        children: [
-          // Modern Gradient Accent (top-right)
-          Positioned(
-            top: -100,
-            right: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
-                    Theme.of(context).colorScheme.primary.withValues(alpha: 0),
-                  ],
-                ),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          // Bottom accent
-          Positioned(
-            bottom: -50,
-            left: -50,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
-                    Theme.of(context).colorScheme.secondary.withValues(alpha: 0),
-                  ],
-                ),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          SafeArea(
+      body: Consumer<AuthProvider>(
+        builder: (context, auth, _) {
+          return Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppTheme.spacingL,
-                vertical: AppTheme.spacingM,
-              ),
+              padding: const EdgeInsets.all(24.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Back Button
+                  Center(
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.admin_panel_settings,
+                        size: 80,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    UserStrings.t(context, 'appTitle'),
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryColor,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    UserStrings.t(context, 'driverLogin'),
+                    style: TextStyle(color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 48),
+
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppTheme.radiusM),
-                      border: Border.all(
-                        color: AppTheme.borderColor,
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 8,
-                        ),
-                      ],
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    child: IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-                      style: IconButton.styleFrom(
-                        padding: const EdgeInsets.all(AppTheme.spacingM),
-                      ),
+                    child: CountryCodePicker(
+                      onChanged: (code) =>
+                          setState(() => _countryCode = code.dialCode!),
+                      initialSelection: 'KE',
+                      favorite: const ['KE', 'UG', 'TZ', 'NG'],
+                      showCountryOnly: false,
+                      showOnlyCountryWhenClosed: false,
+                      alignLeft: true,
                     ),
                   ),
-                  const SizedBox(height: AppTheme.spacingXL),
+                  const SizedBox(height: 16),
 
-                  // Header
-                  Text(
-                    l10n.welcome,
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: Theme.of(context).colorScheme.onSurface,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: AppTheme.spacingS),
-                  Text(
-                    l10n.loginToYourAccount,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                  const SizedBox(height: AppTheme.spacingXXL),
+                  TextField(
+                    controller: _phoneController,
+                    focusNode: _phoneFocusNode,
+                    decoration: InputDecoration(
+                      labelText: UserStrings.t(context, 'phoneNumber'),
+                      prefixIcon: const Icon(Icons.phone),
+                      prefixText: '$_countryCode ',
+                      hintText: '7XX XXX XXX',
+                      errorText:
+                          !_phoneFocusNode.hasFocus &&
+                              _phoneController.text.isNotEmpty &&
+                              !RegExp(
+                                r'^[0-9]{9}$',
+                              ).hasMatch(_phoneController.text)
+                          ? 'Enter 9 digits'
+                          : null,
+                      // Using global input theme
 
-                  // Phone Input with Country Picker
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.phone,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+                    ),
+                    keyboardType: TextInputType.phone,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 16),
+
+                  TextField(
+                    controller: _passwordController,
+                    decoration: InputDecoration(
+                      labelText: UserStrings.t(context, 'password'),
+                      prefixIcon: const Icon(Icons.lock),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
                         ),
                       ),
-                      const SizedBox(height: AppTheme.spacingS),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surface,
-                          borderRadius:
-                              BorderRadius.circular(AppTheme.radiusS),
-                          border: Border.all(
-                            color: Theme.of(context).colorScheme.outline,
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Consumer<SettingsProvider>(
-                              builder: (context, settings, _) {
-                                return CountryCodePicker(
-                                  onChanged: (code) => setState(
-                                    () => _countryCode = code.dialCode!,
-                                  ),
-                                  initialSelection:
-                                      settings.isoCountryCode ?? 'UG',
-                                  favorite: const ['UG', 'KE', 'TZ'],
-                                  showCountryOnly: false,
-                                  showOnlyCountryWhenClosed: false,
-                                  alignLeft: false,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: AppTheme.spacingM,
-                                  ),
-                                  textStyle: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                );
-                              },
-                            ),
-                            Container(
-                              height: 28,
-                              width: 1,
-                              color: Theme.of(context).colorScheme.outline,
-                            ),
-                            const SizedBox(width: AppTheme.spacingS),
-                            Expanded(
-                              child: TextField(
-                                controller: _phoneController,
-                                keyboardType: TextInputType.phone,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyLarge,
-                                decoration: InputDecoration(
-                                  hintText: l10n.phone,
-                                  hintStyle: Theme.of(context)
-                                      .textTheme
-                                      .bodyLarge
-                                      ?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                                  ),
-                                  border: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
-                                  contentPadding: EdgeInsets.zero,
-                                ),
+                      // Using global input theme
+
+                    ),
+                    obscureText: _obscurePassword,
+                  ),
+                  const SizedBox(height: 32),
+
+                  ElevatedButton(
+                    onPressed: auth.status == AuthStatus.authenticating
+                        ? null
+                        : _login,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: AppTheme.primaryColor,
+                      disabledBackgroundColor: Colors.grey[300],
+                    ),
+                    child: auth.status == AuthStatus.authenticating
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
                               ),
+                              strokeWidth: 2,
                             ),
-                            const SizedBox(width: AppTheme.spacingM),
-                          ],
-                        ),
-                      ),
-                    ],
+                          )
+                        : Text(
+                            UserStrings.t(context, 'loginButton'),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
-                  const SizedBox(height: AppTheme.spacingL),
 
-                  // Password Input
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 16),
+
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _acceptedTerms,
+                    onChanged: (v) => setState(() => _acceptedTerms = v ?? false),
+                    title: Text(UserStrings.t(context, 'agreeToTerms')),
+                    controlAffinity: ListTileControlAffinity.leading,
+                  ),
+
+                  Wrap(
+                    spacing: 8,
+                    alignment: WrapAlignment.center,
                     children: [
-                      Text(
-                        l10n.password,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      _legalLink(
+                        context,
+                        label: UserStrings.t(context, 'terms'),
+                        type: LegalDocumentType.termsAndConditions,
                       ),
-                      const SizedBox(height: AppTheme.spacingS),
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        style: Theme.of(context).textTheme.bodyLarge,
-                        decoration: InputDecoration(
-                          hintText: '••••••••',
-                          prefixIcon: Padding(
-                            padding:
-                                const EdgeInsets.all(AppTheme.spacingM),
-                            child: Icon(
-                              Icons.lock_outline,
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                              size: 20,
-                            ),
-                          ),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined,
-                              size: 20,
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                            ),
-                            onPressed: () => setState(
-                              () => _obscurePassword = !_obscurePassword,
-                            ),
-                          ),
-                        ),
+                      _legalLink(
+                        context,
+                        label: UserStrings.t(context, 'privacyPolicy'),
+                        type: LegalDocumentType.privacyPolicy,
+                      ),
+                      _legalLink(
+                        context,
+                        label: UserStrings.t(context, 'termsOfService'),
+                        type: LegalDocumentType.termsOfService,
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: AppTheme.spacingS),
+                  const SizedBox(height: 18),
 
-                  // Forgot Password Link
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(l10n.passwordResetSoon),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                      child: Text(
-                        l10n.forgotPassword,
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: AppTheme.primaryColor,
-                          fontWeight: FontWeight.w600,
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const RegisterScreen(),
                         ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: AppTheme.spacingL),
-
-                  // Terms & Privacy Checkbox
-                  ModernCard(
-                    backgroundColor: Theme.of(context).colorScheme.surface,
-                    padding: const EdgeInsets.all(AppTheme.spacingM),
-                    hasShadow: false,
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: Checkbox(
-                            value: _acceptTerms,
-                            activeColor: Theme.of(context).colorScheme.primary,
-                            onChanged: (val) =>
-                                setState(() => _acceptTerms = val!),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: AppTheme.spacingM),
-                        Expanded(
-                          child: Wrap(
-                            spacing: 4,
-                            runSpacing: 4,
-                            children: [
-                              Text(
-                                l10n.iAcceptThe,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall,
-                              ),
-                              GestureDetector(
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const TermsOfServiceScreen(),
-                                  ),
-                                ),
-                                child: Text(
-                                  l10n.terms,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                    color: Theme.of(context).colorScheme.primary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              Text(
-                                '&',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall,
-                              ),
-                              GestureDetector(
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const PrivacyPolicyScreen(),
-                                  ),
-                                ),
-                                child: Text(
-                                  l10n.privacyPolicy,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                    color: Theme.of(context).colorScheme.primary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: AppTheme.spacingXL),
-
-                  // Login Button
-                  Consumer<AuthProvider>(
-                    builder: (context, auth, _) {
-                      return ModernButton(
-                        label: l10n.login,
-                        onPressed: _handleLogin,
-                        isLoading:
-                            auth.status == AuthStatus.authenticating,
                       );
                     },
+                    child: Text(UserStrings.t(context, 'dontHaveAccountSignUp')),
                   ),
 
-                  const SizedBox(height: AppTheme.spacingXL),
+                  const SizedBox(height: 12),
 
-                  // Register Link
-                  Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          l10n.dontHaveAccount,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                          ),
-                        ),
-                        const SizedBox(width: AppTheme.spacingS),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const reg.RegisterScreen(),
+                  if (auth.status == AuthStatus.authenticating)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.blue),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info, color: Colors.blue, size: 20),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              UserStrings.t(context, 'connectingToServer'),
+                              style: const TextStyle(
+                                color: Colors.blue,
+                                fontSize: 12,
                               ),
-                            );
-                          },
-                          child: Text(
-                            l10n.register,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-
-                  const SizedBox(height: AppTheme.spacingL),
                 ],
               ),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
+}
+
+Widget _legalLink(
+  BuildContext context, {
+  required String label,
+  required LegalDocumentType type,
+}) {
+  return InkWell(
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LegalDocumentScreen(type: type),
+        ),
+      );
+    },
+    child: Text(
+      label,
+      style: TextStyle(
+        color: AppTheme.primaryColor,
+        fontWeight: FontWeight.w900,
+        decoration: TextDecoration.underline,
+      ),
+    ),
+  );
 }

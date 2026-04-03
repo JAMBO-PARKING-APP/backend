@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "parking_user_app" "\0"
+            VALUE "CompanyName", "com.jambopark" "\0"
+            VALUE "FileDescription", "parking_officer_app" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "parking_user_app" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "parking_user_app.exe" "\0"
-            VALUE "ProductName", "parking_user_app" "\0"
+            VALUE "InternalName", "parking_officer_app" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 com.jambopark. All rights reserved." "\0"
+            VALUE "OriginalFilename", "parking_officer_app.exe" "\0"
+            VALUE "ProductName", "parking_officer_app" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

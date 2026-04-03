@@ -1,4 +1,4 @@
-class Vehicle {
+class VehicleModel {
   final String id;
   final String licensePlate;
   final String make;
@@ -6,7 +6,7 @@ class Vehicle {
   final String color;
   final bool isActive;
 
-  Vehicle({
+  VehicleModel({
     required this.id,
     required this.licensePlate,
     required this.make,
@@ -15,27 +15,24 @@ class Vehicle {
     required this.isActive,
   });
 
-  factory Vehicle.fromJson(Map<String, dynamic> json) {
-    return Vehicle(
-      id: json['id'] ?? '',
-      licensePlate: json['license_plate'] ?? '',
-      make: json['make'] ?? '',
-      model: json['model'] ?? '',
-      color: json['color'] ?? '',
-      isActive: json['is_active'] ?? true,
+  factory VehicleModel.fromJson(Map<String, dynamic> json) {
+    return VehicleModel(
+      id: json['id']?.toString() ?? '',
+      licensePlate: (json['license_plate'] ?? json['licensePlate'] ?? '').toString(),
+      make: (json['make'] ?? '').toString(),
+      model: (json['model'] ?? '').toString(),
+      color: (json['color'] ?? '').toString(),
+      isActive: json['is_active'] == null ? true : (json['is_active'] as bool),
     );
   }
 
-  String get displayName => '$licensePlate ($make $model)';
-
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'license_plate': licensePlate,
       'make': make,
       'model': model,
       'color': color,
-      'is_active': isActive,
     };
   }
 }
+

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:parking_user_app/features/payments/providers/payment_provider.dart';
-import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
-import 'package:parking_user_app/core/utils/currency_formatter.dart';
-import 'package:parking_user_app/core/app_theme.dart';
-import 'package:parking_user_app/core/localizations.dart';
+import 'package:parking_officer_app/core/app_theme.dart';
+import 'package:parking_officer_app/core/user_strings.dart';
+import 'package:parking_officer_app/features/payments/services/wallet_service.dart';
+import 'package:parking_officer_app/features/payments/screens/topup_wallet_screen.dart';
+import 'package:parking_officer_app/features/payments/screens/payment_methods_screen.dart';
+import 'package:parking_officer_app/features/payments/screens/payment_summary_screen.dart';
+import 'package:parking_officer_app/features/payments/screens/transactions_list_screen.dart';
+import 'package:parking_officer_app/features/payments/screens/invoices_list_screen.dart';
+import 'package:parking_officer_app/features/payments/screens/wallet_transactions_list_screen.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -14,453 +17,182 @@ class WalletScreen extends StatefulWidget {
 }
 
 class _WalletScreenState extends State<WalletScreen> {
-  final TextEditingController _amountController = TextEditingController();
+  bool _isLoading = false;
+  String? _error;
+  double? _balance;
+  String _currency = 'UGX';
+  String _currencySymbol = 'UGX';
 
   @override
-  void dispose() {
-    _amountController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final data = await WalletService().getWalletBalance();
+      setState(() {
+        _balance = (data['balance'] as num?)?.toDouble() ?? 0.0;
+        _currency = data['currency']?.toString() ?? 'UGX';
+        _currencySymbol = data['currency_symbol']?.toString() ?? 'UGX';
+      });
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FB),
-      appBar: AppBar(
-        title: const Text(
-          'Wallet',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF121212),
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF121212)),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: Consumer<PaymentProvider>(
-        builder: (context, provider, _) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Premium Balance Card
-                Container(
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF0B67C2), Color(0xFF0087F6)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+      appBar: AppBar(title: Text(UserStrings.t(context, 'walletTitle'))),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              UserStrings.t(context, 'walletBalance'),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
                   ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Available Balance',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontSize: 14,
-                            ),
-                          ),
-                          Icon(
-                            Icons.account_balance_wallet,
-                            color: Colors.white.withValues(alpha: 0.5),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Consumer<PaymentProvider>(
-                        builder: (context, provider, _) {
-                          final walletBalance = provider.walletBalance;
-                          if (walletBalance == null) {
-                            return const Center(
-                              child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0078D4)),
-                              ),
-                            );
-                          }
-
-                          return Column(
-                            children: [
-                              // Balance Amount
-                              Text(
-                                '${walletBalance.currencySymbol}${walletBalance.balance.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontSize: 42,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-
-                              // Currency and Country
-                              Text(
-                                '${walletBalance.currency} • ${walletBalance.countryName}',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-
-                              // Exchange Rate (if not base currency)
-                              if (walletBalance.exchangeRate != 1.0) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  '1 UGX = ${walletBalance.exchangeRate.toStringAsFixed(2)} ${walletBalance.currency}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.white.withValues(alpha: 0.6),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'Space Park Wallet',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-
-                // Quick Top-up Section
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Quick Top-up',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF121212),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Amount Input
-                      Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8F9FA),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE5E7EB)),
-                        ),
-                        child: TextField(
-                          controller: _amountController,
-                          keyboardType: TextInputType.number,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF0078D4),
-                          ),
-                          decoration: InputDecoration(
-                            hintText: '0.00',
-                            hintStyle: const TextStyle(color: Color(0xFF64748B)),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.all(20),
-                            prefixIcon: Center(
-                              widthFactor: 1,
-                              child: Consumer<SettingsProvider>(
-                                builder: (context, settings, _) => Text(
-                                  settings.countryConfig.currencySymbol,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                    color: Color(0xFF64748B),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Quick Amount Buttons
-                      Row(
-                        children: [
-                          _buildQuickAmountButton('5,000'),
-                          const SizedBox(width: 12),
-                          _buildQuickAmountButton('10,000'),
-                          const SizedBox(width: 12),
-                          _buildQuickAmountButton('20,000'),
-                        ],
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      // Top-up Button
-                      SizedBox(
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            if (_amountController.text.isNotEmpty) {
-                              try {
-                                final amount = double.parse(_amountController.text);
-                                final provider = Provider.of<PaymentProvider>(context, listen: false);
-                                
-                                final result = await provider.topUpWallet(amount: amount);
-                                
-                                if (result['success'] == true) {
-                                  _amountController.clear();
-                                  
-                                  // Show success message and redirect to payment
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Redirecting to payment...'),
-                                        backgroundColor: const Color(0xFF10B981),
-                                      ),
-                                    );
-                                    
-                                    // TODO: Open payment URL in webview or browser
-                                    // For now, just show success
-                                    await provider.fetchWalletData(); // Refresh balance
-                                  }
-                                } else {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(result['message'] ?? 'Failed to top up wallet'),
-                                        backgroundColor: const Color(0xFFEF4444),
-                                      ),
-                                    );
-                                  }
-                                }
-                              } catch (e) {
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Invalid amount or payment failed'),
-                                      backgroundColor: const Color(0xFFEF4444),
-                                    ),
-                                  );
-                                }
-                              }
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0078D4),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            'Top Up Wallet',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-
-                // Recent Transactions
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Recent Transactions',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF121212),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    if (provider.isLoading)
-                      const Center(child: CircularProgressIndicator())
-                    else if (provider.transactions.isEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(40),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFE5E7EB)),
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.receipt_long_outlined,
-                              size: 48,
-                              color: const Color(0xFF64748B),
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'No transactions yet',
-                              style: TextStyle(color: Color(0xFF64748B)),
-                            ),
-                          ],
-                        ),
-                      )
-                    else
-                      ...provider.transactions.take(5).map((tx) {
-                        final isCredit =
-                            tx.type == 'credit' || tx.type == 'topup';
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFE5E7EB)),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: (isCredit
-                                          ? const Color(0xFF10B981)
-                                          : const Color(0xFFEF4444))
-                                      .withValues(alpha: 0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  isCredit
-                                      ? Icons.arrow_downward
-                                      : Icons.arrow_upward,
-                                  color: isCredit
-                                      ? const Color(0xFF10B981)
-                                      : const Color(0xFFEF4444),
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      tx.description ??
-                                          (isCredit
-                                              ? 'Top Up'
-                                              : 'Payment'),
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF121212),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      tx.timestamp != null 
-                                          ? '${tx.timestamp!.day}/${tx.timestamp!.month}/${tx.timestamp!.year}'
-                                          : 'Unknown date',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Color(0xFF64748B),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Text(
-                                '${isCredit ? '+' : '-'}UGX ${tx.amount?.toString() ?? '0'}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: isCredit
-                                      ? const Color(0xFF10B981)
-                                      : const Color(0xFFEF4444),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                  ],
-                ),
-              ],
             ),
-          );
-        },
+            const SizedBox(height: 12),
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (_error != null)
+              Text(
+                _error!,
+                style: const TextStyle(color: Colors.red),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.all(16),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppTheme.borderColor),
+                ),
+                child: Text(
+                  '${_currencySymbol} ${_balance?.toStringAsFixed(2) ?? '0.00'}',
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
+              ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const TopupWalletScreen(),
+                    ),
+                  );
+                  await _load();
+                },
+                icon: const Icon(Icons.add_card_rounded),
+                label: Text(UserStrings.t(context, 'topUpWallet')),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _actionTile(
+              icon: Icons.payment_rounded,
+              title: UserStrings.t(context, 'paymentMethods'),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const PaymentMethodsScreen(),
+                ),
+              ),
+            ),
+            _actionTile(
+              icon: Icons.summarize_rounded,
+              title: UserStrings.t(context, 'paymentSummary'),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const PaymentSummaryScreen(),
+                ),
+              ),
+            ),
+            _actionTile(
+              icon: Icons.receipt_long_rounded,
+              title: UserStrings.t(context, 'invoices'),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const InvoicesListScreen(),
+                ),
+              ),
+            ),
+            _actionTile(
+              icon: Icons.history_rounded,
+              title: UserStrings.t(context, 'transactions'),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const TransactionsListScreen(),
+                ),
+              ),
+            ),
+            _actionTile(
+              icon: Icons.account_balance_wallet_rounded,
+              title: UserStrings.t(context, 'walletTransactions'),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const WalletTransactionsListScreen(),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildQuickAmountButton(String amount) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          _amountController.text = amount;
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8F9FA),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
-          ),
-          child: Text(
-            amount,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF0078D4),
-            ),
-          ),
+  Widget _actionTile({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.borderColor),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: AppTheme.primaryColor),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w900),
         ),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: onTap,
       ),
     );
   }
 }
+

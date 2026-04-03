@@ -1,52 +1,52 @@
-import 'package:parking_user_app/core/api_client.dart';
-import 'package:parking_user_app/features/auth/models/vehicle_model.dart';
+import 'package:dio/dio.dart';
+import 'package:parking_officer_app/core/api_client.dart';
+import 'package:parking_officer_app/features/auth/models/vehicle_model.dart';
 
 class VehicleService {
   final ApiClient _apiClient = ApiClient();
 
-  Future<List<Vehicle>> getVehicles() async {
-    try {
-      final response = await _apiClient.get('vehicles/');
-      if (response.statusCode == 200) {
-        final List<dynamic> data = response.data is List
-            ? response.data
-            : (response.data['results'] ?? []);
-        return data.map((v) => Vehicle.fromJson(v)).toList();
-      }
-    } catch (e) {
-      return [];
+  Future<List<VehicleModel>> getVehicles() async {
+    final response = await _apiClient.get('user/vehicles/');
+    final payload = response.data;
+
+    final List<dynamic> data;
+    if (payload is List) {
+      data = payload;
+    } else if (payload is Map && payload['results'] is List) {
+      data = payload['results'] as List<dynamic>;
+    } else {
+      data = [];
     }
-    return [];
+
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map((v) => VehicleModel.fromJson(v))
+        .toList();
   }
 
-  Future<bool> addVehicle({
+  Future<VehicleModel> createVehicle({
     required String licensePlate,
     required String make,
     required String model,
     required String color,
   }) async {
-    try {
-      final response = await _apiClient.post(
-        'vehicles/',
-        data: {
-          'license_plate': licensePlate,
-          'make': make,
-          'model': model,
-          'color': color,
-        },
-      );
-      return response.statusCode == 201;
-    } catch (e) {
-      return false;
+    final response = await _apiClient.post(
+      'user/vehicles/',
+      data: {
+        'license_plate': licensePlate,
+        'make': make,
+        'model': model,
+        'color': color,
+      },
+    );
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      return VehicleModel.fromJson(response.data as Map<String, dynamic>);
     }
-  }
-
-  Future<bool> removeVehicle(String id) async {
-    try {
-      final response = await _apiClient.dio.delete('vehicles/$id/');
-      return response.statusCode == 204;
-    } catch (e) {
-      return false;
-    }
+    throw DioException(
+      requestOptions: response.requestOptions,
+      response: response,
+      type: DioExceptionType.badResponse,
+    );
   }
 }
+

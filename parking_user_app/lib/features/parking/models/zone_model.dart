@@ -4,11 +4,11 @@ class Zone {
   final String code;
   final double latitude;
   final double longitude;
-  final double hourlyRate;
   final int totalSlots;
   final int availableSlots;
-  final String? description;
+  final int occupiedSlots;
   final String? imageUrl;
+  final double? distanceKm;
 
   Zone({
     required this.id,
@@ -16,26 +16,63 @@ class Zone {
     required this.code,
     required this.latitude,
     required this.longitude,
-    required this.hourlyRate,
     required this.totalSlots,
     required this.availableSlots,
-    this.description,
+    required this.occupiedSlots,
     this.imageUrl,
+    this.distanceKm,
   });
 
   factory Zone.fromJson(Map<String, dynamic> json) {
+    int parseInt(dynamic value) {
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      return int.tryParse(value?.toString() ?? '') ?? 0;
+    }
+
+    String? imageFrom(dynamic value) {
+      final v = value?.toString();
+      if (v == null || v.isEmpty || v == 'null') return null;
+      return v;
+    }
+
     return Zone(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
+      id: json['id'] ?? (json['zone_id'] ?? ''),
+      name: json['name'] ?? (json['zone_name'] ?? ''),
       code: json['code'] ?? '',
       latitude: double.tryParse(json['latitude']?.toString() ?? '0') ?? 0.0,
       longitude: double.tryParse(json['longitude']?.toString() ?? '0') ?? 0.0,
-      hourlyRate:
-          double.tryParse(json['hourly_rate']?.toString() ?? '0') ?? 0.0,
-      totalSlots: json['total_slots'] ?? json['capacity'] ?? 0,
-      availableSlots: json['available_slots'] ?? 0,
-      description: json['description'],
-      imageUrl: json['zone_image'],
+      totalSlots: parseInt(json['total_slots'] ?? json['capacity']),
+      availableSlots: parseInt(json['available_slots']),
+      occupiedSlots: parseInt(json['occupied_slots']),
+      imageUrl: imageFrom(json['zone_image']),
+      distanceKm: null,
+    );
+  }
+
+  Zone copyWith({
+    String? id,
+    String? name,
+    String? code,
+    double? latitude,
+    double? longitude,
+    int? totalSlots,
+    int? availableSlots,
+    int? occupiedSlots,
+    String? imageUrl,
+    double? distanceKm,
+  }) {
+    return Zone(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      code: code ?? this.code,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      totalSlots: totalSlots ?? this.totalSlots,
+      availableSlots: availableSlots ?? this.availableSlots,
+      occupiedSlots: occupiedSlots ?? this.occupiedSlots,
+      imageUrl: imageUrl ?? this.imageUrl,
+      distanceKm: distanceKm ?? this.distanceKm,
     );
   }
 }

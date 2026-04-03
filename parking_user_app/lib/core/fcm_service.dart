@@ -1,181 +1,18 @@
-import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:parking_user_app/core/storage_manager.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
-import 'package:parking_user_app/core/dialog_service.dart';
-import 'package:parking_user_app/features/parking/providers/parking_provider.dart';
-import 'package:parking_user_app/features/parking/screens/active_session_screen.dart';
-import 'package:parking_user_app/features/payments/screens/wallet_screen.dart';
-import 'package:parking_user_app/features/parking/screens/violations_screen.dart';
-import 'package:parking_user_app/features/notifications/screens/notification_screen.dart';
+import 'package:parking_officer_app/main.dart';
+import 'package:parking_officer_app/features/parking/providers/zone_provider.dart';
+import 'package:parking_officer_app/features/parking/providers/reservation_provider.dart';
+import 'package:parking_officer_app/features/auth/providers/vehicle_provider.dart';
 import 'api_client.dart';
-import 'notification_dialog_service.dart';
 
 @pragma('vm:entry-point')
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  if (kDebugMode) {
-    print('Handling background message: ${message.messageId}');
-  }
-
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-  
-  const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/launcher_icon');
-  const DarwinInitializationSettings initializationSettingsIOS =
-      DarwinInitializationSettings();
-  const InitializationSettings initializationSettings =
-      InitializationSettings(
-        android: initializationSettingsAndroid,
-        iOS: initializationSettingsIOS,
-      );
-  
-  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
-
-  await _processBackgroundMessage(message, flutterLocalNotificationsPlugin);
-}
-
-Future<void> _processBackgroundMessage(
-  RemoteMessage message,
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin,
-) async {
-  try {
-    final notification = message.notification;
-    final data = message.data;
-
-    if (notification != null) {
-      const androidDetails = AndroidNotificationDetails(
-        'default',
-        'Default Notifications',
-        channelDescription: 'Default notification channel for Space Park',
-        importance: Importance.high,
-        priority: Priority.high,
-        playSound: true,
-      );
-
-      const iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-
-      const details = NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      );
-
-      await flutterLocalNotificationsPlugin.show(
-        notification.hashCode,
-        notification.title,
-        notification.body,
-        details,
-        payload: jsonEncode(data),
-      );
-    }
-
-    if (data.containsKey('type')) {
-      switch (data['type']) {
-        case 'parking_ended':
-          if (data.containsKey('session_id')) {
-            await _scheduleSessionEndNotification(data, flutterLocalNotificationsPlugin);
-          }
-          break;
-        case 'parking_expiring':
-          if (data.containsKey('session_id')) {
-            await _scheduleExpirationReminder(data, flutterLocalNotificationsPlugin);
-          }
-          break;
-      }
-    }
-  } catch (e) {
-    if (kDebugMode) {
-      print('Error processing background message: $e');
-    }
-  }
-}
-
-Future<void> _scheduleSessionEndNotification(
-  Map<String, dynamic> data,
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin,
-) async {
-  try {
-    const androidDetails = AndroidNotificationDetails(
-      'parking_sessions',
-      'Parking Sessions',
-      channelDescription: 'Notifications for parking session updates',
-      importance: Importance.high,
-      priority: Priority.high,
-      playSound: true,
-    );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    await flutterLocalNotificationsPlugin.show(
-      DateTime.now().millisecondsSinceEpoch.remainder(100000),
-      'Parking Session Ended',
-      'Your parking session has ended. You have been charged accordingly.',
-      details,
-    );
-  } catch (e) {
-    if (kDebugMode) {
-      print('Error scheduling session end notification: $e');
-    }
-  }
-}
-
-Future<void> _scheduleExpirationReminder(
-  Map<String, dynamic> data,
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin,
-) async {
-  try {
-    const androidDetails = AndroidNotificationDetails(
-      'parking_sessions',
-      'Parking Sessions',
-      channelDescription: 'Notifications for parking session updates',
-      importance: Importance.high,
-      priority: Priority.high,
-      playSound: true,
-    );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    await flutterLocalNotificationsPlugin.show(
-      DateTime.now().millisecondsSinceEpoch.remainder(100000) + 1,
-      'Parking Session Expiring Soon',
-      'Your parking session will expire soon. Extend your session to avoid additional charges.',
-      details,
-    );
-  } catch (e) {
-    if (kDebugMode) {
-      print('Error scheduling expiration reminder: $e');
-    }
-  }
+  debugPrint('Handling background message: ${message.messageId}');
 }
 
 class FCMService {
@@ -183,17 +20,20 @@ class FCMService {
   factory FCMService() => _instance;
   FCMService._internal();
 
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  FirebaseMessaging get _firebaseMessaging => FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
   String? _fcmToken;
   String? get fcmToken => _fcmToken;
-  bool _isUnregistering = false;
 
   Future<void> initialize() async {
     try {
-      
+ 
+      await Firebase.initializeApp();
+
+      await _initializeLocalNotifications();
+
       NotificationSettings settings = await _firebaseMessaging
           .requestPermission(
             alert: true,
@@ -202,50 +42,37 @@ class FCMService {
             provisional: false,
           );
 
-      if (kDebugMode) {
-        print('FCM Permission status: ${settings.authorizationStatus}');
-      }
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        debugPrint('User app: User granted notification permission');
 
-      if (settings.authorizationStatus == AuthorizationStatus.authorized ||
-          settings.authorizationStatus == AuthorizationStatus.provisional) {
-        
-        await _initializeLocalNotifications();
-
-        
         _fcmToken = await _firebaseMessaging.getToken();
-        if (kDebugMode) {
-          print('FCM Token: $_fcmToken');
+        debugPrint('User FCM Token: $_fcmToken');
+
+        if (_fcmToken != null) {
+          await _registerTokenWithBackend(_fcmToken!);
         }
 
-        
-        if (_fcmToken != null) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('fcm_token', _fcmToken!);
-        }
+        _firebaseMessaging.onTokenRefresh.listen((newToken) {
+          _fcmToken = newToken;
+          _registerTokenWithBackend(newToken);
+        });
 
         _setupMessageHandlers();
 
-        
-        _firebaseMessaging.onTokenRefresh.listen((newToken) {
-          _fcmToken = newToken;
-          if (kDebugMode) {
-            print('FCM Token refreshed: $newToken');
-          }
-          
-          _registerTokenWithBackend(newToken);
-        });
+        FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler,
+        );
+      } else {
+        debugPrint('User app: User declined notification permission');
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('Error initializing FCM: $e');
-      }
+      debugPrint('Error initializing FCM: $e');
     }
   }
 
-  
   Future<void> _initializeLocalNotifications() async {
     const androidSettings = AndroidInitializationSettings(
-      '@mipmap/launcher_icon',
+      '@mipmap/ic_launcher',
     );
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -263,282 +90,172 @@ class FCMService {
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
-    if (Platform.isAndroid) {
-      const androidChannel = AndroidNotificationChannel(
-        'default',
-        'Default Notifications',
-        description: 'Default notification channel for Spave Park',
-        importance: Importance.high,
-        playSound: true,
-      );
+    const androidChannel = AndroidNotificationChannel(
+      'space_user_channel',
+      'SPACE Notifications',
+      description: 'Notifications for SPACE users',
+      importance: Importance.high,
+      playSound: true,
+    );
 
-      await _localNotifications
-          .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >()
-          ?.createNotificationChannel(androidChannel);
-    }
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(androidChannel);
   }
 
   void _setupMessageHandlers() {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      if (kDebugMode) {
-        print('Foreground message received: ${message.messageId}');
-      }
+      debugPrint('Foreground message received: ${message.notification?.title}');
       _showLocalNotification(message);
 
-      NotificationDialogService().showNotificationDialog({
-        'title': message.notification?.title ?? 'Notification',
-        'body': message.notification?.body ?? '',
-        ...message.data,
-      });
+      final type = message.data['type'];
+      if (type == 'session_ended' ||
+          type == 'session_extended' ||
+          type == 'violation_reported') {
+        _refreshAppData(message);
+      }
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      if (kDebugMode) {
-        print('Notification tapped (background): ${message.messageId}');
-      }
+      debugPrint('Message opened: ${message.notification?.title}');
       _handleNotificationTap(message.data);
-
-      if (message.data['show_dialog'] == 'true') {
-        NotificationDialogService().showNotificationDialog(message.data);
-      }
     });
 
     _firebaseMessaging.getInitialMessage().then((RemoteMessage? message) {
       if (message != null) {
-        if (kDebugMode) {
-          print('Notification tapped (terminated): ${message.messageId}');
-        }
+        debugPrint(
+          'App opened from notification: ${message.notification?.title}',
+        );
         _handleNotificationTap(message.data);
-
-        if (message.data['show_dialog'] == 'true') {
-          Future.delayed(const Duration(milliseconds: 500), () {
-            NotificationDialogService().showNotificationDialog(message.data);
-          });
-        }
       }
     });
   }
 
   Future<void> _showLocalNotification(RemoteMessage message) async {
     final notification = message.notification;
-    if (notification == null) return;
 
-    const androidDetails = AndroidNotificationDetails(
-      'default',
-      'Default Notifications',
-      channelDescription: 'Default notification channel for Space Park',
-      importance: Importance.high,
-      priority: Priority.high,
-      playSound: true,
-    );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    await _localNotifications.show(
-      notification.hashCode,
-      notification.title,
-      notification.body,
-      details,
-      payload: jsonEncode(message.data),
-    );
+    if (notification != null) {
+      await _localNotifications.show(
+        notification.hashCode,
+        notification.title,
+        notification.body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'space_user_channel',
+            'SPACE Notifications',
+            channelDescription: 'Notifications for SPACE users',
+            importance: Importance.high,
+            priority: Priority.high,
+            icon: '@mipmap/ic_launcher',
+            playSound: true,
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+        payload: message.data.toString(),
+      );
+    }
   }
 
-  
   void _onNotificationTapped(NotificationResponse response) {
-    if (kDebugMode) {
-      print('Notification tapped: ${response.payload}');
-    }
-
-    if (response.payload != null) {
-      try {
-        final Map<String, dynamic> data = jsonDecode(response.payload!);
-        _handleNotificationTap(data);
-      } catch (e) {
-        if (kDebugMode) {
-          print('Error parsing notification payload: $e');
-        }
-      }
-    }
+    debugPrint('Notification tapped: ${response.payload}');
   }
 
   void _handleNotificationTap(Map<String, dynamic> data) {
-    if (kDebugMode) {
-      print('Handling notification tap with data: $data');
-    }
-
-    final context = DialogService.navigatorKey.currentContext;
-    if (context == null) return;
-
     final type = data['type'];
+    debugPrint('Handling notification tap: $type');
+
     switch (type) {
-      case 'parking_started':
-      case 'parking_expiring':
-      case 'parking_ended':
-        final parkingProvider = context.read<ParkingProvider>();
-        parkingProvider.fetchSessions().then((_) {
-          if (parkingProvider.activeSessions.isNotEmpty) {
-            final session = parkingProvider.activeSessions.first;
-            DialogService.navigatorKey.currentState?.push(
-              MaterialPageRoute(
-                builder: (context) => ActiveSessionScreen(session: session),
-              ),
-            );
-          }
-        });
+      case 'chat_message':
+        debugPrint('Navigate to chat: ${data['conversation_id']}');
         break;
-      case 'payment_success':
-        DialogService.navigatorKey.currentState?.push(
-          MaterialPageRoute(builder: (context) => const WalletScreen()),
-        );
+      case 'session_ended':
+        debugPrint('Navigate to session: ${data['session_id']}');
         break;
-      case 'payment_failed':
-        DialogService.navigatorKey.currentState?.push(
-          MaterialPageRoute(builder: (context) => const WalletScreen()),
-        );
+      case 'violation_reported':
+        debugPrint('Navigate to violations');
         break;
-      case 'violation_issued':
-        DialogService.navigatorKey.currentState?.push(
-          MaterialPageRoute(builder: (context) => const ViolationsScreen()),
-        );
-        break;
-      case 'notification':
-        DialogService.navigatorKey.currentState?.push(
-          MaterialPageRoute(builder: (context) => const NotificationScreen()),
-        );
+      case 'officer_dispatch':
+        debugPrint('Navigate to zone: ${data['zone_id']} for hotspot dispatch');
         break;
       default:
-        break;
+        debugPrint('Unknown notification type: $type');
     }
   }
 
-  Future<bool> registerToken() async {
-    if (_fcmToken == null) {
-      if (kDebugMode) {
-        print('FCM token not available, attempting to retrieve...');
-      }
-
-      try {
-        _fcmToken = await _firebaseMessaging.getToken();
-        if (_fcmToken != null) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('fcm_token', _fcmToken!);
-          if (kDebugMode) {
-            print('FCM Token retrieved: $_fcmToken');
-          }
-        } else {
-          if (kDebugMode) {
-            print('Failed to retrieve FCM token');
-          }
-          return false;
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          print('Error retrieving FCM token: $e');
-        }
-        return false;
-      }
-    }
-
-    return await _registerTokenWithBackend(_fcmToken!);
-  }
-
-  Future<bool> _registerTokenWithBackend(String token) async {
+  Future<void> _registerTokenWithBackend(String token) async {
     try {
-      final storage = StorageManager();
-      final accessToken = await storage.getAccessToken();
-
-      if (accessToken == null) {
-        if (kDebugMode) {
-          print(
-            '[FCMService] User not authenticated, skipping backend registration',
-          );
-        }
-        return false;
-      }
-
-      if (kDebugMode) {
-        print('Attempting to register FCM token with backend...');
-        print('Token: ${token.substring(0, 20)}...');
-      }
-
       final apiClient = ApiClient();
-      final response = await apiClient.post(
-        'notifications/fcm/register-token/',
+      await apiClient.post(
+        'user/notifications/fcm/register-token/',
         data: {'token': token},
       );
-
-      if (kDebugMode) {
-        print('FCM token registration response: ${response.data}');
-        print('Success: ${response.data['success']}');
-      }
-
-      return response.data['success'] == true;
+      debugPrint('User FCM token registered with backend');
     } catch (e) {
-      if (kDebugMode) {
-        print('Error registering FCM token with backend: $e');
-      }
-      return false;
+      debugPrint('Error registering FCM token: $e');
     }
   }
 
-  Future<bool> unregisterToken() async {
-    if (_isUnregistering) return false;
-    _isUnregistering = true;
-
+  Future<void> unregisterToken() async {
     try {
       final apiClient = ApiClient();
-      final response = await apiClient.post(
-        'notifications/fcm/unregister-token/',
-        data: {},
-      );
-
-      if (kDebugMode) {
-        print(
-          'FCM token unregistered from backend: ${response.data['success']}',
-        );
-      }
-
-      _fcmToken = null;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('fcm_token');
-
-      return response.data['success'] == true;
+      await apiClient.post('user/notifications/fcm/unregister-token/');
+      debugPrint('User FCM token unregistered');
     } catch (e) {
-      if (kDebugMode) {
-        print('Error unregistering FCM token: $e');
-      }
-      return false;
-    } finally {
-      _isUnregistering = false;
+      debugPrint('Error unregistering FCM token: $e');
     }
   }
 
- 
-  Future<void> deleteToken() async {
-    try {
-      await _firebaseMessaging.deleteToken();
-      _fcmToken = null;
+  void _refreshAppData(RemoteMessage message) {
+    final context = SpaceUserApp.navigatorKey.currentContext;
+    if (context != null) {
+      debugPrint('Refreshing app data from FCM trigger');
+      context.read<ZoneProvider>().fetchZones();
+      // Keep user data in sync with backend.
+      context.read<ReservationProvider>().fetchReservations();
+      context.read<VehicleProvider>().fetchVehicles();
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('fcm_token');
-
-      if (kDebugMode) {
-        print('FCM token deleted');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error deleting FCM token: $e');
+      // Show immediate feedback for foreground users
+      final notification = message.notification;
+      if (notification != null) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.info_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        notification.title ?? 'System Update',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        notification.body ?? 'Data has been refreshed.',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.blue.shade700,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
       }
     }
   }

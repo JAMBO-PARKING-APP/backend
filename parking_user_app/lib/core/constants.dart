@@ -1,29 +1,29 @@
 import 'dart:io' show Platform;
 
 class AppConstants {
-  // Set to true to use production URL, false for local development
   static bool useProduction = true;
-  static const String prodBase = 'https://backend.p-space.ai/api/user/';
+  static const String prodBase = 'https://backend.p-space.ai/api/';
 
   static String get baseUrl {
     if (useProduction) return prodBase;
     final host = Platform.isAndroid ? '10.0.2.2' : '127.0.0.1';
-    return 'http://$host:8000/api/user/';
+    return 'http://$host:8000/api/';
   }
 
   static String get wsUrl {
     final base = baseUrl;
     final wsScheme = base.startsWith('https') ? 'wss' : 'ws';
-    // Remove trailing slash from base if present to avoid double slash in ws path
     final cleanBase = base.endsWith('/')
         ? base.substring(0, base.length - 1)
         : base;
     return cleanBase
         .replaceFirst(RegExp(r'https?'), wsScheme)
-        .replaceFirst('/api/user', '/ws');
+        .replaceFirst('/api', '/ws');
   }
 
   static const String appName = 'SPACE';
+  // Keep in sync with `pubspec.yaml` version.
+  static const String appVersion = '1.0.0';
 }
 
 class CountryCode {

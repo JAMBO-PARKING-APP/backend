@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:parking_user_app/core/api_client.dart';
+import 'package:parking_officer_app/core/api_client.dart';
 
 class LocationService {
   static final LocationService _instance = LocationService._internal();
@@ -12,22 +12,20 @@ class LocationService {
   StreamSubscription<Position>? _positionStreamSubscription;
   DateTime? _lastUpdateTime;
 
-  // Settings
   static const int _updateIntervalSeconds = 60;
-  static const int _distanceFilterMeters = 50;
+  static const int _distanceFilterMeters =
+      30;
 
   Future<void> startTracking() async {
     bool serviceEnabled;
     LocationPermission permission;
 
-    // 1. Check if location services are enabled.
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       debugPrint('Location services are disabled.');
       return;
     }
 
-    // 2. Request permissions
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -38,21 +36,17 @@ class LocationService {
     }
 
     if (permission == LocationPermission.deniedForever) {
-      debugPrint(
-        'Location permissions are permanently denied, we cannot request permissions.',
-      );
+      debugPrint('Location permissions are permanently denied.');
       return;
     }
 
-    // 3. Get current position immediately
     try {
       Position position = await Geolocator.getCurrentPosition();
-      _sendLocationUpdate(position);
+      await _sendLocationUpdate(position);
     } catch (e) {
       debugPrint('Error getting initial location: $e');
     }
 
-    // 4. Listen for updates
     const LocationSettings locationSettings = LocationSettings(
       accuracy: LocationAccuracy.high,
       distanceFilter: _distanceFilterMeters,
@@ -70,7 +64,7 @@ class LocationService {
     final now = DateTime.now();
     if (_lastUpdateTime != null &&
         now.difference(_lastUpdateTime!).inSeconds < _updateIntervalSeconds) {
-      return; // Too soon
+      return; 
     }
 
     _sendLocationUpdate(position);
@@ -80,18 +74,27 @@ class LocationService {
   Future<void> _sendLocationUpdate(Position position) async {
     try {
       await _apiClient.post(
-        'location/',
+        'user/location/',
         data: {
           'latitude': position.latitude,
           'longitude': position.longitude,
-          'is_driver_app': true,
+          'accuracy': position.accuracy,
         },
       );
-      debugPrint(
-        'Location updated: ${position.latitude}, ${position.longitude}',
+      debugPrint('[User] Location updated: ${position.latitude}, ${position.longitude}');
+    } catch (e) {
+      debugPrint('[User] Failed to send location update: $e');
+    }
+  }
+
+  Future<Position?> getCurrentPosition() async {
+    try {
+      return await Geolocator.getCurrentPosition(
+        timeLimit: const Duration(seconds: 10),
       );
     } catch (e) {
-      debugPrint('Failed to send location update: $e');
+      debugPrint('Error getting current position: $e');
+      return null;
     }
   }
 

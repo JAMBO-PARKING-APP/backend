@@ -1,54 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:parking_user_app/features/parking/models/reservation_model.dart';
-import 'package:parking_user_app/features/parking/services/reservation_service.dart';
+import 'package:parking_officer_app/features/parking/models/reservation_model.dart';
+import 'package:parking_officer_app/features/parking/services/reservation_service.dart';
 
 class ReservationProvider with ChangeNotifier {
   final ReservationService _reservationService = ReservationService();
-  List<Reservation> _reservations = [];
-  bool _isLoading = false;
 
-  List<Reservation> get reservations => _reservations;
+  List<ReservationModel> _reservations = [];
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  List<ReservationModel> get reservations => _reservations;
   bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
 
   Future<void> fetchReservations() async {
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
-    _reservations = await _reservationService.getReservations();
-    _isLoading = false;
-    notifyListeners();
+
+    try {
+      _reservations = await _reservationService.listReservations();
+    } catch (e) {
+      _errorMessage = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
-  Future<Reservation?> createReservation({
-    required String vehicleId,
-    required String zoneId,
-    required DateTime startTime,
-    required DateTime endTime,
-    bool confirmImmediately = true, // Default to true for the new flow
-    String paymentMethod = 'wallet',
-  }) async {
-    final reservation = await _reservationService.createReservation(
-      vehicleId: vehicleId,
-      zoneId: zoneId,
-      startTime: startTime,
-      endTime: endTime,
-      confirmImmediately: confirmImmediately,
-      paymentMethod: paymentMethod,
-    );
-    if (reservation != null) await fetchReservations();
-    return reservation;
+  Future<void> cancelReservation(String reservationId) async {
+    await _reservationService.cancelReservation(reservationId);
+    await fetchReservations();
   }
 
-  Future<bool> cancelReservation(String reservationId) async {
-    final success = await _reservationService.cancelReservation(reservationId);
-    if (success) await fetchReservations();
-    return success;
-  }
-
-  Future<bool> confirmReservationWallet(String reservationId) async {
-    final success = await _reservationService.confirmReservationWallet(
-      reservationId,
-    );
-    if (success) await fetchReservations();
-    return success;
+  Future<void> confirmReservationWithWallet(String reservationId) async {
+    await _reservationService.confirmWallet(reservationId);
+    await fetchReservations();
   }
 }
+

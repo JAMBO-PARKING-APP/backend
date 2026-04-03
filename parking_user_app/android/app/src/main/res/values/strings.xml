@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Jambo Space</string>
-    <string name="default_notification_channel_id">jambo_space_channel</string>
-    <string name="default_notification_channel_name">Jambo Space Notifications</string>
+    <string name="default_notification_channel_id">space_officer_channel</string>
 </resources>

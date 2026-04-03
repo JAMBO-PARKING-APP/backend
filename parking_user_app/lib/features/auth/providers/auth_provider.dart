@@ -1,270 +1,89 @@
 import 'package:flutter/material.dart';
-import 'package:parking_user_app/features/auth/models/user_model.dart';
-import 'package:parking_user_app/features/auth/services/auth_service.dart';
-import 'package:parking_user_app/core/storage_manager.dart';
-import 'package:parking_user_app/core/fcm_service.dart';
-import 'package:parking_user_app/core/websocket_service.dart';
-// import 'package:parking_user_app/core/background_service.dart';
+import 'package:parking_officer_app/features/auth/models/user_model.dart';
+import 'package:parking_officer_app/features/auth/services/auth_service.dart';
+import 'package:parking_officer_app/core/storage_manager.dart';
 import 'dart:convert';
 
-import 'dart:io';
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:parking_user_app/features/settings/providers/settings_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-enum AuthStatus { authenticated, unauthenticated, authenticating, initial, needsUpdate }
+enum AuthStatus { authenticated, unauthenticated, authenticating, initial }
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
-  UserModel? _user;
+  User? _user;
   AuthStatus _status = AuthStatus.initial;
   String? _errorMessage;
-  bool _isInitialLoadComplete = false;
-  bool _isCheckingAuth = false; // Add this flag to prevent race conditions
 
-  UserModel? get user => _user;
+  User? get user => _user;
   AuthStatus get status => _status;
   String? get errorMessage => _errorMessage;
-  bool get isInitialLoadComplete => _isInitialLoadComplete;
-
-  bool _hasRequestedPermissions = false;
-  bool get hasRequestedPermissions => _hasRequestedPermissions;
-  String get currencySymbol => user?.countryDetails?.currencySymbol ?? 'UGX';
-
-  void setInitialLoadComplete() {
-    _isInitialLoadComplete = true;
-    notifyListeners();
-  }
 
   Future<void> checkAuth() async {
-    // Prevent multiple simultaneous auth checks
-    if (_isCheckingAuth) {
-      debugPrint('[AuthProvider] Auth check already in progress, skipping...');
-      return;
-    }
-    
-    _isCheckingAuth = true;
-    
     try {
-      debugPrint('[AuthProvider] ====== STARTING AUTH CHECK ======');
-      
-      // 0. Version Check
-      final needsUpdate = await _checkVersion();
-      if (needsUpdate) {
-        _status = AuthStatus.needsUpdate;
-        notifyListeners();
-        setInitialLoadComplete();
-        return;
-      }
-
-      // Only show global loading if we are NOT already authenticated
-      if (_status != AuthStatus.authenticated &&
-          _status != AuthStatus.authenticating) {
-        _status = AuthStatus.authenticating;
-        notifyListeners();
-      }
-
-    final storage = StorageManager();
-    _hasRequestedPermissions = await storage.hasRequestedPermissions();
-
-    if (!_hasRequestedPermissions) {
-      _status = AuthStatus.unauthenticated;
+      _status = AuthStatus.authenticating;
       notifyListeners();
-      setInitialLoadComplete();
-      return;
-    }
 
-    // 1. Try to load from storage first (Offline-first strategy)
-    final token = await storage.getAccessToken();
-    final userJson = await storage.getUserJson();
+      final storage = StorageManager();
+      final userJson = await storage.getUserJson();
 
-    if (token != null && userJson != null) {
-      try {
-        _user = UserModel.fromJson(json.decode(userJson));
-        _status = AuthStatus.authenticated;
-        notifyListeners(); // Validate immediately with cached data
-        debugPrint(
-          '[AuthProvider] Loaded profile from storage: ${_user?.firstName}',
-        );
-        // Connect WebSocket after loading from storage
-        WebSocketService().connect();
-        
-        // Initialize Background Service
-        // initializeBackgroundService();
-      } catch (e) {
-        debugPrint('[AuthProvider] Error parsing cached user: $e');
-      }
-    }
-
-    // 2. Refresh from network (Background update) - with timeout to prevent hanging
-    if (token != null) {
-      debugPrint('[AuthProvider] Attempting to fetch profile from network...');
-      try {
-        // Use timeout to prevent hanging on network issues  
-        final user = await _authService.getProfile().timeout(
-          const Duration(seconds: 5),
-          onTimeout: () {
-            debugPrint('[AuthProvider]Profile fetch timed out after 5 seconds');
-            return null;
-          },
-        );
-        
-        if (user != null) {
-          debugPrint('[AuthProvider] Network profile fetch successful');
-          _user = user;
+      if (userJson != null) {
+        try {
+          _user = User.fromJson(json.decode(userJson));
+          print('✅ AuthProvider: User restored from storage');
+          print('   - User ID: ${_user?.id}');
+          print('   - Phone: ${_user?.phone}');
+          print('   - Role: ${_user?.role}');
+          print('   - Country: ${_user?.country}');
+          print('   - Country Name: ${_user?.countryName}');
+          print('   - Country Identifier: ${_user?.countryIdentifier}');
           _status = AuthStatus.authenticated;
-
-          // Persist updated profile
-          await storage.saveUserJson(json.encode(user.toJson()));
-          debugPrint(
-            '[AuthProvider] Updated profile from network and saved to storage',
-          );
-          
-          notifyListeners();
-        } else if (_user == null) {
-          debugPrint('[AuthProvider] Network profile fetch returned null and no cached user - setting unauthenticated');
+        } catch (e) {
+          debugPrint('[AuthProvider] Error parsing user JSON: $e');
+          print('❌ AuthProvider: Failed to parse stored user data - $e');
           _status = AuthStatus.unauthenticated;
-          notifyListeners();
-        } else {
-          debugPrint('[AuthProvider] Network profile fetch returned null but using cached user (offline mode)');
         }
-      } catch (e) {
-        debugPrint('[AuthProvider] Network profile fetch exception: $e');
-        // If we have _user from storage, we stay authenticated (Offline mode)
-        if (_user == null) {
-          debugPrint('[AuthProvider] No cached user, setting to unauthenticated');
-          _status = AuthStatus.unauthenticated;
-          notifyListeners();
-        } else {
-          debugPrint('[AuthProvider] Using cached user data despite network error (offline mode)');
-        }
+      } else {
+        print('ℹ️ AuthProvider: No stored user data');
+        _status = AuthStatus.unauthenticated;
       }
-    } else {
-      debugPrint('[AuthProvider] No token found, setting to unauthenticated');
+    } catch (e) {
+      debugPrint('[AuthProvider] Error in checkAuth: $e');
+      print('💥 AuthProvider: Exception in checkAuth - $e');
       _status = AuthStatus.unauthenticated;
-      notifyListeners();
     }
-    
-    // Always mark initial load as complete to prevent hanging on splash screen
-    setInitialLoadComplete();
-    } finally {
-      _isCheckingAuth = false; // Reset the flag
-      debugPrint('[AuthProvider] ====== AUTH CHECK COMPLETE ======');
-    }
-  }
-
-  void skipVersionCheck() {
-    _status = AuthStatus.unauthenticated;
     notifyListeners();
-  }
-
-  Future<bool> _checkVersion() async {
-    try {
-      // Add timeout to prevent hanging
-      await Future.delayed(const Duration(seconds: 1));
-      
-      final packageInfo = await PackageInfo.fromPlatform();
-      final currentVersion = packageInfo.version;
-      
-      // We rely on SettingsProvider having fetched the config already in SplashScreen
-      // But we can double check here or use a safe default
-      final settings = SettingsProvider();
-      
-      // Try to fetch system config with timeout
-      try {
-        await settings.fetchSystemConfig().timeout(const Duration(seconds: 3));
-      } catch (e) {
-        debugPrint('[AuthProvider] System config fetch timeout, using fallback: $e');
-        // Continue with default values if fetch fails
-      }
-      
-      final config = settings.systemConfig;
-      final targetVersion = Platform.isAndroid 
-          ? config.minAndroidVersion 
-          : config.minIosVersion;
-
-      debugPrint('[AuthProvider] Version check: current=$currentVersion, target=$targetVersion');
-      debugPrint('[AuthProvider] Force update: ${config.forceUpdate}');
-
-      // Only check version if force update is true
-      if (config.forceUpdate && _isVersionLower(currentVersion, targetVersion)) {
-        debugPrint('[AuthProvider] Version check failed: $currentVersion < $targetVersion');
-        return true;
-      }
-      
-      debugPrint('[AuthProvider] Version check passed');
-    } catch (e) {
-      debugPrint('[AuthProvider] Version check error: $e');
-    }
-    return false;
-  }
-
-  bool _isVersionLower(String current, String target) {
-    try {
-      List<int> currentParts = current.split('.').map((s) => int.tryParse(s) ?? 0).toList();
-      List<int> targetParts = target.split('.').map((s) => int.tryParse(s) ?? 0).toList();
-      
-      for (int i = 0; i < 3; i++) {
-        int c = i < currentParts.length ? currentParts[i] : 0;
-        int t = i < targetParts.length ? targetParts[i] : 0;
-        if (c < t) return true;
-        if (c > t) return false;
-      }
-    } catch (e) {
-      debugPrint('Error comparing versions: $e');
-    }
-    return false;
-  }
-
-  Future<void> completePermissions() async {
-    final storage = StorageManager();
-    await storage.setPermissionsRequested(true);
-    _hasRequestedPermissions = true;
-    _status = AuthStatus.unauthenticated;
-    notifyListeners();
-    debugPrint('[AuthProvider] Permissions completed, triggering UI update');
   }
 
   Future<bool> login(String phoneNumber, String password) async {
-    _status = AuthStatus.authenticating;
-    _errorMessage = null;
-    notifyListeners();
-
-    debugPrint('[AuthProvider] ====== STARTING LOGIN ======');
-    debugPrint('[AuthProvider] Phone: $phoneNumber');
-
-    final result = await _authService.login(phoneNumber, password);
-
-    debugPrint('[AuthProvider] Login result success: ${result['success']}');
-
-    if (result['success']) {
-      _user = result['user'];
-      _status = AuthStatus.authenticated;
-      debugPrint('[AuthProvider] ✓ User authenticated successfully');
-      debugPrint('[AuthProvider] User: ${_user?.firstName} ${_user?.lastName}');
-      debugPrint('[AuthProvider] Status changed to: $_status');
-
-      // Register FCM token after successful login - don't wait for completion
-      FCMService().registerToken().then((success) {
-        debugPrint('[AuthProvider] FCM token registration: $success');
-      }).catchError((error) {
-        debugPrint('[AuthProvider] FCM token registration failed: $error');
-        // Don't let FCM registration failure affect login status
-      });
-      
+    try {
+      _status = AuthStatus.authenticating;
+      _errorMessage = null;
       notifyListeners();
-      // Connect WebSocket after login
-      WebSocketService().connect();
-      
-      // Initialize Background Service
-      // initializeBackgroundService();
-      
-      debugPrint('[AuthProvider] Notified listeners - UI should update now');
-      return true;
-    } else {
+
+      final result = await _authService.login(phoneNumber, password);
+
+      if (result['success']) {
+        _user = result['user'];
+        print('✅ AuthProvider: User logged in successfully');
+        print('   - User ID: ${_user?.id}');
+        print('   - Phone: ${_user?.phone}');
+        print('   - Role: ${_user?.role}');
+        print('   - Country: ${_user?.country}');
+        print('   - Country Name: ${_user?.countryName}');
+        print('   - Country Identifier: ${_user?.countryIdentifier}');
+        _status = AuthStatus.authenticated;
+        notifyListeners();
+        return true;
+      } else {
+        _status = AuthStatus.unauthenticated;
+        _errorMessage = result['message'];
+        print('❌ AuthProvider: Login failed - ${result['message']}');
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      debugPrint('[AuthProvider] Error in login: $e');
       _status = AuthStatus.unauthenticated;
-      _errorMessage = result['message'];
-      debugPrint('[AuthProvider] ✗ Login failed: $_errorMessage');
+      _errorMessage = 'An error occurred during login. Please try again.';
+      print('💥 AuthProvider: Exception during login - $e');
       notifyListeners();
       return false;
     }
@@ -272,119 +91,71 @@ class AuthProvider with ChangeNotifier {
 
   Future<bool> register({
     required String phoneNumber,
+    required String firstName,
+    required String lastName,
+    required String email,
     required String password,
-    String? confirmPassword,
-    String? email,
-    String? firstName,
-    String? lastName,
+    required String passwordConfirm,
   }) async {
-    _status = AuthStatus.authenticating;
-    _errorMessage = null;
-    notifyListeners();
-
-    final result = await _authService.register(
-      phone: phoneNumber,
-      password: password,
-      confirmPassword: confirmPassword,
-      email: email,
-      firstName: firstName,
-      lastName: lastName,
-    );
-
-    if (result['success']) {
-      _user = result['user'];
-      _status = AuthStatus.authenticated;
-      
-      // Register FCM token after successful registration
-      FCMService().registerToken().then((success) {
-        debugPrint('[AuthProvider] FCM token registration: $success');
-      });
-
-      // Connect WebSocket after registration
-      WebSocketService().connect();
-      
-      // Initialize Background Service
-      // initializeBackgroundService();
-      
+    try {
+      _status = AuthStatus.authenticating;
+      _errorMessage = null;
       notifyListeners();
-      return true;
-    } else {
+
+      final result = await _authService.register(
+        phoneNumber: phoneNumber,
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        password: password,
+        passwordConfirm: passwordConfirm,
+      );
+
+      if (result['success'] == true) {
+        _user = result['user'];
+        _status = AuthStatus.authenticated;
+        notifyListeners();
+        return true;
+      }
+
       _status = AuthStatus.unauthenticated;
-      _errorMessage = result['message'];
+      _errorMessage = result['message']?.toString();
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _status = AuthStatus.unauthenticated;
+      _errorMessage = 'An error occurred during registration. Please try again.';
       notifyListeners();
       return false;
     }
-  }
-
-  Future<bool> verifyOtp(String phoneNumber, String otp, {String? email}) async {
-    _status = AuthStatus.authenticating;
-    _errorMessage = null;
-    notifyListeners();
-
-    final result = await _authService.verifyOtp(phoneNumber, otp, email: email);
-    if (result['success']) {
-      _user = result['user'];
-      _status = AuthStatus.authenticated;
-
-      // Register FCM token after successful OTP verification
-      FCMService().registerToken().then((success) {
-        debugPrint('[AuthProvider] FCM token registration: $success');
-      });
-
-      notifyListeners();
-      // Connect WebSocket after OTP verification
-      WebSocketService().connect();
-      return true;
-    } else {
-      _status = AuthStatus.unauthenticated;
-      _errorMessage = result['message'];
-      notifyListeners();
-      return false;
-    }
-  }
-
-  Future<bool> resendOtp(String phoneNumber, {String? email}) async {
-    _errorMessage = null;
-    notifyListeners();
-    final success = await _authService.resendOtp(phoneNumber, email: email);
-    if (!success) {
-      _errorMessage = 'Failed to resend OTP. Please try again.';
-    }
-    notifyListeners();
-    return success;
   }
 
   Future<void> logout() async {
-    // Unregister FCM token before logout
-    await FCMService().unregisterToken();
-
     await _authService.logout();
     _user = null;
     _status = AuthStatus.unauthenticated;
-
-    // Disconnect WebSocket on logout
-    WebSocketService().disconnect();
-
     notifyListeners();
   }
 
-  Future<bool> updateProfilePhoto(String filePath) async {
-    final success = await _authService.updateProfilePhoto(filePath);
-    if (success) {
-      await checkAuth(); // Refresh profile
-    }
-    return success;
-  }
-
-  Future<bool> deleteAccount() async {
-    final success = await _authService.deleteAccount();
-    if (success) {
-      final storage = StorageManager();
-      await storage.clearAuthData();
-      _user = null;
-      _status = AuthStatus.unauthenticated;
-      notifyListeners();
-    }
-    return success;
+  Future<void> refreshProfile() async {
+    try {
+      final fresh = await _authService.getProfile();
+      if (fresh != null) {
+        _user = fresh;
+        final storage = StorageManager();
+        await storage.saveUserJson(json.encode({
+          'id': fresh.id,
+          'phone': fresh.phone,
+          'first_name': fresh.firstName,
+          'last_name': fresh.lastName,
+          'email': fresh.email,
+          'role': fresh.role,
+          'profile_photo': fresh.profilePhoto,
+          'country': fresh.country,
+          'country_name': fresh.countryName,
+        }));
+        notifyListeners();
+      }
+    } catch (_) {}
   }
 }

@@ -1,112 +1,80 @@
 import 'package:dio/dio.dart';
-import 'package:parking_user_app/core/api_client.dart';
-import 'package:parking_user_app/features/parking/models/reservation_model.dart';
+import 'package:parking_officer_app/core/api_client.dart';
+import 'package:parking_officer_app/features/parking/models/reservation_model.dart';
 
 class ReservationService {
   final ApiClient _apiClient = ApiClient();
 
-  Future<List<Reservation>> getReservations() async {
-    try {
-      final response = await _apiClient.get('reservations/');
-      if (response.statusCode == 200) {
-        final List<dynamic> data = response.data is List
-            ? response.data
-            : (response.data['results'] ?? []);
-        return data.map((json) => Reservation.fromJson(json)).toList();
+  Future<List<ReservationModel>> listReservations() async {
+    final response = await _apiClient.get('user/reservations/');
+    final payload = response.data;
+
+    final List<dynamic> data;
+    if (payload is List) {
+      data = payload;
+    } else if (payload is Map) {
+      if (payload['results'] is List) {
+        data = payload['results'] as List<dynamic>;
+      } else if (payload['reservations'] is List) {
+        data = payload['reservations'] as List<dynamic>;
+      } else {
+        data = [];
       }
-    } catch (e) {
-      return [];
+    } else {
+      data = [];
     }
-    return [];
+
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map((r) => ReservationModel.fromJson(r))
+        .toList();
   }
 
-  Future<Reservation?> createReservation({
+  Future<void> cancelReservation(String reservationId) async {
+    await _apiClient.post('user/reservations/$reservationId/cancel/', data: {});
+  }
+
+  Future<void> confirmWallet(String reservationId) async {
+    await _apiClient.post('user/reservations/$reservationId/confirm-wallet/', data: {});
+  }
+
+  Future<ReservationModel> createReservation({
     required String vehicleId,
     required String zoneId,
-    required DateTime startTime,
-    required DateTime endTime,
-    bool confirmImmediately = false,
-    String paymentMethod = 'wallet',
+    required DateTime reservedFrom,
+    required DateTime reservedUntil,
+    required bool confirmImmediately,
+    required String paymentMethod, // wallet or pesapal
   }) async {
-    try {
-      final response = await _apiClient.post(
-        'reservations/create/',
-        data: {
-          'vehicle_id': vehicleId,
-          'zone_id': zoneId,
-          'start_time': startTime.toUtc().toIso8601String(),
-          'end_time': endTime.toUtc().toIso8601String(),
-          'confirm_immediately': confirmImmediately,
-          'payment_method': paymentMethod,
-        },
-      );
+    final response = await _apiClient.post(
+      'user/reservations/create/',
+      data: {
+        'vehicle_id': vehicleId,
+        'zone_id': zoneId,
+        // Backend serializer accepts either reserved_from/reserved_until or start_time/end_time.
+        'reserved_from': reservedFrom.toIso8601String(),
+        'reserved_until': reservedUntil.toIso8601String(),
+        'confirm_immediately': confirmImmediately,
+        'payment_method': paymentMethod,
+      },
+    );
 
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        final data = response.data['reservation'];
-        if (data != null) {
-          return Reservation.fromJson(data);
-        }
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      final data = response.data;
+      if (data is Map && data['reservation'] is Map<String, dynamic>) {
+        return ReservationModel.fromJson(data['reservation'] as Map<String, dynamic>);
       }
-
-      final errorMsg = response.data is Map ? response.data['error'] : null;
-      throw errorMsg ??
-          'Failed to create reservation: Status ${response.statusCode}';
-    } on DioException catch (e) {
-      final data = e.response?.data;
-      String message = 'Failed to create reservation';
-      if (data is Map) {
-        message =
-            data['error'] ?? data['detail'] ?? data.values.first.toString();
+      if (data is Map<String, dynamic>) {
+        // Some implementations may return reservation at top-level.
+        return ReservationModel.fromJson(data);
       }
-      throw message;
-    } catch (e) {
-      throw e.toString();
     }
-  }
 
-  Future<bool> cancelReservation(String reservationId) async {
-    try {
-      final response = await _apiClient.post(
-        'reservations/$reservationId/cancel/',
-      );
-      if (response.statusCode == 200) return true;
-
-      final errorMsg = response.data is Map ? response.data['error'] : null;
-      throw errorMsg ??
-          'Failed to cancel reservation: Status ${response.statusCode}';
-    } on DioException catch (e) {
-      final data = e.response?.data;
-      String message = 'Failed to cancel reservation';
-      if (data is Map) {
-        message =
-            data['error'] ?? data['detail'] ?? data.values.first.toString();
-      }
-      throw message;
-    } catch (e) {
-      throw e.toString();
-    }
-  }
-
-  Future<bool> confirmReservationWallet(String reservationId) async {
-    try {
-      final response = await _apiClient.post(
-        'reservations/$reservationId/confirm-wallet/',
-      );
-      if (response.statusCode == 200) return true;
-
-      final errorMsg = response.data is Map ? response.data['error'] : null;
-      throw errorMsg ??
-          'Failed to confirm reservation: Status ${response.statusCode}';
-    } on DioException catch (e) {
-      final data = e.response?.data;
-      String message = 'Failed to confirm reservation';
-      if (data is Map) {
-        message =
-            data['error'] ?? data['detail'] ?? data.values.first.toString();
-      }
-      throw message;
-    } catch (e) {
-      throw e.toString();
-    }
+    throw DioException(
+      requestOptions: response.requestOptions,
+      response: response,
+      type: DioExceptionType.badResponse,
+    );
   }
 }
+
