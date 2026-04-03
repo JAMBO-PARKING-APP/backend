@@ -12,16 +12,33 @@ class RegionalContextMiddleware:
     def __call__(self, request):
         set_current_country(None)
         
+        # 1. Check for explicit header override (Prioritize this)
+        country_id = request.headers.get('X-Country-ID') or request.headers.get('X-Country-Code')
+        if country_id:
+            from .models import Country
+            try:
+                if len(country_id) == 2: # ISO Code
+                    country = Country.objects.get(iso_code=country_id.upper(), is_active=True)
+                else: # UUID
+                    country = Country.objects.get(id=country_id, is_active=True)
+                set_current_country(country)
+            except (Country.DoesNotExist, Exception):
+                pass
+        
         if request.user.is_authenticated:
-            session_country_id = request.session.get('selected_country_id')
-            if request.user.is_superuser and session_country_id:
-                from .models import Country
-                try:
-                    country = Country.objects.get(id=session_country_id)
-                    set_current_country(country)
-                except Country.DoesNotExist:
-                    pass
-            elif not request.user.is_superuser:
+            # 2. Check for session override (e.g., for superusers/admins)
+            if not get_current_country():
+                session_country_id = request.session.get('selected_country_id')
+                if session_country_id:
+                    from .models import Country
+                    try:
+                        country = Country.objects.get(id=session_country_id)
+                        set_current_country(country)
+                    except Country.DoesNotExist:
+                        pass
+            
+            # 3. Fallback to User Profile
+            if not get_current_country():
                 country = getattr(request.user, 'country', None)
                 if country:
                     set_current_country(country)

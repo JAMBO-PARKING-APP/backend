@@ -8,6 +8,7 @@ class Zone {
   final int availableSlots;
   final int occupiedSlots;
   final String? imageUrl;
+  final String? googleMapsUrl;
   final double? distanceKm;
 
   Zone({
@@ -20,6 +21,7 @@ class Zone {
     required this.availableSlots,
     required this.occupiedSlots,
     this.imageUrl,
+    this.googleMapsUrl,
     this.distanceKm,
   });
 
@@ -46,6 +48,7 @@ class Zone {
       availableSlots: parseInt(json['available_slots']),
       occupiedSlots: parseInt(json['occupied_slots']),
       imageUrl: imageFrom(json['zone_image']),
+      googleMapsUrl: json['google_maps_url'],
       distanceKm: null,
     );
   }
@@ -60,6 +63,7 @@ class Zone {
     int? availableSlots,
     int? occupiedSlots,
     String? imageUrl,
+    String? googleMapsUrl,
     double? distanceKm,
   }) {
     return Zone(
@@ -72,6 +76,7 @@ class Zone {
       availableSlots: availableSlots ?? this.availableSlots,
       occupiedSlots: occupiedSlots ?? this.occupiedSlots,
       imageUrl: imageUrl ?? this.imageUrl,
+      googleMapsUrl: googleMapsUrl ?? this.googleMapsUrl,
       distanceKm: distanceKm ?? this.distanceKm,
     );
   }

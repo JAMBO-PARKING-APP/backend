@@ -63,10 +63,14 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
 
     @property
     def wallet_balance(self):
-        """Returns the wallet balance for the user's current country."""
-        if not self.country:
+        """Returns the wallet balance for the current active country context."""
+        from apps.common.models import get_current_country
+        active_country = get_current_country() or self.country
+        
+        if not active_country:
             return self.wallet_balance_legacy
-        wallet, _ = Wallet.objects.get_or_create(user=self, country=self.country)
+            
+        wallet, _ = Wallet.objects.get_or_create(user=self, country=active_country)
         return wallet.balance
 
     @property

@@ -429,7 +429,7 @@ class ParkingSession(RegionalModel, BaseModel):
         ]
         return "\r\n".join(data)
 
-class Reservation(BaseModel):
+class Reservation(RegionalModel, BaseModel):
     STATUS_CHOICES = [
         ('pending_payment', _('Pending Payment')),
         ('confirmed', _('Confirmed')),
@@ -463,6 +463,9 @@ class Reservation(BaseModel):
         return f"{self.vehicle.license_plate} - {self.zone.name} ({self.status})"
 
     def save(self, *args, **kwargs):
+        if self.zone and not self.country:
+            self.country = self.zone.country
+            
         if self.status in ['cancelled', 'expired', 'completed']:
             if self.parking_slot and self.parking_slot.status != SlotStatus.AVAILABLE:
                 self.parking_slot.status = SlotStatus.AVAILABLE

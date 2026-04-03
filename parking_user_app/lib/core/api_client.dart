@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:convert';
 import 'package:parking_officer_app/core/constants.dart';
 import 'package:parking_officer_app/core/storage_manager.dart';
 
@@ -38,6 +39,22 @@ class ApiClient {
             if (token != null) {
               options.headers['Authorization'] = 'Bearer $token';
             }
+          }
+
+          // Attach Country header to all requests for regional isolation
+          final userJson = await _storageManager.getUserJson();
+          if (userJson != null) {
+            try {
+              final userMap = json.decode(userJson);
+              final country = userMap['country']?.toString();
+              if (country != null && country.isNotEmpty && country != 'null') {
+                if (country.length == 2) {
+                   options.headers['X-Country-Code'] = country;
+                } else {
+                   options.headers['X-Country-ID'] = country;
+                }
+              }
+            } catch (_) {}
           }
           debugPrint('[ApiClient] ${options.method} ${options.path}');
           return handler.next(options);

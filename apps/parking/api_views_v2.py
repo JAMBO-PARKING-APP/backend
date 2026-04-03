@@ -64,10 +64,12 @@ class ZoneListAPIView(generics.ListAPIView):
         available_only = request.query_params.get('available_only', 'false').lower() == 'true'
         
         if not search:
+            from apps.common.models import get_current_country
             cache = caches['default']
-            country_id = getattr(request.user, 'country_id', 'none')
+            country = get_current_country()
+            country_id = str(country.id) if country else 'none'
             is_staff = request.user.is_staff
-            cache_key = f"zone_list_country_{country_id}_staff_{is_staff}_{available_only}"
+            cache_key = f"zone_list_country_{country_id}_staff_{is_staff}_{available_only}_v2"
             cached_data = cache.get(cache_key)
             if cached_data:
                 return Response(cached_data)
@@ -115,9 +117,8 @@ class ZoneListAPIView(generics.ListAPIView):
             )
         ).select_related('country')
         
-        if hasattr(self.request.user, 'country') and self.request.user.country:
-             if not self.request.user.is_superuser:
-                 queryset = queryset.filter(country=self.request.user.country)
+        # Regional filtering is now handled automatically by RegionalManager 
+        # using the context set in RegionalContextMiddleware.
         
         search = self.request.query_params.get('search')
         if search:
