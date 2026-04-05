@@ -23,22 +23,21 @@ def initialize_firebase():
         return
     
     try:
-        # Check if app is already initialized to avoid ValueError
         try:
             firebase_admin.get_app()
             logger.debug("Firebase Admin SDK already initialized")
             return
         except ValueError:
-            # App not yet initialized, proceed
             pass
 
         cred_path = str(settings.FIREBASE_CREDENTIALS_PATH)
         cred = credentials.Certificate(cred_path)
         firebase_admin.initialize_app(cred)
+        global _firebase_initialized
+        _firebase_initialized = True
         logger.info("Firebase Admin SDK initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize Firebase Admin SDK: {e}")
-        # Don't re-raise in production to prevent crashing the whole process
         if settings.DEBUG:
             raise
 

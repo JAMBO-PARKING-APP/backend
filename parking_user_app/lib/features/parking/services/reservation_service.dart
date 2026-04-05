@@ -76,5 +76,15 @@ class ReservationService {
       type: DioExceptionType.badResponse,
     );
   }
+  Future<Map<String, dynamic>> startParkingFromReservation(String reservationId, double lat, double lng) async {
+    final response = await _apiClient.post(
+      'user/reservations/$reservationId/start/',
+      data: {
+        'lat': lat,
+        'lng': lng,
+      },
+    );
+    return response.data as Map<String, dynamic>;
+  }
 }
 

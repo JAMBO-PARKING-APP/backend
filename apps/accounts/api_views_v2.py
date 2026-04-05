@@ -227,10 +227,10 @@ class LoginAPIView(APIView):
         if isinstance(errors, dict) and errors.get('detail'):
             detail = errors.get('detail')
             message = detail[0] if isinstance(detail, (list, tuple)) else detail
-            logger.warning(f"❌ Login failed for {request.data.get('phone')}: {message}")
+            logger.warning(f"Login failed for {request.data.get('phone')}: {message}")
             return Response({'error': message}, status=status.HTTP_403_FORBIDDEN)
 
-        logger.warning(f"❌ Login validation failed: {errors}")
+        logger.warning(f"Login validation failed: {errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ProfileAPIView(APIView):

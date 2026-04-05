@@ -46,6 +46,8 @@ urlpatterns = [
     path('reservations/', parking_views.UserReservationsAPIView.as_view(), name='reservations'),
     path('reservations/<uuid:reservation_id>/cancel/', parking_views.CancelReservationAPIView.as_view(), 
          name='cancel-reservation'),
+    path('reservations/<uuid:reservation_id>/start/', parking_views.StartParkingFromReservationAPIView.as_view(), 
+         name='start-reservation-session'),
     path('reservations/<uuid:reservation_id>/confirm-wallet/', parking_views.ConfirmReservationWalletAPIView.as_view(), 
          name='confirm-reservation-wallet'),
     path('violations/', enforcement_views.UserViolationsListAPIView.as_view(), name='violations'),

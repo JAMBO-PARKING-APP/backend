@@ -93,19 +93,50 @@ def cancel_overdue_reservations():
     cutoff_time = now - timedelta(minutes=15)
     
     overdue_reservations = Reservation.objects.filter(
-        status='pending_payment',
-        created_at__lt=cutoff_time
+        Q(status='pending_payment', created_at__lt=cutoff_time) |
+        Q(status='confirmed', reserved_until__lt=now)
     )
     
-    count = overdue_reservations.count()
+    count = 0
     for reservation in overdue_reservations:
-        reservation.status = 'cancelled'
+        old_status = reservation.status
+        reservation.status = 'expired' if old_status == 'confirmed' else 'cancelled'
         reservation.save()
+        count += 1
         
         from apps.notifications.notification_triggers import notify_reservation_cancelled
         notify_reservation_cancelled(reservation)
         
-    return f"Cancelled {count} overdue reservations."
+    return f"Processed {count} overdue reservations."
+
+@shared_task(name='apps.parking.tasks.notify_upcoming_reservations')
+def notify_upcoming_reservations():
+    """
+    Notify users of reservations starting in 30 minutes.
+    """
+    now = timezone.now()
+    thirty_mins_later = now + timedelta(minutes=30)
+    
+    upcoming = Reservation.objects.filter(
+        status='confirmed',
+        reserved_from__lte=thirty_mins_later,
+        reserved_from__gt=now + timedelta(minutes=29)
+    )
+    
+    count = 0
+    from apps.notifications.notification_triggers import notify_custom
+    for res in upcoming:
+        user = res.vehicle.user
+        notify_custom(
+            user=user,
+            title="Upcoming Reservation",
+            message=f"Reminder: Your reservation at {res.zone.name} starts in 30 minutes.",
+            type='reservation_reminder',
+            metadata={'reservation_id': str(res.id)}
+        )
+        count += 1
+        
+    return f"Sent {count} upcoming reservation notifications."
 
 @shared_task(name='apps.parking.tasks.check_reservation_attendance')
 def check_reservation_attendance(reservation_id):

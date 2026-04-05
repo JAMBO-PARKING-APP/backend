@@ -3,7 +3,10 @@ import 'package:dio/dio.dart';
 import 'package:parking_officer_app/core/api_client.dart';
 import 'package:parking_officer_app/features/auth/models/user_model.dart';
 import 'package:parking_officer_app/core/storage_manager.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:parking_officer_app/core/constants.dart';
 import 'dart:convert';
+import 'dart:io';
 
 class AuthService {
   final ApiClient _apiClient = ApiClient();
@@ -18,6 +21,16 @@ class AuthService {
     required String passwordConfirm,
   }) async {
     try {
+      final deviceInfo = DeviceInfoPlugin();
+      String deviceModel = 'Unknown';
+      if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        deviceModel = '${androidInfo.manufacturer} ${androidInfo.model}';
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        deviceModel = iosInfo.utsname.machine;
+      }
+
       final response = await _apiClient.post(
         'user/auth/register/',
         data: {
@@ -27,6 +40,9 @@ class AuthService {
           'email': email,
           'password': password,
           'password_confirm': passwordConfirm,
+          'device_model': deviceModel,
+          'app_version': AppConstants.appVersion,
+          'device_os': Platform.isAndroid ? 'android' : 'ios',
         },
       );
 
@@ -71,9 +87,25 @@ class AuthService {
     String password,
   ) async {
     try {
+      final deviceInfo = DeviceInfoPlugin();
+      String deviceModel = 'Unknown';
+      if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        deviceModel = '${androidInfo.manufacturer} ${androidInfo.model}';
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        deviceModel = iosInfo.utsname.machine;
+      }
+
       final response = await _apiClient.post(
         'user/auth/login/', 
-        data: {'phone': phoneNumber, 'password': password},
+        data: {
+          'phone': phoneNumber, 
+          'password': password,
+          'device_model': deviceModel,
+          'app_version': AppConstants.appVersion,
+          'device_os': Platform.isAndroid ? 'android' : 'ios',
+        },
       );
 
       if (response.statusCode == 200) {

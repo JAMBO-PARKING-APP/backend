@@ -59,12 +59,11 @@ class FCMService {
       if (token != null) {
         debugPrint('[FCM] Registration Token: $token');
         
-        // Update backend profile with new token
-        await _apiClient.put(
-          'accounts/profile/',
+        // Use dedicated FCM registration endpoint
+        await _apiClient.post(
+          'user/notifications/fcm/register-token/',
           data: {
-            'fcm_device_token': token,
-            'device_os': Platform.isAndroid ? 'android' : 'ios',
+            'token': token,
           },
         );
         debugPrint('[FCM] Token registered successfully with backend');

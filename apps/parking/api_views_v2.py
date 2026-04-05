@@ -119,8 +119,6 @@ class ZoneListAPIView(generics.ListAPIView):
             )
         ).select_related('country')
         
-        # Regional filtering is now handled automatically by RegionalManager 
-        # using the context set in RegionalContextMiddleware.
         
         search = self.request.query_params.get('search')
         if search:
@@ -248,7 +246,6 @@ class StartParkingAPIView(APIView):
                         description=f'Parking payment for zone {zone.name}'
                     )
                     
-                    # Mark slot occupied only when session actually starts.
                     parking_slot.status = SlotStatus.OCCUPIED
                     parking_slot.save()
                     
@@ -560,6 +557,67 @@ class CreateReservationAPIView(APIView):
             return Response({
                 'error': str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
+
+class StartParkingFromReservationAPIView(APIView):
+    """
+    Start a parking session from an existing confirmed reservation.
+    Requires user to be within the zone radius.
+    """
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request, reservation_id):
+        from apps.common.utils import calculate_distance
+        
+        try:
+            reservation = Reservation.objects.get(
+                id=reservation_id, 
+                vehicle__user=request.user,
+                status='confirmed'
+            )
+            
+            lat = request.data.get('latitude')
+            lng = request.data.get('longitude')
+            
+            if not lat or not lng:
+                return Response({'error': 'Current location (lat/lng) is required'}, status=status.HTTP_400_BAD_REQUEST)
+                
+            dist_m = calculate_distance(lat, lng, reservation.zone.latitude, reservation.zone.longitude)
+            max_dist = reservation.zone.radius_meters + 100 
+            
+            if dist_m > max_dist:
+                return Response({
+                    'error': f'You are too far from {reservation.zone.name} to start this session. Distance: {int(dist_m)}m'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            if ParkingSession.objects.filter(vehicle=reservation.vehicle, status=ParkingStatus.ACTIVE).exists():
+                 return Response({'error': 'An active session already exists for this vehicle'}, status=status.HTTP_400_BAD_REQUEST)
+
+            session = ParkingSession.objects.create(
+                vehicle=reservation.vehicle,
+                zone=reservation.zone,
+                parking_slot=reservation.parking_slot,
+                start_time=timezone.now(),
+                planned_end_time=reservation.reserved_until,
+                estimated_cost=reservation.cost,
+                status=ParkingStatus.ACTIVE
+            )
+            
+            reservation.status = 'completed'
+            reservation.save()
+            
+            from apps.notifications.notification_triggers import notify_parking_started
+            notify_parking_started(session)
+            
+            return Response({
+                'message': 'Parking started from reservation',
+                'session': ParkingSessionSerializer(session).data
+            }, status=status.HTTP_201_CREATED)
+
+        except Reservation.DoesNotExist:
+            return Response({'error': 'Confirmed reservation not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class UserReservationsAPIView(generics.ListAPIView):
     """List user's parking reservations"""

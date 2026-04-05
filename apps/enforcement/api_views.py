@@ -137,8 +137,12 @@ class CreateViolationView(generics.CreateAPIView):
             logger.error(f"Failed to send violation notification: {e}")
         user = violation.vehicle.user
         fine_amount = violation.fine_amount
-        user.wallet_balance -= fine_amount
-        user.save(update_fields=['wallet_balance'])
+        user.adjust_wallet_balance(
+            -fine_amount,
+            transaction_type='fine_payment',
+            description=f"Fine for violation: {violation.get_violation_type_display()}",
+            parking_session=violation.parking_session
+        )
         WalletTransaction.objects.create(
             user=user,
             amount=-fine_amount,

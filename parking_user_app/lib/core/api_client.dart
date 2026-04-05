@@ -4,10 +4,13 @@ import 'dart:convert';
 import 'package:parking_officer_app/core/location_service.dart';
 import 'package:parking_officer_app/core/constants.dart';
 import 'package:parking_officer_app/core/storage_manager.dart';
+import 'package:parking_officer_app/core/app_logger.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class ApiClient {
   late Dio dio;
   final StorageManager _storageManager = StorageManager();
+  final AppLogger _logger = AppLogger();
 
   ApiClient() {
     dio = Dio(
@@ -72,18 +75,27 @@ class ApiClient {
             options.headers['X-Longitude'] = pos.longitude.toString();
           }
 
-          debugPrint('[ApiClient] ${options.method} ${options.path}');
+          _logger.info('Request: ${options.method} ${options.path}');
           return handler.next(options);
         },
         onResponse: (response, handler) {
-          debugPrint(
-            '[ApiClient] Response ${response.statusCode}: ${response.requestOptions.path}',
-          );
+          _logger.info('Response ${response.statusCode}: ${response.requestOptions.path}');
           return handler.next(response);
         },
         onError: (DioException e, handler) async {
-          debugPrint('[ApiClient] Error: ${e.type} - ${e.message}');
-          debugPrint('[ApiClient] Status: ${e.response?.statusCode}');
+          final isNoInternet = e.type == DioExceptionType.connectionError || 
+                             e.type == DioExceptionType.connectionTimeout ||
+                             e.type == DioExceptionType.sendTimeout ||
+                             e.type == DioExceptionType.receiveTimeout;
+
+          _logger.error(
+            'API Error: ${e.type} - ${e.message}',
+            details: 'Path: ${e.requestOptions.path}\n'
+                     'Method: ${e.requestOptions.method}\n'
+                     'Status: ${e.response?.statusCode}\n'
+                     'Data: ${e.response?.data}\n'
+                     'IsNoInternet: $isNoInternet',
+          );
           if (e.response?.statusCode == 401) {
             debugPrint('[ApiClient] 401 Unauthorized - Token may be invalid');
 

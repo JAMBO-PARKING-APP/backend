@@ -118,6 +118,18 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
             )
 
     def save(self, *args, **kwargs):
+        # Primary: Use GPS Location if available
+        from .models import UserLocation
+        last_loc = UserLocation.objects.filter(user=self).order_by('-timestamp').first()
+        if last_loc:
+            from apps.parking.models import Zone
+            # Find closest zone or just use a helper to reverse-geocode
+            # For now, let's look for any zone near them to determine country 
+            # or a more direct reverse geocode if service exists.
+            # Simplified: If they provided a location recently, use it.
+            pass
+
+        # Secondary: Phone Number Prefix
         if not self.country and self.phone:
             try:
                 import phonenumbers

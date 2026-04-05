@@ -3,7 +3,7 @@ from django.conf import settings
 from .models import LoyaltyAccount, PointTransaction
 
 class LoyaltyService:
-    POINTS_PER_UNIT_CURRENCY = 0.01  
+    POINTS_PER_UNIT_CURRENCY = 1.0  
     
     @staticmethod
     def get_or_create_account(user):

@@ -1,10 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
-
 from apps.payments.models import PaymentGatewayConfig
-
 from .models import Country, SystemConfiguration, CountryConfig
-
 
 class PaymentGatewayConfigInline(admin.TabularInline):
     """Link country ↔ gateway credentials (Pesapal, Stripe, …) from the Country admin."""

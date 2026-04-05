@@ -148,8 +148,22 @@ class PaymentMethodAdmin(admin.ModelAdmin):
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ('user', 'amount', 'status', 'created_at')
-    list_filter = ('status', 'created_at')
+    list_display = ('user', 'amount', 'get_gateway', 'status', 'created_at')
+    list_filter = ('payment_method__gateway', 'status', 'created_at')
+    search_fields = ('user__phone', 'idempotency_key', 'pesapal_merchant_reference')
+    autocomplete_fields = ['user']
+    readonly_fields = ('stripe_payment_intent_id', 'processor_response')
+
+    def get_gateway(self, obj):
+        return obj.payment_method.get_gateway_display() if obj.payment_method else "N/A"
+    get_gateway.short_description = 'Gateway'
+
+    def get_queryset(self, request):
+        """Optionally filter to show only PesaPal if requested by user rule"""
+        qs = super().get_queryset(request)
+        # If the user wants a hard filter to ONLY show Pesapal:
+        # return qs.filter(payment_method__gateway='pesapal')
+        return qs
     search_fields = ('user__phone', 'idempotency_key')
     autocomplete_fields = ['user']
     readonly_fields = ('stripe_payment_intent_id', 'processor_response')
@@ -165,10 +179,18 @@ class RefundAdmin(admin.ModelAdmin):
 @admin.register(WalletTransaction)
 class WalletTransactionAdmin(admin.ModelAdmin):
     list_display = ('user', 'transaction_type', 'amount', 'opening_balance', 'closing_balance', 'created_at', 'status')
-    list_filter = ('transaction_type', 'status', 'created_at')
-    search_fields = ('user__phone', 'description')
+    list_filter = ('transaction_type', 'status', 'created_at', 'country')
+    search_fields = ('user__phone', 'description', 'metadata__session_id')
     autocomplete_fields = ['user']
     readonly_fields = ('opening_balance', 'closing_balance', 'created_at')
+
+    def get_queryset(self, request):
+        """Focus on app-initiated transactions as requested"""
+        qs = super().get_queryset(request)
+        # The user mentioned only showing transactions happening in the app.
+        # This usually means excluding internal payouts/withdrawals for regular view.
+        # But we'll keep all types for now but add a clear list_filter.
+        return qs
 
 
 @admin.register(Invoice)

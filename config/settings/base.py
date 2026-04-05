@@ -9,10 +9,8 @@ import builtins
 
 if not hasattr(inspect, 'getargspec'):
     inspect.getargspec = inspect.getfullargspec
-
 if not hasattr(builtins, 'basestring'):
     builtins.basestring = str
-
 if not hasattr(django.utils.translation, 'ugettext'):
     django.utils.translation.ugettext = django.utils.translation.gettext
 if not hasattr(django.utils.translation, 'ugettext_lazy'):
@@ -43,15 +41,10 @@ except ImportError:
     pass
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-in-production')
-
 DEBUG = config('DEBUG', default=False, cast=bool)
-
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
-
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='http://localhost:8000,http://127.0.0.1:8000', cast=lambda v: [s.strip() for s in v.split(',')])
-
 CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=True, cast=bool)
 CORS_ALLOW_CREDENTIALS = True
 DJANGO_APPS = [
@@ -217,8 +210,6 @@ from config.redis_urls import redis_url_for_database
 
 REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
 
-# Optional workload isolation: set REDIS_CACHE_DB / REDIS_CHANNELS_DB / REDIS_CELERY_RESULT_DB
-# (integers) or full REDIS_CACHE_URL / REDIS_CHANNELS_URL / CELERY_RESULT_BACKEND.
 _redis_cache_db = config('REDIS_CACHE_DB', default='').strip()
 REDIS_CACHE_URL = config('REDIS_CACHE_URL', default='').strip() or (
     redis_url_for_database(REDIS_URL, int(_redis_cache_db)) if _redis_cache_db else REDIS_URL
@@ -238,8 +229,6 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
-
-# Throughput and reliability (tune via env in production).
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = int(config('CELERY_TASK_TIME_LIMIT', default=300))
@@ -278,7 +267,6 @@ SPECTACULAR_SETTINGS = {
     },
 }
 
-# Single default cache (one connection pool). Zone list keys use distinct prefixes.
 DJANGO_REDIS_OPTIONS = {
     'CLIENT_CLASS': 'django_redis.client.DefaultClient',
     'CONNECTION_POOL_KWARGS': {
@@ -304,13 +292,11 @@ CACHES = {
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_CACHE_ALIAS = 'default'
-
 PHONENUMBER_DEFAULT_REGION = 'GH'
-
 PESAPAL_CONSUMER_KEY = config('PESAPAL_CONSUMER_KEY', default='')
 PESAPAL_CONSUMER_SECRET = config('PESAPAL_CONSUMER_SECRET', default='')
 PESAPAL_SANDBOX = config('PESAPAL_SANDBOX', default=True, cast=bool)
-PESAPAL_CALLBACK_URL = config('PESAPAL_CALLBACK_URL', default='https://curtis-unmobilized-clarence.ngrok-free.dev/api/user/payments/pesapal/callback/')
+PESAPAL_CALLBACK_URL = config('PESAPAL_CALLBACK_URL', default='https://p-space.ai/api/user/payments/pesapal/callback/')
 PESAPAL_IPN_ID = config('PESAPAL_IPN_ID', default='')
 PESAPAL_USD_EXCHANGE_RATE = config('PESAPAL_USD_EXCHANGE_RATE', default=3700, cast=int)
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
@@ -320,10 +306,8 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='union.crm.products@gmail.com')
-
 FIREBASE_CREDENTIALS_PATH = BASE_DIR / 'jambo-parking-d6e88-firebase-adminsdk-fbsvc-9ba12edacb.json'
 FIREBASE_ENABLED = config('FIREBASE_ENABLED', default=True, cast=bool)
-
 GOOGLE_API_KEY = config('GOOGLE_API_KEY', default='')
 
 CELERY_BEAT_SCHEDULE = {
