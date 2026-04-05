@@ -19,6 +19,8 @@ import 'package:parking_officer_app/core/settings_provider.dart';
 import 'package:parking_officer_app/core/country_payment_config_provider.dart';
 import 'package:parking_officer_app/core/localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:parking_officer_app/core/providers/connectivity_provider.dart';
+import 'package:parking_officer_app/core/widgets/network_error_widget.dart';
 
 void main() async {
   try {
@@ -49,6 +51,7 @@ void main() async {
           ChangeNotifierProvider(create: (_) => ReservationProvider()),
           ChangeNotifierProvider(create: (_) => SettingsProvider()),
           ChangeNotifierProvider(create: (_) => CountryPaymentConfigProvider()),
+          ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
         ],
         child: const SpaceUserApp(),
       ),
@@ -91,6 +94,21 @@ class SpaceUserApp extends StatelessWidget {
             GlobalCupertinoLocalizations.delegate,
           ],
           home: const AppBootstrapper(),
+          builder: (context, child) {
+            return Stack(
+              children: [
+                if (child != null) child,
+                Consumer<ConnectivityProvider>(
+                  builder: (context, connectivity, _) {
+                    if (connectivity.isOffline) {
+                      return const NetworkErrorWidget();
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ],
+            );
+          },
         );
       },
     );
