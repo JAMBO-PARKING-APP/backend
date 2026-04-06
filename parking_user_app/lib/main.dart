@@ -14,6 +14,8 @@ import 'package:parking_officer_app/features/settings/screens/force_update_scree
 import 'package:parking_officer_app/core/system_config_service.dart';
 import 'package:parking_officer_app/core/constants.dart';
 import 'package:parking_officer_app/features/parking/providers/zone_provider.dart';
+import 'package:parking_officer_app/features/parking/providers/country_provider.dart';
+import 'package:parking_officer_app/features/payments/providers/wallet_provider.dart';
 import 'package:parking_officer_app/features/parking/screens/user_dashboard_screen.dart';
 import 'package:parking_officer_app/core/settings_provider.dart';
 import 'package:parking_officer_app/core/country_payment_config_provider.dart';
@@ -47,6 +49,8 @@ void main() async {
         providers: [
           ChangeNotifierProvider(create: (_) => AuthProvider()),
           ChangeNotifierProvider(create: (_) => ZoneProvider()),
+          ChangeNotifierProvider(create: (_) => CountryProvider()),
+          ChangeNotifierProvider(create: (_) => WalletProvider()),
           ChangeNotifierProvider(create: (_) => VehicleProvider()),
           ChangeNotifierProvider(create: (_) => ReservationProvider()),
           ChangeNotifierProvider(create: (_) => SettingsProvider()),

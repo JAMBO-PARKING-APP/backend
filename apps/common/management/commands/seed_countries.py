@@ -52,6 +52,10 @@ class Command(BaseCommand):
                 if not iso_code:
                     continue
 
+                latlng = data.get('latlng', [])
+                lat = latlng[0] if len(latlng) >= 1 else None
+                lon = latlng[1] if len(latlng) >= 2 else None
+
                 Country.objects.update_or_create(
                     iso_code=iso_code,
                     defaults={
@@ -59,7 +63,9 @@ class Command(BaseCommand):
                         'currency': currency_code,
                         'currency_symbol': currency_symbol,
                         'phone_code': phone_code,
-                        'flag_emoji': flag_emoji
+                        'flag_emoji': flag_emoji,
+                        'latitude': lat,
+                        'longitude': lon
                     }
                 )
                 count += 1

@@ -19,6 +19,8 @@ class Country(BaseModel):
     timezone = models.CharField(max_length=50, default='Africa/Kampala')
     phone_code = models.CharField(max_length=10, help_text="Dialing code (e.g. +256)")
     flag_emoji = models.CharField(max_length=10, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     is_active = models.BooleanField(default=True)
 
     class Meta:

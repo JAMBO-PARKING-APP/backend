@@ -196,6 +196,7 @@ def send_multicast_sync(
                         sound='default',
                         icon='launcher_icon',
                         color='#4CAF50',
+                        notification_channel_id='parking_alerts',
                     ),
                 ),
                 apns=messaging.APNSConfig(

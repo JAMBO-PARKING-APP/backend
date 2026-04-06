@@ -63,15 +63,22 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
 
     @property
     def wallet_balance(self):
-        """Returns the wallet balance for the current active country context."""
+        """Returns the wallet balance for the current active country context.
+        Caches result in-memory to avoid redundant DB queries in the same request.
+        """
+        if hasattr(self, '_cached_wallet_balance'):
+            return self._cached_wallet_balance
+            
         from apps.common.models import get_current_country
         active_country = get_current_country() or self.country
         
         if not active_country:
-            return self.wallet_balance_legacy
+            self._cached_wallet_balance = self.wallet_balance_legacy
+            return self._cached_wallet_balance
             
         wallet, _ = Wallet.objects.get_or_create(user=self, country=active_country)
-        return wallet.balance
+        self._cached_wallet_balance = wallet.balance
+        return self._cached_wallet_balance
 
     @property
     def full_name(self):

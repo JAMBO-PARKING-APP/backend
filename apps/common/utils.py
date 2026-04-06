@@ -3,6 +3,7 @@ import json
 import logging
 from decimal import Decimal, ROUND_DOWN
 from django.conf import settings
+from django.core.cache import cache
 from .models import Country
 
 def truncate_coord(coord):
@@ -34,34 +35,52 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     r = 6371000 
     return c * r
 
-_cached_countries_data = None
-
 def get_country_from_coords(latitude, longitude):
     """
-    Lookup country based on coordinates using global_countries.json.
-    Caches the JSON file to ensure high performance in middleware.
+    Lookup country based on coordinates using the Country database table.
+    Caches the results using Django cache for specific coordinate regions.
+    Rounds lat/lon to 1 decimal place (~11km) to increase cache hit rate.
     """
-    global _cached_countries_data
     try:
-        if _cached_countries_data is None:
-            data_path = settings.BASE_DIR / 'global_countries.json'
-            with open(data_path, 'r', encoding='utf-8') as f:
-                _cached_countries_data = json.load(f)
+        # 1. Check if we have this region cached
+        cache_lat = round(float(latitude), 1)
+        cache_lon = round(float(longitude), 1)
+        cache_key = f"geo_country_{cache_lat}_{cache_lon}"
         
-        closest_country_iso = None
+        cached_id = cache.get(cache_key)
+        if cached_id:
+            if cached_id == 'none':
+                return None
+            return Country.objects.filter(id=cached_id, is_active=True).first()
+
+        # 2. Not in cache, query the database for eligible countries
+        countries = Country.objects.filter(
+            latitude__isnull=False, 
+            longitude__isnull=False, 
+            is_active=True
+        ).only('id', 'iso_code', 'latitude', 'longitude')
+        
+        closest_country = None
         min_distance = float('inf')
         
-        for country in _cached_countries_data:
-            if 'latlng' in country and len(country['latlng']) == 2:
-                c_lat, c_lng = country['latlng']
-                dist = calculate_distance(latitude, longitude, c_lat, c_lng)
-                if dist < min_distance:
-                    min_distance = dist
-                    closest_country_iso = country.get('cca2')
+        for country in countries:
+            dist = calculate_distance(latitude, longitude, country.latitude, country.longitude)
+            if dist < min_distance:
+                min_distance = dist
+                closest_country = country
 
         # Limit to 500km radius for a sensible match
-        if closest_country_iso and min_distance < 500000: 
-             return Country.objects.filter(iso_code=closest_country_iso.upper(), is_active=True).first()
+        res_country = None
+        if closest_country and min_distance < 500000: 
+             res_country = closest_country
+        
+        # 3. Store result in cache (1 hour timeout for geo lookups)
+        if res_country:
+            cache.set(cache_key, str(res_country.id), timeout=3600)
+        else:
+            cache.set(cache_key, 'none', timeout=1800)
+            
+        return res_country
                 
     except Exception as e:
         logger.error(f"Error in get_country_from_coords: {str(e)}")
