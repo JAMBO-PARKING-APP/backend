@@ -6,6 +6,7 @@
 {% block content %}
 <div class="realtime-monitor">
     <h1>{{ title }}</h1>
+    <p>Last updated: <span id="last-update">Loading...</span> | <button id="refresh-btn" onclick="updateData()">🔄 Refresh Now</button></p>
     <div class="dashboard-row">
         <section class="dashboard-card heartbeat-card">
             <h2>🚀 Celery Heartbeat</h2>
@@ -66,7 +67,19 @@
 </div>
 
 <style>
-.realtime-monitor h1 { color: #333; margin-bottom: 20px; }
+body { background: #000; color: #00ff00; font-family: 'Courier New', monospace; }
+.realtime-monitor h1 { color: #00ff00; margin-bottom: 10px; text-shadow: 0 0 10px #00ff00; }
+.realtime-monitor p { margin-bottom: 20px; color: #00aa00; }
+#refresh-btn {
+    background: #004400;
+    color: #00ff00;
+    border: 1px solid #00ff00;
+    padding: 5px 10px;
+    border-radius: 0;
+    cursor: pointer;
+    box-shadow: 0 0 5px #00ff00;
+}
+#refresh-btn:hover { background: #006600; box-shadow: 0 0 10px #00ff00; }
 .dashboard-row {
     display: flex;
     gap: 20px;
@@ -75,38 +88,39 @@
 }
 .dashboard-card {
     flex: 1 1 320px;
-    background: #fff;
-    border: 1px solid #ddd;
+    background: #111;
+    border: 1px solid #00ff00;
     padding: 18px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 0;
+    box-shadow: 0 0 10px #00ff00;
 }
-.heartbeat-card { border-left: 4px solid #28a745; }
-.resources-card { border-left: 4px solid #007bff; }
-.dashboard-card h2 { margin-top: 0; color: #495057; font-size: 1.2em; }
+.heartbeat-card { border-color: #00ff00; box-shadow: 0 0 10px #00ff00; }
+.resources-card { border-color: #00aa00; box-shadow: 0 0 10px #00aa00; }
+.dashboard-card h2 { margin-top: 0; color: #00ff00; font-size: 1.2em; text-shadow: 0 0 5px #00ff00; }
 .monitor-list dt {
     float: left;
     width: 120px;
     font-weight: 600;
-    color: #6c757d;
+    color: #00aa00;
 }
 .monitor-list dd {
     margin: 0 0 10px 130px;
     font-weight: 500;
+    color: #00ff00;
 }
-.status-ok { color: #28a745; }
-.status-error { color: #dc3545; }
-.status-warning { color: #ffc107; }
-.status-unknown { color: #6c757d; }
-.no-data { color: #6c757d; font-style: italic; }
+.status-ok { color: #00ff00; text-shadow: 0 0 5px #00ff00; }
+.status-error { color: #ff0000; text-shadow: 0 0 5px #ff0000; }
+.status-warning { color: #ffff00; text-shadow: 0 0 5px #ffff00; }
+.status-unknown { color: #aaaaaa; }
+.no-data { color: #aaaaaa; font-style: italic; }
 .regions-section, .trends-section {
     margin-bottom: 30px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background: #fff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #00ff00;
+    border-radius: 0;
+    background: #111;
+    box-shadow: 0 0 10px #00ff00;
 }
-.regions-section h2, .trends-section h2 { color: #495057; }
+.regions-section h2, .trends-section h2 { color: #00ff00; text-shadow: 0 0 5px #00ff00; }
 .region-table-wrap {
     overflow-x: auto;
 }
@@ -117,31 +131,34 @@
 .model-table th, .model-table td {
     padding: 12px;
     text-align: left;
-    border-bottom: 1px solid #dee2e6;
+    border-bottom: 1px solid #00aa00;
 }
-.model-table th { background-color: #f8f9fa; font-weight: 600; }
-.model-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
+.model-table th { background-color: #222; color: #00ff00; font-weight: 600; }
+.model-table tbody tr:nth-child(even) { background-color: #111; }
 .bar-wrapper {
-    background: #e9ecef;
-    border-radius: 8px;
+    background: #333;
+    border-radius: 0;
     height: 24px;
     width: 100%;
     position: relative;
     overflow: hidden;
+    border: 1px solid #00aa00;
 }
 .bar-fill {
-    background: linear-gradient(90deg, #007bff, #0056b3);
+    background: linear-gradient(90deg, #00ff00, #00aa00);
     height: 100%;
-    border-radius: 8px 0 0 8px;
+    border-radius: 0;
     transition: width 0.3s ease;
+    box-shadow: 0 0 5px #00ff00;
 }
 .trend-chart {
     width: 100%;
     min-height: 250px;
-    border: 1px solid #d9d9d9;
+    border: 1px solid #00ff00;
     padding: 18px;
-    border-radius: 8px;
-    background: #fff;
+    border-radius: 0;
+    background: #111;
+    box-shadow: 0 0 10px #00ff00;
 }
 .trend-legend {
     margin-top: 12px;
@@ -150,6 +167,7 @@
 .trend-legend span {
     margin-right: 16px;
     font-weight: 600;
+    color: #00ff00;
 }
 </style>
 
@@ -162,7 +180,7 @@ function buildChart(series, labels, container) {
         return;
     }
     const maxValue = series.reduce((max, s) => Math.max(max, ...s.values), 0);
-    const colors = ['#007bff', '#28a745', '#ffc107'];
+    const colors = ['#00ff00', '#00aa00', '#00ffaa'];
 
     const chartHtml = ['<div class="trend-grid">'];
     chartHtml.push('<div class="trend-axis">');
@@ -243,6 +261,7 @@ function updateData() {
         updateRegions(data.region_data, data.max_count);
         updateTrends(data.trend_data);
         updateSystem(data.system_usage);
+        document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
     })
     .catch(error => console.error('Error updating data:', error));
 }
@@ -254,9 +273,10 @@ function updateData() {
     const container = document.getElementById('trend-chart');
     buildChart(series, labels, container);
 })();
-
+// Set initial update time
+document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
 // Start polling
-setInterval(updateData, 30000); // Update every 30 seconds
+setInterval(updateData, 30000); 
 </script>
 
 <style>

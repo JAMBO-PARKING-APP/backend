@@ -42,12 +42,13 @@ class ZoneListSerializer(serializers.ModelSerializer):
     occupied_slots = serializers.SerializerMethodField()
     occupancy_rate = serializers.SerializerMethodField()
     capacity = serializers.SerializerMethodField()
+    distance = serializers.SerializerMethodField()
     
     class Meta:
         model = Zone
         fields = ['id', 'name', 'description', 'hourly_rate', 'max_duration_hours',
                   'total_slots', 'capacity', 'available_slots', 'occupied_slots', 'occupancy_rate', 'latitude', 
-                  'longitude', 'radius_meters', 'zone_image', 'created_at']
+                  'longitude', 'radius_meters', 'zone_image', 'distance', 'created_at']
     
     def get_available_slots(self, obj):
         return getattr(obj, 'annotated_available_slots', obj.available_slots)
@@ -64,6 +65,9 @@ class ZoneListSerializer(serializers.ModelSerializer):
         if capacity == 0:
             return 0
         return round((occupied / capacity) * 100, 2)
+    
+    def get_distance(self, obj):
+        return getattr(obj, 'distance', None)
 
 class ParkingSessionSerializer(serializers.ModelSerializer):
     zone_name = serializers.CharField(source='zone.name', read_only=True)

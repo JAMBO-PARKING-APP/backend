@@ -59,9 +59,18 @@ class ZoneListAPIView(generics.ListAPIView):
     serializer_class = ZoneListSerializer
     permission_classes = [IsAuthenticated]
     
+class ZoneListAPIView(generics.ListAPIView):
+    """List all active parking zones"""
+    queryset = Zone.objects.filter(is_active=True)
+    serializer_class = ZoneListSerializer
+    permission_classes = [IsAuthenticated]
+    
     def list(self, request, *args, **kwargs):
+        from apps.common.utils import calculate_distance
         search = request.query_params.get('search')
         available_only = request.query_params.get('available_only', 'false').lower() == 'true'
+        lat = request.query_params.get('lat')
+        lng = request.query_params.get('lng')
         
         if not search:
             from apps.common.models import get_current_country
@@ -71,12 +80,21 @@ class ZoneListAPIView(generics.ListAPIView):
             # Use country ID for cache key to ensure strict isolation
             country_id = str(country.id) if country else 'global'
             is_staff = request.user.is_staff
-            cache_key = f"zone_list_v3_country_{country_id}_staff_{is_staff}_{available_only}"
+            cache_key = f"zone_list_v3_country_{country_id}_staff_{is_staff}_{available_only}_lat_{lat}_lng_{lng}"
             cached_data = cache.get(cache_key)
             if cached_data:
                 return Response(cached_data)
 
         queryset = self.get_queryset()
+        
+        # If lat/lng provided, calculate distances and sort
+        if lat and lng:
+            zones = list(queryset)
+            for zone in zones:
+                zone.distance = calculate_distance(float(lat), float(lng), zone.latitude, zone.longitude)
+            zones.sort(key=lambda z: z.distance)
+            queryset = zones
+        
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
