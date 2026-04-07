@@ -74,6 +74,81 @@ class SystemHealthAPIView(APIView):
         })
 
 
+class SystemMonitorAPIView(APIView):
+    """Detailed system and Celery monitoring endpoint for admin use."""
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        from django.conf import settings
+        from django.core.cache import cache
+        from config.celery import app as celery_app
+        from django.db import connection
+        import shutil
+        import os
+
+        monitor_data = {
+            'server_time': timezone.now().isoformat(),
+            'health': {
+                'database': False,
+                'redis': False,
+                'disk_usage_percent': None,
+            },
+            'celery': {
+                'heartbeat': None,
+                'workers': {},
+                'stats': {},
+                'active': {},
+                'scheduled': {},
+                'reserved': {},
+            },
+            'schedule': [],
+        }
+
+        try:
+            connection.ensure_connection()
+            monitor_data['health']['database'] = True
+        except Exception as exc:
+            monitor_data['health']['database'] = False
+            monitor_data['health']['database_error'] = str(exc)
+
+        try:
+            cache.set('health_check_monitor', 'ok', timeout=10)
+            monitor_data['health']['redis'] = cache.get('health_check_monitor') == 'ok'
+        except Exception as exc:
+            monitor_data['health']['redis'] = False
+            monitor_data['health']['redis_error'] = str(exc)
+
+        try:
+            total, used, free = shutil.disk_usage(settings.BASE_DIR)
+            monitor_data['health']['disk_usage_percent'] = round((used / total) * 100, 2)
+        except Exception as exc:
+            monitor_data['health']['disk_error'] = str(exc)
+
+        heartbeat = cache.get('celery_heartbeat')
+        monitor_data['celery']['heartbeat'] = heartbeat
+        if heartbeat:
+            monitor_data['celery']['heartbeat_age_seconds'] = (timezone.now() - timezone.datetime.fromisoformat(heartbeat['timestamp'])).total_seconds()
+
+        try:
+            inspector = celery_app.control.inspect()
+            monitor_data['celery']['active'] = inspector.active() or {}
+            monitor_data['celery']['scheduled'] = inspector.scheduled() or {}
+            monitor_data['celery']['reserved'] = inspector.reserved() or {}
+            monitor_data['celery']['workers'] = inspector.registered() or {}
+            monitor_data['celery']['stats'] = inspector.stats() or {}
+        except Exception as exc:
+            monitor_data['celery']['inspect_error'] = str(exc)
+
+        for name, schedule in settings.CELERY_BEAT_SCHEDULE.items():
+            monitor_data['schedule'].append({
+                'name': name,
+                'task': schedule.get('task'),
+                'schedule': str(schedule.get('schedule'))
+            })
+
+        return Response(monitor_data)
+
+
 from rest_framework.permissions import AllowAny
 import requests as http_requests
 

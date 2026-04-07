@@ -109,6 +109,20 @@ def cancel_overdue_reservations():
         
     return f"Processed {count} overdue reservations."
 
+@shared_task(name='apps.parking.tasks.cleanup_expired_reservations')
+def cleanup_expired_reservations():
+    """
+    Delete reservation records that are expired, cancelled, or completed and older than 30 days.
+    """
+    cutoff = timezone.now() - timedelta(days=30)
+    old_reservations = Reservation.objects.filter(
+        status__in=['cancelled', 'expired', 'completed'],
+        reserved_until__lt=cutoff
+    )
+    deleted_count, _ = old_reservations.delete()
+    logger.info(f"Deleted {deleted_count} old reservations from system cleanup.")
+    return f"Deleted {deleted_count} old reservations."
+
 @shared_task(name='apps.parking.tasks.notify_upcoming_reservations')
 def notify_upcoming_reservations():
     """

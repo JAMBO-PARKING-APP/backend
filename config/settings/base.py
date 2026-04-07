@@ -355,6 +355,18 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'apps.parking.tasks.cleanup_slot_statuses',
         'schedule': crontab(minute='*/10'),
     },
+    'celery-heartbeat': {
+        'task': 'apps.common.tasks.celery_heartbeat',
+        'schedule': crontab(minute='*/1'),
+    },
+    'cleanup-expired-reservations': {
+        'task': 'apps.parking.tasks.cleanup_expired_reservations',
+        'schedule': crontab(minute=0, hour=3),
+    },
+    'notify-upcoming-reservations': {
+        'task': 'apps.parking.tasks.notify_upcoming_reservations',
+        'schedule': crontab(minute='*/5'),
+    },
     'escalate-unpaid-violations': {
         'task': 'apps.enforcement.tasks.escalate_unpaid_violations',
         'schedule': crontab(minute=0, hour=0),

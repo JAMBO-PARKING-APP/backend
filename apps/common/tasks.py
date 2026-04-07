@@ -92,3 +92,17 @@ def check_system_health():
         logger.info(f"System Health Check Passed: {health_status}")
         
     return health_status
+
+@shared_task(name='apps.common.tasks.celery_heartbeat')
+def celery_heartbeat():
+    """Periodic heartbeat task that signals Celery is alive."""
+    from django.core.cache import cache
+    from django.utils import timezone
+
+    heartbeat = {
+        'timestamp': timezone.now().isoformat(),
+        'status': 'ok'
+    }
+    cache.set('celery_heartbeat', heartbeat, timeout=180)
+    logger.info(f"Celery heartbeat updated: {heartbeat['timestamp']}")
+    return heartbeat

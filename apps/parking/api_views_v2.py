@@ -137,11 +137,30 @@ class ZoneDetailAPIView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
     lookup_field = 'pk'
 
+    def retrieve(self, request, *args, **kwargs):
+        cache = caches['default']
+        zone_id = kwargs.get(self.lookup_field)
+        cache_key = f"zone_detail_{zone_id}"
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data)
+
+        response = super().retrieve(request, *args, **kwargs)
+        if response.status_code == status.HTTP_200_OK:
+            cache.set(cache_key, response.data, timeout=60)
+        return response
+
 class ZoneAvailabilityAPIView(APIView):
     """Get real-time availability information for a zone"""
     permission_classes = [IsAuthenticated]
     
     def get(self, request, zone_id):
+        cache = caches['default']
+        cache_key = f"zone_availability_{zone_id}"
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data)
+
         try:
             zone = Zone.objects.get(id=zone_id, is_active=True)
             
@@ -151,7 +170,7 @@ class ZoneAvailabilityAPIView(APIView):
             disabled_slots = zone.slots.filter(status=SlotStatus.DISABLED).count()
             total_slots = zone.capacity
             
-            return Response({
+            data = {
                 'zone_id': zone.id,
                 'zone_name': zone.name,
                 'available_slots': available_slots,
@@ -165,7 +184,9 @@ class ZoneAvailabilityAPIView(APIView):
                 'latitude': float(zone.latitude),
                 'longitude': float(zone.longitude),
                 'radius_meters': zone.radius_meters
-            }, status=status.HTTP_200_OK)
+            }
+            cache.set(cache_key, data, timeout=10)
+            return Response(data, status=status.HTTP_200_OK)
         except Zone.DoesNotExist:
             return Response({
                 'error': 'Zone not found'
@@ -567,7 +588,7 @@ class StartParkingFromReservationAPIView(APIView):
 
     @transaction.atomic
     def post(self, request, reservation_id):
-        from apps.common.utils import calculate_distance
+        # from apps.common.utils import calculate_distance
         
         try:
             reservation = Reservation.objects.get(
@@ -576,27 +597,28 @@ class StartParkingFromReservationAPIView(APIView):
                 status='confirmed'
             )
             
-            lat = request.data.get('latitude')
-            lng = request.data.get('longitude')
+            # Skip location check for reservations
+            # lat = request.data.get('latitude')
+            # lng = request.data.get('longitude')
             
-            if not lat or not lng:
-                # Try to get from cache
-                from django.core.cache import cache
-                cache_key = f'user:{request.user.id}:location'
-                cached_location = cache.get(cache_key)
-                if cached_location:
-                    lat = cached_location['latitude']
-                    lng = cached_location['longitude']
-                else:
-                    return Response({'error': 'Current location (lat/lng) is required'}, status=status.HTTP_400_BAD_REQUEST)
+            # if not lat or not lng:
+            #     # Try to get from cache
+            #     from django.core.cache import cache
+            #     cache_key = f'user:{request.user.id}:location'
+            #     cached_location = cache.get(cache_key)
+            #     if cached_location:
+            #         lat = cached_location['latitude']
+            #         lng = cached_location['longitude']
+            #     else:
+            #         return Response({'error': 'Current location (lat/lng) is required'}, status=status.HTTP_400_BAD_REQUEST)
                 
-            dist_m = calculate_distance(lat, lng, reservation.zone.latitude, reservation.zone.longitude)
-            max_dist = reservation.zone.radius_meters + 100 
+            # dist_m = calculate_distance(lat, lng, reservation.zone.latitude, reservation.zone.longitude)
+            # max_dist = reservation.zone.radius_meters + 100 
             
-            if dist_m > max_dist:
-                return Response({
-                    'error': f'You are too far from {reservation.zone.name} to start this session. Distance: {int(dist_m)}m'
-                }, status=status.HTTP_400_BAD_REQUEST)
+            # if dist_m > max_dist:
+            #     return Response({
+            #         'error': f'You are too far from {reservation.zone.name} to start this session. Distance: {int(dist_m)}m'
+            #         }, status=status.HTTP_400_BAD_REQUEST)
 
             if ParkingSession.objects.filter(vehicle=reservation.vehicle, status=ParkingStatus.ACTIVE).exists():
                  return Response({'error': 'An active session already exists for this vehicle'}, status=status.HTTP_400_BAD_REQUEST)

@@ -358,10 +358,12 @@ class WalletBalanceAPIView(APIView):
             
         from apps.accounts.models import Wallet
         try:
-            wallet, _ = Wallet.objects.get_or_create(user=request.user, country=country)
-        except IntegrityError:
-            # Handle race condition where wallet was created between get and create
             wallet = Wallet.objects.get(user=request.user, country=country)
+        except Wallet.DoesNotExist:
+            try:
+                wallet = Wallet.objects.create(user=request.user, country=country)
+            except IntegrityError:
+                wallet = Wallet.objects.get(user=request.user, country=country)
         
         return Response({
             'balance': float(wallet.balance),

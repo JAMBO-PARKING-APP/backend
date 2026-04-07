@@ -11,7 +11,7 @@ from apps.enforcement.api_views_v2 import (
     AdminGlobalOfficerLogListAPIView, AdminOfficerReassignAPIView
 )
 
-from apps.common.api_views import AdminCountryListAPIView, AdminCountryDetailAPIView, AdminSystemSettingsAPIView, SystemHealthAPIView
+from apps.common.api_views import AdminCountryListAPIView, AdminCountryDetailAPIView, AdminSystemSettingsAPIView, SystemHealthAPIView, SystemMonitorAPIView
 from apps.notifications.api_views import (
     AdminNotificationEventAPIView, BulkCreateNotificationsAPIView,
     AdminChatConversationListAPIView, AdminChatMessageListAPIView,
@@ -30,6 +30,7 @@ urlpatterns = [
     path('notifications/custom/', SendCustomNotificationAPIView.as_view(), name='admin-notification-custom'),
     path('common/countries/', AdminCountryListAPIView.as_view(), name='admin-country-list'),
     path('common/countries/<uuid:pk>/', AdminCountryDetailAPIView.as_view(), name='admin-country-detail'),
+    path('system/monitor/', SystemMonitorAPIView.as_view(), name='admin-system-monitor'),
     path('parking/active-sessions/', AdminActiveSessionsAPIView.as_view(), name='admin-active-sessions'),
     path('parking/sessions/', AdminParkingSessionListView.as_view(), name='admin-parking-sessions'),
     path('parking/zones/', AdminZoneListCreateAPIView.as_view(), name='admin-zone-list'),
