@@ -161,8 +161,6 @@ class TransactionAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         """Optionally filter to show only PesaPal if requested by user rule"""
         qs = super().get_queryset(request)
-        # If the user wants a hard filter to ONLY show Pesapal:
-        # return qs.filter(payment_method__gateway='pesapal')
         return qs
     search_fields = ('user__phone', 'idempotency_key')
     autocomplete_fields = ['user']
@@ -187,9 +185,6 @@ class WalletTransactionAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         """Focus on app-initiated transactions as requested"""
         qs = super().get_queryset(request)
-        # The user mentioned only showing transactions happening in the app.
-        # This usually means excluding internal payouts/withdrawals for regular view.
-        # But we'll keep all types for now but add a clear list_filter.
         return qs
 
 

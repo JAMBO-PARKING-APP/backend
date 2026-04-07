@@ -8,7 +8,7 @@ Payments API Endpoints for User App
 
 import uuid
 from decimal import Decimal
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.conf import settings
 from django.core.cache import cache
 from rest_framework import generics, status
@@ -357,7 +357,11 @@ class WalletBalanceAPIView(APIView):
             }, status=status.HTTP_200_OK)
             
         from apps.accounts.models import Wallet
-        wallet, _ = Wallet.objects.get_or_create(user=request.user, country=country)
+        try:
+            wallet, _ = Wallet.objects.get_or_create(user=request.user, country=country)
+        except IntegrityError:
+            # Handle race condition where wallet was created between get and create
+            wallet = Wallet.objects.get(user=request.user, country=country)
         
         return Response({
             'balance': float(wallet.balance),

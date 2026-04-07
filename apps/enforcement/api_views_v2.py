@@ -235,8 +235,6 @@ class OfficerVehicleStatusAPIView(APIView):
             
         try:
             vehicle = Vehicle.objects.get(license_plate=license_plate)
-            
-            # Find the most recent session (active or recently ended/expired)
             session = ParkingSession.objects.filter(
                 vehicle=vehicle
             ).order_by('-created_at').first()
@@ -342,7 +340,6 @@ class StartSessionByOfficerAPIView(APIView):
                 status=ParkingStatus.ACTIVE
             )
             
-            # Deduct from user wallet
             try:
                 from django.db import transaction as db_transaction
                 driver = vehicle.user
@@ -391,18 +388,12 @@ class CreateGuestParkingSessionAPIView(APIView):
     def post(self, request):
         if request.user.role != UserRole.OFFICER:
             return Response({'error': 'Only officers can perform this action'}, status=status.HTTP_403_FORBIDDEN)
-        
-        # Guard against None request data
         if request.data is None:
             return Response({'error': 'Invalid request body'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Accept both field name variations
         license_plate = (request.data.get('license_plate') or request.data.get('vehicle_plate', '')).upper()
         driver_name = (request.data.get('driver_name') or '').strip()
         driver_phone = (request.data.get('driver_phone') or '').strip()
         zone_id = request.data.get('zone_id')
-        
-        # Handle duration in both minutes and hours
         duration_minutes = request.data.get('duration_minutes')
         duration_hours = request.data.get('duration_hours')
         
@@ -441,9 +432,7 @@ class CreateGuestParkingSessionAPIView(APIView):
             parking_slot.save()
             
             planned_end = timezone.now() + timezone.timedelta(hours=duration_hours)
-            estimated_cost = zone.hourly_rate * Decimal(str(duration_hours))
-            
-            # Create guest parking session record
+            estimated_cost = zone.hourly_rate * Decimal(str(duration_hours))          
             guest_session = GuestParkingSession.objects.create(
                 license_plate=license_plate,
                 driver_name=driver_name,
@@ -513,7 +502,6 @@ class ConfirmGuestSessionPaymentAPIView(APIView):
         except GuestParkingSession.DoesNotExist:
             return Response({'error': 'Guest parking session not found'}, status=status.HTTP_404_NOT_FOUND)
         
-        # Check if session is already active or if payment is pending
         if guest_session.status == 'active' and guest_session.payment_status == 'completed':
             return Response({
                 'status': 'success',
@@ -522,7 +510,6 @@ class ConfirmGuestSessionPaymentAPIView(APIView):
                 'status_code': guest_session.status,
             }, status=status.HTTP_200_OK)
         
-        # Check if there's a related transaction that's been completed
         if guest_session.payment_transaction:
             trans = guest_session.payment_transaction
             if trans.status == 'completed':
@@ -550,7 +537,6 @@ class ConfirmGuestSessionPaymentAPIView(APIView):
                     'payment_status': trans.status
                 }, status=status.HTTP_400_BAD_REQUEST)
         else:
-            # No payment transaction means session is free
             guest_session.payment_status = 'free'
             guest_session.status = 'active'
             guest_session.save()
@@ -588,7 +574,6 @@ class OfficerInitiatePesaPalPaymentAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Get the guest parking session
             guest_session = GuestParkingSession.objects.get(id=session_id, officer=request.user)
             
             if guest_session.payment_status == 'completed':
@@ -597,12 +582,10 @@ class OfficerInitiatePesaPalPaymentAPIView(APIView):
                     'payment_status': guest_session.payment_status
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Import PesaPal service
             from apps.payments.pesapal_service import PesapalService
             from apps.payments.models import Transaction
             from apps.common.constants import TransactionStatus
             
-            # Create a transaction record for tracking
             merchant_reference = str(uuid.uuid4())
             transaction_record = Transaction.objects.create(
                 user=request.user,
@@ -612,7 +595,6 @@ class OfficerInitiatePesaPalPaymentAPIView(APIView):
                 idempotency_key=merchant_reference
             )
             
-            # Get zone's country and use PesaPal service
             pesapal = PesapalService()
             response = pesapal.create_payment(
                 amount=str(guest_session.estimated_cost),
@@ -623,7 +605,6 @@ class OfficerInitiatePesaPalPaymentAPIView(APIView):
             )
             
             if response and response.get('redirect_url'):
-                # Store transaction reference on guest session
                 guest_session.payment_transaction = transaction_record
                 guest_session.save()
                 
@@ -649,9 +630,9 @@ class OfficerInitiatePesaPalPaymentAPIView(APIView):
                 return Response({
                     'success': True,
                     'redirect_url': response.get('redirect_url'),
-                    'payment_url': response.get('redirect_url'),  # Support both keys
+                    'payment_url': response.get('redirect_url'),  
                     'order_id': response.get('order_tracking_id'),
-                    'order_tracking_id': response.get('order_tracking_id'),  # Support both keys
+                    'order_tracking_id': response.get('order_tracking_id'),  
                     'merchant_reference': merchant_reference,
                 }, status=status.HTTP_200_OK)
             else:
@@ -830,7 +811,6 @@ class AdminOfficerReassignAPIView(APIView):
             zone_id = request.data.get('zone_id')
             
             if not zone_id:
-                # If zone_id is empty, unassign
                 status_obj, created = OfficerStatus.objects.get_or_create(officer=officer)
                 status_obj.current_zone = None
                 status_obj.save()

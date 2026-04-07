@@ -20,7 +20,7 @@ class DeviceSessionJWTAuthentication(JWTAuthentication):
             return None
 
         user, token = auth_result
-        logger.debug(f"📌 AUTH CHECK for {user.phone} on {request.path}")
+        logger.debug(f"AUTH CHECK for {user.phone} on {request.path}")
 
         # Get the JWT ID (jti) from the token
         token_jti = token.get('jti')
@@ -34,7 +34,7 @@ class DeviceSessionJWTAuthentication(JWTAuthentication):
             if current_session_token:
                 if str(current_session_token) != str(token_jti):
                     logger.warning(
-                        f"❌ SESSION MISMATCH for {user.phone} (ID: {user.id}). "
+                        f"SESSION MISMATCH for {user.phone} (ID: {user.id}). "
                         f"Token: {str(token_jti)[:30]}... vs DB: {str(current_session_token)[:30]}... "
                         f"Path: {request.path}"
                     )
@@ -43,8 +43,8 @@ class DeviceSessionJWTAuthentication(JWTAuthentication):
                         code='session_invalidated'
                     )
                 else:
-                    logger.debug(f"✅ Session match for {user.phone}")
+                    logger.debug(f"Session match for {user.phone}")
             else:
-                logger.debug(f"⚠️ No session token in DB for {user.phone}, allowing request")
+                logger.debug(f"No session token in DB for {user.phone}, allowing request")
         
         return user, token

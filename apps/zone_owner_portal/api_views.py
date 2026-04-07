@@ -202,7 +202,6 @@ class OwnerDashboardView(APIView):
             zone_id__in=zone_ids, status='active'
         ).count()
 
-        # Reservations info
         from apps.parking.models import Reservation
         total_reservations = Reservation.objects.filter(
             zone_id__in=zone_ids

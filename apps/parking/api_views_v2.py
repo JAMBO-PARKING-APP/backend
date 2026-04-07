@@ -580,7 +580,15 @@ class StartParkingFromReservationAPIView(APIView):
             lng = request.data.get('longitude')
             
             if not lat or not lng:
-                return Response({'error': 'Current location (lat/lng) is required'}, status=status.HTTP_400_BAD_REQUEST)
+                # Try to get from cache
+                from django.core.cache import cache
+                cache_key = f'user:{request.user.id}:location'
+                cached_location = cache.get(cache_key)
+                if cached_location:
+                    lat = cached_location['latitude']
+                    lng = cached_location['longitude']
+                else:
+                    return Response({'error': 'Current location (lat/lng) is required'}, status=status.HTTP_400_BAD_REQUEST)
                 
             dist_m = calculate_distance(lat, lng, reservation.zone.latitude, reservation.zone.longitude)
             max_dist = reservation.zone.radius_meters + 100 

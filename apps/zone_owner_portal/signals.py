@@ -129,7 +129,7 @@ def _process_approval(instance_pk):
             country=country,
             is_active=True,
             commission_rate=10,
-            zone_image=instance.zone_picture, # Copy the picture
+            zone_image=instance.zone_picture,
         )
         zone.save()
 
@@ -144,7 +144,7 @@ def _process_approval(instance_pk):
         return
 
     try:
-        portal_url = getattr(settings, 'PARTNER_PORTAL_URL', 'http://localhost:5173')
+        portal_url = getattr(settings, 'PARTNER_PORTAL_URL', 'https://p-space.ai')
         login_url = f"{portal_url}/login"
 
         subject = "🎉 Your Parking Space Application Has Been Approved — Space Park"

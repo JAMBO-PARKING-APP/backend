@@ -11,9 +11,6 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_BROWSER_XSS_FILTER = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
-# Database override removed to use base.py settings (PostgreSQL via env)
-
-
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 LOGGING = {
     'version': 1,
