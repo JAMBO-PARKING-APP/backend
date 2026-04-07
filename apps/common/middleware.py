@@ -1,5 +1,7 @@
 from .models import set_current_country, get_current_country
 from .utils import get_country_from_coords
+from django.core.cache import cache
+from django.utils import timezone
 import logging
 
 logger = logging.getLogger(__name__)
@@ -65,7 +67,31 @@ class RegionalContextMiddleware:
                     logger.debug(f"RegionalContext: Set country to {country.name} via user profile")
         
         response = self.get_response(request)
-        
+
+        try:
+            if request.path.startswith('/api/'):
+                country = get_current_country() or getattr(request.user, 'country', None)
+                if country:
+                    country_code = getattr(country, 'iso_code', None) or str(country.id)
+                    now = timezone.now()
+                    date_key = now.strftime('%Y%m%d')
+                    hour_key = now.strftime('%Y%m%d%H')
+                    keys = [
+                        f"monitor:requests:country:{country_code}:total",
+                        f"monitor:requests:country:{country_code}:{date_key}",
+                        f"monitor:requests:country:{country_code}:{hour_key}",
+                    ]
+                    for key in keys:
+                        cache.add(key, 0, timeout=60 * 60 * 24 * 7)
+                        cache.incr(key)
+                    cache.set(
+                        f"monitor:requests:country:{country_code}:last_seen",
+                        now.isoformat(),
+                        timeout=60 * 60 * 24 * 7,
+                    )
+        except Exception as e:
+            logger.debug(f"RegionalContextTracking: Failed to update monitor counts: {e}")
+
         set_current_country(None)
-        
+
         return response

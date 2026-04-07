@@ -1,6 +1,15 @@
+import json
+from datetime import timedelta
 from django.contrib import admin
+from django.urls import path
+from django.http import HttpResponseForbidden
+from django.template.response import TemplateResponse
+from django.core.cache import caches
+from django_redis import get_redis_connection
+from django.utils import timezone
 from django.utils.html import format_html
 from apps.payments.models import PaymentGatewayConfig
+from .api_views import _get_system_usage
 from .models import Country, SystemConfiguration, CountryConfig
 
 class PaymentGatewayConfigInline(admin.TabularInline):
@@ -82,3 +91,88 @@ class CountryConfigAdmin(admin.ModelAdmin):
         )
 
     gateway_admin_link.short_description = 'Gateway API keys'
+
+
+def _build_region_request_stats():
+    redis_client = get_redis_connection('default')
+    country_totals = {}
+
+    for raw_key in redis_client.scan_iter('monitor:requests:country:*:total'):
+        key = raw_key.decode('utf-8')
+        parts = key.split(':')
+        if len(parts) < 6:
+            continue
+        country_code = parts[-2]
+        count = int(redis_client.get(key) or 0)
+        country_totals[country_code] = country_totals.get(country_code, 0) + count
+
+    countries = Country.objects.filter(iso_code__in=country_totals.keys())
+    country_map = {country.iso_code: country.name for country in countries}
+
+    region_data = []
+    for country_code, total in sorted(country_totals.items(), key=lambda item: item[1], reverse=True)[:10]:
+        region_data.append({
+            'country_code': country_code,
+            'country_name': country_map.get(country_code, country_code),
+            'request_count': total,
+        })
+
+    return region_data
+
+
+def _build_detected_region_trends(top_regions):
+    redis_client = get_redis_connection('default')
+    now = timezone.now()
+    hours = [now - timedelta(hours=i) for i in range(11, -1, -1)]
+    labels = [hour.strftime('%H:%M') for hour in hours]
+    series = []
+
+    for region in top_regions:
+        values = []
+        country_code = region['country_code']
+        for hour in hours:
+            key = f"monitor:requests:country:{country_code}:{hour.strftime('%Y%m%d%H')}"
+            values.append(int(redis_client.get(key) or 0))
+        series.append({
+            'country_code': country_code,
+            'country_name': region['country_name'],
+            'values': values,
+        })
+
+    return {
+        'labels': labels,
+        'series': series,
+    }
+
+
+def realtime_monitor_view(request):
+    if not request.user.is_active or not request.user.is_staff:
+        return HttpResponseForbidden('Permission denied')
+
+    cache = caches['default']
+    heartbeat = cache.get('celery_heartbeat') or {}
+    region_data = _build_region_request_stats()
+    trend_data = _build_detected_region_trends(region_data[:3])
+
+    context = {
+        'title': 'Realtime API Monitor',
+        'heartbeat': heartbeat,
+        'region_data': region_data,
+        'trend_labels': json.dumps(trend_data['labels']),
+        'trend_series': json.dumps(trend_data['series']),
+        'region_labels': json.dumps([region['country_name'] for region in region_data]),
+        'region_counts': json.dumps([region['request_count'] for region in region_data]),
+        'system_usage': _get_system_usage(),
+    }
+
+    return TemplateResponse(request, 'admin/realtime_monitor.html', context)
+
+
+original_get_urls = admin.site.get_urls
+
+def get_admin_urls():
+    return [
+        path('realtime-monitor/', admin.site.admin_view(realtime_monitor_view), name='realtime-monitor'),
+    ] + original_get_urls()
+
+admin.site.get_urls = get_admin_urls

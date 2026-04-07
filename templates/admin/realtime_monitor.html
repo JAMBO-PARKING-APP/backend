@@ -1,0 +1,159 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block content %}
+<div class="module">
+    <h1>{{ title }}</h1>
+    <div class="dashboard-row">
+        <section class="dashboard-card">
+            <h2>Celery Heartbeat</h2>
+            {% if heartbeat %}
+                <dl class="monitor-list">
+                    <dt>Last seen</dt><dd>{{ heartbeat.last_seen }}</dd>
+                    <dt>Status</dt><dd>{{ heartbeat.status }}</dd>
+                    <dt>Active workers</dt><dd>{{ heartbeat.active_workers }}</dd>
+                    <dt>Worker uptime</dt><dd>{{ heartbeat.uptime }}</dd>
+                </dl>
+            {% else %}
+                <p>No heartbeat data found yet.</p>
+            {% endif %}
+        </section>
+        <section class="dashboard-card">
+            <h2>Server Resources</h2>
+            <dl class="monitor-list">
+                <dt>CPU utilization</dt><dd>{{ system_usage.cpu_percent|default:'N/A' }}%</dd>
+                <dt>Memory used</dt><dd>{{ system_usage.memory_used_mb|default:'N/A' }} MB</dd>
+                <dt>Memory total</dt><dd>{{ system_usage.memory_total_mb|default:'N/A' }} MB</dd>
+                <dt>Memory load</dt><dd>{{ system_usage.memory_percent|default:'N/A' }}%</dd>
+            </dl>
+        </section>
+    </div>
+
+    <section class="module aligned">
+        <h2>API requests by region (top 10)</h2>
+        {% if region_data %}
+            <div class="region-table-wrap">
+                <table class="model-table">
+                    <thead>
+                        <tr><th>Country</th><th>Requests</th><th>Share</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for region in region_data %}
+                            <tr>
+                                <td>{{ region.country_name }}</td>
+                                <td>{{ region.request_count }}</td>
+                                <td>
+                                    <div class="bar-wrapper">
+                                        <div class="bar-fill" style="width: {{ region.request_count|floatformat:0 }}px"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p>No regional request counts available.</p>
+        {% endif %}
+    </section>
+
+    <section class="module aligned">
+        <h2>Recent hourly trends</h2>
+        {% if trend_series %}
+            <div id="trend-chart" class="trend-chart"></div>
+        {% else %}
+            <p>No historical trend data available yet.</p>
+        {% endif %}
+    </section>
+</div>
+
+<style>
+.dashboard-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+.dashboard-card {
+    flex: 1 1 320px;
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 18px;
+    border-radius: 4px;
+}
+.monitor-list dt {
+    float: left;
+    width: 120px;
+    font-weight: 600;
+}
+.monitor-list dd {
+    margin: 0 0 10px 130px;
+}
+.region-table-wrap {
+    overflow-x: auto;
+}
+.bar-wrapper {
+    background: #f5f7fa;
+    border-radius: 8px;
+    height: 16px;
+    width: 100%;
+}
+.bar-fill {
+    background: #0078d4;
+    height: 100%;
+    border-radius: 8px 0 0 8px;
+    min-width: 8px;
+}
+.trend-chart {
+    width: 100%;
+    min-height: 220px;
+    border: 1px solid #d9d9d9;
+    padding: 18px;
+    border-radius: 6px;
+    background: #fff;
+}
+.trend-legend {
+    margin-top: 12px;
+}
+</style>
+
+<script>
+(function(){
+    const series = {{ trend_series|safe }};
+    const labels = {{ trend_labels|safe }};
+    const container = document.getElementById('trend-chart');
+    if (!series || !container) { return; }
+    const maxValue = series.reduce((max, s) => Math.max(max, ...s.values), 0);
+    const colors = ['#0078d4', '#ff8c00', '#2e8b57'];
+
+    const chartHtml = ['<div class="trend-grid">'];
+    chartHtml.push('<div class="trend-axis">');
+    chartHtml.push('<div class="trend-labels">' + labels.slice(-6).map(l => '<span>' + l + '</span>').join('') + '</div>');
+    chartHtml.push('</div>');
+    chartHtml.push('<div class="trend-series">');
+
+    series.forEach((s, index) => {
+        const color = colors[index % colors.length];
+        chartHtml.push('<div class="trend-line" style="border-color:' + color + '"><strong>' + s.country_name + '</strong>');
+        chartHtml.push('<div class="trend-points">' + s.values.map(v => {
+            const scaled = maxValue ? (v / maxValue) * 100 : 0;
+            return '<span class="trend-point" title="' + v + '" style="height:' + (scaled + 8) + 'px; background:' + color + '"></span>';
+        }).join('') + '</div></div>');
+    });
+
+    chartHtml.push('</div></div>');
+    chartHtml.push('<div class="trend-legend">' + series.map((s, index) => '<span style="color:' + colors[index % colors.length] + '">● ' + s.country_name + '</span>').join(' ') + '</div>');
+    container.innerHTML = chartHtml.join('');
+})();
+</script>
+
+<style>
+.trend-grid { display: flex; flex-direction: column; gap: 14px; }
+.trend-line { margin-bottom: 16px; }
+.trend-line strong { display: block; margin-bottom: 6px; }
+.trend-points { display: flex; align-items: flex-end; gap: 4px; min-height: 48px; }
+.trend-point { width: 14px; display: inline-block; border-radius: 4px 4px 0 0; }
+.trend-legend span { margin-right: 16px; font-weight: 600; }
+</style>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+
+{% block content %}
+    {{ block.super }}
+    <div class="dashboard-module module">
+        <h2>Realtime Monitoring</h2>
+        <div class="dashboard-module-content">
+            <p>View live API region traffic and Celery heartbeat data.</p>
+            <p><a class="button" href="{% url 'admin:realtime-monitor' %}">Open Realtime API Monitor</a></p>
+        </div>
+    </div>
+{% endblock %}
