@@ -1,3 +1,4 @@
+import os
 from django.utils import timezone
 from rest_framework import generics
 from rest_framework.views import APIView
@@ -31,6 +32,48 @@ class AdminSystemSettingsAPIView(generics.RetrieveUpdateAPIView):
         return SystemConfiguration.get_config()
 
 
+def _get_system_usage():
+    """Return current CPU and memory metrics for the server."""
+    try:
+        import psutil
+        virtual = psutil.virtual_memory()
+        return {
+            'cpu_percent': psutil.cpu_percent(interval=0.2),
+            'memory_total_mb': round(virtual.total / 1024**2, 2),
+            'memory_used_mb': round(virtual.used / 1024**2, 2),
+            'memory_percent': virtual.percent,
+        }
+    except Exception:
+        pass
+
+    try:
+        if os.path.exists('/proc/meminfo'):
+            meminfo = {}
+            with open('/proc/meminfo', 'r') as fh:
+                for line in fh:
+                    key, value = line.split(':', 1)
+                    meminfo[key.strip()] = int(value.split()[0])
+            total_kb = meminfo.get('MemTotal')
+            avail_kb = meminfo.get('MemAvailable', meminfo.get('MemFree', 0) + meminfo.get('Buffers', 0) + meminfo.get('Cached', 0))
+            if total_kb:
+                used_kb = total_kb - avail_kb
+                return {
+                    'cpu_percent': None,
+                    'memory_total_mb': round(total_kb / 1024, 2),
+                    'memory_used_mb': round(used_kb / 1024, 2),
+                    'memory_percent': round((used_kb / total_kb) * 100, 2),
+                }
+    except Exception:
+        pass
+
+    return {
+        'cpu_percent': None,
+        'memory_total_mb': None,
+        'memory_used_mb': None,
+        'memory_percent': None,
+    }
+
+
 class SystemHealthAPIView(APIView):
     """Infrastructure health check for admin view"""
     permission_classes = [IsAdminUser]
@@ -57,6 +100,7 @@ class SystemHealthAPIView(APIView):
 
         total, used, free = shutil.disk_usage("/")
         disk_usage_pct = (used / total) * 100
+        system_usage = _get_system_usage()
 
         return Response({
             'services': [
@@ -66,9 +110,11 @@ class SystemHealthAPIView(APIView):
                 {'name': 'Static Assets', 'status': 'Healthy', 'color': 'success'}
             ],
             'resources': {
-                'cpu': 15,  
-                'memory': 45, 
-                'disk': round(disk_usage_pct, 1)
+                'cpu_percent': system_usage.get('cpu_percent'),
+                'memory_total_mb': system_usage.get('memory_total_mb'),
+                'memory_used_mb': system_usage.get('memory_used_mb'),
+                'memory_percent': system_usage.get('memory_percent'),
+                'disk_percent': round(disk_usage_pct, 1),
             },
             'timestamp': timezone.now()
         })
@@ -123,6 +169,8 @@ class SystemMonitorAPIView(APIView):
             monitor_data['health']['disk_usage_percent'] = round((used / total) * 100, 2)
         except Exception as exc:
             monitor_data['health']['disk_error'] = str(exc)
+
+        monitor_data['resources'] = _get_system_usage()
 
         heartbeat = cache.get('celery_heartbeat')
         monitor_data['celery']['heartbeat'] = heartbeat
