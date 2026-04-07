@@ -358,12 +358,12 @@ class WalletBalanceAPIView(APIView):
             
         from apps.accounts.models import Wallet
         try:
-            wallet = Wallet.objects.get(user=request.user, country=country)
+            wallet = Wallet.all_objects.get(user=request.user, country=country)
         except Wallet.DoesNotExist:
             try:
-                wallet = Wallet.objects.create(user=request.user, country=country)
+                wallet = Wallet.all_objects.create(user=request.user, country=country)
             except IntegrityError:
-                wallet = Wallet.objects.get(user=request.user, country=country)
+                wallet = Wallet.all_objects.get(user=request.user, country=country)
         
         return Response({
             'balance': float(wallet.balance),
@@ -634,7 +634,7 @@ class PesapalUserCallbackView(APIView):
                         if country:
                             from apps.accounts.models import Wallet
                             from django.db.models import F
-                            wallet, _ = Wallet.objects.get_or_create(user=user, country=country)
+                            wallet, _ = Wallet.all_objects.get_or_create(user=user, country=country)
                             wallet.balance = F('balance') + trans.amount
                             wallet.save(update_fields=['balance'])
                         else:
@@ -743,7 +743,7 @@ class PesapalIPNAPIView(APIView):
                         if country:
                             from apps.accounts.models import Wallet
                             from django.db.models import F
-                            wallet, _ = Wallet.objects.get_or_create(user=user, country=country)
+                            wallet, _ = Wallet.all_objects.get_or_create(user=user, country=country)
                             wallet.balance = F('balance') + trans.amount
                             wallet.save(update_fields=['balance'])
                         else:

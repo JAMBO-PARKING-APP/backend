@@ -4,26 +4,26 @@
 {% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
 
 {% block content %}
-<div class="module">
+<div class="realtime-monitor">
     <h1>{{ title }}</h1>
     <div class="dashboard-row">
-        <section class="dashboard-card">
-            <h2>Celery Heartbeat</h2>
+        <section class="dashboard-card heartbeat-card">
+            <h2>🚀 Celery Heartbeat</h2>
             {% if heartbeat %}
                 <dl class="monitor-list">
-                    <dt>Last seen</dt><dd>{{ heartbeat.last_seen }}</dd>
-                    <dt>Status</dt><dd>{{ heartbeat.status }}</dd>
-                    <dt>Active workers</dt><dd>{{ heartbeat.active_workers }}</dd>
-                    <dt>Worker uptime</dt><dd>{{ heartbeat.uptime }}</dd>
+                    <dt>Last seen</dt><dd>{{ heartbeat.last_seen|default:'N/A' }}</dd>
+                    <dt>Status</dt><dd class="status-{{ heartbeat.status|lower|default:'unknown' }}">{{ heartbeat.status|default:'Unknown' }}</dd>
+                    <dt>Active workers</dt><dd>{{ heartbeat.active_workers|default:0 }}</dd>
+                    <dt>Worker uptime</dt><dd>{{ heartbeat.uptime|default:'N/A' }}</dd>
                 </dl>
             {% else %}
-                <p>No heartbeat data found yet.</p>
+                <p class="no-data">No heartbeat data found yet. Ensure Celery tasks are running.</p>
             {% endif %}
         </section>
-        <section class="dashboard-card">
-            <h2>Server Resources</h2>
+        <section class="dashboard-card resources-card">
+            <h2>🖥️ Server Resources</h2>
             <dl class="monitor-list">
-                <dt>CPU utilization</dt><dd>{{ system_usage.cpu_percent|default:'N/A' }}%</dd>
+                <dt>CPU utilization</dt><dd>{% if system_usage.cpu_percent %}{{ system_usage.cpu_percent }}%{% else %}N/A (install psutil){% endif %}</dd>
                 <dt>Memory used</dt><dd>{{ system_usage.memory_used_mb|default:'N/A' }} MB</dd>
                 <dt>Memory total</dt><dd>{{ system_usage.memory_total_mb|default:'N/A' }} MB</dd>
                 <dt>Memory load</dt><dd>{{ system_usage.memory_percent|default:'N/A' }}%</dd>
@@ -31,8 +31,8 @@
         </section>
     </div>
 
-    <section class="module aligned">
-        <h2>API requests by region (top 10)</h2>
+    <section class="module aligned regions-section">
+        <h2>🌍 API requests by region (top 10)</h2>
         {% if region_data %}
             <div class="region-table-wrap">
                 <table class="model-table">
@@ -46,7 +46,7 @@
                                 <td>{{ region.request_count }}</td>
                                 <td>
                                     <div class="bar-wrapper">
-                                        <div class="bar-fill" style="width: {{ region.request_count|floatformat:0 }}px"></div>
+                                        <div class="bar-fill" style="width: {% widthratio region.request_count max_count 100 %}%"></div>
                                     </div>
                                 </td>
                             </tr>
@@ -55,77 +55,114 @@
                 </table>
             </div>
         {% else %}
-            <p>No regional request counts available.</p>
+            <p class="no-data">No regional request data available yet. Make some API requests to populate.</p>
         {% endif %}
     </section>
 
-    <section class="module aligned">
-        <h2>Recent hourly trends</h2>
-        {% if trend_series %}
-            <div id="trend-chart" class="trend-chart"></div>
-        {% else %}
-            <p>No historical trend data available yet.</p>
-        {% endif %}
+    <section class="module aligned trends-section">
+        <h2>📈 Recent hourly trends</h2>
+        <div id="trend-chart" class="trend-chart"></div>
     </section>
 </div>
 
 <style>
+.realtime-monitor h1 { color: #333; margin-bottom: 20px; }
 .dashboard-row {
     display: flex;
     gap: 20px;
     flex-wrap: wrap;
+    margin-bottom: 30px;
 }
 .dashboard-card {
     flex: 1 1 320px;
     background: #fff;
     border: 1px solid #ddd;
     padding: 18px;
-    border-radius: 4px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+.heartbeat-card { border-left: 4px solid #28a745; }
+.resources-card { border-left: 4px solid #007bff; }
+.dashboard-card h2 { margin-top: 0; color: #495057; font-size: 1.2em; }
 .monitor-list dt {
     float: left;
     width: 120px;
     font-weight: 600;
+    color: #6c757d;
 }
 .monitor-list dd {
     margin: 0 0 10px 130px;
+    font-weight: 500;
 }
+.status-ok { color: #28a745; }
+.status-error { color: #dc3545; }
+.status-warning { color: #ffc107; }
+.status-unknown { color: #6c757d; }
+.no-data { color: #6c757d; font-style: italic; }
+.regions-section, .trends-section {
+    margin-bottom: 30px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.regions-section h2, .trends-section h2 { color: #495057; }
 .region-table-wrap {
     overflow-x: auto;
 }
-.bar-wrapper {
-    background: #f5f7fa;
-    border-radius: 8px;
-    height: 16px;
+.model-table {
     width: 100%;
+    border-collapse: collapse;
+}
+.model-table th, .model-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+.model-table th { background-color: #f8f9fa; font-weight: 600; }
+.model-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
+.bar-wrapper {
+    background: #e9ecef;
+    border-radius: 8px;
+    height: 24px;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
 }
 .bar-fill {
-    background: #0078d4;
+    background: linear-gradient(90deg, #007bff, #0056b3);
     height: 100%;
     border-radius: 8px 0 0 8px;
-    min-width: 8px;
+    transition: width 0.3s ease;
 }
 .trend-chart {
     width: 100%;
-    min-height: 220px;
+    min-height: 250px;
     border: 1px solid #d9d9d9;
     padding: 18px;
-    border-radius: 6px;
+    border-radius: 8px;
     background: #fff;
 }
 .trend-legend {
     margin-top: 12px;
+    text-align: center;
+}
+.trend-legend span {
+    margin-right: 16px;
+    font-weight: 600;
 }
 </style>
 
 <script>
-(function(){
-    const series = {{ trend_series|safe }};
-    const labels = {{ trend_labels|safe }};
-    const container = document.getElementById('trend-chart');
-    if (!series || !container) { return; }
+function buildChart(series, labels, container) {
+    if (!series || series.length === 0 || !container) {
+        if (container) {
+            container.innerHTML = '<p style="text-align:center; padding:40px; color:#6c757d;">No historical trend data available yet. Make some API requests to populate hourly trends.</p>';
+        }
+        return;
+    }
     const maxValue = series.reduce((max, s) => Math.max(max, ...s.values), 0);
-    const colors = ['#0078d4', '#ff8c00', '#2e8b57'];
+    const colors = ['#007bff', '#28a745', '#ffc107'];
 
     const chartHtml = ['<div class="trend-grid">'];
     chartHtml.push('<div class="trend-axis">');
@@ -145,7 +182,81 @@
     chartHtml.push('</div></div>');
     chartHtml.push('<div class="trend-legend">' + series.map((s, index) => '<span style="color:' + colors[index % colors.length] + '">● ' + s.country_name + '</span>').join(' ') + '</div>');
     container.innerHTML = chartHtml.join('');
+}
+
+function updateHeartbeat(heartbeat) {
+    const heartbeatEl = document.querySelector('.heartbeat-card dl');
+    if (heartbeat && Object.keys(heartbeat).length) {
+        heartbeatEl.innerHTML = `
+            <dt>Last seen</dt><dd>${heartbeat.last_seen || 'N/A'}</dd>
+            <dt>Status</dt><dd class="status-${(heartbeat.status || '').toLowerCase()}">${heartbeat.status || 'Unknown'}</dd>
+            <dt>Active workers</dt><dd>${heartbeat.active_workers || 0}</dd>
+            <dt>Worker uptime</dt><dd>${heartbeat.uptime || 'N/A'}</dd>
+        `;
+    } else {
+        heartbeatEl.innerHTML = '<p class="no-data">No heartbeat data found yet. Ensure Celery tasks are running.</p>';
+    }
+}
+
+function updateRegions(regionData, maxCount) {
+    const section = document.querySelector('.regions-section');
+    if (regionData && regionData.length) {
+        const tbody = section.querySelector('.model-table tbody');
+        if (tbody) {
+            tbody.innerHTML = regionData.map(region => `
+                <tr>
+                    <td>${region.country_name}</td>
+                    <td>${region.request_count}</td>
+                    <td>
+                        <div class="bar-wrapper">
+                            <div class="bar-fill" style="width: ${(region.request_count / maxCount * 100)}%"></div>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } else {
+        section.innerHTML = '<h2>🌍 API requests by region (top 10)</h2><p class="no-data">No regional request data available yet. Make some API requests to populate.</p>';
+    }
+}
+
+function updateTrends(trendData) {
+    const container = document.getElementById('trend-chart');
+    buildChart(trendData.series, trendData.labels, container);
+}
+
+function updateSystem(systemUsage) {
+    const resourcesEl = document.querySelector('.resources-card dl');
+    resourcesEl.innerHTML = `
+        <dt>CPU utilization</dt><dd>${systemUsage.cpu_percent ? systemUsage.cpu_percent + '%' : 'N/A (install psutil)'}</dd>
+        <dt>Memory used</dt><dd>${systemUsage.memory_used_mb || 'N/A'} MB</dd>
+        <dt>Memory total</dt><dd>${systemUsage.memory_total_mb || 'N/A'} MB</dd>
+        <dt>Memory load</dt><dd>${systemUsage.memory_percent || 'N/A'}%</dd>
+    `;
+}
+
+function updateData() {
+    fetch('/admin/realtime-monitor/?format=json')
+    .then(response => response.json())
+    .then(data => {
+        updateHeartbeat(data.heartbeat);
+        updateRegions(data.region_data, data.max_count);
+        updateTrends(data.trend_data);
+        updateSystem(data.system_usage);
+    })
+    .catch(error => console.error('Error updating data:', error));
+}
+
+// Initial chart build
+(function(){
+    const series = {{ trend_series|safe }};
+    const labels = {{ trend_labels|safe }};
+    const container = document.getElementById('trend-chart');
+    buildChart(series, labels, container);
 })();
+
+// Start polling
+setInterval(updateData, 30000); // Update every 30 seconds
 </script>
 
 <style>

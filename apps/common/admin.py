@@ -2,7 +2,7 @@ import json
 from datetime import timedelta
 from django.contrib import admin
 from django.urls import path
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 from django.template.response import TemplateResponse
 from django.core.cache import caches
 from django_redis import get_redis_connection
@@ -153,6 +153,20 @@ def realtime_monitor_view(request):
     heartbeat = cache.get('celery_heartbeat') or {}
     region_data = _build_region_request_stats()
     trend_data = _build_detected_region_trends(region_data[:3])
+    max_count = max((region['request_count'] for region in region_data), default=1)
+    system_usage = _get_system_usage()
+
+    if request.GET.get('format') == 'json':
+        return JsonResponse({
+            'heartbeat': heartbeat,
+            'region_data': region_data,
+            'trend_data': {
+                'labels': trend_data['labels'],
+                'series': trend_data['series'],
+            },
+            'system_usage': system_usage,
+            'max_count': max_count,
+        })
 
     context = {
         'title': 'Realtime API Monitor',
@@ -162,7 +176,8 @@ def realtime_monitor_view(request):
         'trend_series': json.dumps(trend_data['series']),
         'region_labels': json.dumps([region['country_name'] for region in region_data]),
         'region_counts': json.dumps([region['request_count'] for region in region_data]),
-        'system_usage': _get_system_usage(),
+        'system_usage': system_usage,
+        'max_count': max_count,
     }
 
     return TemplateResponse(request, 'admin/realtime_monitor.html', context)
