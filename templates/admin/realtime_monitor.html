@@ -30,6 +30,23 @@
                 <dt>Memory load</dt><dd>{{ system_usage.memory_percent|default:'N/A' }}%</dd>
             </dl>
         </section>
+        <section class="dashboard-card redis-card">
+            <h2>🔴 Redis Stats</h2>
+            <dl class="monitor-list">
+                <dt>Connected clients</dt><dd>{{ redis_stats.connected_clients|default:0 }}</dd>
+                <dt>Memory used</dt><dd>{{ redis_stats.used_memory_human|default:'N/A' }}</dd>
+                <dt>Total connections</dt><dd>{{ redis_stats.total_connections_received|default:0 }}</dd>
+                <dt>Active WS connections</dt><dd id="active-connections">{{ active_connections|default:0 }}</dd>
+            </dl>
+        </section>
+        <section class="dashboard-card requests-card">
+            <h2>📊 Request Stats</h2>
+            <dl class="monitor-list">
+                <dt>Requests/min</dt><dd id="requests-per-minute">{{ requests_per_minute|default:0 }}</dd>
+                <dt>Connection status</dt><dd id="ws-status" class="status-disconnected">Disconnected</dd>
+                <dt>Last update</dt><dd id="last-update">Loading...</dd>
+            </dl>
+        </section>
     </div>
 
     <section class="module aligned regions-section">
@@ -94,6 +111,8 @@
 }
 .heartbeat-card { border-left: 4px solid #28a745; }
 .resources-card { border-left: 4px solid #007bff; }
+.redis-card { border-left: 4px solid #dc3545; }
+.requests-card { border-left: 4px solid #ffc107; }
 .dashboard-card h2 { margin-top: 0; color: #495057; font-size: 1.2em; }
 .monitor-list dt {
     float: left;
@@ -246,17 +265,75 @@ function updateSystem(systemUsage) {
     `;
 }
 
-function updateData() {
-    fetch('/admin/realtime-monitor/?format=json')
-    .then(response => response.json())
-    .then(data => {
-        updateHeartbeat(data.heartbeat);
-        updateRegions(data.region_data, data.max_count);
-        updateTrends(data.trend_data);
-        updateSystem(data.system_usage);
-        document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
-    })
-    .catch(error => console.error('Error updating data:', error));
+function updateRedis(redisStats) {
+    const redisEl = document.querySelector('.redis-card dl');
+    redisEl.innerHTML = `
+        <dt>Connected clients</dt><dd>${redisStats.connected_clients || 0}</dd>
+        <dt>Memory used</dt><dd>${redisStats.used_memory_human || 'N/A'}</dd>
+        <dt>Total connections</dt><dd>${redisStats.total_connections_received || 0}</dd>
+        <dt>Active WS connections</dt><dd id="active-connections">${redisStats.active_connections || 0}</dd>
+    `;
+}
+
+function updateRequestsStats(requestsPerMinute, activeConnections) {
+    document.getElementById('requests-per-minute').textContent = requestsPerMinute || 0;
+    document.getElementById('active-connections').textContent = activeConnections || 0;
+}
+
+function updateData(data) {
+    updateHeartbeat(data.heartbeat);
+    updateRegions(data.region_data, data.max_count);
+    updateTrends(data.trend_data);
+    updateSystem(data.system_usage);
+    updateRedis(data.redis_stats);
+    updateRequestsStats(data.requests_per_minute, data.active_connections);
+    document.getElementById('last-update').textContent = new Date(data.timestamp).toLocaleTimeString();
+}
+
+// WebSocket connection
+let ws = null;
+function connectWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/admin/realtime-monitor/`;
+    
+    ws = new WebSocket(wsUrl);
+    
+    ws.onopen = function(event) {
+        console.log('WebSocket connected');
+        document.getElementById('ws-status').textContent = 'Connected';
+        document.getElementById('ws-status').className = 'status-ok';
+    };
+    
+    ws.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        updateData(data);
+    };
+    
+    ws.onclose = function(event) {
+        console.log('WebSocket disconnected');
+        document.getElementById('ws-status').textContent = 'Disconnected';
+        document.getElementById('ws-status').className = 'status-error';
+        // Reconnect after 5 seconds
+        setTimeout(connectWebSocket, 5000);
+    };
+    
+    ws.onerror = function(error) {
+        console.error('WebSocket error:', error);
+        document.getElementById('ws-status').textContent = 'Error';
+        document.getElementById('ws-status').className = 'status-error';
+    };
+}
+
+// Fallback polling function
+function startPolling() {
+    setInterval(() => {
+        fetch('/admin/realtime-monitor/?format=json')
+        .then(response => response.json())
+        .then(data => {
+            updateData(data);
+        })
+        .catch(error => console.error('Error updating data:', error));
+    }, 30000);
 }
 
 // Initial chart build
@@ -266,10 +343,20 @@ function updateData() {
     const container = document.getElementById('trend-chart');
     buildChart(series, labels, container);
 })();
-// Set initial update time
-document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
-// Start polling
-setInterval(updateData, 30000); 
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    // Try WebSocket first
+    if ('WebSocket' in window) {
+        connectWebSocket();
+    } else {
+        // Fallback to polling
+        startPolling();
+    }
+    
+    // Set initial update time
+    document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+}); 
 </script>
 
 <style>

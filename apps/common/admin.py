@@ -156,6 +156,21 @@ def realtime_monitor_view(request):
     max_count = max((region['request_count'] for region in region_data), default=1)
     system_usage = _get_system_usage()
 
+    # Additional stats
+    redis_client = get_redis_connection('default')
+    redis_info = redis_client.info()
+    active_connections = len(redis_client.pubsub_channels())
+
+    # Request rate (last minute)
+    now = timezone.now()
+    minute_ago = now - timedelta(minutes=1)
+    request_keys = redis_client.scan_iter('monitor:requests:*')
+    recent_requests = 0
+    for key in request_keys:
+        key_str = key.decode('utf-8')
+        if 'minute' in key_str:
+            recent_requests += int(redis_client.get(key) or 0)
+
     if request.GET.get('format') == 'json':
         return JsonResponse({
             'heartbeat': heartbeat,
@@ -165,7 +180,15 @@ def realtime_monitor_view(request):
                 'series': trend_data['series'],
             },
             'system_usage': system_usage,
+            'redis_stats': {
+                'connected_clients': redis_info.get('connected_clients', 0),
+                'used_memory_human': redis_info.get('used_memory_human', 'N/A'),
+                'total_connections_received': redis_info.get('total_connections_received', 0),
+            },
+            'active_connections': active_connections,
+            'requests_per_minute': recent_requests,
             'max_count': max_count,
+            'timestamp': now.isoformat(),
         })
 
     context = {
@@ -177,6 +200,13 @@ def realtime_monitor_view(request):
         'region_labels': json.dumps([region['country_name'] for region in region_data]),
         'region_counts': json.dumps([region['request_count'] for region in region_data]),
         'system_usage': system_usage,
+        'redis_stats': {
+            'connected_clients': redis_info.get('connected_clients', 0),
+            'used_memory_human': redis_info.get('used_memory_human', 'N/A'),
+            'total_connections_received': redis_info.get('total_connections_received', 0),
+        },
+        'active_connections': active_connections,
+        'requests_per_minute': recent_requests,
         'max_count': max_count,
     }
 

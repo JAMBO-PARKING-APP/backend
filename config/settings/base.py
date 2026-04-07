@@ -377,6 +377,10 @@ CELERY_BEAT_SCHEDULE = {
     },
     'send-weekly-admin-report': {
         'task': 'apps.analytics.reporting_tasks.send_weekly_admin_report',
-        'schedule': crontab(minute=0, hour=8, day_of_week=1),  
+        'schedule': crontab(minute=0, hour=8, day_of_week=1),
+    },
+    'send-realtime-monitor-updates': {
+        'task': 'apps.common.tasks.send_realtime_monitor_updates',
+        'schedule': crontab(minute='*/1'),  # Every minute
     },
 }
