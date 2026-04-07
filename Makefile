@@ -20,7 +20,7 @@ migrate:
 	python manage.py migrate
 
 run:
-	python manage.py runserver
+	daphne config.asgi:application --bind 0.0.0.0 --port 8000
 
 db-shell:
 	python manage.py dbshell

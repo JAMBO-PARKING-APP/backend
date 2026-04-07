@@ -29,6 +29,9 @@ echo Starting Celery Worker...
 REM Using 'solo' pool for Windows/Python 3.14 compatibility (gevent has DLL issues)
 start "Celery Worker" cmd /k "venv\Scripts\python.exe -m celery -A config worker --loglevel=info -P solo"
 
+echo Starting Celery Beat...
+start "Celery Beat" cmd /k "venv\Scripts\python.exe -m celery -A config beat --loglevel=info"
+
 REM --- Ngrok Setup ---
 echo Starting Ngrok Tunnel...
 set "NGROK_EXE=C:\Users\callc\AppData\Local\Microsoft\WinGet\Packages\Ngrok.Ngrok_Microsoft.Winget.Source_8wekyb3d8bbwe\ngrok.exe"
@@ -47,7 +50,7 @@ if %errorlevel% == 0 (
 )
 
 REM --- Django Setup ---
-echo Starting Django Server...
-venv\Scripts\python.exe manage.py runserver
+echo Starting Django Server with Daphne...
+venv\Scripts\python.exe -m daphne config.asgi:application --bind 0.0.0.0 --port 8000
 
 pause
