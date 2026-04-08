@@ -22,6 +22,18 @@ class Country(BaseModel):
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    
+    # Payment configuration
+    payment_methods = models.JSONField(
+        default=list,
+        help_text="Available payment methods: ['wallet', 'pesapal', 'mpesa', 'flutterwave', 'paystack', 'stripe']"
+    )
+    exchange_rate_to_base = models.DecimalField(
+        max_digits=10,
+        decimal_places=4,
+        default=1.0,
+        help_text="Exchange rate from base currency (UGX) to this country's currency"
+    )
 
     class Meta:
         verbose_name_plural = "Countries"
@@ -102,31 +114,3 @@ class SystemConfiguration(RegionalModel, models.Model):
             
         config, created = cls.objects.get_or_create(country=country)
         return config
-
-
-class CountryConfig(BaseModel):
-    """Payment and currency configuration for each country"""
-    country = models.OneToOneField(
-        Country,
-        on_delete=models.CASCADE,
-        related_name='payment_config',
-        help_text="Country this configuration applies to"
-    )
-    payment_methods = models.JSONField(
-        default=list,
-        help_text="Available payment methods: ['wallet', 'pesapal', 'mpesa', 'flutterwave']"
-    )
-    exchange_rate_to_base = models.DecimalField(
-        max_digits=10,
-        decimal_places=4,
-        default=1.0,
-        help_text="Exchange rate from base currency (UGX) to this country's currency"
-    )
-    is_active = models.BooleanField(default=True)
-
-    class Meta:
-        verbose_name = _("Country Payment Configuration")
-        verbose_name_plural = _("Country Payment Configurations")
-
-    def __str__(self):
-        return f"{self.country.name} Payment Config"
