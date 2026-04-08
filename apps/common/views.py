@@ -32,18 +32,11 @@ def get_country_config(request, country_code):
     Get payment and currency configuration for a specific country
     """
     try:
-        from apps.common.models import Country, CountryConfig
+        from apps.common.models import Country
         country = Country.objects.get(iso_code=country_code.upper(), is_active=True)
         
-        try:
-            config = CountryConfig.objects.get(country=country, is_active=True)
-            payment_methods = config.payment_methods
-            exchange_rate = str(config.exchange_rate_to_base)
-        except CountryConfig.DoesNotExist:
-            payment_methods = ['wallet']
-            if country.iso_code == 'UG':
-                payment_methods.append('pesapal')
-            exchange_rate = '1.0000'
+        payment_methods = country.payment_methods or ['wallet']
+        exchange_rate = str(country.exchange_rate_to_base)
         
         return Response({
             'country_code': country.iso_code,

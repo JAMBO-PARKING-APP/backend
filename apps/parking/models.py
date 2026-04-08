@@ -6,6 +6,103 @@ from decimal import Decimal
 from apps.common.models import BaseModel, RegionalModel
 from apps.common.constants import ParkingStatus, SlotStatus
 
+class PricingRuleType(models.TextChoices):
+    TIME_BASED = 'time_based', _('Time Based')
+    DEMAND_BASED = 'demand_based', _('Demand Based')
+    SPECIAL_EVENT = 'special_event', _('Special Event')
+
+class PricingRule(RegionalModel, BaseModel):
+    """Base pricing rule model for dynamic pricing"""
+    zone = models.ForeignKey('Zone', on_delete=models.CASCADE, related_name='pricing_rules')
+    rule_type = models.CharField(max_length=20, choices=PricingRuleType.choices)
+    name = models.CharField(max_length=100, help_text=_("Descriptive name for this pricing rule"))
+    description = models.TextField(blank=True, help_text=_("Optional description of when this rule applies"))
+    hourly_rate = models.DecimalField(max_digits=12, decimal_places=2, help_text=_("Rate to apply when this rule is active"))
+    is_active = models.BooleanField(default=True, help_text=_("Whether this rule is currently active"))
+    priority = models.IntegerField(default=0, help_text=_("Higher priority rules override lower ones (0-100)"))
+
+    class Meta:
+        ordering = ['-priority', '-created_at']
+        indexes = [
+            models.Index(fields=['zone', 'rule_type', 'is_active']),
+            models.Index(fields=['zone', 'priority']),
+        ]
+
+    def __str__(self):
+        return f"{self.zone.name} - {self.name}"
+
+    def is_applicable(self, current_time=None):
+        """Check if this rule applies at the given time. Override in subclasses."""
+        return self.is_active
+
+class TimeBasedPricingRule(PricingRule):
+    """Pricing rule based on time of day/week"""
+    start_time = models.TimeField(help_text=_("Start time for this rate (HH:MM format)"))
+    end_time = models.TimeField(help_text=_("End time for this rate (HH:MM format)"))
+    days_of_week = models.JSONField(default=list, help_text=_("List of days this rule applies (0=Monday, 6=Sunday)"))
+
+    def is_applicable(self, current_time=None):
+        if not super().is_applicable():
+            return False
+
+        if current_time is None:
+            current_time = timezone.now()
+
+        current_time_only = current_time.time()
+        current_day = current_time.weekday()
+
+        # Check if current day is in the allowed days
+        if self.days_of_week and current_day not in self.days_of_week:
+            return False
+
+        # Check if current time is within the time range
+        if self.start_time <= self.end_time:
+            # Same day range
+            return self.start_time <= current_time_only <= self.end_time
+        else:
+            # Overnight range (e.g., 22:00 to 06:00)
+            return current_time_only >= self.start_time or current_time_only <= self.end_time
+
+class DemandBasedPricingRule(PricingRule):
+    """Pricing rule based on zone occupancy"""
+    occupancy_threshold = models.DecimalField(max_digits=5, decimal_places=2, help_text=_("Occupancy percentage threshold (0-100)"))
+    comparison = models.CharField(max_length=10, choices=[
+        ('gte', _('Greater than or equal')),
+        ('lte', _('Less than or equal')),
+    ], default='gte', help_text=_("How to compare current occupancy with threshold"))
+
+    def is_applicable(self, current_time=None):
+        if not super().is_applicable():
+            return False
+
+        # Calculate current occupancy
+        zone = self.zone
+        total_slots = zone.total_slots
+        if total_slots == 0:
+            return False
+
+        active_sessions = zone.sessions.filter(status=ParkingStatus.ACTIVE).count()
+        occupancy_percentage = (active_sessions / total_slots) * 100
+
+        if self.comparison == 'gte':
+            return occupancy_percentage >= self.occupancy_threshold
+        else:
+            return occupancy_percentage <= self.occupancy_threshold
+
+class SpecialEventPricingRule(PricingRule):
+    """Pricing rule for special events or holidays"""
+    start_datetime = models.DateTimeField(help_text=_("When this special pricing starts"))
+    end_datetime = models.DateTimeField(help_text=_("When this special pricing ends"))
+
+    def is_applicable(self, current_time=None):
+        if not super().is_applicable():
+            return False
+
+        if current_time is None:
+            current_time = timezone.now()
+
+        return self.start_datetime <= current_time <= self.end_datetime
+
 class ZoneType(models.TextChoices):
     COMPANY = 'company', _('Company')
     PRIVATE = 'private', _('Private')
@@ -96,6 +193,30 @@ class Zone(RegionalModel, BaseModel):
             return 0
         occupied = self.occupied_slots
         return (occupied / capacity) * 100
+
+    def get_current_hourly_rate(self, current_time=None):
+        """
+        Get the current hourly rate for this zone, considering dynamic pricing rules.
+        Returns the base hourly_rate if dynamic pricing is disabled or no rules apply.
+        """
+        if not self.supports_dynamic_pricing:
+            return self.hourly_rate
+
+        if current_time is None:
+            current_time = timezone.now()
+
+        # Get all active pricing rules for this zone, ordered by priority
+        applicable_rules = []
+        for rule in self.pricing_rules.filter(is_active=True).order_by('-priority'):
+            if rule.is_applicable(current_time):
+                applicable_rules.append(rule)
+
+        # Return the rate from the highest priority applicable rule
+        if applicable_rules:
+            return applicable_rules[0].hourly_rate
+
+        # Fallback to base rate if no rules apply
+        return self.hourly_rate
     
     @property
     def google_maps_url(self):
@@ -254,7 +375,7 @@ class ParkingSession(RegionalModel, BaseModel):
     def calculate_cost(self):
         """
         Calculate cost using decimal hours, allow sub-hour durations with a minimum
-        of 0.25 hours (15 minutes).
+        of 0.25 hours (15 minutes). Uses dynamic pricing if enabled.
         """
         end_time = self.actual_end_time or timezone.now()
         duration_seconds = (end_time - self.start_time).total_seconds()
@@ -262,7 +383,9 @@ class ParkingSession(RegionalModel, BaseModel):
         if duration_hours < Decimal('0.25'):
             duration_hours = Decimal('0.25')
 
-        cost = (duration_hours * self.zone.hourly_rate).quantize(Decimal('0.01'))
+        # Use dynamic pricing if available, otherwise fall back to base rate
+        current_rate = self.zone.get_current_hourly_rate(self.start_time)
+        cost = (duration_hours * current_rate).quantize(Decimal('0.01'))
         return cost
 
     def end_session(self):

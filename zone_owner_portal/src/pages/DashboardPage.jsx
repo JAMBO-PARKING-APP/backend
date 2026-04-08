@@ -3,9 +3,9 @@ import { api } from '../AuthContext';
 import Sidebar from '../components/Sidebar';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend
+  PieChart, Pie, Cell, Legend, BarChart, Bar, LineChart, Line
 } from 'recharts';
-import { Banknote, Calendar, Sun, CarFront, Map as MapIcon, TrendingUp, PieChart as PieChartIcon, Car } from 'lucide-react';
+import { Banknote, Calendar, Sun, CarFront, Map as MapIcon, TrendingUp, PieChart as PieChartIcon, Car, AlertTriangle, Target, Clock, Users, DollarSign } from 'lucide-react';
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'];
 
@@ -132,6 +132,139 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
+
+            {/* Portfolio Analytics */}
+            {data.portfolio_analytics && (
+              <>
+                <div className="glass-card" style={{ padding: 28, marginBottom: 24 }}>
+                  <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Target size={20} color="var(--accent)" /> Portfolio Analytics
+                  </h2>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20 }}>
+                    <StatCard label="Sessions (30d)" value={fmt(data.portfolio_analytics.total_sessions_30d)} sub="Total sessions" icon={<CarFront size={20} />} iconColor="var(--accent)" />
+                    <StatCard label="Avg Session Duration" value={`${data.portfolio_analytics.avg_session_duration_hours?.toFixed(1) || 0}h`} sub="Average duration" icon={<Clock size={20} />} iconColor="var(--warning)" />
+                    <StatCard label="Avg Revenue/Session" value={fmt(data.portfolio_analytics.avg_revenue_per_session)} sub="Per session" icon={<Banknote size={20} />} iconColor="var(--success)" />
+                  </div>
+                </div>
+
+                {/* Occupancy Trends */}
+                {data.portfolio_analytics.occupancy_trends && data.portfolio_analytics.occupancy_trends.length > 0 && (
+                  <div className="glass-card" style={{ padding: 28, marginBottom: 24 }}>
+                    <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Users size={20} color="var(--text-secondary)" /> Occupancy Trends (Last 7 Days)
+                    </h2>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <LineChart data={data.portfolio_analytics.occupancy_trends}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                        <XAxis dataKey="date" tick={{ fill: '#475569', fontSize: 11 }} tickLine={false} axisLine={false}
+                          tickFormatter={d => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} />
+                        <YAxis tick={{ fill: '#475569', fontSize: 11 }} tickLine={false} axisLine={false}
+                          domain={[0, 100]} tickFormatter={v => `${v}%`} />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Line type="monotone" dataKey="avg_occupancy" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {/* Peak Hours */}
+                {data.portfolio_analytics.peak_hours && data.portfolio_analytics.peak_hours.length > 0 && (
+                  <div className="glass-card" style={{ padding: 28, marginBottom: 24 }}>
+                    <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Clock size={20} color="var(--warning)" /> Peak Hours Analysis
+                    </h2>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart data={data.portfolio_analytics.peak_hours}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                        <XAxis dataKey="hour" tick={{ fill: '#475569', fontSize: 11 }} tickLine={false} axisLine={false}
+                          tickFormatter={h => `${h}:00`} />
+                        <YAxis tick={{ fill: '#475569', fontSize: 11 }} tickLine={false} axisLine={false} />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Bar dataKey="count" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Zone Comparison */}
+            {data.zone_comparison && data.zone_comparison.length > 1 && (
+              <div className="glass-card" style={{ padding: 28, marginBottom: 24 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <TrendingUp size={20} color="var(--success)" /> Zone Performance Comparison
+                </h2>
+                <div className="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Zone</th><th>Revenue (30d)</th><th>Sessions (30d)</th><th>Avg Occupancy</th><th>Utilization</th><th>Hourly Rate</th><th>Dynamic Pricing</th><th>Reservations</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.zone_comparison.map(z => (
+                        <tr key={z.zone_id}>
+                          <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{z.zone_name}</td>
+                          <td style={{ fontWeight: 600, color: 'var(--success)' }}>{fmt(z.revenue_30d)}</td>
+                          <td>{z.sessions_30d}</td>
+                          <td>{z.avg_occupancy.toFixed(1)}%</td>
+                          <td>{z.utilization_rate.toFixed(1)}%</td>
+                          <td>{fmt(z.hourly_rate)}</td>
+                          <td style={{ textAlign: 'center' }}>
+                            <span className={`badge ${z.supports_dynamic_pricing ? 'badge-approved' : 'badge-pending'}`}>
+                              {z.supports_dynamic_pricing ? 'Yes' : 'No'}
+                            </span>
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            <span className={`badge ${z.supports_reservations ? 'badge-approved' : 'badge-pending'}`}>
+                              {z.supports_reservations ? 'Yes' : 'No'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Optimization Suggestions */}
+            {data.optimization_suggestions && data.optimization_suggestions.length > 0 && (
+              <div className="glass-card" style={{ padding: 28, marginBottom: 24 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <AlertTriangle size={20} color="var(--warning)" /> Revenue Optimization Suggestions
+                </h2>
+                <div style={{ display: 'grid', gap: 16 }}>
+                  {data.optimization_suggestions.map((suggestion, index) => (
+                    <div key={index} style={{
+                      padding: 16,
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-md)',
+                      background: suggestion.severity === 'high' ? 'rgba(239, 68, 68, 0.1)' :
+                                suggestion.severity === 'medium' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                      borderColor: suggestion.severity === 'high' ? '#ef4444' :
+                                  suggestion.severity === 'medium' ? '#f59e0b' : '#10b981'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                        <AlertTriangle size={18} color={
+                          suggestion.severity === 'high' ? '#ef4444' :
+                          suggestion.severity === 'medium' ? '#f59e0b' : '#10b981'
+                        } />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                            {suggestion.zone_name && suggestion.zone_name !== 'Portfolio' ? `${suggestion.zone_name}: ` : ''}
+                            {suggestion.message}
+                          </div>
+                          <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'capitalize' }}>
+                            Severity: {suggestion.severity}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Zones table */}
             {data.zones.length > 0 && (

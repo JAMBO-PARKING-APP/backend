@@ -9,6 +9,10 @@ import LoginPage from './pages/LoginPage';
 import BankDetailsPage from './pages/BankDetailsPage';
 import DashboardPage from './pages/DashboardPage';
 import AddZonePage from './pages/AddZonePage';
+import ManageZonesPage from './pages/ManageZonesPage';
+import PricingRulesOverviewPage from './pages/PricingRulesOverviewPage';
+import PricingRulesPage from './pages/PricingRulesPage';
+import ZoneEditPage from './pages/ZoneEditPage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
@@ -41,6 +45,18 @@ export default function App() {
           } />
           <Route path="/add-zone" element={
             <BankDetailsGuard><AddZonePage /></BankDetailsGuard>
+          } />
+          <Route path="/manage-zones" element={
+            <BankDetailsGuard><ManageZonesPage /></BankDetailsGuard>
+          } />
+          <Route path="/pricing-rules" element={
+            <BankDetailsGuard><PricingRulesOverviewPage /></BankDetailsGuard>
+          } />
+          <Route path="/zones/:zoneId/pricing-rules" element={
+            <BankDetailsGuard><PricingRulesPage /></BankDetailsGuard>
+          } />
+          <Route path="/zones/:zoneId/edit" element={
+            <BankDetailsGuard><ZoneEditPage /></BankDetailsGuard>
           } />
           <Route path="/change-password" element={
             <BankDetailsGuard><ChangePasswordPage /></BankDetailsGuard>

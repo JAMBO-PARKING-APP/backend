@@ -24,7 +24,9 @@ from .models import Zone, ParkingSlot, ParkingSession, Reservation, ZoneApplicat
 from .serializers_v2 import (
     ZoneListSerializer, ZoneDetailSerializer, ParkingSessionSerializer,
     ReservationSerializer, StartParkingSerializer, EndParkingSerializer,
-    CreateReservationSerializer, ZoneApplicationSerializer, OwnerZoneSerializer
+    CreateReservationSerializer, ZoneApplicationSerializer, OwnerZoneSerializer,
+    PricingRuleSerializer, TimeBasedPricingRuleSerializer, DemandBasedPricingRuleSerializer,
+    SpecialEventPricingRuleSerializer, ZoneEditSerializer
 )
 
 class ZoneApplicationCreateAPIView(generics.CreateAPIView):
@@ -742,3 +744,102 @@ class ConfirmReservationWalletAPIView(APIView):
             return Response({
                 'error': str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
+
+class PricingRuleListCreateAPIView(generics.ListCreateAPIView):
+    """List and create pricing rules for a zone (zone owners only)"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = PricingRuleSerializer
+
+    def get_queryset(self):
+        zone_id = self.kwargs.get('zone_id')
+        return PricingRule.objects.filter(zone_id=zone_id, zone__owner=self.request.user)
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            rule_type = self.request.data.get('rule_type')
+            if rule_type == 'time_based':
+                return TimeBasedPricingRuleSerializer
+            elif rule_type == 'demand_based':
+                return DemandBasedPricingRuleSerializer
+            elif rule_type == 'special_event':
+                return SpecialEventPricingRuleSerializer
+        return PricingRuleSerializer
+
+    def perform_create(self, serializer):
+        zone_id = self.kwargs.get('zone_id')
+        zone = Zone.objects.get(id=zone_id, owner=self.request.user)
+        serializer.save(zone=zone)
+
+class PricingRuleDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, update, or delete a pricing rule (zone owners only)"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = PricingRuleSerializer
+
+    def get_queryset(self):
+        return PricingRule.objects.filter(zone__owner=self.request.user)
+
+    def get_serializer_class(self):
+        instance = self.get_object()
+        if isinstance(instance, TimeBasedPricingRule):
+            return TimeBasedPricingRuleSerializer
+        elif isinstance(instance, DemandBasedPricingRule):
+            return DemandBasedPricingRuleSerializer
+        elif isinstance(instance, SpecialEventPricingRule):
+            return SpecialEventPricingRuleSerializer
+        return PricingRuleSerializer
+
+class ZoneCurrentRateAPIView(APIView):
+    """Get the current hourly rate for a zone (considering dynamic pricing)"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, zone_id):
+        try:
+            zone = Zone.objects.get(id=zone_id, is_active=True)
+            current_rate = zone.get_current_hourly_rate()
+            applicable_rules = []
+
+            # Get applicable rules for debugging/transparency
+            for rule in zone.pricing_rules.filter(is_active=True).order_by('-priority'):
+                if rule.is_applicable():
+                    applicable_rules.append({
+                        'id': rule.id,
+                        'name': rule.name,
+                        'rule_type': rule.rule_type,
+                        'hourly_rate': float(rule.hourly_rate),
+                        'priority': rule.priority
+                    })
+
+            return Response({
+                'zone_id': zone_id,
+                'zone_name': zone.name,
+                'base_rate': float(zone.hourly_rate),
+                'current_rate': float(current_rate),
+                'supports_dynamic_pricing': zone.supports_dynamic_pricing,
+                'applicable_rules': applicable_rules
+            }, status=status.HTTP_200_OK)
+
+        except Zone.DoesNotExist:
+            return Response({
+                'error': 'Zone not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+class ZoneEditAPIView(generics.RetrieveUpdateAPIView):
+    """Retrieve and update comprehensive zone details (zone owners only)"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = ZoneEditSerializer
+
+    def get_queryset(self):
+        return Zone.objects.filter(owner=self.request.user, is_active=True)
+
+    def perform_update(self, serializer):
+        zone = serializer.save()
+        
+        # Log zone updates for audit trail
+        logger.info(f"Zone {zone.id} updated by owner {self.request.user.id}: {serializer.validated_data}")
+        
+        # If dynamic pricing was enabled/disabled, notify about potential impact
+        if 'supports_dynamic_pricing' in serializer.validated_data:
+            new_dynamic_pricing = serializer.validated_data['supports_dynamic_pricing']
+            if new_dynamic_pricing != zone.supports_dynamic_pricing:
+                action = "enabled" if new_dynamic_pricing else "disabled"
+                logger.info(f"Dynamic pricing {action} for zone {zone.id} by owner {self.request.user.id}")

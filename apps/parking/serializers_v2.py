@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Zone, ParkingSlot, ParkingSession, Reservation, ZoneApplication
+from .models import Zone, ParkingSlot, ParkingSession, Reservation, ZoneApplication, PricingRule, TimeBasedPricingRule, DemandBasedPricingRule, SpecialEventPricingRule
 
 class ParkingSlotSerializer(serializers.ModelSerializer):
     class Meta:
@@ -183,3 +183,45 @@ class OwnerZoneSerializer(serializers.ModelSerializer):
                  'total_slots', 'is_active', 'latitude', 'longitude', 'commission_rate',
                  'available_slots_count', 'active_sessions_count')
         read_only_fields = ('id', 'commission_rate', 'active_sessions_count', 'available_slots_count')
+
+class ZoneEditSerializer(serializers.ModelSerializer):
+    """Comprehensive zone editing serializer for zone owners"""
+    current_occupancy_rate = serializers.ReadOnlyField()
+    active_pricing_rules_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Zone
+        fields = ('id', 'name', 'code', 'description', 'hourly_rate', 'max_duration_hours',
+                 'total_slots', 'is_active', 'supports_dynamic_pricing', 'supports_reservations',
+                 'latitude', 'longitude', 'radius_meters', 'zone_image', 'diagram_image',
+                 'diagram_width', 'diagram_height', 'commission_rate', 'current_occupancy_rate',
+                 'active_pricing_rules_count')
+        read_only_fields = ('id', 'commission_rate', 'current_occupancy_rate', 'active_pricing_rules_count')
+    
+    def get_active_pricing_rules_count(self, obj):
+        return obj.pricing_rules.filter(is_active=True).count()
+
+class PricingRuleSerializer(serializers.ModelSerializer):
+    """Base serializer for pricing rules"""
+    class Meta:
+        model = PricingRule
+        fields = ('id', 'rule_type', 'name', 'description', 'hourly_rate', 'is_active', 'priority', 'created_at')
+        read_only_fields = ('id', 'created_at')
+
+class TimeBasedPricingRuleSerializer(PricingRuleSerializer):
+    """Serializer for time-based pricing rules"""
+    class Meta(PricingRuleSerializer.Meta):
+        model = TimeBasedPricingRule
+        fields = PricingRuleSerializer.Meta.fields + ('start_time', 'end_time', 'days_of_week')
+
+class DemandBasedPricingRuleSerializer(PricingRuleSerializer):
+    """Serializer for demand-based pricing rules"""
+    class Meta(PricingRuleSerializer.Meta):
+        model = DemandBasedPricingRule
+        fields = PricingRuleSerializer.Meta.fields + ('occupancy_threshold', 'comparison')
+
+class SpecialEventPricingRuleSerializer(PricingRuleSerializer):
+    """Serializer for special event pricing rules"""
+    class Meta(PricingRuleSerializer.Meta):
+        model = SpecialEventPricingRule
+        fields = PricingRuleSerializer.Meta.fields + ('start_datetime', 'end_datetime')

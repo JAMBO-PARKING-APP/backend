@@ -303,7 +303,177 @@ class OwnerDashboardView(APIView):
             'zones': zone_data,
             'recent_sessions': sessions_data,
             'recent_reservations': reservations_data,
+            'portfolio_analytics': portfolio_analytics,
+            'zone_comparison': zone_comparison,
+            'optimization_suggestions': optimization_suggestions,
         })
+
+    def _get_portfolio_analytics(self, zones, zone_ids, last_30_days):
+        """Calculate portfolio-wide analytics"""
+        from apps.parking.models import ParkingSession
+        from apps.payments.models import WalletTransaction
+        
+        # Overall portfolio metrics
+        total_sessions_30d = ParkingSession.objects.filter(
+            zone_id__in=zone_ids, start_time__gte=last_30_days
+        ).count()
+        
+        completed_sessions_30d = ParkingSession.objects.filter(
+            zone_id__in=zone_ids, status='completed', start_time__gte=last_30_days
+        )
+        
+        avg_session_duration = completed_sessions_30d.aggregate(
+            avg_duration=Avg('actual_end_time') - Avg('start_time')
+        )['avg_duration']
+        
+        avg_revenue_per_session = completed_sessions_30d.aggregate(
+            avg_revenue=Avg('final_cost')
+        )['avg_revenue'] or Decimal('0')
+        
+        # Peak hours analysis
+        from django.db.models.functions import ExtractHour
+        peak_hours = list(
+            ParkingSession.objects.filter(
+                zone_id__in=zone_ids, start_time__gte=last_30_days
+            ).annotate(hour=ExtractHour('start_time'))
+            .values('hour')
+            .annotate(count=Count('id'))
+            .order_by('-count')[:5]
+            .values('hour', 'count')
+        )
+        
+        # Occupancy trends
+        occupancy_trends = []
+        for i in range(7):  # Last 7 days
+            day = timezone.now() - timedelta(days=i)
+            day_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
+            day_end = day_start + timedelta(days=1)
+            
+            day_sessions = ParkingSession.objects.filter(
+                zone_id__in=zone_ids,
+                start_time__gte=day_start,
+                start_time__lt=day_end
+            ).count()
+            
+            avg_occupancy = 0
+            if zones.exists():
+                total_capacity = sum(z.capacity for z in zones)
+                avg_occupancy = (day_sessions / max(total_capacity, 1)) * 100
+            
+            occupancy_trends.append({
+                'date': day_start.date().isoformat(),
+                'sessions': day_sessions,
+                'avg_occupancy': round(avg_occupancy, 1)
+            })
+        
+        return {
+            'total_sessions_30d': total_sessions_30d,
+            'avg_session_duration_hours': avg_session_duration.total_seconds() / 3600 if avg_session_duration else 0,
+            'avg_revenue_per_session': float(avg_revenue_per_session),
+            'peak_hours': peak_hours,
+            'occupancy_trends': occupancy_trends
+        }
+
+    def _get_zone_comparison(self, zones, last_30_days):
+        """Compare performance across zones"""
+        from apps.parking.models import ParkingSession
+        
+        comparison_data = []
+        for zone in zones:
+            zone_sessions_30d = ParkingSession.objects.filter(
+                zone=zone, start_time__gte=last_30_days
+            )
+            
+            completed_sessions = zone_sessions_30d.filter(status='completed')
+            revenue_30d = completed_sessions.aggregate(
+                total=Sum('final_cost')
+            )['total'] or Decimal('0')
+            
+            avg_occupancy = zone.occupancy_rate
+            utilization_rate = (zone_sessions_30d.count() / max(zone.capacity, 1)) * 100
+            
+            comparison_data.append({
+                'zone_id': str(zone.id),
+                'zone_name': zone.name,
+                'revenue_30d': float(revenue_30d),
+                'sessions_30d': zone_sessions_30d.count(),
+                'avg_occupancy': round(avg_occupancy, 1),
+                'utilization_rate': round(utilization_rate, 1),
+                'hourly_rate': float(zone.hourly_rate),
+                'supports_dynamic_pricing': zone.supports_dynamic_pricing,
+                'supports_reservations': zone.supports_reservations
+            })
+        
+        # Sort by revenue descending
+        comparison_data.sort(key=lambda x: x['revenue_30d'], reverse=True)
+        
+        return comparison_data
+
+    def _get_optimization_suggestions(self, zones):
+        """Generate revenue optimization suggestions"""
+        suggestions = []
+        
+        for zone in zones:
+            # Check for low utilization
+            if zone.occupancy_rate < 30:
+                suggestions.append({
+                    'type': 'low_utilization',
+                    'zone_id': str(zone.id),
+                    'zone_name': zone.name,
+                    'message': f"Low occupancy ({zone.occupancy_rate:.1f}%). Consider promotional pricing or marketing.",
+                    'severity': 'medium'
+                })
+            
+            # Check for high utilization without dynamic pricing
+            if zone.occupancy_rate > 80 and not zone.supports_dynamic_pricing:
+                suggestions.append({
+                    'type': 'high_demand_no_dynamic_pricing',
+                    'zone_id': str(zone.id),
+                    'zone_name': zone.name,
+                    'message': f"High demand ({zone.occupancy_rate:.1f}%) but no dynamic pricing. Enable surge pricing.",
+                    'severity': 'high'
+                })
+            
+            # Check for zones without reservations that might benefit
+            if not zone.supports_reservations and zone.occupancy_rate > 60:
+                suggestions.append({
+                    'type': 'enable_reservations',
+                    'zone_id': str(zone.id),
+                    'zone_name': zone.name,
+                    'message': f"High utilization suggests enabling reservations could increase revenue.",
+                    'severity': 'low'
+                })
+            
+            # Check pricing competitiveness
+            avg_rate = sum(z.hourly_rate for z in zones) / len(zones)
+            if zone.hourly_rate < avg_rate * 0.8:
+                suggestions.append({
+                    'type': 'pricing_below_average',
+                    'zone_id': str(zone.id),
+                    'zone_name': zone.name,
+                    'message': f"Rate ({zone.hourly_rate}) is below portfolio average. Consider price increase.",
+                    'severity': 'low'
+                })
+        
+        # Portfolio-level suggestions
+        if len(zones) > 1:
+            # Check for geographic concentration
+            latitudes = [z.latitude for z in zones]
+            longitudes = [z.longitude for z in zones]
+            
+            lat_range = max(latitudes) - min(latitudes)
+            lon_range = max(longitudes) - min(longitudes)
+            
+            if lat_range < 0.01 and lon_range < 0.01:  # Very close together
+                suggestions.append({
+                    'type': 'geographic_concentration',
+                    'zone_id': None,
+                    'zone_name': 'Portfolio',
+                    'message': "Zones are geographically concentrated. Consider expanding to new areas.",
+                    'severity': 'low'
+                })
+        
+        return suggestions
 
 
 class PartnerChangePasswordView(APIView):
