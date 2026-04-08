@@ -80,6 +80,11 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
         self._cached_wallet_balance = wallet.balance
         return self._cached_wallet_balance
 
+    def clear_wallet_cache(self):
+        """Clear the cached wallet balance so it gets recalculated on next access."""
+        if hasattr(self, '_cached_wallet_balance'):
+            delattr(self, '_cached_wallet_balance')
+
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
@@ -95,7 +100,10 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
         """
         from apps.payments.models import WalletTransaction
         from django.db.models import F
-        target_country = country or self.country
+        from apps.common.models import get_current_country
+        
+        # Use provided country, then current country context, then user's country
+        target_country = country or get_current_country() or self.country
         
         if target_country:
             wallet, _ = Wallet.objects.select_for_update().get_or_create(user=self, country=target_country)

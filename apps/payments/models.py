@@ -148,7 +148,8 @@ class WalletTransaction(RegionalModel, BaseModel):
 
     def save(self, *args, **kwargs):
         if self.user and not self.country:
-            self.country = self.user.country
+            from apps.common.models import get_current_country
+            self.country = get_current_country() or self.user.country
         super().save(*args, **kwargs)
 
     class Meta:

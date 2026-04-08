@@ -18,6 +18,9 @@ class RegionalContextMiddleware:
     def __call__(self, request):
         set_current_country(None)
         
+        # Store the previous country to detect changes
+        previous_country = get_current_country()
+        
         # 1. Check for explicit header override (Highest Priority for manual selection)
         country_id = request.headers.get('X-Country-ID') or request.headers.get('X-Country-Code')
         if not country_id:
@@ -65,6 +68,12 @@ class RegionalContextMiddleware:
                 if country:
                     set_current_country(country)
                     logger.debug(f"RegionalContext: Set country to {country.name} via user profile")
+        
+        # Clear wallet cache if country changed
+        current_country = get_current_country()
+        if request.user.is_authenticated and current_country != previous_country:
+            request.user.clear_wallet_cache()
+            logger.debug(f"RegionalContext: Cleared wallet cache due to country change from {previous_country} to {current_country}")
         
         response = self.get_response(request)
 
