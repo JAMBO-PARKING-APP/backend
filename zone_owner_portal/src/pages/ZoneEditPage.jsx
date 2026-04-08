@@ -336,7 +336,7 @@ export default function ZoneEditPage() {
 
                 <div style={{ textAlign: 'center', padding: 20, background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-md)' }}>
                   <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--accent)' }}>
-                    {zone.current_occupancy_rate?.toFixed(1) || 0}%
+                    {(zone.current_occupancy_rate ?? 0).toFixed(1)}%
                   </div>
                   <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>Current Occupancy</div>
                 </div>

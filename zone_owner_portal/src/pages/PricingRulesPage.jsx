@@ -22,9 +22,9 @@ export default function PricingRulesPage() {
     try {
       const [rulesRes, zoneRes] = await Promise.all([
         userApi.get(`/parking/owner/zones/${zoneId}/pricing-rules/`),
-        parkingApi.get(`/owner/zones/${zoneId}/edit/`)
+        userApi.get(`/parking/owner/zones/${zoneId}/edit/`)
       ]);
-      setRules(rulesRes.data);
+      setRules(rulesRes.data?.results || []);
       setZone(zoneRes.data);
     } catch (err) {
       setError('Failed to load pricing rules');
@@ -113,7 +113,7 @@ export default function PricingRulesPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--accent)' }}>
-                  {zone?.current_occupancy_rate?.toFixed(1)}%
+                  {(zone?.current_occupancy_rate ?? 0).toFixed(1)}%
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Current Occupancy</div>
               </div>

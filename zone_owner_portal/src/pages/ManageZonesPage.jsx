@@ -17,7 +17,7 @@ export default function ManageZonesPage() {
   const loadZones = async () => {
     try {
       const res = await userApi.get('/parking/owner/zones/');
-      setZones(res.data);
+      setZones(res.data?.results || []);
     } catch (err) {
       setError('Failed to load zones');
     } finally {
@@ -133,7 +133,7 @@ export default function ManageZonesPage() {
 
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: 24, fontWeight: 700, color: getOccupancyColor(zone.occupancy_rate) }}>
-                      {zone.occupancy_rate.toFixed(1)}%
+                      {(zone.occupancy_rate ?? 0).toFixed(1)}%
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Occupancy</div>
                   </div>

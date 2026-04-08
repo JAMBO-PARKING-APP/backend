@@ -17,12 +17,13 @@ export default function PricingRulesOverviewPage() {
   const loadZones = async () => {
     try {
       const res = await userApi.get('/parking/owner/zones/');
+      const zoneResults = res.data?.results || [];
       // Load pricing rules for each zone
       const zonesWithRules = await Promise.all(
-        (res.data || []).map(async (zone) => {
+        zoneResults.map(async (zone) => {
           try {
             const rulesRes = await userApi.get(`/parking/owner/zones/${zone.id}/pricing-rules/`);
-            return { ...zone, pricing_rules: rulesRes.data };
+            return { ...zone, pricing_rules: rulesRes.data?.results || [] };
           } catch (err) {
             return { ...zone, pricing_rules: [] };
           }

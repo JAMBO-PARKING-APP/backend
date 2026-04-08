@@ -20,7 +20,7 @@ from rest_framework.views import APIView
 from django.core.cache import caches
 
 from apps.common.constants import ParkingStatus, SlotStatus
-from .models import Zone, ParkingSlot, ParkingSession, Reservation, ZoneApplication
+from .models import Zone, ParkingSlot, ParkingSession, Reservation, ZoneApplication, PricingRule
 from .serializers_v2 import (
     ZoneListSerializer, ZoneDetailSerializer, ParkingSessionSerializer,
     ReservationSerializer, StartParkingSerializer, EndParkingSerializer,
@@ -46,8 +46,8 @@ class OwnerZoneListAPIView(generics.ListAPIView):
     def get_queryset(self):
         return Zone.objects.filter(owner=self.request.user, is_active=True)
 
-class OwnerZoneUpdateAPIView(generics.UpdateAPIView):
-    """Update zone details like hourly_rate for owner"""
+class OwnerZoneUpdateAPIView(generics.RetrieveUpdateAPIView):
+    """Retrieve or update zone details for the current owner"""
     serializer_class = OwnerZoneSerializer
     permission_classes = [IsAuthenticated]
 
