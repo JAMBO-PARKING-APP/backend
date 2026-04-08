@@ -4,27 +4,34 @@ import axios from 'axios';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export const api = axios.create({ baseURL: `${BASE_URL}/api/partner` });
+export const parkingApi = axios.create({ baseURL: `${BASE_URL}/api/parking` });
+export const userApi = axios.create({ baseURL: `${BASE_URL}/api/user` });
 
-// Attach JWT to every request
-api.interceptors.request.use(config => {
+// Attach JWT to every request for both APIs
+const attachToken = (config) => {
   const token = localStorage.getItem('partner_access');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
-});
+};
 
-// Auto-logout on 401
-api.interceptors.response.use(
-  res => res,
-  err => {
-    if (err.response?.status === 401) {
-      localStorage.removeItem('partner_access');
-      localStorage.removeItem('partner_refresh');
-      localStorage.removeItem('partner_user');
-      window.location.href = '/login';
-    }
-    return Promise.reject(err);
+api.interceptors.request.use(attachToken);
+parkingApi.interceptors.request.use(attachToken);
+userApi.interceptors.request.use(attachToken);
+
+// Auto-logout on 401 for both APIs
+const handle401 = (err) => {
+  if (err.response?.status === 401) {
+    localStorage.removeItem('partner_access');
+    localStorage.removeItem('partner_refresh');
+    localStorage.removeItem('partner_user');
+    window.location.href = '/login';
   }
-);
+  return Promise.reject(err);
+};
+
+api.interceptors.response.use(res => res, handle401);
+parkingApi.interceptors.response.use(res => res, handle401);
+userApi.interceptors.response.use(res => res, handle401);
 
 const AuthContext = createContext(null);
 

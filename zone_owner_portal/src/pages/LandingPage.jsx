@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Rocket, FileText, CheckCircle2, Banknote, BarChart3, Landmark, Map, ShieldCheck, Smartphone, Search, CreditCard, Timer, Bell } from 'lucide-react';
+import LanguageSelector from '../components/LanguageSelector';
+import { useLanguage } from '../LanguageContext';
 
 function FeatureCard({ icon, title, desc }) {
   return (
@@ -23,6 +25,8 @@ function AppStoreBadge({ platform, imgSrc, href, height = 52 }) {
 }
 
 export default function LandingPage() {
+  const { t } = useLanguage();
+
   return (
     <>
       {/* Navbar */}
@@ -32,11 +36,12 @@ export default function LandingPage() {
           <span>Space Park</span>
         </Link>
         <div className="navbar-links">
-          <Link to="/how-it-works">How It Works</Link>
-          <a href="#benefits">Benefits</a>
-          <a href="#download">Get the App</a>
-          <Link to="/status">Check Status</Link>
-          <Link to="/login" style={{ color: 'var(--accent-light)', fontWeight: 600 }}>Partner Login</Link>
+          <Link to="/how-it-works">{t('landing.howItWorks')}</Link>
+          <a href="#benefits">{t('landing.benefits')}</a>
+          <a href="#download">{t('landing.getTheApp')}</a>
+          <Link to="/status">{t('landing.checkStatus')}</Link>
+          <LanguageSelector compact />
+          <Link to="/login" style={{ color: 'var(--accent-light)', fontWeight: 600 }}>{t('landing.partnerLogin')}</Link>
         </div>
       </nav>
 
@@ -47,21 +52,20 @@ export default function LandingPage() {
         <div className="hero-content">
           <div className="hero-badge">
             <span style={{ display: 'flex' }}><Rocket size={16} /></span>
-            <span>Earn passive income from your parking space</span>
+            <span>{t('landing.earnPassiveIncome')}</span>
           </div>
           <h1 className="hero-title">
-            Turn Your Space Into<br />
-            <span className="gradient-text">Real Income</span>
+            {t('landing.turnSpaceIntoIncome')}<br />
+            <span className="gradient-text">{t('landing.realIncome')}</span>
           </h1>
           <p className="hero-sub">
-            List your parking space on Space Park and earn money every time someone parks.
-            Real-time analytics, automatic payouts, and total control — all in your partner dashboard.
+            {t('landing.heroSubtitle')}
           </p>
           <div className="hero-actions">
             <Link to="/apply" className="btn-primary">
-              <span>Apply Now — Free</span><span>→</span>
+              <span>{t('landing.applyNow')}</span><span>→</span>
             </Link>
-            <Link to="/how-it-works" className="btn-secondary">Learn How It Works</Link>
+            <Link to="/how-it-works" className="btn-secondary">{t('landing.learnHowItWorks')}</Link>
           </div>
         </div>
       </section>

@@ -293,6 +293,8 @@ body {
     font-size: 16px;
   }
 }
+
+.btn-primary {
   text-decoration: none;
   position: relative;
   overflow: hidden;

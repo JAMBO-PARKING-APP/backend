@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api } from '../AuthContext';
+import { api, parkingApi, userApi } from '../AuthContext';
 import Sidebar from '../components/Sidebar';
 import { Plus, Edit, Trash2, Clock, TrendingUp, Calendar, AlertCircle, CheckCircle } from 'lucide-react';
 
@@ -21,8 +21,8 @@ export default function PricingRulesPage() {
   const loadData = async () => {
     try {
       const [rulesRes, zoneRes] = await Promise.all([
-        api.get(`/parking/owner/zones/${zoneId}/pricing-rules/`),
-        api.get(`/parking/owner/zones/${zoneId}/edit/`)
+        userApi.get(`/parking/owner/zones/${zoneId}/pricing-rules/`),
+        parkingApi.get(`/owner/zones/${zoneId}/edit/`)
       ]);
       setRules(rulesRes.data);
       setZone(zoneRes.data);
@@ -37,7 +37,7 @@ export default function PricingRulesPage() {
     if (!confirm('Are you sure you want to delete this pricing rule?')) return;
 
     try {
-      await api.delete(`/parking/owner/pricing-rules/${ruleId}/`);
+      await userApi.delete(`/parking/owner/pricing-rules/${ruleId}/`);
       setRules(rules.filter(r => r.id !== ruleId));
     } catch (err) {
       setError('Failed to delete pricing rule');
@@ -46,7 +46,7 @@ export default function PricingRulesPage() {
 
   const toggleRule = async (ruleId, isActive) => {
     try {
-      await api.patch(`/parking/owner/pricing-rules/${ruleId}/`, { is_active: !isActive });
+      await userApi.patch(`/parking/owner/pricing-rules/${ruleId}/`, { is_active: !isActive });
       setRules(rules.map(r => r.id === ruleId ? { ...r, is_active: !isActive } : r));
     } catch (err) {
       setError('Failed to update pricing rule');

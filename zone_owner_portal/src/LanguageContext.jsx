@@ -126,7 +126,39 @@ const TRANSLATIONS = {
     'norwegian': 'Norsk',
     'finnish': 'Suomi',
     'dark-theme': 'Dark Theme',
-    'light-theme': 'Light Theme'
+    'light-theme': 'Light Theme',
+    nav: {
+      dashboard: 'Dashboard',
+      addZone: 'Add New Zone',
+      manageZones: 'Manage Zones',
+      pricingRules: 'Pricing Rules',
+      bankDetails: 'Bank Details',
+      changePassword: 'Change Password'
+    },
+    theme: {
+      darkMode: 'Dark Mode',
+      lightMode: 'Light Mode'
+    },
+    auth: {
+      signOut: 'Sign Out'
+    },
+    landing: {
+      howItWorks: 'How It Works',
+      benefits: 'Benefits',
+      getTheApp: 'Get the App',
+      checkStatus: 'Check Status',
+      partnerLogin: 'Partner Login',
+      earnPassiveIncome: 'Earn passive income from your parking space',
+      smartParking: 'Smart Parking Management',
+      smartParkingDesc: 'Transform your parking spaces into revenue-generating assets with our intelligent management platform.',
+      getStarted: 'Get Started',
+      learnMore: 'Learn More',
+      turnSpaceIntoIncome: 'Turn Your Space Into',
+      realIncome: 'Real Income',
+      heroSubtitle: 'List your parking space on Space Park and earn money every time someone parks. Real-time analytics, automatic payouts, and total control — all in your partner dashboard.',
+      applyNow: 'Apply Now — Free',
+      learnHowItWorks: 'Learn How It Works'
+    }
   },
   es: {
     dashboard: 'Panel de Control',
@@ -252,7 +284,39 @@ const TRANSLATIONS = {
     'norwegian': 'Norsk',
     'finnish': 'Suomi',
     'dark-theme': 'Tema Oscuro',
-    'light-theme': 'Tema Claro'
+    'light-theme': 'Tema Claro',
+    nav: {
+      dashboard: 'Panel de Control',
+      addZone: 'Agregar Nueva Zona',
+      manageZones: 'Administrar Zonas',
+      pricingRules: 'Reglas de Precios',
+      bankDetails: 'Detalles Bancarios',
+      changePassword: 'Cambiar Contraseña'
+    },
+    theme: {
+      darkMode: 'Modo Oscuro',
+      lightMode: 'Modo Claro'
+    },
+    auth: {
+      signOut: 'Cerrar Sesión'
+    },
+    landing: {
+      howItWorks: 'Cómo Funciona',
+      benefits: 'Beneficios',
+      getTheApp: 'Obtener la App',
+      checkStatus: 'Verificar Estado',
+      partnerLogin: 'Acceso de Socio',
+      earnPassiveIncome: 'Gana ingresos pasivos de tu espacio de estacionamiento',
+      smartParking: 'Gestión Inteligente de Estacionamiento',
+      smartParkingDesc: 'Transforma tus espacios de estacionamiento en activos generadores de ingresos con nuestra plataforma de gestión inteligente.',
+      getStarted: 'Comenzar',
+      learnMore: 'Saber Más',
+      turnSpaceIntoIncome: 'Convierte Tu Espacio en',
+      realIncome: 'Ingresos Reales',
+      heroSubtitle: 'Lista tu espacio de estacionamiento en Space Park y gana dinero cada vez que alguien estaciona. Análisis en tiempo real, pagos automáticos y control total — todo en tu panel de socio.',
+      applyNow: 'Aplicar Ahora — Gratis',
+      learnHowItWorks: 'Aprende Cómo Funciona'
+    }
   }
   // Add more languages as needed
 };
@@ -267,7 +331,22 @@ export function LanguageProvider({ children }) {
   }, [language]);
 
   const t = (key) => {
-    return TRANSLATIONS[language]?.[key] || TRANSLATIONS.en[key] || key;
+    const keys = key.split('.');
+    let value = TRANSLATIONS[language];
+    
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    
+    if (value !== undefined) return value;
+    
+    // Fallback to English
+    value = TRANSLATIONS.en;
+    for (const k of keys) {
+      value = value?.[k];
+    }
+    
+    return value !== undefined ? value : key;
   };
 
   return (

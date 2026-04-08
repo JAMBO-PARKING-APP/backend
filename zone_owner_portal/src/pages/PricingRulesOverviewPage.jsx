@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../AuthContext';
+import { api, parkingApi, userApi } from '../AuthContext';
 import Sidebar from '../components/Sidebar';
 import { DollarSign, Plus, Clock, TrendingUp, Calendar, Settings, MapPin } from 'lucide-react';
 
@@ -16,12 +16,12 @@ export default function PricingRulesOverviewPage() {
 
   const loadZones = async () => {
     try {
-      const res = await api.get('/parking/owner/zones/');
+      const res = await userApi.get('/parking/owner/zones/');
       // Load pricing rules for each zone
       const zonesWithRules = await Promise.all(
         res.data.map(async (zone) => {
           try {
-            const rulesRes = await api.get(`/parking/owner/zones/${zone.id}/pricing-rules/`);
+            const rulesRes = await userApi.get(`/parking/owner/zones/${zone.id}/pricing-rules/`);
             return { ...zone, pricing_rules: rulesRes.data };
           } catch (err) {
             return { ...zone, pricing_rules: [] };

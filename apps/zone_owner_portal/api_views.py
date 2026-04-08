@@ -287,6 +287,11 @@ class OwnerDashboardView(APIView):
             for r in recent_reservations
         ]
 
+        # Get additional analytics
+        portfolio_analytics = self._get_portfolio_analytics(zones, zone_ids, last_30_days)
+        zone_comparison = self._get_zone_comparison(zones, last_30_days)
+        optimization_suggestions = self._get_optimization_suggestions(zones)
+
         return Response({
             'summary': {
                 'total_earnings': float(total_earnings),

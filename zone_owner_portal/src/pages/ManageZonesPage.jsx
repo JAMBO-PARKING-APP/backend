@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../AuthContext';
+import { api, parkingApi, userApi } from '../AuthContext';
 import Sidebar from '../components/Sidebar';
 import { Edit, DollarSign, MapPin, Users, TrendingUp, Settings, Plus } from 'lucide-react';
 
@@ -16,7 +16,7 @@ export default function ManageZonesPage() {
 
   const loadZones = async () => {
     try {
-      const res = await api.get('/parking/owner/zones/');
+      const res = await userApi.get('/parking/owner/zones/');
       setZones(res.data);
     } catch (err) {
       setError('Failed to load zones');

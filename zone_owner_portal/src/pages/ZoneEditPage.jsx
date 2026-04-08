@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api } from '../AuthContext';
+import { api, parkingApi, userApi } from '../AuthContext';
 import Sidebar from '../components/Sidebar';
 import { Save, MapPin, Settings, DollarSign, Clock, Users, Image as ImageIcon } from 'lucide-react';
 
@@ -19,7 +19,7 @@ export default function ZoneEditPage() {
 
   const loadZone = async () => {
     try {
-      const res = await api.get(`/parking/owner/zones/${zoneId}/edit/`);
+      const res = await userApi.get(`/parking/owner/zones/${zoneId}/edit/`);
       setZone(res.data);
     } catch (err) {
       setError('Failed to load zone details');
@@ -34,7 +34,7 @@ export default function ZoneEditPage() {
     setSuccess('');
 
     try {
-      const res = await api.put(`/parking/owner/zones/${zoneId}/edit/`, zone);
+      const res = await userApi.put(`/parking/owner/zones/${zoneId}/edit/`, zone);
       setZone(res.data);
       setSuccess('Zone updated successfully!');
       setTimeout(() => setSuccess(''), 3000);
