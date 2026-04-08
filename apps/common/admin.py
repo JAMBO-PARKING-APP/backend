@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.utils.html import format_html
 from apps.payments.models import PaymentGatewayConfig
 from .api_views import _get_system_usage
-from .models import Country, SystemConfiguration, CountryConfig
+from .models import Country, SystemConfiguration
 
 class PaymentGatewayConfigInline(admin.TabularInline):
     """Link country ↔ gateway credentials (Pesapal, Stripe, …) from the Country admin."""
