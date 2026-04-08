@@ -24,7 +24,7 @@ from .serializers_v2 import (
 )
 from .models import Transaction, PaymentMethod, Invoice, WalletTransaction, PaymentGatewayConfig, PaymentGateway
 from apps.common.serializers import CountrySerializer
-from apps.common.models import CountryConfig
+from apps.common.models import Country
 from .pesapal_service import PesapalService
 from apps.enforcement.models import Violation
 from apps.parking.models import ParkingSession, ParkingStatus, Reservation
@@ -76,10 +76,9 @@ class UserPaymentCountryConfigAPIView(APIView):
             return Response(body)
 
         try:
-            cc = CountryConfig.objects.get(country=country, is_active=True)
-            methods = list(cc.payment_methods) if cc.payment_methods else ['wallet']
-            exchange_rate = str(cc.exchange_rate_to_base)
-        except CountryConfig.DoesNotExist:
+            methods = list(country.payment_methods) if country.payment_methods else ['wallet']
+            exchange_rate = str(country.exchange_rate_to_base)
+        except AttributeError:
             methods = ['wallet']
             if country.iso_code == 'UG':
                 methods.append('pesapal')
