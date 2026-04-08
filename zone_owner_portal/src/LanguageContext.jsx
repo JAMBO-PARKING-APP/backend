@@ -325,9 +325,11 @@ const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
   const [language, setLanguage] = useState(localStorage.getItem('language') || 'en');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     localStorage.setItem('language', language);
+    setIsLoading(false);
   }, [language]);
 
   const t = (key) => {
@@ -348,6 +350,22 @@ export function LanguageProvider({ children }) {
     
     return value !== undefined ? value : key;
   };
+
+  // Show loading state while language is initializing
+  if (isLoading) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        background: '#0f172a',
+        color: '#e2e8f0'
+      }}>
+        <div>Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t }}>
