@@ -460,7 +460,7 @@ class OwnerDashboardView(APIView):
             
             # Check pricing competitiveness
             avg_rate = sum(z.hourly_rate for z in zones) / len(zones)
-            if zone.hourly_rate < avg_rate * 0.8:
+            if zone.hourly_rate < avg_rate * Decimal('0.8'):
                 suggestions.append({
                     'type': 'pricing_below_average',
                     'zone_id': str(zone.id),

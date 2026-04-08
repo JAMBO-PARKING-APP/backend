@@ -161,7 +161,7 @@ export default function PricingRulesOverviewPage() {
                   </div>
                 ) : (
                   <div style={{ display: 'grid', gap: 12 }}>
-                    {zone.pricing_rules.map(rule => (
+                    {(zone.pricing_rules || []).map(rule => (
                       <div key={rule.id} style={{
                         padding: 16,
                         border: '1px solid var(--border)',

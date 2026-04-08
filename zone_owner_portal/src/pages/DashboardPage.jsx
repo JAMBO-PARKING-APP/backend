@@ -112,7 +112,7 @@ export default function DashboardPage() {
                   <ResponsiveContainer width="100%" height={260}>
                     <PieChart>
                       <Pie
-                        data={data.revenue_by_zone}
+                        data={data.revenue_by_zone || []}
                         dataKey="value"
                         nameKey="name"
                         cx="50%"
@@ -121,7 +121,7 @@ export default function DashboardPage() {
                         outerRadius={80}
                         paddingAngle={5}
                       >
-                        {data.revenue_by_zone.map((entry, index) => (
+                        {(data.revenue_by_zone || []).map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
@@ -202,7 +202,7 @@ export default function DashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.zone_comparison.map(z => (
+                      {(data.zone_comparison || []).map(z => (
                         <tr key={z.zone_id}>
                           <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{z.zone_name}</td>
                           <td style={{ fontWeight: 600, color: 'var(--success)' }}>{fmt(z.revenue_30d)}</td>
@@ -235,7 +235,7 @@ export default function DashboardPage() {
                   <AlertTriangle size={20} color="var(--warning)" /> Revenue Optimization Suggestions
                 </h2>
                 <div style={{ display: 'grid', gap: 16 }}>
-                  {data.optimization_suggestions.map((suggestion, index) => (
+                  {(data.optimization_suggestions || []).map((suggestion, index) => (
                     <div key={index} style={{
                       padding: 16,
                       border: '1px solid var(--border)',
@@ -325,7 +325,7 @@ export default function DashboardPage() {
                     <table>
                       <thead><tr><th>Vehicle</th><th>Zone</th><th>Start Time</th><th>Status</th><th>Amount</th></tr></thead>
                       <tbody>
-                        {data.recent_sessions.map(s => (
+                        {(data.recent_sessions || []).map(s => (
                           <tr key={s.id}>
                             <td style={{ fontFamily: 'monospace', letterSpacing: '0.05em' }}>
                               {s.vehicle} {s.is_guest && <span style={{ fontSize: 9, opacity: 0.6, background: '#475569', padding: '1px 4px', borderRadius: 3, verticalAlign: 'middle', marginLeft: 4 }}>GUEST</span>}
@@ -361,7 +361,7 @@ export default function DashboardPage() {
                     <table>
                       <thead><tr><th>User</th><th>Zone</th><th>Planned Start</th><th>Status</th><th>Fee Deducted</th></tr></thead>
                       <tbody>
-                        {data.recent_reservations.map(r => (
+                        {(data.recent_reservations || []).map(r => (
                           <tr key={r.id}>
                             <td style={{ fontWeight: 600 }}>{r.user}</td>
                             <td>{r.zone}</td>
