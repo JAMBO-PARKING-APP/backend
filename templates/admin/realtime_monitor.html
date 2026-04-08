@@ -6,80 +6,47 @@
 {% block content %}
 <div class="realtime-monitor">
     <h1>{{ title }}</h1>
-    <p>Last updated: <span id="last-update">Loading...</span> | <button id="refresh-btn" onclick="updateData()">🔄 Refresh Now</button></p>
+    <p>Last updated: <span id="last-update">Loading...</span> | <button id="refresh-btn">🔄 Refresh Now</button></p>
+    
     <div class="dashboard-row">
         <section class="dashboard-card heartbeat-card">
             <h2>🚀 Celery Heartbeat</h2>
-            {% if heartbeat %}
-                <dl class="monitor-list">
-                    <dt>Last seen</dt><dd>{{ heartbeat.last_seen|default:'N/A' }}</dd>
-                    <dt>Status</dt><dd class="status-{{ heartbeat.status|lower|default:'unknown' }}">{{ heartbeat.status|default:'Unknown' }}</dd>
-                    <dt>Active workers</dt><dd>{{ heartbeat.active_workers|default:0 }}</dd>
-                    <dt>Worker uptime</dt><dd>{{ heartbeat.uptime|default:'N/A' }}</dd>
-                </dl>
-            {% else %}
-                <p class="no-data">No heartbeat data found yet. Ensure Celery tasks are running.</p>
-            {% endif %}
+            <dl class="monitor-list" id="heartbeat-data">
+                <dt>Status</dt><dd class="status-disconnected">Loading...</dd>
+            </dl>
         </section>
         <section class="dashboard-card resources-card">
             <h2>🖥️ Server Resources</h2>
-            <dl class="monitor-list">
-                <dt>CPU utilization</dt><dd>{% if system_usage.cpu_percent %}{{ system_usage.cpu_percent }}%{% else %}N/A (install psutil){% endif %}</dd>
-                <dt>Memory used</dt><dd>{{ system_usage.memory_used_mb|default:'N/A' }} MB</dd>
-                <dt>Memory total</dt><dd>{{ system_usage.memory_total_mb|default:'N/A' }} MB</dd>
-                <dt>Memory load</dt><dd>{{ system_usage.memory_percent|default:'N/A' }}%</dd>
+            <dl class="monitor-list" id="resources-data">
+                <dt>CPU utilization</dt><dd>Loading...</dd>
             </dl>
         </section>
         <section class="dashboard-card redis-card">
             <h2>🔴 Redis Stats</h2>
-            <dl class="monitor-list">
-                <dt>Connected clients</dt><dd>{{ redis_stats.connected_clients|default:0 }}</dd>
-                <dt>Memory used</dt><dd>{{ redis_stats.used_memory_human|default:'N/A' }}</dd>
-                <dt>Total connections</dt><dd>{{ redis_stats.total_connections_received|default:0 }}</dd>
-                <dt>Active WS connections</dt><dd id="active-connections">{{ active_connections|default:0 }}</dd>
+            <dl class="monitor-list" id="redis-data">
+                <dt>Connected clients</dt><dd>Loading...</dd>
             </dl>
         </section>
-        <section class="dashboard-card requests-card">
-            <h2>📊 Request Stats</h2>
-            <dl class="monitor-list">
-                <dt>Requests/min</dt><dd id="requests-per-minute">{{ requests_per_minute|default:0 }}</dd>
-                <dt>Connection status</dt><dd id="ws-status" class="status-disconnected">Disconnected</dd>
-                <dt>Last update</dt><dd id="last-update">Loading...</dd>
+        <section class="dashboard-card health-card">
+            <h2>🏥 System Health</h2>
+            <dl class="monitor-list" id="health-data">
+                <dt>Status</dt><dd>Loading...</dd>
             </dl>
         </section>
     </div>
 
-    <section class="module aligned regions-section">
-        <h2>🌍 API requests by region (top 10)</h2>
-        {% if region_data %}
-            <div class="region-table-wrap">
-                <table class="model-table">
-                    <thead>
-                        <tr><th>Country</th><th>Requests</th><th>Share</th></tr>
-                    </thead>
-                    <tbody>
-                        {% for region in region_data %}
-                            <tr>
-                                <td>{{ region.country_name }}</td>
-                                <td>{{ region.request_count }}</td>
-                                <td>
-                                    <div class="bar-wrapper">
-                                        <div class="bar-fill" style="width: {% widthratio region.request_count max_count 100 %}%"></div>
-                                    </div>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <p class="no-data">No regional request data available yet. Make some API requests to populate.</p>
-        {% endif %}
+    <section class="module aligned services-section">
+        <h2>📋 System Services</h2>
+        <div id="services-status" class="services-grid">
+            <p class="no-data">Loading services...</p>
+        </div>
     </section>
 
-    <section class="module aligned trends-section">
-        <h2>📈 Recent hourly trends</h2>
-        <div id="trend-chart" class="trend-chart"></div>
+    <section class="module aligned workers-section">
+        <h2>👷 Celery Workers</h2>
+        <div id="workers-status" class="workers-grid">
+            <p class="no-data">Loading workers...</p>
+        </div>
     </section>
 </div>
 
@@ -95,276 +62,246 @@
     cursor: pointer;
 }
 #refresh-btn:hover { background: #0056b3; }
+
 .dashboard-row {
     display: flex;
     gap: 20px;
     flex-wrap: wrap;
     margin-bottom: 30px;
 }
+
 .dashboard-card {
-    flex: 1 1 320px;
+    flex: 1 1 280px;
     background: #fff;
     border: 1px solid #ddd;
     padding: 18px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+
 .heartbeat-card { border-left: 4px solid #28a745; }
 .resources-card { border-left: 4px solid #007bff; }
 .redis-card { border-left: 4px solid #dc3545; }
-.requests-card { border-left: 4px solid #ffc107; }
+.health-card { border-left: 4px solid #ffc107; }
+
 .dashboard-card h2 { margin-top: 0; color: #495057; font-size: 1.2em; }
+
 .monitor-list dt {
     float: left;
-    width: 120px;
+    width: 140px;
     font-weight: 600;
     color: #6c757d;
 }
+
 .monitor-list dd {
-    margin: 0 0 10px 130px;
+    margin: 0 0 10px 145px;
     font-weight: 500;
 }
+
 .status-ok { color: #28a745; }
 .status-error { color: #dc3545; }
 .status-warning { color: #ffc107; }
-.status-unknown { color: #6c757d; }
+.status-disconnected { color: #6c757d; }
+.status-running { color: #17a2b8; }
+
 .no-data { color: #6c757d; font-style: italic; }
-.regions-section, .trends-section {
+
+.services-section, .workers-section {
     margin-bottom: 30px;
     border: 1px solid #ddd;
     border-radius: 8px;
     background: #fff;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
-.regions-section h2, .trends-section h2 { color: #495057; }
-.region-table-wrap {
-    overflow-x: auto;
+
+.services-grid, .workers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    padding: 15px;
 }
-.model-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-.model-table th, .model-table td {
+
+.service-card, .worker-card {
     padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #dee2e6;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    background: #f8f9fa;
 }
-.model-table th { background-color: #f8f9fa; font-weight: 600; }
-.model-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
-.bar-wrapper {
-    background: #e9ecef;
-    border-radius: 8px;
-    height: 24px;
-    width: 100%;
-    position: relative;
-    overflow: hidden;
-}
-.bar-fill {
-    background: linear-gradient(90deg, #007bff, #0056b3);
-    height: 100%;
-    border-radius: 8px 0 0 8px;
-    transition: width 0.3s ease;
-}
-.trend-chart {
-    width: 100%;
-    min-height: 250px;
-    border: 1px solid #d9d9d9;
-    padding: 18px;
-    border-radius: 8px;
-    background: #fff;
-}
-.trend-legend {
-    margin-top: 12px;
-    text-align: center;
-}
-.trend-legend span {
-    margin-right: 16px;
+
+.service-name, .worker-name {
     font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 0.95em;
 }
+
+.service-status, .worker-status {
+    font-size: 0.85em;
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.status-success { background: #d4edda; color: #155724; }
+.status-failure { background: #f8d7da; color: #721c24; }
+.status-unknown { background: #e2e3e5; color: #383d41; }
 </style>
 
 <script>
-function buildChart(series, labels, container) {
-    if (!series || series.length === 0 || !container) {
-        if (container) {
-            container.innerHTML = '<p style="text-align:center; padding:40px; color:#6c757d;">No historical trend data available yet. Make some API requests to populate hourly trends.</p>';
-        }
-        return;
+document.getElementById('refresh-btn').addEventListener('click', function() {
+    loadMonitorData();
+});
+
+function getStatusClass(statusText) {
+    const text = (statusText || '').toLowerCase();
+    if (text.includes('ok') || text.includes('operational') || text.includes('active') || text.includes('connected')) {
+        return 'status-ok';
+    } else if (text.includes('error') || text.includes('failed') || text.includes('down')) {
+        return 'status-error';
+    } else if (text.includes('warning')) {
+        return 'status-warning';
     }
-    const maxValue = series.reduce((max, s) => Math.max(max, ...s.values), 0);
-    const colors = ['#007bff', '#28a745', '#ffc107'];
-
-    const chartHtml = ['<div class="trend-grid">'];
-    chartHtml.push('<div class="trend-axis">');
-    chartHtml.push('<div class="trend-labels">' + labels.slice(-6).map(l => '<span>' + l + '</span>').join('') + '</div>');
-    chartHtml.push('</div>');
-    chartHtml.push('<div class="trend-series">');
-
-    series.forEach((s, index) => {
-        const color = colors[index % colors.length];
-        chartHtml.push('<div class="trend-line" style="border-color:' + color + '"><strong>' + s.country_name + '</strong>');
-        chartHtml.push('<div class="trend-points">' + s.values.map(v => {
-            const scaled = maxValue ? (v / maxValue) * 100 : 0;
-            return '<span class="trend-point" title="' + v + '" style="height:' + (scaled + 8) + 'px; background:' + color + '"></span>';
-        }).join('') + '</div></div>');
-    });
-
-    chartHtml.push('</div></div>');
-    chartHtml.push('<div class="trend-legend">' + series.map((s, index) => '<span style="color:' + colors[index % colors.length] + '">● ' + s.country_name + '</span>').join(' ') + '</div>');
-    container.innerHTML = chartHtml.join('');
+    return 'status-disconnected';
 }
 
-function updateHeartbeat(heartbeat) {
-    const heartbeatEl = document.querySelector('.heartbeat-card dl');
-    if (heartbeat && Object.keys(heartbeat).length) {
-        heartbeatEl.innerHTML = `
-            <dt>Last seen</dt><dd>${heartbeat.last_seen || 'N/A'}</dd>
-            <dt>Status</dt><dd class="status-${(heartbeat.status || '').toLowerCase()}">${heartbeat.status || 'Unknown'}</dd>
-            <dt>Active workers</dt><dd>${heartbeat.active_workers || 0}</dd>
-            <dt>Worker uptime</dt><dd>${heartbeat.uptime || 'N/A'}</dd>
+function loadMonitorData() {
+    document.getElementById('refresh-btn').disabled = true;
+    
+    Promise.all([
+        fetch('{{ api_monitor_url }}').then(r => r.json()),
+        fetch('{{ api_health_url }}').then(r => r.json())
+    ]).then(([monitorData, healthData]) => {
+        updateHeartbeatDisplay(monitorData);
+        updateResourcesDisplay(monitorData);
+        updateRedisDisplay(monitorData);
+        updateHealthDisplay(healthData);
+        updateServicesDisplay(healthData);
+        updateWorkersDisplay(monitorData);
+        
+        document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+        document.getElementById('refresh-btn').disabled = false;
+    }).catch(error => {
+        console.error('Error loading monitor data:', error);
+        document.getElementById('refresh-btn').disabled = false;
+    });
+}
+
+function updateHeartbeatDisplay(data) {
+    const el = document.getElementById('heartbeat-data');
+    const hb = data.celery.heartbeat;
+    
+    if (hb && hb.timestamp) {
+        const timestamp = new Date(hb.timestamp);
+        const ageSeconds = Math.floor((Date.now() - timestamp.getTime()) / 1000);
+        const ageMin = Math.floor(ageSeconds / 60);
+        const ageSec = ageSeconds % 60;
+        
+        el.innerHTML = `
+            <dt>Last heartbeat</dt><dd>${timestamp.toLocaleTimeString()}</dd>
+            <dt>Age</dt><dd>${ageMin}m ${ageSec}s ago</dd>
+            <dt>Status</dt><dd class="status-ok">✓ Active</dd>
         `;
     } else {
-        heartbeatEl.innerHTML = '<p class="no-data">No heartbeat data found yet. Ensure Celery tasks are running.</p>';
+        el.innerHTML = `<dt>Status</dt><dd class="status-error">✗ No heartbeat</dd>`;
     }
 }
 
-function updateRegions(regionData, maxCount) {
-    const section = document.querySelector('.regions-section');
-    if (regionData && regionData.length) {
-        const tbody = section.querySelector('.model-table tbody');
-        if (tbody) {
-            tbody.innerHTML = regionData.map(region => `
-                <tr>
-                    <td>${region.country_name}</td>
-                    <td>${region.request_count}</td>
-                    <td>
-                        <div class="bar-wrapper">
-                            <div class="bar-fill" style="width: ${(region.request_count / maxCount * 100)}%"></div>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
-        }
-    } else {
-        section.innerHTML = '<h2>🌍 API requests by region (top 10)</h2><p class="no-data">No regional request data available yet. Make some API requests to populate.</p>';
+function updateResourcesDisplay(data) {
+    const el = document.getElementById('resources-data');
+    const res = data.resources;
+    
+    el.innerHTML = `
+        <dt>CPU utilization</dt><dd>${res.cpu_percent !== null ? res.cpu_percent.toFixed(1) + '%' : 'N/A'}</dd>
+        <dt>Memory used</dt><dd>${res.memory_used_mb ? res.memory_used_mb.toFixed(2) : 'N/A'} MB</dd>
+        <dt>Memory total</dt><dd>${res.memory_total_mb ? res.memory_total_mb.toFixed(2) : 'N/A'} MB</dd>
+        <dt>Memory load</dt><dd>${res.memory_percent ? res.memory_percent.toFixed(1) : 'N/A'}%</dd>
+    `;
+}
+
+function updateRedisDisplay(data) {
+    const el = document.getElementById('redis-data');
+    const health = data.health;
+    const stats = data.celery.stats;
+    
+    let totalUptime = 0;
+    let workerCount = 0;
+    
+    for (let worker in stats) {
+        workerCount++;
+        totalUptime += (stats[worker].uptime || 0);
     }
-}
-
-function updateTrends(trendData) {
-    const container = document.getElementById('trend-chart');
-    buildChart(trendData.series, trendData.labels, container);
-}
-
-function updateSystem(systemUsage) {
-    const resourcesEl = document.querySelector('.resources-card dl');
-    resourcesEl.innerHTML = `
-        <dt>CPU utilization</dt><dd>${systemUsage.cpu_percent ? systemUsage.cpu_percent + '%' : 'N/A (install psutil)'}</dd>
-        <dt>Memory used</dt><dd>${systemUsage.memory_used_mb || 'N/A'} MB</dd>
-        <dt>Memory total</dt><dd>${systemUsage.memory_total_mb || 'N/A'} MB</dd>
-        <dt>Memory load</dt><dd>${systemUsage.memory_percent || 'N/A'}%</dd>
+    
+    const avgUptime = workerCount > 0 ? Math.floor(totalUptime / workerCount) : 0;
+    const uptimeHours = Math.floor(avgUptime / 3600);
+    const uptimeMinutes = Math.floor((avgUptime % 3600) / 60);
+    
+    el.innerHTML = `
+        <dt>Redis status</dt><dd class="${health.redis ? 'status-ok' : 'status-error'}">${health.redis ? '✓ Connected' : '✗ Disconnected'}</dd>
+        <dt>Workers running</dt><dd>${workerCount}</dd>
+        <dt>Avg uptime</dt><dd>${uptimeHours}h ${uptimeMinutes}m</dd>
     `;
 }
 
-function updateRedis(redisStats) {
-    const redisEl = document.querySelector('.redis-card dl');
-    redisEl.innerHTML = `
-        <dt>Connected clients</dt><dd>${redisStats.connected_clients || 0}</dd>
-        <dt>Memory used</dt><dd>${redisStats.used_memory_human || 'N/A'}</dd>
-        <dt>Total connections</dt><dd>${redisStats.total_connections_received || 0}</dd>
-        <dt>Active WS connections</dt><dd id="active-connections">${redisStats.active_connections || 0}</dd>
+function updateHealthDisplay(data) {
+    const el = document.getElementById('health-data');
+    const res = data.resources;
+    const allOk = res.disk_percent < 90;
+    
+    el.innerHTML = `
+        <dt>Disk usage</dt><dd>${res.disk_percent ? res.disk_percent.toFixed(1) : 'N/A'}%</dd>
+        <dt>Status</dt><dd class="${allOk ? 'status-ok' : 'status-warning'}">${allOk ? '✓ Healthy' : '⚠ Warning'}</dd>
     `;
 }
 
-function updateRequestsStats(requestsPerMinute, activeConnections) {
-    document.getElementById('requests-per-minute').textContent = requestsPerMinute || 0;
-    document.getElementById('active-connections').textContent = activeConnections || 0;
+function updateServicesDisplay(data) {
+    const el = document.getElementById('services-status');
+    const services = data.services || [];
+    
+    if (services.length === 0) {
+        el.innerHTML = '<p class="no-data">No service data available</p>';
+        return;
+    }
+    
+    el.innerHTML = services.map(service => `
+        <div class="service-card">
+            <div class="service-name">${service.name}</div>
+            <div class="service-status status-${service.color || 'unknown'}">${service.status}</div>
+        </div>
+    `).join('');
 }
 
-function updateData(data) {
-    updateHeartbeat(data.heartbeat);
-    updateRegions(data.region_data, data.max_count);
-    updateTrends(data.trend_data);
-    updateSystem(data.system_usage);
-    updateRedis(data.redis_stats);
-    updateRequestsStats(data.requests_per_minute, data.active_connections);
-    document.getElementById('last-update').textContent = new Date(data.timestamp).toLocaleTimeString();
+function updateWorkersDisplay(data) {
+    const el = document.getElementById('workers-status');
+    const stats = data.celery.stats || {};
+    
+    if (Object.keys(stats).length === 0) {
+        el.innerHTML = '<p class="no-data">No workers running</p>';
+        return;
+    }
+    
+    el.innerHTML = Object.keys(stats).map(workerName => {
+        const workerStats = stats[workerName];
+        const taskCount = Object.keys(workerStats.total || {}).length;
+        const uptime = workerStats.uptime || 0;
+        const uptimeHours = Math.floor(uptime / 3600);
+        const uptimeMinutes = Math.floor((uptime % 3600) / 60);
+        
+        return `
+            <div class="worker-card">
+                <div class="worker-name">${workerName}</div>
+                <div class="worker-status status-running">Running</div>
+                <div style="font-size: 0.8em; margin-top: 8px; color: #666;">
+                    Tasks: ${taskCount}<br>
+                    Uptime: ${uptimeHours}h ${uptimeMinutes}m<br>
+                    PID: ${workerStats.pid || 'N/A'}
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
-// WebSocket connection
-let ws = null;
-function connectWebSocket() {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/admin/realtime-monitor/`;
-    
-    ws = new WebSocket(wsUrl);
-    
-    ws.onopen = function(event) {
-        console.log('WebSocket connected');
-        document.getElementById('ws-status').textContent = 'Connected';
-        document.getElementById('ws-status').className = 'status-ok';
-    };
-    
-    ws.onmessage = function(event) {
-        const data = JSON.parse(event.data);
-        updateData(data);
-    };
-    
-    ws.onclose = function(event) {
-        console.log('WebSocket disconnected');
-        document.getElementById('ws-status').textContent = 'Disconnected';
-        document.getElementById('ws-status').className = 'status-error';
-        // Reconnect after 5 seconds
-        setTimeout(connectWebSocket, 5000);
-    };
-    
-    ws.onerror = function(error) {
-        console.error('WebSocket error:', error);
-        document.getElementById('ws-status').textContent = 'Error';
-        document.getElementById('ws-status').className = 'status-error';
-    };
-}
-
-// Fallback polling function
-function startPolling() {
-    setInterval(() => {
-        fetch('/admin/realtime-monitor/?format=json')
-        .then(response => response.json())
-        .then(data => {
-            updateData(data);
-        })
-        .catch(error => console.error('Error updating data:', error));
-    }, 30000);
-}
-
-// Initial chart build
-(function(){
-    const series = {{ trend_series|safe }};
-    const labels = {{ trend_labels|safe }};
-    const container = document.getElementById('trend-chart');
-    buildChart(series, labels, container);
-})();
-
-// Initialize
 document.addEventListener('DOMContentLoaded', function() {
-    // Try WebSocket first
-    if ('WebSocket' in window) {
-        connectWebSocket();
-    } else {
-        // Fallback to polling
-        startPolling();
-    }
-    
-    // Set initial update time
-    document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
-}); 
+    loadMonitorData();
+    setInterval(loadMonitorData, 30000);
+});
 </script>
-
-<style>
-.trend-grid { display: flex; flex-direction: column; gap: 14px; }
-.trend-line { margin-bottom: 16px; }
-.trend-line strong { display: block; margin-bottom: 6px; }
-.trend-points { display: flex; align-items: flex-end; gap: 4px; min-height: 48px; }
-.trend-point { width: 14px; display: inline-block; border-radius: 4px 4px 0 0; }
-.trend-legend span { margin-right: 16px; font-weight: 600; }
-</style>
 {% endblock %}

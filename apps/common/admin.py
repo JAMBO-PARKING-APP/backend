@@ -30,6 +30,17 @@ class CountryAdmin(admin.ModelAdmin):
     ordering = ('name',)
     list_editable = ('is_active',)
     inlines = (PaymentGatewayConfigInline,)
+    actions = ['enable_all_countries', 'disable_all_countries']
+
+    def enable_all_countries(self, request, queryset):
+        Country.objects.update(is_active=True)
+        self.message_user(request, "All countries have been enabled.")
+    enable_all_countries.short_description = "Enable all countries"
+
+    def disable_all_countries(self, request, queryset):
+        Country.objects.update(is_active=False)
+        self.message_user(request, "All countries have been disabled.")
+    disable_all_countries.short_description = "Disable all countries"
 
 @admin.register(SystemConfiguration)
 class SystemConfigurationAdmin(admin.ModelAdmin):
@@ -149,65 +160,10 @@ def realtime_monitor_view(request):
     if not request.user.is_active or not request.user.is_staff:
         return HttpResponseForbidden('Permission denied')
 
-    cache = caches['default']
-    heartbeat = cache.get('celery_heartbeat') or {}
-    region_data = _build_region_request_stats()
-    trend_data = _build_detected_region_trends(region_data[:3])
-    max_count = max((region['request_count'] for region in region_data), default=1)
-    system_usage = _get_system_usage()
-
-    # Additional stats
-    redis_client = get_redis_connection('default')
-    redis_info = redis_client.info()
-    active_connections = len(redis_client.pubsub_channels())
-
-    # Request rate (last minute)
-    now = timezone.now()
-    minute_ago = now - timedelta(minutes=1)
-    request_keys = redis_client.scan_iter('monitor:requests:*')
-    recent_requests = 0
-    for key in request_keys:
-        key_str = key.decode('utf-8')
-        if 'minute' in key_str:
-            recent_requests += int(redis_client.get(key) or 0)
-
-    if request.GET.get('format') == 'json':
-        return JsonResponse({
-            'heartbeat': heartbeat,
-            'region_data': region_data,
-            'trend_data': {
-                'labels': trend_data['labels'],
-                'series': trend_data['series'],
-            },
-            'system_usage': system_usage,
-            'redis_stats': {
-                'connected_clients': redis_info.get('connected_clients', 0),
-                'used_memory_human': redis_info.get('used_memory_human', 'N/A'),
-                'total_connections_received': redis_info.get('total_connections_received', 0),
-            },
-            'active_connections': active_connections,
-            'requests_per_minute': recent_requests,
-            'max_count': max_count,
-            'timestamp': now.isoformat(),
-        })
-
     context = {
         'title': 'Realtime API Monitor',
-        'heartbeat': heartbeat,
-        'region_data': region_data,
-        'trend_labels': json.dumps(trend_data['labels']),
-        'trend_series': json.dumps(trend_data['series']),
-        'region_labels': json.dumps([region['country_name'] for region in region_data]),
-        'region_counts': json.dumps([region['request_count'] for region in region_data]),
-        'system_usage': system_usage,
-        'redis_stats': {
-            'connected_clients': redis_info.get('connected_clients', 0),
-            'used_memory_human': redis_info.get('used_memory_human', 'N/A'),
-            'total_connections_received': redis_info.get('total_connections_received', 0),
-        },
-        'active_connections': active_connections,
-        'requests_per_minute': recent_requests,
-        'max_count': max_count,
+        'api_monitor_url': '/api/admin/system/monitor/',
+        'api_health_url': '/api/admin/system/health/',
     }
 
     return TemplateResponse(request, 'admin/realtime_monitor.html', context)
