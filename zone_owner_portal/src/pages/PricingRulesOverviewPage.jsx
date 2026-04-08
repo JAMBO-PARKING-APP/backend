@@ -19,7 +19,7 @@ export default function PricingRulesOverviewPage() {
       const res = await userApi.get('/parking/owner/zones/');
       // Load pricing rules for each zone
       const zonesWithRules = await Promise.all(
-        res.data.map(async (zone) => {
+        (res.data || []).map(async (zone) => {
           try {
             const rulesRes = await userApi.get(`/parking/owner/zones/${zone.id}/pricing-rules/`);
             return { ...zone, pricing_rules: rulesRes.data };
@@ -110,7 +110,7 @@ export default function PricingRulesOverviewPage() {
           </div>
         ) : (
           <div style={{ display: 'grid', gap: 24 }}>
-            {zones.map(zone => (
+            {(zones || []).map(zone => (
               <div key={zone.id} className="glass-card" style={{ padding: 28 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                   <div>

@@ -281,7 +281,7 @@ export default function DashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.zones.map(z => (
+                      {(data.zones || []).map(z => (
                         <tr key={z.id}>
                           <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{z.name}</td>
                           <td>{z.total_slots}</td>

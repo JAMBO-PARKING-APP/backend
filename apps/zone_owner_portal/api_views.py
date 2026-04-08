@@ -330,12 +330,15 @@ class OwnerDashboardView(APIView):
         # Calculate average session duration properly
         from django.db.models import F, ExpressionWrapper, fields
         from django.db.models.functions import Extract
-        avg_session_duration = completed_sessions_30d.annotate(
+        avg_session_duration_seconds = completed_sessions_30d.annotate(
             duration=ExpressionWrapper(
                 Extract('actual_end_time', 'epoch') - Extract('start_time', 'epoch'),
                 output_field=fields.FloatField()
             )
         ).aggregate(avg_duration=Avg('duration'))['avg_duration']
+        
+        # Convert to hours
+        avg_session_duration_hours = avg_session_duration_seconds / 3600 if avg_session_duration_seconds else 0
         
         avg_revenue_per_session = completed_sessions_30d.aggregate(
             avg_revenue=Avg('final_cost')
@@ -379,7 +382,7 @@ class OwnerDashboardView(APIView):
         
         return {
             'total_sessions_30d': total_sessions_30d,
-            'avg_session_duration_hours': avg_session_duration.total_seconds() / 3600 if avg_session_duration else 0,
+            'avg_session_duration_hours': avg_session_duration_hours,
             'avg_revenue_per_session': float(avg_revenue_per_session),
             'peak_hours': peak_hours,
             'occupancy_trends': occupancy_trends

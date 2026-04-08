@@ -76,7 +76,7 @@ export default function ManageZonesPage() {
           </div>
         ) : (
           <div style={{ display: 'grid', gap: 20 }}>
-            {zones.map(zone => (
+            {(zones || []).map(zone => (
               <div key={zone.id} className="glass-card" style={{ padding: 24 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                   <div>
