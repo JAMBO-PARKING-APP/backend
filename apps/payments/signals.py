@@ -5,7 +5,7 @@ from typing import Optional
 from django.core.cache import cache
 from django.db.models.signals import pre_save, post_save, post_delete
 from django.dispatch import receiver
-from apps.common.models import CountryConfig
+from apps.common.models import Country
 from .models import PaymentGatewayConfig, PaymentGateway
 
 
@@ -69,7 +69,7 @@ def _pgw_invalidate_country_api_cache(sender, **kwargs):
     _invalidate_user_payment_country_cache()
 
 
-@receiver(post_save, sender=CountryConfig)
-@receiver(post_delete, sender=CountryConfig)
+@receiver(post_save, sender=Country)
+@receiver(post_delete, sender=Country)
 def _country_config_invalidate_payment_api_cache(sender, **kwargs):
     _invalidate_user_payment_country_cache()
