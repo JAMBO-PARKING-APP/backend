@@ -7,7 +7,6 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from decimal import Decimal
-
 from .pesapal_service import PesapalService
 from .models import Transaction
 from apps.common.constants import TransactionStatus
@@ -94,7 +93,6 @@ class PesapalCallbackView(APIView):
 
         try:
             transaction = Transaction.objects.get(pesapal_merchant_reference=merchant_reference)
-            
             payment_status = status_response.get('payment_status_description')
             
             if payment_status == "Completed":

@@ -18,10 +18,7 @@ class RegionalContextMiddleware:
     def __call__(self, request):
         set_current_country(None)
         
-        # Store the previous country to detect changes
         previous_country = get_current_country()
-        
-        # 1. Check for explicit header override (Highest Priority for manual selection)
         country_id = request.headers.get('X-Country-ID') or request.headers.get('X-Country-Code')
         if not country_id:
             country_id = request.META.get('HTTP_X_COUNTRY_ID') or request.META.get('HTTP_X_COUNTRY_CODE')
@@ -38,7 +35,6 @@ class RegionalContextMiddleware:
             except (Country.DoesNotExist, Exception) as e:
                 logger.warning(f"RegionalContext: Failed to set country via header {country_id}: {e}")
 
-        # 2. Check for GPS Location Overrides (Fallback if no explicit header)
         if not get_current_country():
             lat = request.headers.get('X-Latitude') or request.META.get('HTTP_X_LATITUDE')
             lon = request.headers.get('X-Longitude') or request.META.get('HTTP_X_LONGITUDE')
@@ -69,7 +65,6 @@ class RegionalContextMiddleware:
                     set_current_country(country)
                     logger.debug(f"RegionalContext: Set country to {country.name} via user profile")
         
-        # Clear wallet cache if country changed
         current_country = get_current_country()
         if request.user.is_authenticated and current_country != previous_country:
             request.user.clear_wallet_cache()

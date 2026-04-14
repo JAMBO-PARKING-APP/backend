@@ -18,7 +18,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.core.cache import caches
-
 from apps.common.constants import ParkingStatus, SlotStatus
 from .models import Zone, ParkingSlot, ParkingSession, Reservation, ZoneApplication, PricingRule
 from .serializers_v2 import (
@@ -78,8 +77,6 @@ class ZoneListAPIView(generics.ListAPIView):
             from apps.common.models import get_current_country
             cache = caches['default']
             country = get_current_country()
-            
-            # Use country ID for cache key to ensure strict isolation
             country_id = str(country.id) if country else 'global'
             is_staff = request.user.is_staff
             cache_key = f"zone_list_v3_country_{country_id}_staff_{is_staff}_{available_only}_lat_{lat}_lng_{lng}"
@@ -89,7 +86,6 @@ class ZoneListAPIView(generics.ListAPIView):
 
         queryset = self.get_queryset()
         
-        # If lat/lng provided, calculate distances and sort
         if lat and lng:
             zones = list(queryset)
             for zone in zones:
@@ -183,7 +179,6 @@ class ZoneAvailabilityAPIView(APIView):
 
         try:
             zone = Zone.objects.get(id=zone_id, is_active=True)
-            
             available_slots = zone.available_slots_count
             occupied_slots = zone.occupied_slots
             reserved_slots = zone.slots.filter(status=SlotStatus.RESERVED).count()
@@ -289,7 +284,6 @@ class StartParkingAPIView(APIView):
                     
                     parking_slot.status = SlotStatus.OCCUPIED
                     parking_slot.save()
-                    
                     session = ParkingSession.objects.create(
                         vehicle=vehicle,
                         zone=zone,
@@ -316,7 +310,6 @@ class StartParkingAPIView(APIView):
                 merchant_reference = str(uuid.uuid4())
                 country = getattr(request.user, 'country', None)
                 pesapal = PesapalService(config_obj=PesapalService.get_config_for_country(country))
-                
                 processor_response = {
                     'parking_intent': {
                         'vehicle_id': str(vehicle.id),
@@ -452,7 +445,6 @@ class ExtendParkingAPIView(APIView):
             )
             wallet_tx.metadata.update({'session_id': str(session.id), 'type': 'extension'})
             wallet_tx.save(update_fields=['metadata'])
-
             session.planned_end_time += timedelta(hours=additional_hours)
             session.estimated_cost += additional_cost
             session.save()
@@ -617,28 +609,7 @@ class StartParkingFromReservationAPIView(APIView):
                 status='confirmed'
             )
             
-            # Skip location check for reservations
-            # lat = request.data.get('latitude')
-            # lng = request.data.get('longitude')
-            
-            # if not lat or not lng:
-            #     # Try to get from cache
-            #     from django.core.cache import cache
-            #     cache_key = f'user:{request.user.id}:location'
-            #     cached_location = cache.get(cache_key)
-            #     if cached_location:
-            #         lat = cached_location['latitude']
-            #         lng = cached_location['longitude']
-            #     else:
-            #         return Response({'error': 'Current location (lat/lng) is required'}, status=status.HTTP_400_BAD_REQUEST)
-                
-            # dist_m = calculate_distance(lat, lng, reservation.zone.latitude, reservation.zone.longitude)
-            # max_dist = reservation.zone.radius_meters + 100 
-            
-            # if dist_m > max_dist:
-            #     return Response({
-            #         'error': f'You are too far from {reservation.zone.name} to start this session. Distance: {int(dist_m)}m'
-            #         }, status=status.HTTP_400_BAD_REQUEST)
+
 
             if ParkingSession.objects.filter(vehicle=reservation.vehicle, status=ParkingStatus.ACTIVE).exists():
                  return Response({'error': 'An active session already exists for this vehicle'}, status=status.HTTP_400_BAD_REQUEST)
@@ -798,7 +769,6 @@ class ZoneCurrentRateAPIView(APIView):
             current_rate = zone.get_current_hourly_rate()
             applicable_rules = []
 
-            # Get applicable rules for debugging/transparency
             for rule in zone.pricing_rules.filter(is_active=True).order_by('-priority'):
                 if rule.is_applicable():
                     applicable_rules.append({
@@ -833,11 +803,8 @@ class ZoneEditAPIView(generics.RetrieveUpdateAPIView):
 
     def perform_update(self, serializer):
         zone = serializer.save()
-        
-        # Log zone updates for audit trail
         logger.info(f"Zone {zone.id} updated by owner {self.request.user.id}: {serializer.validated_data}")
         
-        # If dynamic pricing was enabled/disabled, notify about potential impact
         if 'supports_dynamic_pricing' in serializer.validated_data:
             new_dynamic_pricing = serializer.validated_data['supports_dynamic_pricing']
             if new_dynamic_pricing != zone.supports_dynamic_pricing:

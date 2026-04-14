@@ -22,3 +22,12 @@ parking_officer_app/
 parking_user_app/
 mantis-free-react-admin-template-master/
 website/
+.env
+db.sqlite3
+google-services.json
+google-services(1).json
+jambo-parking-d6e88-firebase-adminsdk-fbsvc-9ba12edacb.json
+.env.example
+celerybeat-schedule
+celerybeat-schedule-shm
+celerybeat-schedule-wal

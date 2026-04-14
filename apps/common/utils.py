@@ -42,7 +42,6 @@ def get_country_from_coords(latitude, longitude):
     Rounds lat/lon to 1 decimal place (~11km) to increase cache hit rate.
     """
     try:
-        # 1. Check if we have this region cached
         cache_lat = round(float(latitude), 1)
         cache_lon = round(float(longitude), 1)
         cache_key = f"geo_country_{cache_lat}_{cache_lon}"
@@ -53,7 +52,6 @@ def get_country_from_coords(latitude, longitude):
                 return None
             return Country.objects.filter(id=cached_id, is_active=True).first()
 
-        # 2. Not in cache, query the database for eligible countries
         countries = Country.objects.filter(
             latitude__isnull=False, 
             longitude__isnull=False, 
@@ -69,12 +67,10 @@ def get_country_from_coords(latitude, longitude):
                 min_distance = dist
                 closest_country = country
 
-        # Limit to 500km radius for a sensible match
         res_country = None
         if closest_country and min_distance < 500000: 
              res_country = closest_country
         
-        # 3. Store result in cache (1 hour timeout for geo lookups)
         if res_country:
             cache.set(cache_key, str(res_country.id), timeout=3600)
         else:

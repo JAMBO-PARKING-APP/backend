@@ -24,7 +24,6 @@ class LoyaltyService:
             return 0
             
         account = LoyaltyService.get_or_create_account(user)
-        
         account.balance += points_to_award
         account.lifetime_points += points_to_award
         

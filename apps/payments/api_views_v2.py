@@ -16,7 +16,6 @@ from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from .serializers_v2 import (
     TransactionSerializer, PaymentMethodSerializer, InvoiceSerializer,
     TransactionListSerializer, PesapalPaymentSerializer, WalletTransactionSerializer,
@@ -886,8 +885,6 @@ class OfficerInitiatePesapalPaymentAPIView(APIView):
     def post(self, request):
         from apps.accounts.models import User
         from apps.common.constants import UserRole
-        
-        # Check if user is officer
         user_role = getattr(request.user, 'role', None)
         if user_role != UserRole.OFFICER:
             return Response(
@@ -936,7 +933,6 @@ class OfficerInitiatePesapalPaymentAPIView(APIView):
         country = getattr(request.user, 'country', None)
         pesapal_config = PesapalService.get_config_for_country(country)
         pesapal = PesapalService(config_obj=pesapal_config) if pesapal_config else PesapalService()
-
         currency = country.currency if country else "UGX"
         response = pesapal.create_payment(
             amount=guest_session.estimated_cost,
@@ -977,7 +973,6 @@ class OfficerPesapalCallbackAPIView(APIView):
     def get(self, request):
         import logging
         logger = logging.getLogger(__name__)
-        
         order_tracking_id = request.query_params.get('OrderTrackingId')
         merchant_reference = request.query_params.get('OrderMerchantReference')
 

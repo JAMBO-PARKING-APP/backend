@@ -21,8 +21,7 @@ class UserNotificationsAPIView(generics.ListAPIView):
 
     def get(self, request, *args, **kwargs):
         try:
-            # This would fetch from a Notification model
-            # For now, return empty list
+
             notifications = []
 
             return Response({
@@ -49,8 +48,7 @@ class NotificationActionAPIView(APIView):
     def post(self, request, notification_id):
         """Mark notification as read"""
         try:
-            # Update notification status
-            logger.info(f"✅ Notification {notification_id} marked as read")
+            logger.info(f" Notification {notification_id} marked as read")
             return Response({
                 'message': 'Notification marked as read',
             }, status=status.HTTP_200_OK)
@@ -65,7 +63,7 @@ class NotificationActionAPIView(APIView):
     def delete(self, request, notification_id):
         """Delete notification"""
         try:
-            logger.info(f"✅ Notification {notification_id} deleted")
+            logger.info(f" Notification {notification_id} deleted")
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         except Exception as e:
@@ -86,9 +84,8 @@ class UserProfilePictureAPIView(APIView):
     def post(self, request):
         """Upload profile picture"""
         try:
-            # Handle file upload
-            # For now, just return success
-            logger.info(f"✅ Profile picture uploaded for {request.user.phone}")
+
+            logger.info(f" Profile picture uploaded for {request.user.phone}")
             return Response({
                 'message': 'Profile picture updated',
                 'url': '/media/profile_pictures/default.jpg'

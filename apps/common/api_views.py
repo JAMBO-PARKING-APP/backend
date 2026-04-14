@@ -308,12 +308,10 @@ class CountryTermsAPIView(APIView):
         language = request.GET.get('language', 'en')
         
         if not user_country:
-            # Return default terms if no country set
             terms = CountryTermsService._get_default_terms()
         else:
             terms = CountryTermsService.get_country_specific_terms(user_country)
-        
-        # Get privacy policy
+
         privacy_policy = CountryTermsService.get_privacy_policy_for_country(user_country)
         
         return Response({

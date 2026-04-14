@@ -92,10 +92,8 @@ class ParkingConsumer(AsyncWebsocketConsumer):
                 lat = float(data.get('latitude'))
                 lon = float(data.get('longitude'))
                 
-                # 1. Update UserLocation record (Async safe)
                 await self.save_user_location(lat, lon)
                 
-                # 2. Check for zone entry
                 zone_data = await self.check_zone_proximity(lat, lon)
                 if zone_data:
                     await self.send(text_data=json.dumps({
@@ -104,7 +102,6 @@ class ParkingConsumer(AsyncWebsocketConsumer):
                         'message': f"You are in {zone_data['name']}. Start parking?"
                     }))
                     
-                    # 3. Trigger a push notification if they aren't looking at the app
                     await self.trigger_entry_push(zone_data)
 
         except Exception as e:
@@ -132,7 +129,6 @@ class ParkingConsumer(AsyncWebsocketConsumer):
         
         for zone in zones:
             dist = calculate_distance(lat, lon, zone.latitude, zone.longitude)
-            # If user is within the zone radius (default 50m if not set)
             radius = getattr(zone, 'radius_meters', 50)
             if dist <= radius:
                 return ZoneSerializer(zone).data

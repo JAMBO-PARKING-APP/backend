@@ -6,7 +6,6 @@ from django.conf import settings
 from datetime import timedelta
 import json
 import logging
-
 from apps.analytics.models import RevenueRecord
 from apps.common.tasks import check_system_health
 

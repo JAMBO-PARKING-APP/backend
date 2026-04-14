@@ -120,7 +120,6 @@ def send_realtime_monitor_updates():
     from .api_views import _get_system_usage
 
     try:
-        # Gather data synchronously
         cache = caches['default']
         heartbeat = cache.get('celery_heartbeat') or {}
         region_data = _build_region_request_stats()
@@ -162,7 +161,6 @@ def send_realtime_monitor_updates():
             'timestamp': now.isoformat(),
         }
         
-        # Send to WebSocket group
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             'realtime_monitor',

@@ -10,13 +10,11 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from .models import User
 from .serializers_v2 import UserProfileSerializer
 from apps.accounts.models import UserLocation
 from apps.common.models import Country
 from apps.common.serializers import CountrySerializer
-
 logger = logging.getLogger(__name__)
 
 
@@ -50,7 +48,6 @@ class UserLocationAPIView(APIView):
 
             user = request.user
             
-            # Store location in database
             location = UserLocation.objects.create(
                 user=user,
                 latitude=latitude,
@@ -60,7 +57,6 @@ class UserLocationAPIView(APIView):
                 timestamp=timezone.now()
             )
 
-            # Cache location in Redis (TTL: 5 minutes)
             cache_key = f'user:{user.id}:location'
             cache.set(cache_key, {
                 'latitude': latitude,
@@ -69,7 +65,7 @@ class UserLocationAPIView(APIView):
                 'timestamp': timezone.now().isoformat(),
             }, timeout=300)
 
-            logger.info(f"✅ Location updated for user {user.phone}: ({latitude}, {longitude})")
+            logger.info(f" Location updated for user {user.phone}: ({latitude}, {longitude})")
 
             return Response({
                 'message': 'Location updated',
@@ -105,7 +101,6 @@ class UserLocationAPIView(APIView):
         if cached_location:
             return Response(cached_location, status=status.HTTP_200_OK)
         
-        # Fallback to last location from database
         try:
             last_location = UserLocation.objects.filter(
                 user=user,
@@ -162,25 +157,18 @@ class CountryDetectionAPIView(APIView):
         """
         user = request.user
 
-        # Option 1: Detect from coordinates
         if 'latitude' in request.data and 'longitude' in request.data:
             latitude = float(request.data.get('latitude'))
             longitude = float(request.data.get('longitude'))
-            
-            # Simple country detection (Uganda is ~0.4°N, 32.5°E)
-            # In production, use a proper geocoding service like geopy
             detected_country = self._detect_country_from_coords(latitude, longitude)
             
             if detected_country:
                 user.country = detected_country
                 user.save()
                 
-                # Cache in Redis (TTL: 24 hours)
                 cache_key = f'user:{user.id}:country'
-                cache.set(cache_key, detected_country.id, timeout=86400)
-                
-                logger.info(f"✅ Country auto-detected for {user.phone}: {detected_country.name}")
-                
+                cache.set(cache_key, detected_country.id, timeout=21600)
+                logger.info(f" Country auto-detected for {user.phone}: {detected_country.name}")
                 serializer = CountrySerializer(detected_country)
                 return Response({
                     'message': 'Country detected',
@@ -188,19 +176,15 @@ class CountryDetectionAPIView(APIView):
                     'auto_detected': True
                 }, status=status.HTTP_200_OK)
         
-        # Option 2: Manual country selection
         elif 'country_id' in request.data:
             country_id = request.data.get('country_id')
             try:
                 country = Country.objects.get(id=country_id, is_active=True)
                 user.country = country
                 user.save()
-                
                 cache_key = f'user:{user.id}:country'
-                cache.set(cache_key, country.id, timeout=86400)
-                
-                logger.info(f"✅ Country manually set for {user.phone}: {country.name}")
-                
+                cache.set(cache_key, country.id, timeout=21600)
+                logger.info(f" Country manually set for {user.phone}: {country.name}")
                 serializer = CountrySerializer(country)
                 return Response({
                     'message': 'Country updated',
@@ -224,15 +208,11 @@ class CountryDetectionAPIView(APIView):
         Simple country detection based on coordinates
         In production, use geopy or a proper geocoding service
         """
-        # Uganda: -1° to 4°N, 29° to 35°E
         if -1 <= latitude <= 4 and 29 <= longitude <= 35:
             return Country.objects.filter(iso_code='UG', is_active=True).first()
         
-        # Kenya: -5° to 5°N, 33° to 42°E
         if -5 <= latitude <= 5 and 33 <= longitude <= 42:
             return Country.objects.filter(iso_code='KE', is_active=True).first()
-        
-        # Add more countries as needed
         
         return None
 
@@ -313,7 +293,7 @@ class ReservationDetailAPIView(APIView):
             reservation.status = 'cancelled'
             reservation.save()
             
-            logger.info(f"✅ Reservation {pk} cancelled by user {request.user.phone}")
+            logger.info(f" Reservation {pk} cancelled by user {request.user.phone}")
             
             return Response({
                 'message': 'Reservation cancelled',
@@ -349,7 +329,6 @@ class HostParkingDashboardAPIView(APIView):
         from apps.parking.models import Zone, Reservation
         
         try:
-            # Get user's zones
             zones = Zone.objects.filter(owner=user)
             
             # Calculate stats
@@ -362,7 +341,6 @@ class HostParkingDashboardAPIView(APIView):
                 status__in=['confirmed', 'active']
             ).count()
             
-            # Revenue (from completed reservations)
             from django.db.models import Sum
             revenue = Reservation.objects.filter(
                 zone__owner=user,
@@ -433,7 +411,6 @@ class HostZoneSettingsAPIView(APIView):
         try:
             zone = Zone.objects.get(id=zone_id, owner=request.user)
             
-            # Update allowed fields
             if 'name' in request.data:
                 zone.name = request.data['name']
             if 'hourly_rate' in request.data:
@@ -443,7 +420,7 @@ class HostZoneSettingsAPIView(APIView):
             
             zone.save()
             
-            logger.info(f"✅ Zone {zone_id} settings updated by host {request.user.phone}")
+            logger.info(f" Zone {zone_id} settings updated by host {request.user.phone}")
             
             return Response({
                 'message': 'Zone settings updated',

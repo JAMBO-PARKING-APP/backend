@@ -20,8 +20,6 @@ urlpatterns = [
     path('sessions/<uuid:session_id>/confirm-payment/', api_views_v2.ConfirmGuestSessionPaymentAPIView.as_view(), name='officer-confirm-payment'),
     path('search/plate/', api_views_v2.OfficerVehicleStatusAPIView.as_view(), name='officer-search-plate'),
     path('location/', accounts_views.UserLocationAPIView.as_view(), name='officer-location'),
-    
-    # Officer Payment Endpoints
     path('payments/pesapal/initiate/', payments_views.OfficerInitiatePesapalPaymentAPIView.as_view(), name='officer-pesapal-initiate'),
     path('payments/pesapal/callback/', payments_views.OfficerPesapalCallbackAPIView.as_view(), name='officer-pesapal-callback'),
 ]

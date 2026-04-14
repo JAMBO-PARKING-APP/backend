@@ -6,7 +6,6 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth import get_user_model
 import logging
-
 from apps.analytics.models import RevenueRecord
 from apps.parking.models import Zone
 from apps.enforcement.models import Violation, OfficerStatus
@@ -22,7 +21,6 @@ def send_weekly_admin_report():
     """
     today = timezone.now().date()
     start_date = today - timedelta(days=7)
-    
     logger.info(f"Generating weekly report for period: {start_date} to {today}")
     weekly_stats = RevenueRecord.objects.filter(
         date__gte=start_date,
@@ -42,7 +40,7 @@ def send_weekly_admin_report():
     ).count()
     active_zones = Zone.objects.filter(is_active=True).count()
     active_officers = User.objects.filter(role='officer', is_active=True).count()
-    subject = f"[Weekly Report] Jambo Park Metrics ({start_date} - {today})"
+    subject = f"[Weekly Report] Space Park Metrics ({start_date} - {today})"
     
     html_message = f"""
     <html>

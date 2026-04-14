@@ -4,13 +4,11 @@ from django.contrib.auth import authenticate
 from django.db.models import Sum, Count, Avg
 from django.utils import timezone
 from datetime import timedelta
-
 from rest_framework import status, generics
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-
 from .models import ZoneApplicationPublic, OwnerBankDetails
 from .serializers import (
     ZoneApplicationPublicSerializer,
@@ -287,7 +285,6 @@ class OwnerDashboardView(APIView):
             for r in recent_reservations
         ]
 
-        # Get additional analytics
         portfolio_analytics = self._get_portfolio_analytics(zones, zone_ids, last_30_days)
         zone_comparison = self._get_zone_comparison(zones, last_30_days)
         optimization_suggestions = self._get_optimization_suggestions(zones)
@@ -317,8 +314,6 @@ class OwnerDashboardView(APIView):
         """Calculate portfolio-wide analytics"""
         from apps.parking.models import ParkingSession
         from apps.payments.models import WalletTransaction
-        
-        # Overall portfolio metrics
         total_sessions_30d = ParkingSession.objects.filter(
             zone_id__in=zone_ids, start_time__gte=last_30_days
         ).count()
@@ -327,7 +322,6 @@ class OwnerDashboardView(APIView):
             zone_id__in=zone_ids, status='completed', start_time__gte=last_30_days
         )
         
-        # Calculate average session duration properly
         from django.db.models import F, ExpressionWrapper, fields
         from django.db.models.functions import Extract
         avg_session_duration_seconds = completed_sessions_30d.annotate(
@@ -337,14 +331,11 @@ class OwnerDashboardView(APIView):
             )
         ).aggregate(avg_duration=Avg('duration'))['avg_duration']
         
-        # Convert to hours
         avg_session_duration_hours = avg_session_duration_seconds / 3600 if avg_session_duration_seconds else 0
-        
         avg_revenue_per_session = completed_sessions_30d.aggregate(
             avg_revenue=Avg('final_cost')
         )['avg_revenue'] or Decimal('0')
         
-        # Peak hours analysis
         from django.db.models.functions import ExtractHour
         peak_hours = list(
             ParkingSession.objects.filter(
@@ -356,9 +347,8 @@ class OwnerDashboardView(APIView):
             .values('hour', 'count')
         )
         
-        # Occupancy trends
         occupancy_trends = []
-        for i in range(7):  # Last 7 days
+        for i in range(7):  
             day = timezone.now() - timedelta(days=i)
             day_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
             day_end = day_start + timedelta(days=1)
@@ -418,7 +408,6 @@ class OwnerDashboardView(APIView):
                 'supports_reservations': zone.supports_reservations
             })
         
-        # Sort by revenue descending
         comparison_data.sort(key=lambda x: x['revenue_30d'], reverse=True)
         
         return comparison_data
@@ -428,7 +417,6 @@ class OwnerDashboardView(APIView):
         suggestions = []
         
         for zone in zones:
-            # Check for low utilization
             if zone.occupancy_rate < 30:
                 suggestions.append({
                     'type': 'low_utilization',
@@ -438,7 +426,6 @@ class OwnerDashboardView(APIView):
                     'severity': 'medium'
                 })
             
-            # Check for high utilization without dynamic pricing
             if zone.occupancy_rate > 80 and not zone.supports_dynamic_pricing:
                 suggestions.append({
                     'type': 'high_demand_no_dynamic_pricing',
@@ -448,7 +435,6 @@ class OwnerDashboardView(APIView):
                     'severity': 'high'
                 })
             
-            # Check for zones without reservations that might benefit
             if not zone.supports_reservations and zone.occupancy_rate > 60:
                 suggestions.append({
                     'type': 'enable_reservations',
@@ -458,7 +444,6 @@ class OwnerDashboardView(APIView):
                     'severity': 'low'
                 })
             
-            # Check pricing competitiveness
             avg_rate = sum(z.hourly_rate for z in zones) / len(zones)
             if zone.hourly_rate < avg_rate * Decimal('0.8'):
                 suggestions.append({
@@ -469,16 +454,13 @@ class OwnerDashboardView(APIView):
                     'severity': 'low'
                 })
         
-        # Portfolio-level suggestions
         if len(zones) > 1:
-            # Check for geographic concentration
             latitudes = [z.latitude for z in zones]
             longitudes = [z.longitude for z in zones]
-            
             lat_range = max(latitudes) - min(latitudes)
             lon_range = max(longitudes) - min(longitudes)
             
-            if lat_range < 0.01 and lon_range < 0.01:  # Very close together
+            if lat_range < 0.01 and lon_range < 0.01:
                 suggestions.append({
                     'type': 'geographic_concentration',
                     'zone_id': None,

@@ -51,16 +51,12 @@ class TimeBasedPricingRule(PricingRule):
         current_time_only = current_time.time()
         current_day = current_time.weekday()
 
-        # Check if current day is in the allowed days
         if self.days_of_week and current_day not in self.days_of_week:
             return False
 
-        # Check if current time is within the time range
         if self.start_time <= self.end_time:
-            # Same day range
             return self.start_time <= current_time_only <= self.end_time
         else:
-            # Overnight range (e.g., 22:00 to 06:00)
             return current_time_only >= self.start_time or current_time_only <= self.end_time
 
 class DemandBasedPricingRule(PricingRule):
@@ -75,7 +71,6 @@ class DemandBasedPricingRule(PricingRule):
         if not super().is_applicable():
             return False
 
-        # Calculate current occupancy
         zone = self.zone
         total_slots = zone.total_slots
         if total_slots == 0:
@@ -205,24 +200,20 @@ class Zone(RegionalModel, BaseModel):
         if current_time is None:
             current_time = timezone.now()
 
-        # Get all active pricing rules for this zone, ordered by priority
         applicable_rules = []
         for rule in self.pricing_rules.filter(is_active=True).order_by('-priority'):
             if rule.is_applicable(current_time):
                 applicable_rules.append(rule)
 
-        # Return the rate from the highest priority applicable rule
         if applicable_rules:
             return applicable_rules[0].hourly_rate
 
-        # Fallback to base rate if no rules apply
         return self.hourly_rate
     
     @property
     def google_maps_url(self):
         """Returns a Google Maps navigation URL for this zone."""
         if self.latitude and self.longitude:
-            # Use navigation intent for better mobile experience
             return f"https://www.google.com/maps/dir/?api=1&destination={self.latitude},{self.longitude}"
         return None
 
@@ -314,11 +305,9 @@ class ParkingSession(RegionalModel, BaseModel):
     guest_license_plate = models.CharField(max_length=20, null=True, blank=True, help_text=_("Plate number for non-app users"))
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE, related_name='sessions')
     parking_slot = models.ForeignKey(ParkingSlot, on_delete=models.SET_NULL, null=True, blank=True)
-    
     start_time = models.DateTimeField(default=timezone.now, db_index=True)
     planned_end_time = models.DateTimeField()
     actual_end_time = models.DateTimeField(null=True, blank=True, db_index=True)
-    
     status = models.CharField(max_length=20, choices=ParkingStatus.choices, default=ParkingStatus.ACTIVE, db_index=True)
     estimated_cost = models.DecimalField(max_digits=12, decimal_places=2)
     final_cost = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
@@ -382,8 +371,6 @@ class ParkingSession(RegionalModel, BaseModel):
         duration_hours = Decimal(str(duration_seconds / 3600))
         if duration_hours < Decimal('0.25'):
             duration_hours = Decimal('0.25')
-
-        # Use dynamic pricing if available, otherwise fall back to base rate
         current_rate = self.zone.get_current_hourly_rate(self.start_time)
         cost = (duration_hours * current_rate).quantize(Decimal('0.01'))
         return cost
@@ -540,7 +527,7 @@ class ParkingSession(RegionalModel, BaseModel):
         expiry = local_expiry.strftime("%Y-%m-%d %H:%M")
         
         data = [
-            "JAMBO PARK VERIFIED PASS",
+            "SPACE VERIFIED PASS",
             f"ID: {self.id}",
             f"Driver: {driver.full_name}",
             f"Phone: {driver.phone}",
@@ -564,7 +551,6 @@ class Reservation(RegionalModel, BaseModel):
     vehicle = models.ForeignKey('accounts.Vehicle', on_delete=models.CASCADE, related_name='reservations')
     zone = models.ForeignKey(Zone, on_delete=models.CASCADE, related_name='reservations')
     parking_slot = models.ForeignKey(ParkingSlot, on_delete=models.SET_NULL, null=True, blank=True)
-    
     reserved_from = models.DateTimeField(db_index=True)
     reserved_until = models.DateTimeField(db_index=True)
     cost = models.DecimalField(max_digits=12, decimal_places=2)

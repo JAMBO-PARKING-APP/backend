@@ -5,7 +5,6 @@ from datetime import timedelta
 import logging
 from decimal import Decimal
 import math
-
 from django.core.cache import caches
 from apps.parking.models import ParkingSession, Reservation, Zone, ParkingSlot
 from apps.accounts.models import User, UserLocation
@@ -130,7 +129,6 @@ def notify_upcoming_reservations():
     """
     now = timezone.now()
     thirty_mins_later = now + timedelta(minutes=30)
-    
     upcoming = Reservation.objects.filter(
         status='confirmed',
         reserved_from__lte=thirty_mins_later,

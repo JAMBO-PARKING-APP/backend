@@ -14,7 +14,6 @@ from django.utils import timezone
 from django.db.models import Q
 from django.core.mail import EmailMessage
 from django.conf import settings
-
 from rest_framework import status, generics, viewsets, serializers
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -22,7 +21,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
-
 from .models import User, Vehicle, OTPCode
 from .serializers_v2 import (
     UserProfileSerializer, UpdateProfileSerializer, RegisterSerializer,
@@ -142,15 +140,11 @@ class VerifyOTPAPIView(APIView):
             
             otp_obj.is_used = True
             otp_obj.save()
-            
             user.is_verified = True
-            
             device_id = request.data.get('device_id')
             device_info = request.data.get('device_info', '')
-            
             refresh = RefreshToken.for_user(user)
             access_token = refresh.access_token
-            
             token_jti = str(access_token.get('jti', ''))
             
             if device_id:
@@ -204,10 +198,8 @@ class LoginAPIView(APIView):
             user.device_os = request.data.get('device_os', 'android')
             user.last_login_device = device_info or request.META.get('HTTP_USER_AGENT', '')[:255]
             user.save()
-            
-            # Log what we're returning
             user_data = UserProfileSerializer(user).data
-            logger.info(f"✅ Login successful for {user.phone}")
+            logger.info(f"  Login successful for {user.phone}")
             logger.info(f"  JTI: {token_jti[:30]}...")
             logger.info(f"  User data fields: {list(user_data.keys())}")
             logger.info(f"  Has country_details: {'country_details' in user_data}")
@@ -350,7 +342,7 @@ class ResendOTPAPIView(APIView):
             )
             
             try:
-                subject = "Space Park Verification Code"
+                subject = "Space  Verification Code"
                 message = f"Your Space Park verification code is: {otp_code}\n\nThis code will expire in 10 minutes."
                 html_content = f"""
                 <!DOCTYPE html>
@@ -371,7 +363,7 @@ class ResendOTPAPIView(APIView):
                                         <td style="padding: 20px 40px 40px 40px;">
                                             <h1 style="color: #1a1f36; font-size: 24px; font-weight: 600; margin: 0; text-align: center;">Verification Code</h1>
                                             <p style="color: #4f566b; font-size: 16px; line-height: 24px; margin-top: 20px; text-align: center;">
-                                                You requested a new verification code. Please use the following code to continue with your Space Park session.
+                                                You requested a new verification code. Please use the following code to continue with your Space session.
                                             </p>
                                             
                                             <div style="margin: 30px 0; padding: 25px; background-color: #f8fbff; border-radius: 8px; text-align: center;">
@@ -386,7 +378,7 @@ class ResendOTPAPIView(APIView):
                                     <!-- Footer -->
                                     <tr>
                                         <td style="padding: 20px 40px; background-color: #f7fafc; text-align: center; border-top: 1px solid #e3e8ee;">
-                                            <p style="color: #a3acb9; font-size: 12px; margin: 0;">&copy; 2026 Space Park Systems. All rights reserved.</p>
+                                            <p style="color: #a3acb9; font-size: 12px; margin: 0;">&copy; 2026 Space Systems. All rights reserved.</p>
                                             <p style="color: #a3acb9; font-size: 12px; margin: 5px 0 0 0;">Did not request this? You can safely ignore this email.</p>
                                         </td>
                                     </tr>

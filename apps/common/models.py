@@ -23,7 +23,6 @@ class Country(BaseModel):
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     
-    # Payment configuration
     payment_methods = models.JSONField(
         default=list,
         help_text="Available payment methods: ['wallet', 'pesapal', 'mpesa', 'flutterwave', 'paystack', 'stripe']"
@@ -92,7 +91,6 @@ class SystemConfiguration(RegionalModel, models.Model):
         verbose_name_plural = 'System Configuration'
     
     def save(self, *args, **kwargs):
-        # Allow one configuration per country
         if not self.pk:
             country = self.country or get_current_country()
             if country and SystemConfiguration.all_objects.filter(country=country).exists():
@@ -106,7 +104,6 @@ class SystemConfiguration(RegionalModel, models.Model):
         """Get or create system configuration for the current country"""
         country = get_current_country()
         if not country:
-            # Fallback to the first found configuration or create a global one
             config = cls.all_objects.first()
             if not config:
                 config = cls.all_objects.create(pk=1)

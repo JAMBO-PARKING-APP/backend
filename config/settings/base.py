@@ -296,7 +296,7 @@ PHONENUMBER_DEFAULT_REGION = 'GH'
 PESAPAL_CONSUMER_KEY = config('PESAPAL_CONSUMER_KEY', default='')
 PESAPAL_CONSUMER_SECRET = config('PESAPAL_CONSUMER_SECRET', default='')
 PESAPAL_SANDBOX = config('PESAPAL_SANDBOX', default=True, cast=bool)
-PESAPAL_CALLBACK_URL = config('PESAPAL_CALLBACK_URL', default='https://p-space.ai/api/user/payments/pesapal/callback/')
+PESAPAL_CALLBACK_URL = config('PESAPAL_CALLBACK_URL', default='https://backend.p-space.ai/api/user/payments/pesapal/callback/')
 PESAPAL_IPN_ID = config('PESAPAL_IPN_ID', default='')
 PESAPAL_USD_EXCHANGE_RATE = config('PESAPAL_USD_EXCHANGE_RATE', default=3700, cast=int)
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')

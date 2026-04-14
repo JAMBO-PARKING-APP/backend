@@ -21,11 +21,8 @@ class DeviceSessionJWTAuthentication(JWTAuthentication):
 
         user, token = auth_result
         logger.debug(f"AUTH CHECK for {user.phone} on {request.path}")
-
-        # Get the JWT ID (jti) from the token
         token_jti = token.get('jti')
         current_session_token = getattr(user, 'current_session_token', None)
-        
         logger.debug(f"  Token JTI: {str(token_jti)[:30]}...")
         logger.debug(f"  DB Session: {str(current_session_token)[:30] if current_session_token else 'NULL'}...")
         
