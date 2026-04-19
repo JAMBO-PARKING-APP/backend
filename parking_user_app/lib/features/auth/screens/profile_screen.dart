@@ -8,8 +8,10 @@ import 'package:parking_user_app/features/settings/screens/language_selection_sc
 import 'package:parking_user_app/features/support/screens/support_screen.dart';
 import 'package:parking_user_app/features/auth/services/auth_service.dart';
 import 'package:provider/provider.dart';
+import 'package:parking_user_app/core/dialog_helper.dart';
 import 'package:parking_user_app/features/parking/providers/country_provider.dart';
 import 'package:parking_user_app/core/storage_manager.dart';
+import 'package:parking_user_app/core/constants.dart';
 import 'package:parking_user_app/features/parking/providers/parking_session_provider.dart';
 import 'package:parking_user_app/features/parking/providers/reservation_provider.dart';
 import 'package:parking_user_app/features/parking/providers/zone_provider.dart';
@@ -199,7 +201,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 18),
           _ProfileCard(
-            title: 'Session',
+            title: 'Account & Support',
             child: Column(
               children: [
                 FilledButton.tonalIcon(
@@ -217,6 +219,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   icon: const Icon(Icons.logout_rounded),
                   label: const Text('Sign out'),
                 ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _confirmDeleteAccount,
+                  icon: const Icon(Icons.delete_forever_rounded, color: AppTheme.errorColor),
+                  label: const Text('Delete Account', style: TextStyle(color: AppTheme.errorColor)),
+                  style: OutlinedButton.styleFrom(side: const BorderSide(color: AppTheme.errorColor)),
+                ),
+                const SizedBox(height: 24),
+                Text('App Version: ${AppConstants.appVersion}', style: const TextStyle(color: Colors.grey)),
               ],
             ),
           ),
@@ -263,9 +274,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       );
                   if (!mounted) return;
                   Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(ok ? 'Vehicle added.' : 'Failed to add vehicle.')),
-                  );
+                  if (ok) {
+                    DialogHelper.showSuccess(context, 'Success', 'Vehicle added.');
+                  } else {
+                    DialogHelper.showError(context, 'Failed', 'Failed to add vehicle.');
+                  }
                 },
                 child: const Text('Save vehicle'),
               ),
@@ -274,6 +287,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       },
     );
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Account'),
+        content: const Text('Are you sure you want to permanently delete your account? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.errorColor),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete permanently'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      if (!mounted) return;
+      final result = await AuthService().deleteAccount();
+      if (!mounted) return;
+      if (result['success'] == true) {
+        DialogHelper.showSuccess(context, 'Account Deleted', 'Your account has been deleted.');
+      } else {
+        DialogHelper.showError(context, 'Delete Failed', result['message'] ?? 'Failed to delete account.');
+      }
+    }
   }
 
   Future<void> _pickAndUploadProfilePic() async {
@@ -290,22 +335,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (result['success'] == true) {
           if (mounted) {
             await context.read<AuthProvider>().checkAuth();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Profile picture updated.')),
-            );
+            DialogHelper.showSuccess(context, 'Success', 'Profile picture updated.');
           }
         } else {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(result['message'] ?? 'Upload failed.')),
-            );
+            DialogHelper.showError(context, 'Failed', result['message'] ?? 'Upload failed.');
           }
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error uploading image.')),
-          );
+          DialogHelper.showError(context, 'Error', 'Error uploading image.');
         }
       } finally {
         if (mounted) setState(() => _isUploadingProfilePic = false);

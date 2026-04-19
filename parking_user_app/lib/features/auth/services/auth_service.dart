@@ -179,6 +179,19 @@ class AuthService {
     await _storageManager.clearAuthData();
   }
 
+  Future<Map<String, dynamic>> deleteAccount() async {
+    try {
+      final response = await _apiClient.delete('user/auth/delete-account/');
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        await logout();
+        return {'success': true};
+      }
+      return {'success': false, 'message': 'Failed to delete account'};
+    } catch (e) {
+      return {'success': false, 'message': 'Error deleting account'};
+    }
+  }
+
   Future<User?> getProfile() async {
     try {
       final response = await _apiClient.get('user/profile/');

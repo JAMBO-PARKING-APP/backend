@@ -457,31 +457,42 @@ def cleanup_slot_statuses():
     Autonomy task: A self-healing watchdog that resets 'stuck' slots.
     If a slot is RESERVED/OCCUPIED but has no active session/reservation, reset it.
     """
-    cutoff = timezone.now() - timedelta(minutes=20)
-    stuck_reserved = ParkingSlot.objects.filter(
-        status=SlotStatus.RESERVED,
-        modified_at__lt=cutoff
-    )
+    from apps.parking.models import ParkingSlot, ParkingSession, Reservation
+    from apps.common.constants import ParkingStatus, SlotStatus
     
+    now = timezone.now()
     reset_count = 0
-    for slot in stuck_reserved:
-        if not Reservation.objects.filter(
-            parking_slot=slot, 
-            status__in=['pending_payment', 'confirmed'],
-            is_active=True
-        ).exists():
-            slot.status = SlotStatus.AVAILABLE
-            slot.save()
-            reset_count += 1
-            
+    
+    # 1. Any slot marked OCCUPIED must have an ACTIVE session
     stuck_occupied = ParkingSlot.objects.filter(status=SlotStatus.OCCUPIED)
     for slot in stuck_occupied:
-        if not ParkingSession.objects.filter(
-            parking_slot=slot,
+        has_active = ParkingSession.objects.filter(
+            parking_slot=slot, 
             status=ParkingStatus.ACTIVE
-        ).exists():
+        ).exists()
+        if not has_active:
             slot.status = SlotStatus.AVAILABLE
-            slot.save()
+            slot.save(update_fields=['status'])
+            reset_count += 1
+
+    # 2. Any slot marked RESERVED must have a confirmed/pending reservation that is active in the future or now, OR an active session.
+    stuck_reserved = ParkingSlot.objects.filter(status=SlotStatus.RESERVED)
+    for slot in stuck_reserved:
+        has_reservation = Reservation.objects.filter(
+            parking_slot=slot,
+            status__in=['pending_payment', 'confirmed'],
+            is_active=True,
+            reserved_until__gt=now
+        ).exists()
+        
+        has_active_session = ParkingSession.objects.filter(
+            parking_slot=slot, 
+            status=ParkingStatus.ACTIVE
+        ).exists()
+
+        if not has_reservation and not has_active_session:
+            slot.status = SlotStatus.AVAILABLE
+            slot.save(update_fields=['status'])
             reset_count += 1
             
     if reset_count > 0:

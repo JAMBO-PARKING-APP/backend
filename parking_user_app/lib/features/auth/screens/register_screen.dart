@@ -80,7 +80,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       items: countryProv.countries.map((c) {
                         return DropdownMenuItem(
                           value: c.code,
-                          child: Text('${c.name} (${c.code})'),
+                          child: Text('${c.flag ?? ''} ${c.name} (${c.code})'),
                         );
                       }).toList(),
                       onChanged: (value) {

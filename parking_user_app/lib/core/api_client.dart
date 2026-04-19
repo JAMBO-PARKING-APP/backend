@@ -108,7 +108,43 @@ class ApiClient {
                 '[ApiClient] 🚨 Session invalidated - user logged in from another device',
               );
               await _storageManager.clearAuthData();
+              return handler.next(e);
             }
+
+            try {
+              final refreshToken = await _storageManager.getRefreshToken();
+              if (refreshToken != null) {
+                final refreshDio = Dio(BaseOptions(baseUrl: AppConstants.baseUrl));
+                final refreshResponse = await refreshDio.post(
+                  'user/auth/token/refresh/',
+                  data: {'refresh': refreshToken},
+                );
+
+                if (refreshResponse.statusCode == 200) {
+                  final newAccess = refreshResponse.data['access'];
+                  final newRefresh = refreshResponse.data['refresh'] ?? refreshToken;
+                  await _storageManager.saveTokens(newAccess, newRefresh);
+
+                  final retryOptions = e.requestOptions;
+                  retryOptions.headers['Authorization'] = 'Bearer $newAccess';
+                  
+                  final cloneReq = await Dio(BaseOptions(baseUrl: AppConstants.baseUrl)).request(
+                    retryOptions.path,
+                    options: Options(
+                      method: retryOptions.method,
+                      headers: retryOptions.headers,
+                    ),
+                    data: retryOptions.data,
+                    queryParameters: retryOptions.queryParameters,
+                  );
+                  return handler.resolve(cloneReq);
+                }
+              }
+            } catch (err) {
+              debugPrint('[ApiClient] Refresh fallback failed: $err');
+            }
+
+            await _storageManager.clearAuthData();
           }
           return handler.next(e);
         },

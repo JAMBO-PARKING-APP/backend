@@ -243,6 +243,8 @@ class StartParkingAPIView(APIView):
             
             parking_slot = None
             slot_id = serializer.validated_data.get('slot_id')
+            planned_end = timezone.now() + timedelta(hours=duration_hours)
+            can_extend = True
             
             if slot_id:
                 try:
@@ -251,16 +253,64 @@ class StartParkingAPIView(APIView):
                         zone=zone,
                         status=SlotStatus.AVAILABLE
                     )
+                    upcoming_res = Reservation.objects.filter(
+                        parking_slot=parking_slot,
+                        status__in=['confirmed', 'pending_payment'],
+                        reserved_from__gt=timezone.now()
+                    ).order_by('reserved_from').first()
+
+                    if upcoming_res:
+                        if planned_end >= upcoming_res.reserved_from:
+                            return Response({
+                                'error': 'Selected slot is reserved in the future and overlaps with your requested duration.'
+                            }, status=status.HTTP_400_BAD_REQUEST)
+                        else:
+                            can_extend = False
+                            
                 except ParkingSlot.DoesNotExist:
                     return Response({
                         'error': 'Selected parking slot is not available'
                     }, status=status.HTTP_400_BAD_REQUEST)
             else:
-                parking_slot = zone.slots.select_for_update().filter(status=SlotStatus.AVAILABLE).first()
-                if not parking_slot:
+                available_slots = zone.slots.select_for_update().filter(status=SlotStatus.AVAILABLE)
+                if not available_slots:
                     return Response({
                         'error': 'No available slots in this zone'
                     }, status=status.HTTP_400_BAD_REQUEST)
+
+                # Try to find a slot without any upcoming reservations
+                from django.db.models import Exists, OuterRef
+                slots_without_res = available_slots.filter(
+                    ~Exists(
+                        Reservation.objects.filter(
+                            parking_slot=OuterRef('pk'),
+                            status__in=['confirmed', 'pending_payment'],
+                            reserved_from__gt=timezone.now()
+                        )
+                    )
+                )
+
+                parking_slot = slots_without_res.first()
+
+                if not parking_slot:
+                    # All available slots have upcoming reservations.
+                    # Find one where our planned_end < its next reservation's reserved_from
+                    for slot in available_slots:
+                        next_res = Reservation.objects.filter(
+                            parking_slot=slot,
+                            status__in=['confirmed', 'pending_payment'],
+                            reserved_from__gt=timezone.now()
+                        ).order_by('reserved_from').first()
+
+                        if next_res and planned_end < next_res.reserved_from:
+                            parking_slot = slot
+                            can_extend = False
+                            break
+                    
+                    if not parking_slot:
+                        return Response({
+                            'error': 'All available slots have upcoming reservations that overlap with your duration. Please try a shorter duration.'
+                        }, status=status.HTTP_400_BAD_REQUEST)
 
             planned_end = timezone.now() + timedelta(hours=duration_hours)
             estimated_cost = zone.hourly_rate * Decimal(str(duration_hours))
@@ -290,7 +340,8 @@ class StartParkingAPIView(APIView):
                         parking_slot=parking_slot,
                         planned_end_time=planned_end,
                         estimated_cost=estimated_cost,
-                        status=ParkingStatus.ACTIVE
+                        status=ParkingStatus.ACTIVE,
+                        can_extend=can_extend
                     )
                     
                     from apps.notifications.notification_triggers import notify_payment_success, notify_parking_started
@@ -428,6 +479,11 @@ class ExtendParkingAPIView(APIView):
                 vehicle__user=request.user,
                 status=ParkingStatus.ACTIVE
             )
+            
+            if not getattr(session, 'can_extend', True):
+                return Response({
+                    'error': 'This session cannot be extended because the slot is reserved for another user.'
+                }, status=status.HTTP_400_BAD_REQUEST)
             
             additional_hours_decimal = Decimal(str(additional_hours))
             additional_cost = session.zone.hourly_rate * additional_hours_decimal

@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:parking_user_app/core/app_theme.dart';
@@ -100,9 +101,33 @@ class AppBootstrapper extends StatefulWidget {
   State<AppBootstrapper> createState() => _AppBootstrapperState();
 }
 
-class _AppBootstrapperState extends State<AppBootstrapper> {
+class _AppBootstrapperState extends State<AppBootstrapper> with WidgetsBindingObserver {
   bool _updateChecked = false;
   bool _updateRequired = false;
+  Timer? _updateTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _updateTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (!_updateRequired) _checkForUpdate();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _updateTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !_updateRequired) {
+      _checkForUpdate();
+    }
+  }
 
   Future<void> _checkForUpdate() async {
     try {

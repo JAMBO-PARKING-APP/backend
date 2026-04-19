@@ -15,6 +15,8 @@ class ParkingSession {
   final String? zoneName;
   final String? qrCodeData;
 
+  final bool canExtend;
+
   ParkingSession({
     required this.id,
     required this.vehiclePlate,
@@ -30,6 +32,7 @@ class ParkingSession {
     this.driverPhone,
     this.zoneName,
     this.qrCodeData,
+    this.canExtend = true,
   });
 
   factory ParkingSession.fromJson(Map<String, dynamic> json) {
@@ -59,6 +62,7 @@ class ParkingSession {
       driverPhone: json['driver_phone'] ?? json['vehicle']?['owner']?['phone'],
       zoneName: json['zone_name'],
       qrCodeData: json['qr_code_data']?.toString(),
+      canExtend: json['can_extend'] ?? true,
     );
   }
 }

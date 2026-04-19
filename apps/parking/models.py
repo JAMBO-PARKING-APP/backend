@@ -311,6 +311,7 @@ class ParkingSession(RegionalModel, BaseModel):
     status = models.CharField(max_length=20, choices=ParkingStatus.choices, default=ParkingStatus.ACTIVE, db_index=True)
     estimated_cost = models.DecimalField(max_digits=12, decimal_places=2)
     final_cost = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    can_extend = models.BooleanField(default=True, help_text=_("Whether this session can be extended or is constrained by an upcoming reservation"))
 
     @property
     def is_overdue(self):

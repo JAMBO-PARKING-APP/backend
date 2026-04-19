@@ -6,6 +6,7 @@ import 'package:parking_user_app/features/payments/providers/wallet_provider.dar
 import 'package:parking_user_app/features/payments/services/payments_service.dart';
 import 'package:provider/provider.dart';
 import 'package:parking_user_app/features/payments/screens/payment_webview_screen.dart';
+import 'package:parking_user_app/core/dialog_helper.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -247,11 +248,11 @@ class _WalletScreenState extends State<WalletScreen> {
                   );
                   _refresh();
                 }
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(response.message ?? 'Top-up initiated.'),
-                  ),
-                );
+                if (response.success) {
+                  DialogHelper.showSuccess(context, 'Payment Initiated', response.message ?? 'Top-up initiated.');
+                } else {
+                  DialogHelper.showError(context, 'Payment Failed', response.message ?? 'Failed to initiate top-up.');
+                }
               },
               child: const Text('Continue'),
             ),

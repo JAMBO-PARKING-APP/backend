@@ -24,6 +24,10 @@ class StorageManager {
     return await _storage.read(key: _tokenKey);
   }
 
+  Future<String?> getRefreshToken() async {
+    return await _storage.read(key: _refreshTokenKey);
+  }
+
   Future<void> saveSelectedCountryCode(String? code) async {
     if (code == null) {
       await _storage.delete(key: _selectedCountryKey);

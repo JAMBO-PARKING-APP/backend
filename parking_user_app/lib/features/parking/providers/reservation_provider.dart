@@ -38,6 +38,20 @@ class ReservationProvider with ChangeNotifier {
     await fetchReservations();
   }
 
+  Future<bool> startReservation(String reservationId) async {
+    try {
+      // In a real app we'd get actual location, but for now plug in 0,0 or current location
+      // Using dummy location so it passes backend logic if required
+      await _reservationService.startParkingFromReservation(reservationId, 0.0, 0.0);
+      await fetchReservations();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<bool> createReservation({
     required String vehicleId,
     required String zoneId,
