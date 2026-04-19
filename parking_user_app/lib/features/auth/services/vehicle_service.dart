@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:parking_officer_app/core/api_client.dart';
-import 'package:parking_officer_app/features/auth/models/vehicle_model.dart';
+import 'package:parking_user_app/core/api_client.dart';
+import 'package:parking_user_app/features/auth/models/vehicle_model.dart';
 
 class VehicleService {
   final ApiClient _apiClient = ApiClient();

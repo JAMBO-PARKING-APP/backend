@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
-import 'package:parking_officer_app/core/location_service.dart';
-import 'package:parking_officer_app/core/constants.dart';
-import 'package:parking_officer_app/core/storage_manager.dart';
-import 'package:parking_officer_app/core/app_logger.dart';
+import 'package:parking_user_app/core/location_service.dart';
+import 'package:parking_user_app/core/constants.dart';
+import 'package:parking_user_app/core/storage_manager.dart';
+import 'package:parking_user_app/core/app_logger.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 class ApiClient {
@@ -89,12 +89,13 @@ class ApiClient {
                              e.type == DioExceptionType.receiveTimeout;
 
           _logger.error(
-            'API Error: ${e.type} - ${e.message}',
-            details: 'Path: ${e.requestOptions.path}\n'
-                     'Method: ${e.requestOptions.method}\n'
-                     'Status: ${e.response?.statusCode}\n'
-                     'Data: ${e.response?.data}\n'
-                     'IsNoInternet: $isNoInternet',
+            'API Error: ${e.type} - ${e.message}\n'
+            'Path: ${e.requestOptions.path}\n'
+            'Method: ${e.requestOptions.method}\n'
+            'Status: ${e.response?.statusCode}\n'
+            'Data: ${e.response?.data}\n'
+            'IsNoInternet: $isNoInternet',
+            e,
           );
           if (e.response?.statusCode == 401) {
             debugPrint('[ApiClient] 401 Unauthorized - Token may be invalid');

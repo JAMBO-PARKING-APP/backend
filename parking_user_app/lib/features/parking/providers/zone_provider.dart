@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import 'package:parking_officer_app/core/location_service.dart';
-import 'package:parking_officer_app/features/parking/models/zone_model.dart';
-import 'package:parking_officer_app/features/parking/models/parking_session_model.dart';
-import 'package:parking_officer_app/features/parking/services/zone_service.dart';
+import 'package:parking_user_app/core/location_service.dart';
+import 'package:parking_user_app/features/parking/models/zone_model.dart';
+import 'package:parking_user_app/features/parking/models/parking_session_model.dart';
+import 'package:parking_user_app/features/parking/services/zone_service.dart';
 
 class ZoneProvider with ChangeNotifier {
   final ZoneService _zoneService = ZoneService();

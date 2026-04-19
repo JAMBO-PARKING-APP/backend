@@ -1,330 +1,370 @@
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:parking_user_app/core/app_theme.dart';
+import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
+import 'package:parking_user_app/features/auth/providers/vehicle_provider.dart';
+import 'package:parking_user_app/features/settings/screens/language_selection_screen.dart';
+import 'package:parking_user_app/features/support/screens/support_screen.dart';
+import 'package:parking_user_app/features/auth/services/auth_service.dart';
 import 'package:provider/provider.dart';
-import 'package:parking_officer_app/features/auth/providers/auth_provider.dart';
-import 'package:parking_officer_app/features/enforcement/providers/officer_provider.dart';
-import 'package:parking_officer_app/core/app_theme.dart';
-import 'package:intl/intl.dart';
+import 'package:parking_user_app/features/parking/providers/country_provider.dart';
+import 'package:parking_user_app/core/storage_manager.dart';
+import 'package:parking_user_app/features/parking/providers/parking_session_provider.dart';
+import 'package:parking_user_app/features/parking/providers/reservation_provider.dart';
+import 'package:parking_user_app/features/parking/providers/zone_provider.dart';
+import 'package:parking_user_app/features/payments/providers/wallet_provider.dart';
+import 'package:parking_user_app/features/notifications/providers/notification_provider.dart';
 
-class OfficerProfileScreen extends StatefulWidget {
-  const OfficerProfileScreen({super.key});
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key});
 
   @override
-  State<OfficerProfileScreen> createState() => _OfficerProfileScreenState();
+  State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _OfficerProfileScreenState extends State<OfficerProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen> {
+  bool _isUploadingProfilePic = false;
+  String? _selectedCountryCode;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<OfficerProvider>().fetchOfficerStatus();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      context.read<AuthProvider>().refreshProfile();
+      context.read<VehicleProvider>().fetchVehicles();
+      context.read<CountryProvider>().loadCountries();
+      final code = await StorageManager().getSelectedCountryCode();
+      if (mounted && code != null) {
+        setState(() => _selectedCountryCode = code);
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final vehicles = context.watch<VehicleProvider>().vehicles;
+    final user = auth.user;
+
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      body: Consumer2<AuthProvider, OfficerProvider>(
-        builder: (context, authProvider, officerProvider, _) {
-          final user = authProvider.user;
-          if (user == null) {
-            return const Center(child: Text('NOT AUTHENTICATED'));
-          }
-
-          return CustomScrollView(
-            slivers: [
-              _buildSliverHeader(user),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      appBar: AppBar(title: const Text('Profile')),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: AppTheme.borderColor),
+            ),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: _pickAndUploadProfilePic,
+                  child: Stack(
                     children: [
-                      _buildSectionLabel('ADMINISTRATIVE STATUS'),
-                      const SizedBox(height: 16),
-                      _buildStatusConsole(officerProvider),
-                      const SizedBox(height: 32),
-                      _buildSectionLabel('ACCOUNT INFORMATION'),
-                      const SizedBox(height: 16),
-                      _buildInfoGrid(user),
-                      const SizedBox(height: 48),
-                      _buildLogoutButton(context),
-                      const SizedBox(height: 48),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildSliverHeader(dynamic user) {
-    return SliverAppBar(
-      expandedHeight: 220,
-      pinned: true,
-      backgroundColor: AppTheme.primaryColor,
-      flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          decoration: const BoxDecoration(
-            color: AppTheme.primaryDark,
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                right: -20,
-                bottom: -20,
-                child: Icon(
-                  Icons.security_rounded,
-                  size: 200,
-                  color: Colors.white.withValues(alpha: 0.05),
-                ),
-              ),
-              Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 40),
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.white24,
-                        shape: BoxShape.circle,
-                      ),
-                      child: CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Colors.white,
-                        backgroundImage: user.profilePhoto != null
+                      CircleAvatar(
+                        radius: 36,
+                        backgroundColor: AppTheme.primaryColor,
+                        backgroundImage: (user?.profilePhoto != null && user!.profilePhoto!.isNotEmpty)
                             ? NetworkImage(user.profilePhoto!)
                             : null,
-                        child: user.profilePhoto == null
+                        child: (user?.profilePhoto == null || user!.profilePhoto!.isEmpty)
                             ? Text(
-                                user.firstName[0].toUpperCase(),
-                                style: const TextStyle(
-                                  fontSize: 40,
-                                  color: AppTheme.primaryColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                (user?.firstName.isNotEmpty == true ? user!.firstName[0] : 'U').toUpperCase(),
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 24),
                               )
                             : null,
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      user.fullName.toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 22,
-                        letterSpacing: 1.0,
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: AppTheme.primaryDark,
+                            shape: BoxShape.circle,
+                          ),
+                          child: _isUploadingProfilePic
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
+                        ),
                       ),
-                    ),
-                    Text(
-                      'OFFICER ID: ${user.phone.substring(user.phone.length - 4)}',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontWeight: FontWeight.w500,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(user?.fullName ?? 'User', style: Theme.of(context).textTheme.titleLarge),
+                      const SizedBox(height: 4),
+                      Text(user?.phone ?? ''),
+                      if ((user?.email ?? '').isNotEmpty) Text(user!.email!),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          _ProfileCard(
+            title: 'Account details',
+            child: Column(
+              children: [
+                _ProfileRow(label: 'Role', value: user?.role ?? 'driver'),
+                const SizedBox(height: 12),
+                Consumer<CountryProvider>(
+                  builder: (context, prov, _) {
+                    if (prov.countries.isEmpty) return const SizedBox.shrink();
+                    final sortedCountries = prov.countries.where((c) => c.isActive).toList();
+                    if (sortedCountries.isEmpty) return const SizedBox.shrink();
+                    
+                    return DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'Active Country/Region'),
+                      value: _selectedCountryCode,
+                      items: sortedCountries.map((c) => DropdownMenuItem(
+                        value: c.code,
+                        child: Text('${c.flag} ${c.name}'),
+                      )).toList(),
+                      onChanged: (newCode) async {
+                        if (newCode != null) {
+                          setState(() => _selectedCountryCode = newCode);
+                          await StorageManager().saveSelectedCountryCode(newCode);
+                          if (!mounted) return;
+                          
+                          // Refresh all app state for new country context
+                          context.read<ZoneProvider>().fetchZones();
+                          context.read<ParkingSessionProvider>().fetchSessions();
+                          context.read<ReservationProvider>().fetchReservations();
+                          context.read<WalletProvider>().loadWallet();
+                          context.read<NotificationProvider>().fetchAll();
+                          
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('App region updated securely.')),
+                          );
+                        }
+                      },
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                _ProfileRow(label: 'Phone verified', value: user?.isPhoneVerified == true ? 'Yes' : 'No'),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const LanguageSelectionScreen(allowBack: true),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.translate_rounded),
+                    label: const Text('Change language'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          _ProfileCard(
+            title: 'My vehicles',
+            action: TextButton(
+              onPressed: _openAddVehicleSheet,
+              child: const Text('Add vehicle'),
+            ),
+            child: vehicles.isEmpty
+                ? const Text('No vehicles added yet.')
+                : Column(
+                    children: vehicles
+                        .map((vehicle) => ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(vehicle.licensePlate),
+                              subtitle: Text('${vehicle.make} ${vehicle.model} - ${vehicle.color}'),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete_outline_rounded),
+                                onPressed: () => context.read<VehicleProvider>().deleteVehicle(vehicle.id),
+                              ),
+                            ))
+                        .toList(),
+                  ),
+          ),
+          const SizedBox(height: 18),
+          _ProfileCard(
+            title: 'Session',
+            child: Column(
+              children: [
+                FilledButton.tonalIcon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SupportScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.support_agent_rounded),
+                  label: const Text('Help & support'),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.tonalIcon(
+                  onPressed: () => context.read<AuthProvider>().logout(),
+                  icon: const Icon(Icons.logout_rounded),
+                  label: const Text('Sign out'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openAddVehicleSheet() async {
+    final plate = TextEditingController();
+    final make = TextEditingController();
+    final model = TextEditingController();
+    final color = TextEditingController();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            12,
+            20,
+            MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: plate, decoration: const InputDecoration(labelText: 'License plate')),
+              const SizedBox(height: 12),
+              TextField(controller: make, decoration: const InputDecoration(labelText: 'Make')),
+              const SizedBox(height: 12),
+              TextField(controller: model, decoration: const InputDecoration(labelText: 'Model')),
+              const SizedBox(height: 12),
+              TextField(controller: color, decoration: const InputDecoration(labelText: 'Color')),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () async {
+                  final ok = await context.read<VehicleProvider>().createVehicle(
+                        licensePlate: plate.text.trim(),
+                        make: make.text.trim(),
+                        model: model.text.trim(),
+                        color: color.text.trim(),
+                      );
+                  if (!mounted) return;
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(ok ? 'Vehicle added.' : 'Failed to add vehicle.')),
+                  );
+                },
+                child: const Text('Save vehicle'),
               ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildSectionLabel(String label) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 8, bottom: 8),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: Colors.grey.shade400,
-          letterSpacing: 1.5,
-        ),
-      ),
-    );
+  Future<void> _pickAndUploadProfilePic() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery, maxWidth: 800, imageQuality: 80);
+    
+    if (pickedFile != null) {
+      if (!mounted) return;
+      setState(() => _isUploadingProfilePic = true);
+      try {
+        final authService = AuthService();
+        final result = await authService.uploadProfilePicture(File(pickedFile.path));
+        
+        if (result['success'] == true) {
+          if (mounted) {
+            await context.read<AuthProvider>().checkAuth();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Profile picture updated.')),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(result['message'] ?? 'Upload failed.')),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error uploading image.')),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isUploadingProfilePic = false);
+      }
+    }
   }
+}
 
-  Widget _buildStatusConsole(OfficerProvider provider) {
+class _ProfileCard extends StatelessWidget {
+  const _ProfileCard({
+    required this.title,
+    required this.child,
+    this.action,
+  });
+
+  final String title;
+  final Widget child;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppTheme.borderColor),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'OPERATIONAL STATUS',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: provider.isOnline
-                      ? AppTheme.successColor.withValues(alpha: 0.1)
-                      : Colors.grey[100],
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  provider.isOnline ? 'ACTIVE' : 'INACTIVE',
-                  style: TextStyle(
-                    color: provider.isOnline
-                        ? AppTheme.successColor
-                        : Colors.grey,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 10,
-                  ),
-                ),
-              ),
+              Expanded(child: Text(title, style: Theme.of(context).textTheme.titleLarge)),
+              if (action != null) action!,
             ],
           ),
-          const Divider(height: 32),
-          _buildConsoleRow(
-            Icons.login_rounded,
-            'DUTY START',
-            provider.officerStatus?.wentOnlineAt != null
-                ? _formatTimeFull(provider.officerStatus!.wentOnlineAt!)
-                : 'N/A',
-          ),
-          const SizedBox(height: 16),
-          _buildConsoleRow(
-            Icons.logout_rounded,
-            'DUTY END',
-            provider.officerStatus?.wentOfflineAt != null
-                ? _formatTimeFull(provider.officerStatus!.wentOfflineAt!)
-                : 'N/A',
-          ),
+          const SizedBox(height: 12),
+          child,
         ],
       ),
     );
   }
-  Widget _buildConsoleRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: Colors.grey[400]),
-        const SizedBox(width: 12),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
-          ),
-        ),
-        const Spacer(),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-        ),
-      ],
-    );
-  }
+}
 
+class _ProfileRow extends StatelessWidget {
+  const _ProfileRow({required this.label, required this.value});
 
-  Widget _buildInfoGrid(dynamic user) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppTheme.primaryColor.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
         children: [
-          _buildInfoItem('EMAIL ARCHIVE', user.email ?? 'UNSET'),
-          const SizedBox(height: 16),
-          _buildInfoItem('SYSTEM ROLE', user.role.toUpperCase()),
-          const SizedBox(height: 16),
-          _buildInfoItem('PHONE LINK', user.phone),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoItem(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey[500],
-            fontWeight: FontWeight.w900,
-            fontSize: 10,
-          ),
-        ),
-        Text(
-          value,
-          style: const TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 13,
-            color: AppTheme.primaryColor,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLogoutButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: () => _showLogoutDialog(context),
-        icon: const Icon(Icons.logout_rounded, size: 20),
-        label: const Text('TERMINATE SESSION'),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppTheme.errorColor,
-          side: const BorderSide(color: AppTheme.errorColor, width: 2),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-        ),
-      ),
-    );
-  }
-
-  String _formatTimeFull(DateTime time) {
-    return DateFormat('MMM d, HH:mm').format(time);
-  }
-
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('TERMINATE SESSION'),
-        content: const Text(
-          'Are you sure you want to log out of the enforcement console?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('CANCEL'),
-          ),
-          TextButton(
-            onPressed: () {
-              context.read<AuthProvider>().logout();
-              Navigator.pop(context);
-            },
-            child: const Text(
-              'LOGOUT',
-              style: TextStyle(color: AppTheme.errorColor),
-            ),
-          ),
+          Expanded(child: Text(label)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w700)),
         ],
       ),
     );

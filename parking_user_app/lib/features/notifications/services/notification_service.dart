@@ -1,13 +1,12 @@
-import 'package:dio/dio.dart';
-import 'package:parking_officer_app/core/api_client.dart';
-import 'package:parking_officer_app/features/notifications/models/notification_model.dart';
+import 'package:parking_user_app/core/api_client.dart';
+import 'package:parking_user_app/features/notifications/models/notification_model.dart';
 
 class NotificationService {
   final ApiClient _apiClient = ApiClient();
 
   Future<List<NotificationModel>> listNotifications({
     String? category,
-    bool? read, // true=read, false=unread
+    bool? read,
   }) async {
     final query = <String, dynamic>{};
     if (category != null && category.isNotEmpty && category != 'all') {
@@ -34,11 +33,14 @@ class NotificationService {
 
     return data
         .whereType<Map<String, dynamic>>()
-        .map((n) => NotificationModel.fromJson(n))
+        .map(NotificationModel.fromJson)
         .toList();
   }
 
-  Future<void> setNotificationRead(String notificationId, {required bool isRead}) async {
+  Future<void> setNotificationRead(
+    String notificationId, {
+    required bool isRead,
+  }) async {
     await _apiClient.put(
       'user/notifications/$notificationId/',
       data: {'is_read': isRead},
@@ -54,19 +56,16 @@ class NotificationService {
 
   Future<Map<String, dynamic>> summary() async {
     final response = await _apiClient.get('user/notifications/summary/');
-    return response.data as Map<String, dynamic>;
+    return (response.data as Map?)?.cast<String, dynamic>() ?? {};
   }
 
   Future<Map<String, dynamic>> getPreferences() async {
     final response = await _apiClient.get('user/preferences/');
-    return response.data as Map<String, dynamic>;
+    return (response.data as Map?)?.cast<String, dynamic>() ?? {};
   }
 
   Future<void> updatePreferences(Map<String, dynamic> data) async {
-    await _apiClient.put(
-      'user/preferences/',
-      data: data,
-    );
+    await _apiClient.put('user/preferences/', data: data);
   }
 
   Future<void> registerFCMToken(String token) async {

@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:parking_user_app/core/app_theme.dart';
+import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
+import 'package:parking_user_app/features/auth/screens/register_screen.dart';
 import 'package:provider/provider.dart';
-import 'package:country_code_picker/country_code_picker.dart';
-import 'package:parking_officer_app/features/auth/providers/auth_provider.dart';
-import 'package:parking_officer_app/core/app_theme.dart';
-import 'package:parking_officer_app/features/auth/screens/register_screen.dart';
-import 'package:parking_officer_app/features/legal/screens/legal_document_screen.dart';
-import 'package:parking_officer_app/core/user_strings.dart';
-import 'package:parking_officer_app/core/ui/space_ui.dart';
+import 'package:parking_user_app/features/parking/providers/country_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,315 +13,185 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _phoneFocusNode = FocusNode();
-  bool _obscurePassword = true;
-  String _countryCode = '+254';
-  bool _acceptedTerms = false;
+  String _countryCode = '+256';
+  bool _obscure = true;
 
   @override
   void initState() {
     super.initState();
-    _countryCode = '+256';
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CountryProvider>().loadCountries();
+    });
   }
 
   @override
   void dispose() {
     _phoneController.dispose();
     _passwordController.dispose();
-    _phoneFocusNode.dispose();
     super.dispose();
-  }
-
-  void _login() async {
-    if (!_acceptedTerms) {
-      _showError('Please accept the Terms and Conditions to continue.');
-      return;
-    }
-
-    if (_phoneController.text.isEmpty) {
-      _showError('Please enter your phone number');
-      return;
-    }
-    if (_passwordController.text.isEmpty) {
-      _showError('Please enter your password');
-      return;
-    }
-
-    final phoneRegex = RegExp(r'^[0-9]{9}$');
-    if (!phoneRegex.hasMatch(_phoneController.text.replaceAll(' ', ''))) {
-      _showError('Please enter a valid phone number (9 digits)');
-      return;
-    }
-
-    final fullPhone = '$_countryCode${_phoneController.text}';
-
-    final success = await context.read<AuthProvider>().login(
-      fullPhone,
-      _passwordController.text,
-    );
-
-    if (!success && mounted) {
-      _showError(context.read<AuthProvider>().errorMessage ?? 'Login failed');
-    }
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.error_outline, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 4),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
     return Scaffold(
-      body: Consumer<AuthProvider>(
-        builder: (context, auth, _) {
-          return SpacePageBackground(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      width: 120,
-                      height: 120,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => const Icon(
-                        Icons.admin_panel_settings,
-                        size: 80,
-                        color: AppTheme.primaryColor,
-                      ),
-                    ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppTheme.primaryDark, AppTheme.primaryColor, AppTheme.primarySoft],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(32),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    UserStrings.t(context, 'appTitle'),
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryColor,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    UserStrings.t(context, 'driverLogin'),
-                    style: TextStyle(color: Colors.grey),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 48),
-
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: CountryCodePicker(
-                      onChanged: (code) =>
-                          setState(() => _countryCode = code.dialCode!),
-                      initialSelection: 'KE',
-                      favorite: const ['KE', 'UG', 'TZ', 'NG'],
-                      showCountryOnly: false,
-                      showOnlyCountryWhenClosed: false,
-                      alignLeft: true,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  TextField(
-                    controller: _phoneController,
-                    focusNode: _phoneFocusNode,
-                    decoration: InputDecoration(
-                      labelText: UserStrings.t(context, 'phoneNumber'),
-                      prefixIcon: const Icon(Icons.phone),
-                      prefixText: '$_countryCode ',
-                      hintText: '7XX XXX XXX',
-                      errorText:
-                          !_phoneFocusNode.hasFocus &&
-                              _phoneController.text.isNotEmpty &&
-                              !RegExp(
-                                r'^[0-9]{9}$',
-                              ).hasMatch(_phoneController.text)
-                          ? 'Enter 9 digits'
-                          : null,
-                      // Using global input theme
-
-                    ),
-                    keyboardType: TextInputType.phone,
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: 16),
-
-                  TextField(
-                    controller: _passwordController,
-                    decoration: InputDecoration(
-                      labelText: UserStrings.t(context, 'password'),
-                      prefixIcon: const Icon(Icons.lock),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility
-                              : Icons.visibility_off,
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(child: Image.asset('assets/images/logo.png', height: 80)),
+                        const SizedBox(height: 18),
+                        Text('Modern parking, without the friction', style: Theme.of(context).textTheme.headlineMedium),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Sign in to manage sessions, reservations, wallet payments, rewards, and notifications.',
+                          style: Theme.of(context).textTheme.bodyMedium,
                         ),
-                        onPressed: () => setState(
-                          () => _obscurePassword = !_obscurePassword,
+                        const SizedBox(height: 24),
+                        Consumer<CountryProvider>(
+                          builder: (context, countryProv, _) {
+                            if (countryProv.countries.isEmpty) {
+                              return const SizedBox(
+                                height: 50,
+                                child: Center(child: CircularProgressIndicator()),
+                              );
+                            }
+                            // Ensure _countryCode is valid
+                            if (!countryProv.countries.any((c) => c.code == _countryCode)) {
+                              _countryCode = countryProv.countries.first.code;
+                            }
+                            return DropdownButtonFormField<String>(
+                              value: _countryCode,
+                              decoration: const InputDecoration(labelText: 'Country code'),
+                              items: countryProv.countries.map((c) {
+                                return DropdownMenuItem(
+                                  value: c.code,
+                                  child: Text('${c.name} (${c.code})'),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                if (value != null) setState(() => _countryCode = value);
+                              },
+                            );
+                          },
                         ),
-                      ),
-                      // Using global input theme
-
-                    ),
-                    obscureText: _obscurePassword,
-                  ),
-                  const SizedBox(height: 32),
-
-                  ElevatedButton(
-                    onPressed: auth.status == AuthStatus.authenticating
-                        ? null
-                        : _login,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: AppTheme.primaryColor,
-                      disabledBackgroundColor: Colors.grey[300],
-                    ),
-                    child: auth.status == AuthStatus.authenticating
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
-                              ),
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Text(
-                            UserStrings.t(context, 'loginButton'),
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                        const SizedBox(height: 14),
+                        TextFormField(
+                          controller: _phoneController,
+                          keyboardType: TextInputType.phone,
+                          decoration: const InputDecoration(
+                            labelText: 'Phone number',
+                            hintText: '7XXXXXXXX',
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().length < 9) {
+                              return 'Enter a valid phone number';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 14),
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: _obscure,
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            suffixIcon: IconButton(
+                              onPressed: () => setState(() => _obscure = !_obscure),
+                              icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
                             ),
                           ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _acceptedTerms,
-                    onChanged: (v) => setState(() => _acceptedTerms = v ?? false),
-                    title: Text(UserStrings.t(context, 'agreeToTerms')),
-                    controlAffinity: ListTileControlAffinity.leading,
-                  ),
-
-                  Wrap(
-                    spacing: 8,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      _legalLink(
-                        context,
-                        label: UserStrings.t(context, 'terms'),
-                        type: LegalDocumentType.termsAndConditions,
-                      ),
-                      _legalLink(
-                        context,
-                        label: UserStrings.t(context, 'privacyPolicy'),
-                        type: LegalDocumentType.privacyPolicy,
-                      ),
-                      _legalLink(
-                        context,
-                        label: UserStrings.t(context, 'termsOfService'),
-                        type: LegalDocumentType.termsOfService,
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 18),
-
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const RegisterScreen(),
+                          validator: (value) {
+                            if (value == null || value.length < 6) {
+                              return 'Enter your password';
+                            }
+                            return null;
+                          },
                         ),
-                      );
-                    },
-                    child: Text(UserStrings.t(context, 'dontHaveAccountSignUp')),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  if (auth.status == AuthStatus.authenticating)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.info, color: Colors.blue, size: 20),
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              UserStrings.t(context, 'connectingToServer'),
-                              style: const TextStyle(
-                                color: Colors.blue,
-                                fontSize: 12,
-                              ),
-                            ),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            onPressed: auth.status == AuthStatus.authenticating ? null : _submit,
+                            child: auth.status == AuthStatus.authenticating
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Text('Sign in'),
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 12),
+                        if ((auth.errorMessage ?? '').isNotEmpty)
+                          Text(auth.errorMessage!, style: const TextStyle(color: AppTheme.errorColor)),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text('New here?'),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                                );
+                              },
+                              child: const Text('Create account'),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                ],
+                  ),
+                ),
               ),
             ),
-            ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    final selectedCountry = context.read<CountryProvider>().countries.firstWhere(
+        (c) => c.code == _countryCode,
+        orElse: () => context.read<CountryProvider>().countries.first,
+    );
+    final phone = '${selectedCountry.phoneCode}${_phoneController.text.trim()}';
+    final success = await context.read<AuthProvider>().login(
+          phone,
+          _passwordController.text,
+        );
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.read<AuthProvider>().errorMessage ?? 'Login failed')),
+      );
+    }
+  }
 }
 
-Widget _legalLink(
-  BuildContext context, {
-  required String label,
-  required LegalDocumentType type,
-}) {
-  return InkWell(
-    onTap: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => LegalDocumentScreen(type: type),
-        ),
-      );
-    },
-    child: Text(
-      label,
-      style: TextStyle(
-        color: AppTheme.primaryColor,
-        fontWeight: FontWeight.w900,
-        decoration: TextDecoration.underline,
-      ),
-    ),
-  );
-}

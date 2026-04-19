@@ -1,7 +1,7 @@
 import 'package:parking_user_app/features/common/models/country_model.dart';
 import 'vehicle_model.dart';
 
-class UserModel {
+class User {
   final String id;
   final String phone;
   final String firstName;
@@ -10,12 +10,12 @@ class UserModel {
   final String role;
   final String? profilePhoto;
   final double walletBalance;
-  final List<Vehicle> vehicles;
+  final List<VehicleModel> vehicles;
   final Country? countryDetails;
   final DateTime? createdAt;
   final bool isPhoneVerified;
 
-  UserModel({
+  User({
     required this.id,
     required this.phone,
     required this.firstName,
@@ -31,8 +31,8 @@ class UserModel {
   });
 
   /// Create an empty user instance
-  factory UserModel.empty() {
-    return UserModel(
+  factory User.empty() {
+    return User(
       id: '',
       phone: '',
       firstName: '',
@@ -48,15 +48,15 @@ class UserModel {
     );
   }
 
-  factory UserModel.fromJson(Map<String, dynamic> json) {
+  factory User.fromJson(Map<String, dynamic> json) {
     try {
       // Parse id field
       final id = json['id'] ?? '';
-      print('[UserModel.fromJson] Parsed id: $id');
+      print('[User.fromJson] Parsed id: $id');
 
       // Parse phone field
       final phone = json['phone'] ?? '';
-      print('[UserModel.fromJson] Parsed phone: $phone');
+      print('[User.fromJson] Parsed phone: $phone');
 
       // Parse firstName field
       final firstName = json['first_name'] ?? '';
@@ -81,13 +81,13 @@ class UserModel {
       final walletBalance = double.tryParse(json['wallet_balance']?.toString() ?? '0') ?? 0.0;
       print('[User.fromJson] Parsed walletBalance: $walletBalance');
 
-      final List<Vehicle> vehicles = [];
+      final List<VehicleModel> vehicles = [];
       try {
         final vehiclesList = json['vehicles'] as List?;
         if (vehiclesList != null && vehiclesList.isNotEmpty) {
           for (int i = 0; i < vehiclesList.length; i++) {
             try {
-              final vehicle = Vehicle.fromJson(vehiclesList[i] as Map<String, dynamic>);
+              final vehicle = VehicleModel.fromJson(vehiclesList[i] as Map<String, dynamic>);
               vehicles.add(vehicle);
               print('[User.fromJson] Successfully parsed vehicle at index $i');
             } catch (e) {
@@ -126,7 +126,7 @@ class UserModel {
 
       bool isPhoneVerified = json['is_phone_verified'] ?? false;
 
-      return UserModel(
+      return User(
         id: id,
         phone: phone,
         firstName: firstName,
@@ -141,8 +141,8 @@ class UserModel {
         isPhoneVerified: isPhoneVerified,
       );
     } catch (e) {
-      print('[UserModel.fromJson] Critical error parsing UserModel from JSON: $e');
-      return UserModel(
+      print('[User.fromJson] Critical error parsing User from JSON: $e');
+      return User(
         id: '',
         phone: '',
         firstName: 'Unknown',
@@ -161,6 +161,10 @@ class UserModel {
 
   String get fullName => '$firstName $lastName';
   String getFullName() => fullName;
+
+  String? get country => countryDetails?.code;
+  String? get countryName => countryDetails?.name;
+  String? get countryIdentifier => countryDetails?.code;
 
   Map<String, dynamic> toJson() {
     return {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:parking_officer_app/features/auth/models/vehicle_model.dart';
-import 'package:parking_officer_app/features/auth/services/vehicle_service.dart';
+import 'package:parking_user_app/features/auth/models/vehicle_model.dart';
+import 'package:parking_user_app/features/auth/services/vehicle_service.dart';
 
 class VehicleProvider with ChangeNotifier {
   final VehicleService _vehicleService = VehicleService();
@@ -38,6 +38,31 @@ class VehicleProvider with ChangeNotifier {
       _errorMessage = e.toString();
     } finally {
       notifyListeners();
+    }
+  }
+
+  Future<bool> createVehicle({
+    required String licensePlate,
+    required String make,
+    required String model,
+    required String color,
+  }) async {
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final vehicle = await _vehicleService.createVehicle(
+        licensePlate: licensePlate,
+        make: make,
+        model: model,
+        color: color,
+      );
+      _vehicles = [vehicle, ..._vehicles];
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
     }
   }
 }

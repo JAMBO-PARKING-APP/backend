@@ -87,7 +87,7 @@ class ParkingSessionSerializer(serializers.ModelSerializer):
 class StartParkingSerializer(serializers.Serializer):
     vehicle_id = serializers.UUIDField()
     zone_id = serializers.UUIDField()
-    slot_id = serializers.UUIDField(required=False)
+    slot_id = serializers.UUIDField(required=False, allow_null=True)
     duration_hours = serializers.DecimalField(max_digits=10, decimal_places=5, default=1, min_value=0.25, max_value=24)
     payment_method = serializers.ChoiceField(choices=['wallet', 'pesapal'], default='wallet')
 

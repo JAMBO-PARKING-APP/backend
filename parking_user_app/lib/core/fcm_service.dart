@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:parking_officer_app/core/api_client.dart';
-import 'package:parking_officer_app/core/storage_manager.dart';
+import 'package:parking_user_app/core/api_client.dart';
+import 'package:parking_user_app/core/storage_manager.dart';
 
 class FCMService {
   static final FCMService _instance = FCMService._internal();

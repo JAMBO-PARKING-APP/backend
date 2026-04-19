@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:parking_officer_app/core/api_client.dart';
-import 'package:parking_officer_app/core/websocket_service.dart';
+import 'package:parking_user_app/core/api_client.dart';
+import 'package:parking_user_app/core/websocket_service.dart';
 
 class LocationService {
   static final LocationService _instance = LocationService._internal();

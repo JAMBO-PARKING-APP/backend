@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:parking_officer_app/core/api_client.dart';
-import 'package:parking_officer_app/features/parking/models/reservation_model.dart';
+import 'package:parking_user_app/core/api_client.dart';
+import 'package:parking_user_app/features/parking/models/reservation_model.dart';
 
 class ReservationService {
   final ApiClient _apiClient = ApiClient();

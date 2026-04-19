@@ -1,4 +1,4 @@
-name: parking_officer_app
+name: parking_user_app
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -85,12 +85,13 @@ flutter:
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
-  # the material Icons class.
+  # material Icons class.
   uses-material-design: true
 
   # App assets
   assets:
     - assets/images/logo.png
+    - assets/illustrations/
 
 # Launcher icon and app name configuration
 flutter_icons:

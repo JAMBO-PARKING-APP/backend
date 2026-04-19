@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:parking_officer_app/features/auth/models/user_model.dart';
-import 'package:parking_officer_app/features/auth/services/auth_service.dart';
-import 'package:parking_officer_app/core/storage_manager.dart';
-import 'package:parking_officer_app/core/fcm_service.dart';
+import 'package:parking_user_app/features/auth/models/user_model.dart';
+import 'package:parking_user_app/features/auth/services/auth_service.dart';
+import 'package:parking_user_app/core/storage_manager.dart';
+import 'package:parking_user_app/core/fcm_service.dart';
 import 'dart:convert';
 
 enum AuthStatus { authenticated, unauthenticated, authenticating, initial }

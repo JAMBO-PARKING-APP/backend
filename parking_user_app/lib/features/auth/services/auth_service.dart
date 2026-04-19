@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
 
-import 'package:parking_officer_app/core/api_client.dart';
-import 'package:parking_officer_app/features/auth/models/user_model.dart';
-import 'package:parking_officer_app/core/storage_manager.dart';
+import 'package:parking_user_app/core/api_client.dart';
+import 'package:parking_user_app/features/auth/models/user_model.dart';
+import 'package:parking_user_app/core/storage_manager.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:parking_officer_app/core/constants.dart';
+import 'package:parking_user_app/core/constants.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -198,6 +198,22 @@ class AuthService {
         return {'success': true, 'data': response.data};
       }
       return {'success': false, 'message': 'Failed to update profile'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  Future<Map<String, dynamic>> uploadProfilePicture(File imageFile) async {
+    try {
+      final formData = FormData.fromMap({
+        'profile_photo': await MultipartFile.fromFile(imageFile.path),
+      });
+
+      final response = await _apiClient.patch('user/profile/', data: formData);
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': response.data};
+      }
+      return {'success': false, 'message': 'Failed to update profile picture'};
     } catch (e) {
       return {'success': false, 'message': e.toString()};
     }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:parking_officer_app/features/parking/models/reservation_model.dart';
-import 'package:parking_officer_app/features/parking/services/reservation_service.dart';
+import 'package:parking_user_app/features/parking/models/reservation_model.dart';
+import 'package:parking_user_app/features/parking/services/reservation_service.dart';
 
 class ReservationProvider with ChangeNotifier {
   final ReservationService _reservationService = ReservationService();
@@ -36,6 +36,35 @@ class ReservationProvider with ChangeNotifier {
   Future<void> confirmReservationWithWallet(String reservationId) async {
     await _reservationService.confirmWallet(reservationId);
     await fetchReservations();
+  }
+
+  Future<bool> createReservation({
+    required String vehicleId,
+    required String zoneId,
+    required DateTime reservedFrom,
+    required DateTime reservedUntil,
+    required bool confirmImmediately,
+    required String paymentMethod,
+  }) async {
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _reservationService.createReservation(
+        vehicleId: vehicleId,
+        zoneId: zoneId,
+        reservedFrom: reservedFrom,
+        reservedUntil: reservedUntil,
+        confirmImmediately: confirmImmediately,
+        paymentMethod: paymentMethod,
+      );
+      await fetchReservations();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
   }
 }
 
