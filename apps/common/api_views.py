@@ -181,9 +181,24 @@ class SystemMonitorAPIView(APIView):
         monitor_data['resources'] = _get_system_usage()
 
         # 4. Business and Country stats (with isolation)
+        global_business = {
+            'revenue_today': 0,
+            'active_sessions': 0,
+            'violations_today': 0,
+            'total_slots': 0,
+        }
         try:
             monitor_data['country_breakdown'] = AnalyticsService.get_realtime_metrics()
             monitor_data['event_feed'] = AnalyticsService.get_unified_event_feed()
+            
+            # Aggregate Global Business Metrics
+            for stats in monitor_data['country_breakdown'].values():
+                global_business['revenue_today'] += stats.get('business', {}).get('revenue_today', 0)
+                global_business['active_sessions'] += stats.get('business', {}).get('active_sessions', 0)
+                global_business['violations_today'] += stats.get('enforcement', {}).get('violations_today', 0)
+                global_business['total_slots'] += stats.get('business', {}).get('total_slots', 0)
+            
+            monitor_data['global_business'] = global_business
         except Exception as e:
             logger.error(f"Monitor: Analytics Service failure: {e}")
 

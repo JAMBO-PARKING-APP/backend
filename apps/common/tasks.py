@@ -136,12 +136,25 @@ def send_realtime_monitor_updates():
 
         system_usage = _get_system_usage()
         
-        # New enriched business and country-wise stats (Isolated)
+        # 6. Build High-level Breakdowns
         country_breakdown = {}
         event_feed = []
+        global_business = {
+            'revenue_today': 0,
+            'active_sessions': 0,
+            'violations_today': 0,
+            'total_slots': 0,
+        }
         try:
             country_breakdown = AnalyticsService.get_realtime_metrics()
             event_feed = AnalyticsService.get_unified_event_feed()
+            
+            # Aggregate Global Business Metrics
+            for stats in country_breakdown.values():
+                global_business['revenue_today'] += stats.get('business', {}).get('revenue_today', 0)
+                global_business['active_sessions'] += stats.get('business', {}).get('active_sessions', 0)
+                global_business['violations_today'] += stats.get('enforcement', {}).get('violations_today', 0)
+                global_business['total_slots'] += stats.get('business', {}).get('total_slots', 0)
         except Exception as e:
             logger.error(f"Task Monitor: Analytics Service failure: {e}")
 
@@ -180,6 +193,7 @@ def send_realtime_monitor_updates():
             'region_data': region_data,
             'trend_data': trend_data,
             'resources': system_usage,
+            'global_business': global_business,
             'health': {
                 'database': True, # If we got here, DB is likely fine
                 'redis': True,

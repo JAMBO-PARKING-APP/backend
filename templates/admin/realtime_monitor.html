@@ -322,6 +322,51 @@
         </div>
     </div>
 
+    <!-- Insights Row -->
+    <div class="infra-row" style="margin-bottom: 30px;">
+        <div class="infra-card success">
+            <div class="infra-header">
+                <span class="infra-label"><i class="fas fa-dollar-sign"></i> GLOBAL REVENUE (24H)</span>
+            </div>
+            <div class="infra-value" id="global-revenue">$0.00</div>
+            <div class="infra-details">
+                <span>Sum of all active markets</span>
+                <span id="revenue-trend">Stable</span>
+            </div>
+        </div>
+
+        <div class="infra-card">
+            <div class="infra-header">
+                <span class="infra-label"><i class="fas fa-car"></i> GLOBAL ACTIVE SESSIONS</span>
+            </div>
+            <div class="infra-value" id="global-sessions">0</div>
+            <div class="infra-details">
+                <span id="global-occupancy">0% Avg Occupancy</span>
+                <span id="sessions-total">/ 0 Slots</span>
+            </div>
+        </div>
+
+        <div class="infra-card danger">
+            <div class="infra-header">
+                <span class="infra-label"><i class="fas fa-exclamation-triangle"></i> TOTAL VIOLATIONS</span>
+            </div>
+            <div class="infra-value" id="global-violations">0</div>
+            <div class="infra-details">
+                <span>Enforcement Pulse</span>
+                <span id="vio-rate">-- per hour</span>
+            </div>
+        </div>
+
+        <div class="infra-card" style="flex: 2;">
+            <div class="infra-header">
+                <span class="infra-label"><i class="fas fa-chart-line"></i> SYSTEM THROUGHPUT (RPM)</span>
+            </div>
+            <div style="height: 60px; margin-top: 10px;">
+                <canvas id="throughputChart"></canvas>
+            </div>
+        </div>
+    </div>
+
     <main class="main-grid" id="country-grid">
         <!-- Country cards will be injected here -->
         <div class="no-data" style="grid-column: 1 / -1; text-align: center; padding: 100px;">
@@ -424,10 +469,47 @@
         };
     }
 
-    function countUp(id, value, suffix = '', decimal = 0) {
+    // Chart Initialization
+    const ctx = document.getElementById('throughputChart').getContext('2d');
+    const throughputChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: Array(20).fill(''),
+            datasets: [{
+                label: 'RPM',
+                data: Array(20).fill(0),
+                borderColor: '#4cc9f0',
+                backgroundColor: 'rgba(76, 201, 240, 0.1)',
+                borderWidth: 2,
+                tension: 0.4,
+                pointRadius: 0,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { display: false },
+                y: { 
+                    display: false,
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    function updateChart(newValue) {
+        throughputChart.data.datasets[0].data.push(newValue);
+        throughputChart.data.datasets[0].data.shift();
+        throughputChart.update('none'); // Use 'none' for performance
+    }
+
+    function countUp(id, value, suffix = '', decimal = 0, isCurrency = false) {
         const el = document.getElementById(id);
         if (!el) return;
-        const start = parseFloat(el.textContent) || 0;
+        const start = parseFloat(el.textContent.replace(/[^0-9.-]+/g,"")) || 0;
         const duration = 1000;
         const startTime = performance.now();
 
@@ -435,7 +517,13 @@
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / duration, 1);
             const current = start + (value - start) * progress;
-            el.textContent = current.toFixed(decimal) + suffix;
+            
+            if (isCurrency) {
+                el.textContent = '$' + current.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            } else {
+                el.textContent = current.toFixed(decimal).toLocaleString() + suffix;
+            }
+            
             if (progress < 1) requestAnimationFrame(update);
         }
         requestAnimationFrame(update);
@@ -447,11 +535,25 @@
         // Update Time
         document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
 
-        // 1. Global Metrics
-        countUp('global-rpm', data.requests_per_minute || 0);
+        // 1. Global Metrics & Chart
+        const rpm = data.requests_per_minute || 0;
+        countUp('global-rpm', rpm);
         countUp('global-active', data.active_connections || 0);
+        updateChart(rpm);
+
+        // 2. Global Business Insights
+        if (data.global_business) {
+            const gb = data.global_business;
+            countUp('global-revenue', gb.revenue_today, '', 2, true);
+            countUp('global-sessions', gb.active_sessions);
+            countUp('global-violations', gb.violations_today);
+            
+            const occupancy = gb.total_slots > 0 ? (gb.active_sessions / gb.total_slots * 100) : 0;
+            document.getElementById('global-occupancy').textContent = occupancy.toFixed(1) + '% Avg Occupancy';
+            document.getElementById('sessions-total').textContent = '/ ' + gb.total_slots.toLocaleString() + ' Slots';
+        }
         
-        // 2. Infrastructure Stats (Resources)
+        // 3. Infrastructure Stats (Resources)
         if (data.resources) {
             const res = data.resources;
             
@@ -474,13 +576,13 @@
             document.getElementById('mem-status').className = 'status-pill ' + (mem > 85 ? 'offline' : 'online');
         }
 
-        // 3. Redis Stats
+        // 4. Redis Stats
         if (data.redis_stats) {
             countUp('redis-clients', data.redis_stats.connected_clients || 0);
             document.getElementById('redis-mem').textContent = data.redis_stats.used_memory_human || '--';
         }
 
-        // 4. Celery Stats
+        // 5. Celery Stats
         if (data.celery) {
             const active = Object.values(data.celery.active || {}).reduce((acc, tasks) => acc + tasks.length, 0);
             countUp('celery-active', active);
