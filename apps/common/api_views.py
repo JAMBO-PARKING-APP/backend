@@ -1,4 +1,5 @@
 import os
+import logging
 from django.utils import timezone
 from rest_framework import generics
 from rest_framework.views import APIView
@@ -7,6 +8,8 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from .models import Country, SystemConfiguration
 from .serializers import CountrySerializer, SystemConfigurationSerializer
 from .services.country_terms_service import CountryTermsService
+
+logger = logging.getLogger(__name__)
 
 class AdminCountryListAPIView(generics.ListCreateAPIView):
     """List and create countries for admin management"""
@@ -128,7 +131,7 @@ class SystemMonitorAPIView(APIView):
         from django.conf import settings
         from django.core.cache import cache
         from config.celery import app as celery_app
-        from django.db import connection
+        from django.db import connection, InterfaceError, OperationalError
         from django_redis import get_redis_connection
         import shutil
         import os
@@ -154,58 +157,72 @@ class SystemMonitorAPIView(APIView):
             'event_feed': [],
         }
 
-        # ... existing logic ...
+        # 1. Database Health
         try:
             connection.ensure_connection()
             monitor_data['health']['database'] = True
-        except Exception as exc:
+        except (InterfaceError, OperationalError, Exception):
             monitor_data['health']['database'] = False
 
+        # 2. Redis Health
         try:
             cache.set('health_check_monitor', 'ok', timeout=10)
             monitor_data['health']['redis'] = cache.get('health_check_monitor') == 'ok'
-        except Exception as exc:
+        except Exception:
             monitor_data['health']['redis'] = False
 
+        # 3. System Resources
         try:
             total, used, free = shutil.disk_usage(settings.BASE_DIR)
             monitor_data['health']['disk_usage_percent'] = round((used / total) * 100, 2)
-        except Exception as exc:
+        except Exception:
             pass
 
         monitor_data['resources'] = _get_system_usage()
 
-        # Business and Country stats
-        monitor_data['country_breakdown'] = AnalyticsService.get_realtime_metrics()
-        monitor_data['event_feed'] = AnalyticsService.get_unified_event_feed()
-        
-        # Enrich country breakdown with Redis info
-        redis_client = get_redis_connection('default')
-        for code, stats in monitor_data['country_breakdown'].items():
-            stats['system'] = {
-                'requests_total': int(redis_client.get(f"monitor:requests:country:{code}:total") or 0),
-                'status_2xx': int(redis_client.get(f"monitor:requests:country:{code}:2xx") or 0),
-                'status_4xx': int(redis_client.get(f"monitor:requests:country:{code}:4xx") or 0),
-                'status_5xx': int(redis_client.get(f"monitor:requests:country:{code}:5xx") or 0),
-                'latency_last': float(redis_client.get(f"monitor:latency:country:{code}:last") or 0),
-            }
+        # 4. Business and Country stats (with isolation)
+        try:
+            monitor_data['country_breakdown'] = AnalyticsService.get_realtime_metrics()
+            monitor_data['event_feed'] = AnalyticsService.get_unified_event_feed()
+        except Exception as e:
+            logger.error(f"Monitor: Analytics Service failure: {e}")
 
+        # 5. Redis Metrics Enrichment
+        try:
+            redis_client = get_redis_connection('default')
+            for code, stats in monitor_data['country_breakdown'].items():
+                stats['system'] = {
+                    'requests_total': int(redis_client.get(f"monitor:requests:country:{code}:total") or 0),
+                    'status_2xx': int(redis_client.get(f"monitor:requests:country:{code}:2xx") or 0),
+                    'status_4xx': int(redis_client.get(f"monitor:requests:country:{code}:4xx") or 0),
+                    'status_5xx': int(redis_client.get(f"monitor:requests:country:{code}:5xx") or 0),
+                    'latency_last': float(redis_client.get(f"monitor:latency:country:{code}:last") or 0),
+                }
+        except Exception as e:
+            logger.warning(f"Monitor: Redis stats enrichment failed: {e}")
+
+        # 6. Celery Health
         heartbeat = cache.get('celery_heartbeat')
         monitor_data['celery']['heartbeat'] = heartbeat
         if heartbeat:
-            monitor_data['celery']['heartbeat_age_seconds'] = (timezone.now() - timezone.datetime.fromisoformat(heartbeat['timestamp'])).total_seconds()
+             try:
+                monitor_data['celery']['heartbeat_age_seconds'] = (timezone.now() - timezone.datetime.fromisoformat(heartbeat['timestamp'])).total_seconds()
+             except (ValueError, TypeError):
+                pass
 
         try:
             inspector = celery_app.control.inspect()
-            monitor_data['celery']['active'] = inspector.active() or {}
-            monitor_data['celery']['scheduled'] = inspector.scheduled() or {}
-            monitor_data['celery']['reserved'] = inspector.reserved() or {}
-            monitor_data['celery']['workers'] = inspector.registered() or {}
-            monitor_data['celery']['stats'] = inspector.stats() or {}
+            if inspector:
+                monitor_data['celery']['active'] = inspector.active() or {}
+                monitor_data['celery']['scheduled'] = inspector.scheduled() or {}
+                monitor_data['celery']['reserved'] = inspector.reserved() or {}
+                monitor_data['celery']['workers'] = inspector.registered() or {}
+                monitor_data['celery']['stats'] = inspector.stats() or {}
         except Exception as exc:
             monitor_data['celery']['inspect_error'] = str(exc)
 
-        for name, schedule in settings.CELERY_BEAT_SCHEDULE.items():
+        # 7. Beat Schedule
+        for name, schedule in getattr(settings, 'CELERY_BEAT_SCHEDULE', {}).items():
             monitor_data['schedule'].append({
                 'name': name,
                 'task': schedule.get('task'),

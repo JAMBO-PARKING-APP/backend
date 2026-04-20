@@ -1,3 +1,4 @@
+import time
 from .models import set_current_country, get_current_country
 from .utils import get_country_from_coords
 from django.core.cache import cache
@@ -70,13 +71,11 @@ class RegionalContextMiddleware:
             request.user.clear_wallet_cache()
             logger.debug(f"RegionalContext: Cleared wallet cache due to country change from {previous_country} to {current_country}")
         
-        import time
         start_time = time.time()
-        
         response = self.get_response(request)
-        
         duration = time.time() - start_time
 
+        # Isolated Monitoring Logic
         try:
             if request.path.startswith('/api/'):
                 country = get_current_country() or getattr(request.user, 'country', None)
@@ -98,29 +97,16 @@ class RegionalContextMiddleware:
                         cache.add(key, 0, timeout=60 * 60 * 24 * 7)
                         cache.incr(key)
                     
-                    # Track latency (sum and count for avg)
-                    latency_sum_key = f"monitor:latency:country:{country_code}:sum"
-                    latency_count_key = f"monitor:latency:country:{country_code}:count"
-                    cache.add(latency_sum_key, 0.0, timeout=60 * 60 * 24)
-                    cache.add(latency_count_key, 0, timeout=60 * 60 * 24)
-                    
-                    # Since cache.incr only works on ints, we might need a workaround for floats if we want precise sum
-                    # But for realtime monitor, we can store last 10 latencies in a list or just use a simple counter
-                    try:
-                        # Redis incrbyfloat would be better but django cache might not support it directly on all backends
-                        # For now, let's just store the last latency
-                        cache.set(f"monitor:latency:country:{country_code}:last", duration, timeout=300)
-                    except:
-                        pass
-
+                    # Track last latency and seen time
+                    cache.set(f"monitor:latency:country:{country_code}:last", duration, timeout=300)
                     cache.set(
                         f"monitor:requests:country:{country_code}:last_seen",
                         now.isoformat(),
                         timeout=60 * 60 * 24 * 7,
                     )
         except Exception as e:
-            logger.debug(f"RegionalContextTracking: Failed to update monitor counts: {e}")
+            # Ensuring monitoring logic NEVER breaks the main request
+            logger.debug(f"RegionalContextTracking: Silently failed to update monitor counts: {e}")
 
         set_current_country(None)
-
         return response

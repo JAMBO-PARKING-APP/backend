@@ -123,46 +123,62 @@ def send_realtime_monitor_updates():
     try:
         cache = caches['default']
         heartbeat = cache.get('celery_heartbeat') or {}
-        region_data = _build_region_request_stats()
-        trend_data = _build_detected_region_trends(region_data[:3])
+        
+        try:
+            region_data = _build_region_request_stats()
+        except Exception:
+            region_data = []
+
+        try:
+            trend_data = _build_detected_region_trends(region_data[:3])
+        except Exception:
+            trend_data = {'labels': [], 'series': []}
+
         system_usage = _get_system_usage()
         
-        # New enriched business and country-wise stats
-        country_breakdown = AnalyticsService.get_realtime_metrics()
-        event_feed = AnalyticsService.get_unified_event_feed()
+        # New enriched business and country-wise stats (Isolated)
+        country_breakdown = {}
+        event_feed = []
+        try:
+            country_breakdown = AnalyticsService.get_realtime_metrics()
+            event_feed = AnalyticsService.get_unified_event_feed()
+        except Exception as e:
+            logger.error(f"Task Monitor: Analytics Service failure: {e}")
 
-        redis_client = get_redis_connection('default')
-        redis_info = redis_client.info()
-        active_connections = len(redis_client.pubsub_channels())
+        # Redis Stats (Isolated)
+        redis_info = {}
+        active_connections = 0
+        try:
+            redis_client = get_redis_connection('default')
+            redis_info = redis_client.info()
+            active_connections = len(redis_client.pubsub_channels())
 
-        # Enrich country breakdown with system metrics from Redis
-        for code, stats in country_breakdown.items():
-            # Add status code stats
-            stats['system'] = {
-                'requests_total': int(redis_client.get(f"monitor:requests:country:{code}:total") or 0),
-                'status_2xx': int(redis_client.get(f"monitor:requests:country:{code}:2xx") or 0),
-                'status_4xx': int(redis_client.get(f"monitor:requests:country:{code}:4xx") or 0),
-                'status_5xx': int(redis_client.get(f"monitor:requests:country:{code}:5xx") or 0),
-                'latency_last': float(redis_client.get(f"monitor:latency:country:{code}:last") or 0),
-            }
+            # Enrich country breakdown with system metrics from Redis
+            for code, stats in country_breakdown.items():
+                stats['system'] = {
+                    'requests_total': int(redis_client.get(f"monitor:requests:country:{code}:total") or 0),
+                    'status_2xx': int(redis_client.get(f"monitor:requests:country:{code}:2xx") or 0),
+                    'status_4xx': int(redis_client.get(f"monitor:requests:country:{code}:4xx") or 0),
+                    'status_5xx': int(redis_client.get(f"monitor:requests:country:{code}:5xx") or 0),
+                    'latency_last': float(redis_client.get(f"monitor:latency:country:{code}:last") or 0),
+                }
 
-        now = timezone.now()
-        request_keys = redis_client.scan_iter('monitor:requests:*')
-        recent_requests = 0
-        for key in request_keys:
-            key_str = key.decode('utf-8')
-            if 'minute' in key_str:
-                recent_requests += int(redis_client.get(key) or 0)
+            request_keys = redis_client.scan_iter('monitor:requests:*')
+            recent_requests = 0
+            for key in request_keys:
+                key_str = key.decode('utf-8')
+                if 'minute' in key_str:
+                    recent_requests += int(redis_client.get(key) or 0)
+        except Exception as e:
+            logger.warning(f"Task Monitor: Redis enrichment failed: {e}")
+            recent_requests = 0
 
-        max_count = max((region['request_count'] for region in region_data), default=1)
+        max_count = max((region.get('request_count', 0) for region in region_data), default=1)
 
         data = {
             'heartbeat': heartbeat,
             'region_data': region_data,
-            'trend_data': {
-                'labels': trend_data['labels'],
-                'series': trend_data['series'],
-            },
+            'trend_data': trend_data,
             'system_usage': system_usage,
             'redis_stats': {
                 'connected_clients': redis_info.get('connected_clients', 0),
@@ -173,8 +189,7 @@ def send_realtime_monitor_updates():
             'active_connections': active_connections,
             'requests_per_minute': recent_requests,
             'max_count': max_count,
-            'timestamp': now.isoformat(),
-            # New fields
+            'timestamp': timezone.now().isoformat(),
             'country_breakdown': country_breakdown,
             'event_feed': event_feed,
         }

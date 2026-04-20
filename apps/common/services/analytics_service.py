@@ -1,17 +1,19 @@
 from django.utils import timezone
-from django.db.models import Sum, Count, Q
 from decimal import Decimal
 from datetime import timedelta
-from apps.parking.models import Zone, ParkingSession, ParkingSlot
-from apps.payments.models import Transaction, WalletTransaction
-from apps.enforcement.models import Violation, OfficerStatus
-from apps.common.models import Country
-from apps.common.constants import ParkingStatus, SlotStatus, TransactionStatus
+
 
 class AnalyticsService:
     @staticmethod
     def get_realtime_metrics():
         """Fetch high-level business metrics grouped by country."""
+        from django.db.models import Sum
+        from apps.parking.models import Zone, ParkingSession
+        from apps.payments.models import Transaction
+        from apps.enforcement.models import Violation, OfficerStatus
+        from apps.common.models import Country
+        from apps.common.constants import ParkingStatus, TransactionStatus
+
         now = timezone.now()
         start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
         
@@ -79,6 +81,11 @@ class AnalyticsService:
     @staticmethod
     def get_unified_event_feed(limit=15):
         """Fetch the most recent significant events across all countries."""
+        from apps.parking.models import ParkingSession
+        from apps.enforcement.models import Violation
+        from apps.payments.models import Transaction
+        from apps.common.constants import TransactionStatus
+
         feed = []
         
         # Recent sessions
@@ -110,13 +117,12 @@ class AnalyticsService:
         for p in payments:
             feed.append({
                 'type': 'payment',
-                'title': f'Payment of {p.amount} {p.country.currency if p.country else ""}',
+                'title': f'Payment of {p.amount} {p.country.currency if p.country and hasattr(p.country, "currency") else ""}',
                 'user': p.user.phone if p.user else "Anonymous",
-                'country': p.country.iso_code if v.country else '??',
+                'country': getattr(p.country, 'iso_code', '??'),
                 'time': p.created_at.isoformat(),
                 'icon': '💰'
             })
             
-        # Sort combined feed and limit
         feed.sort(key=lambda x: x['time'], reverse=True)
         return feed[:limit]
