@@ -141,8 +141,10 @@ class SystemMonitorAPIView(APIView):
 
             monitor_data = {
                 'server_time': timezone.now().isoformat(),
-            'python_version': f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
-            'django_version': django.get_version(),
+                'python_version': f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+                'django_version': django.get_version(),
+                'health': {
+                    'database': False,
                     'redis': False,
                     'disk_usage_percent': None,
                 },
