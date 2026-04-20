@@ -269,10 +269,51 @@
 <script>
     const socketUrl = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/admin/realtime-monitor/';
     let socket = null;
+    let pollInterval = null;
+
+    function poll() {
+        console.log('Polling for updates...');
+        fetch('{{ api_monitor_url }}')
+            .then(r => r.json())
+            .then(data => {
+                updateUI(data);
+                document.getElementById('connection-status').textContent = 'Live (Polling)';
+                document.getElementById('connection-status').style.color = '#4cc9f0';
+            })
+            .catch(e => {
+                console.error('Polling error:', e);
+                document.getElementById('connection-status').textContent = 'Connection Error';
+                document.getElementById('connection-status').style.color = '#f72585';
+            });
+    }
+
+    function startPolling() {
+        if (!pollInterval) {
+            pollInterval = setInterval(poll, 10000); // 10s interval
+            poll(); // Initial poll
+        }
+    }
+
+    function stopPolling() {
+        if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+        }
+    }
 
     function connect() {
         console.log('Connecting to realtime feed...');
-        socket = new WebSocket(socketUrl);
+        
+        // If we were polling, stop it when we try to connect
+        stopPolling();
+
+        try {
+            socket = new WebSocket(socketUrl);
+        } catch (e) {
+            console.error('WebSocket creation failed:', e);
+            startPolling();
+            return;
+        }
 
         socket.onmessage = function(e) {
             const data = JSON.parse(e.data);
@@ -280,20 +321,26 @@
         };
 
         socket.onclose = function(e) {
-            console.log('Socket closed. Reconnecting in 5s...');
-            document.getElementById('connection-status').textContent = 'Reconnecting...';
+            console.log('Socket closed. Reconnecting in 10s...');
+            document.getElementById('connection-status').textContent = 'Retrying WebSocket...';
             document.getElementById('connection-status').style.color = '#e67e22';
-            setTimeout(connect, 5000);
+            
+            // Start polling as fallback
+            startPolling();
+            
+            setTimeout(connect, 10000);
         };
 
         socket.onerror = function(err) {
             console.error('Socket error:', err);
+            startPolling();
         };
 
         socket.onopen = function() {
             console.log('Connected to command center');
-            document.getElementById('connection-status').textContent = 'Live';
+            document.getElementById('connection-status').textContent = 'Live (WS)';
             document.getElementById('connection-status').style.color = '#2ecc71';
+            stopPolling();
         };
     }
 
