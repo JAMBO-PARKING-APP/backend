@@ -118,7 +118,7 @@ class AnalyticsService:
             feed.append({
                 'type': 'payment',
                 'title': f'Payment of {p.amount} {p.country.currency if p.country and hasattr(p.country, "currency") else ""}',
-                'user': p.user.phone if p.user else "Anonymous",
+                'user': str(p.user.phone) if p.user else "Anonymous",
                 'country': getattr(p.country, 'iso_code', '??'),
                 'time': p.created_at.isoformat(),
                 'icon': '💰'
