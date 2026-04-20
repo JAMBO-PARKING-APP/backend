@@ -509,6 +509,10 @@
     function countUp(id, value, suffix = '', decimal = 0, isCurrency = false) {
         const el = document.getElementById(id);
         if (!el) return;
+        
+        // Handle null/NaN values
+        const targetValue = (value === null || isNaN(value)) ? 0 : parseFloat(value);
+        
         const start = parseFloat(el.textContent.replace(/[^0-9.-]+/g,"")) || 0;
         const duration = 1000;
         const startTime = performance.now();
@@ -516,7 +520,7 @@
         function update(currentTime) {
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / duration, 1);
-            const current = start + (value - start) * progress;
+            const current = start + (targetValue - start) * progress;
             
             if (isCurrency) {
                 el.textContent = '$' + current.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -607,6 +611,14 @@
 
     function updateEventFeed(events) {
         const list = document.getElementById('event-feed-list');
+        if (!events || events.length === 0) {
+            list.innerHTML = `
+                <div style="padding: 20px; text-align: center; color: #999; font-size: 0.8rem;">
+                    <i class="fas fa-info-circle"></i> No recent activity detected
+                </div>
+            `;
+            return;
+        }
         list.innerHTML = events.map(event => {
             const time = new Date(event.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             return `

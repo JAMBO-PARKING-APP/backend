@@ -87,14 +87,19 @@ class RegionalContextMiddleware:
                     
                     status_cat = f"{response.status_code // 100}xx"
                     
+                    minute_key = now.strftime('%Y%m%d%H%M')
+                    
                     keys = [
                         f"monitor:requests:country:{country_code}:total",
                         f"monitor:requests:country:{country_code}:{date_key}",
                         f"monitor:requests:country:{country_code}:{hour_key}",
+                        f"monitor:requests:country:{country_code}:min:{minute_key}",
                         f"monitor:requests:country:{country_code}:{status_cat}",
                     ]
                     for key in keys:
-                        cache.add(key, 0, timeout=60 * 60 * 24 * 7)
+                        # TTL for per-minute keys is shorter (30 mins) to save space
+                        ttl = 600 if ':min:' in key else 604800
+                        cache.add(key, 0, timeout=ttl)
                         cache.incr(key)
                     
                     # Track last latency and seen time

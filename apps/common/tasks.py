@@ -180,7 +180,7 @@ def send_realtime_monitor_updates():
             recent_requests = 0
             for key in request_keys:
                 key_str = key.decode('utf-8')
-                if 'minute' in key_str:
+                if ':min:' in key_str:
                     recent_requests += int(redis_client.get(key) or 0)
         except Exception as e:
             logger.warning(f"Task Monitor: Redis enrichment failed: {e}")
