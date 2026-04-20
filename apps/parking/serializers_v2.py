@@ -81,7 +81,7 @@ class ParkingSessionSerializer(serializers.ModelSerializer):
         model = ParkingSession
         fields = ['id', 'vehicle_plate', 'zone_name', 'hourly_rate', 'slot_code', 'slot_type', 
                   'start_time', 'planned_end_time', 'actual_end_time', 'duration_minutes',
-                  'status', 'is_overdue', 'estimated_cost', 'final_cost', 'qr_code_data', 'can_extend', 'created_at']
+                  'status', 'is_overdue', 'estimated_cost', 'final_cost', 'qr_code_data', 'can_extend', 'auto_extend_enabled', 'created_at']
         read_only_fields = ['id', 'start_time', 'created_at', 'can_extend']
 
 class StartParkingSerializer(serializers.Serializer):

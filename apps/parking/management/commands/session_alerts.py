@@ -33,7 +33,6 @@ class Command(BaseCommand):
         for session in sessions_5:
             self._send_alert(session, 5)
             
-        # Sessions that just expired
         expired_sessions = ParkingSession.objects.filter(
             status=ParkingStatus.ACTIVE,
             planned_end_time__lte=now

@@ -6,7 +6,6 @@ from decimal import Decimal
 import uuid
 import logging
 from typing import Optional
-
 from apps.parking.models import Zone, Reservation, ParkingSession, ParkingSlot
 from apps.common.constants import ParkingStatus, SlotStatus, TransactionStatus
 from apps.payments.models import WalletTransaction, Transaction, Invoice
@@ -83,7 +82,6 @@ class ReservationService:
         base_cost = (duration_hours * zone.hourly_rate).quantize(Decimal('0.01'))
         service_fee = (base_cost * Decimal('0.05')).quantize(Decimal('0.01'))
         total_cost = base_cost + service_fee
-
         reservation = Reservation.objects.create(
             vehicle=vehicle,
             zone=zone,
@@ -221,7 +219,6 @@ class ReservationService:
         country = user.country
 
         if reservation.status == 'confirmed':
-             # Refund total cost minus the 5% service fee
              refund_amount = reservation.cost - reservation.service_fee
              
              if refund_amount > 0:

@@ -23,7 +23,6 @@ class RealtimeMonitorConsumer(AsyncWebsocketConsumer):
         )
 
     async def receive(self, text_data):
-        # Handle any incoming messages if needed
         pass
 
     async def send_monitor_update(self, event):

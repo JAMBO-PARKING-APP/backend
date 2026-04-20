@@ -25,11 +25,42 @@ def check_expired_sessions():
     ).select_related('vehicle__user', 'zone')
     
     count = 0
+    from apps.parking.services.reservation_service import ReservationService
     for session in expired_sessions.iterator(chunk_size=100):
         try:
             user = session.vehicle.user
             planned_end = session.planned_end_time
             
+            if getattr(session, 'auto_extend_enabled', False):
+                new_planned_end = planned_end + timedelta(hours=1)
+                
+                # Check for reservation conflicts
+                if ReservationService.check_availability(session.zone, planned_end, new_planned_end):
+                    current_rate = session.zone.get_current_hourly_rate(now)
+                    cost = current_rate  # 1 hour cost
+                    
+                    if user.wallet_balance >= cost:
+                        user.adjust_wallet_balance(
+                            -cost,
+                            transaction_type='payment',
+                            description=f'Auto-extension for {session.zone.name}',
+                            parking_session=session
+                        )
+                        session.planned_end_time = new_planned_end
+                        session.estimated_cost += cost
+                        session.save(update_fields=['planned_end_time', 'estimated_cost'])
+                        
+                        from apps.notifications.notification_triggers import notify_custom
+                        notify_custom(
+                            user=user,
+                            title="Session Auto-Extended",
+                            message=f"Your session at {session.zone.name} was auto-extended by 1 hour. UGX {cost} was deducted.",
+                            type='session_extended',
+                            metadata={'session_id': str(session.id)}
+                        )
+                        logger.info(f"Session {session.id} auto-extended by 1 hour.")
+                        continue
+                        
             session.end_session()
             count += 1
             logger.info(f"Session {session.id} auto-ended and charged.")
@@ -220,40 +251,31 @@ def expire_reservation_task(reservation_id):
 def validate_active_session_location():
     """
     Check if users with active sessions are too far from the parking zone.
-    Optimized to avoid N+1 queries.
+    Optimized to avoid N+1 queries and massive dictionary mapping.
     """
-    active_sessions = ParkingSession.objects.filter(status=ParkingStatus.ACTIVE).select_related('vehicle__user', 'zone')
-    
-    if not active_sessions.exists():
-        return "No active sessions to check."
-        
-    user_ids = [session.vehicle.user.id for session in active_sessions]
+    from django.db.models import OuterRef, Subquery
     
     cutoff = timezone.now() - timedelta(minutes=20)
-    recent_locations = UserLocation.objects.filter(
-        user_id__in=user_ids, 
+    latest_user_loc = UserLocation.objects.filter(
+        user=OuterRef('vehicle__user'),
         timestamp__gte=cutoff
-    ).order_by('user_id', '-timestamp')
+    ).order_by('-timestamp')
     
-    user_locations = {}
-    for loc in recent_locations:
-        if loc.user_id not in user_locations:
-            user_locations[loc.user_id] = loc
-            
+    active_sessions = ParkingSession.objects.filter(
+        status=ParkingStatus.ACTIVE
+    ).annotate(
+        user_lat=Subquery(latest_user_loc.values('latitude')[:1]),
+        user_lon=Subquery(latest_user_loc.values('longitude')[:1])
+    ).select_related('vehicle__user', 'zone')
+    
     count = 0
-    
     for session in active_sessions:
-        user = session.vehicle.user
-        zone = session.zone
-        
-        last_location = user_locations.get(user.id)
-        
-        if not last_location:
+        if session.user_lat is None or session.user_lon is None:
             continue
             
         dist_km = calculate_distance(
-            float(last_location.latitude), float(last_location.longitude),
-            float(zone.latitude), float(zone.longitude)
+            float(session.user_lat), float(session.user_lon),
+            float(session.zone.latitude), float(session.zone.longitude)
         )
         
         if dist_km > 1.0:
@@ -261,7 +283,7 @@ def validate_active_session_location():
             notify_session_reminder(session)
             count += 1
             
-    return f"Checked location for {len(active_sessions)} sessions. Sent {count} reminders."
+    return f"Checked location for {active_sessions.count()} sessions. Sent {count} reminders."
 
 @shared_task(name='apps.parking.tasks.notify_exit_overdue')
 def notify_exit_overdue():
@@ -269,42 +291,31 @@ def notify_exit_overdue():
     Find users whose sessions recently ended (COMPLETED or EXPIRED) 
     but are still detected near the zone.
     """
+    from django.db.models import OuterRef, Subquery
     now = timezone.now()
-
     cutoff = now - timedelta(minutes=20)
+    
+    latest_user_loc = UserLocation.objects.filter(
+        user=OuterRef('vehicle__user'),
+        timestamp__gte=cutoff
+    ).order_by('-timestamp')
     
     ended_sessions = ParkingSession.objects.filter(
         status__in=[ParkingStatus.COMPLETED, ParkingStatus.EXPIRED],
         updated_at__gte=cutoff
+    ).annotate(
+        user_lat=Subquery(latest_user_loc.values('latitude')[:1]),
+        user_lon=Subquery(latest_user_loc.values('longitude')[:1])
     ).select_related('vehicle__user', 'zone')
     
-    if not ended_sessions.exists():
-        return "No recently ended sessions to check."
-        
-    user_ids = [s.vehicle.user.id for s in ended_sessions]
-    
-    recent_locations = UserLocation.objects.filter(
-        user_id__in=user_ids, 
-        timestamp__gte=cutoff
-    ).order_by('user_id', '-timestamp')
-    
-    user_locations = {}
-    for loc in recent_locations:
-        if loc.user_id not in user_locations:
-            user_locations[loc.user_id] = loc
-            
     count = 0
     for session in ended_sessions:
-        user = session.vehicle.user
-        zone = session.zone
-        last_loc = user_locations.get(user.id)
-        
-        if not last_loc:
+        if session.user_lat is None or session.user_lon is None:
             continue
             
         dist_km = calculate_distance(
-            float(last_loc.latitude), float(last_loc.longitude),
-            float(zone.latitude), float(zone.longitude)
+            float(session.user_lat), float(session.user_lon),
+            float(session.zone.latitude), float(session.zone.longitude)
         )
         
         if dist_km < 0.2:
@@ -320,14 +331,22 @@ def check_vacate_grace_period():
     Check if users who ended their session 3 minutes ago have vacated the zone.
     Users get a 3-minute window to leave.
     """
+    from django.db.models import OuterRef, Subquery
     now = timezone.now()
     three_mins_ago = now - timedelta(minutes=3)
     five_mins_ago = now - timedelta(minutes=5)
+    
+    latest_user_loc = UserLocation.objects.filter(
+        user=OuterRef('vehicle__user')
+    ).order_by('-timestamp')
     
     recently_ended = ParkingSession.objects.filter(
         status__in=[ParkingStatus.COMPLETED, ParkingStatus.EXPIRED, ParkingStatus.CANCELLED],
         actual_end_time__lte=three_mins_ago,
         actual_end_time__gt=five_mins_ago
+    ).annotate(
+        user_lat=Subquery(latest_user_loc.values('latitude')[:1]),
+        user_lon=Subquery(latest_user_loc.values('longitude')[:1])
     ).select_related('vehicle__user', 'zone')
     
     count = 0
@@ -344,11 +363,9 @@ def check_vacate_grace_period():
         ).exists():
             continue
 
-        last_loc = UserLocation.objects.filter(user=user).order_by('-timestamp').first()
-        
-        if last_loc:
+        if session.user_lat is not None and session.user_lon is not None:
             dist_km = calculate_distance(
-                float(last_loc.latitude), float(last_loc.longitude),
+                float(session.user_lat), float(session.user_lon),
                 float(zone.latitude), float(zone.longitude)
             )
             

@@ -26,12 +26,9 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('Starting Watchdog Management Command...'))
 
         def run_cycle():
-            # 1. Clean up "stuck" slots
             res1 = cleanup_slot_statuses()
             logger.info(res1)
             self.stdout.write(res1)
-
-            # 2. Check for overdue active sessions
             res2 = check_expired_sessions()
             logger.info(res2)
             self.stdout.write(res2)

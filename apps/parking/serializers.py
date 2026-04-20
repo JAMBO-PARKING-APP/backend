@@ -30,7 +30,7 @@ class ParkingSessionSerializer(serializers.ModelSerializer):
         model = ParkingSession
         fields = ('id', 'vehicle_plate', 'zone_name', 'slot_code', 'start_time', 
                  'planned_end_time', 'actual_end_time', 'status', 'estimated_cost', 
-                 'final_cost', 'duration_minutes', 'hourly_rate')
+                 'final_cost', 'duration_minutes', 'hourly_rate', 'auto_extend_enabled')
 
 class ReservationSerializer(serializers.ModelSerializer):
     zone_name = serializers.CharField(source='zone.name', read_only=True)

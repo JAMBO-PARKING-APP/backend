@@ -118,6 +118,7 @@ def send_realtime_monitor_updates():
     from datetime import timedelta
     from .admin import _build_region_request_stats, _build_detected_region_trends
     from .api_views import _get_system_usage
+    from .services.analytics_service import AnalyticsService
 
     try:
         cache = caches['default']
@@ -125,13 +126,27 @@ def send_realtime_monitor_updates():
         region_data = _build_region_request_stats()
         trend_data = _build_detected_region_trends(region_data[:3])
         system_usage = _get_system_usage()
+        
+        # New enriched business and country-wise stats
+        country_breakdown = AnalyticsService.get_realtime_metrics()
+        event_feed = AnalyticsService.get_unified_event_feed()
 
         redis_client = get_redis_connection('default')
         redis_info = redis_client.info()
         active_connections = len(redis_client.pubsub_channels())
 
+        # Enrich country breakdown with system metrics from Redis
+        for code, stats in country_breakdown.items():
+            # Add status code stats
+            stats['system'] = {
+                'requests_total': int(redis_client.get(f"monitor:requests:country:{code}:total") or 0),
+                'status_2xx': int(redis_client.get(f"monitor:requests:country:{code}:2xx") or 0),
+                'status_4xx': int(redis_client.get(f"monitor:requests:country:{code}:4xx") or 0),
+                'status_5xx': int(redis_client.get(f"monitor:requests:country:{code}:5xx") or 0),
+                'latency_last': float(redis_client.get(f"monitor:latency:country:{code}:last") or 0),
+            }
+
         now = timezone.now()
-        minute_ago = now - timedelta(minutes=1)
         request_keys = redis_client.scan_iter('monitor:requests:*')
         recent_requests = 0
         for key in request_keys:
@@ -159,6 +174,9 @@ def send_realtime_monitor_updates():
             'requests_per_minute': recent_requests,
             'max_count': max_count,
             'timestamp': now.isoformat(),
+            # New fields
+            'country_breakdown': country_breakdown,
+            'event_feed': event_feed,
         }
         
         channel_layer = get_channel_layer()

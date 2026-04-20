@@ -6,4 +6,4 @@ class ParkingConfig(AppConfig):
     name = 'apps.parking'
 
     def ready(self):
-        from . import cache_signals  # noqa: F401
+        from . import cache_signals  

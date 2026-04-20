@@ -254,7 +254,7 @@ CHANNEL_LAYERS = {
 }
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'JAMBO PARK API',
+    'TITLE': 'SPACE PARK API',
     'DESCRIPTION': 'Enterprise Intelligent Parking System API documentation.',
     'VERSION': '2.8.0',
     'SERVE_INCLUDE_SCHEMA': False,
@@ -381,6 +381,6 @@ CELERY_BEAT_SCHEDULE = {
     },
     'send-realtime-monitor-updates': {
         'task': 'apps.common.tasks.send_realtime_monitor_updates',
-        'schedule': crontab(minute='*/1'),  # Every minute
+        'schedule': crontab(minute='*/1'),  
     },
 }

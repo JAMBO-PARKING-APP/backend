@@ -3,305 +3,429 @@
 
 {% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
 
-{% block content %}
-<div class="realtime-monitor">
-    <h1>{{ title }}</h1>
-    <p>Last updated: <span id="last-update">Loading...</span> | <button id="refresh-btn">🔄 Refresh Now</button></p>
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    :root {
+        --primary: #4361ee;
+        --secondary: #3f37c9;
+        --success: #4cc9f0;
+        --danger: #f72585;
+        --warning: #f8961e;
+        --bg-light: #f8f9fa;
+        --text-dark: #212529;
+        --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    #content { background: #f0f2f5; padding: 20px; }
     
-    <div class="dashboard-row">
-        <section class="dashboard-card heartbeat-card">
-            <h2>🚀 Celery Heartbeat</h2>
-            <dl class="monitor-list" id="heartbeat-data">
-                <dt>Status</dt><dd class="status-disconnected">Loading...</dd>
-            </dl>
-        </section>
-        <section class="dashboard-card resources-card">
-            <h2>🖥️ Server Resources</h2>
-            <dl class="monitor-list" id="resources-data">
-                <dt>CPU utilization</dt><dd>Loading...</dd>
-            </dl>
-        </section>
-        <section class="dashboard-card redis-card">
-            <h2>🔴 Redis Stats</h2>
-            <dl class="monitor-list" id="redis-data">
-                <dt>Connected clients</dt><dd>Loading...</dd>
-            </dl>
-        </section>
-        <section class="dashboard-card health-card">
-            <h2>🏥 System Health</h2>
-            <dl class="monitor-list" id="health-data">
-                <dt>Status</dt><dd>Loading...</dd>
-            </dl>
-        </section>
-    </div>
+    .monitor-container {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        grid-template-rows: auto 1fr;
+        gap: 20px;
+        max-width: 1600px;
+        margin: 0 auto;
+    }
 
-    <section class="module aligned services-section">
-        <h2>📋 System Services</h2>
-        <div id="services-status" class="services-grid">
-            <p class="no-data">Loading services...</p>
-        </div>
-    </section>
+    /* Header Pulse */
+    .pulse-header {
+        grid-column: 1 / -1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: white;
+        padding: 15px 25px;
+        border-radius: 12px;
+        box-shadow: var-card-shadow;
+    }
 
-    <section class="module aligned workers-section">
-        <h2>👷 Celery Workers</h2>
-        <div id="workers-status" class="workers-grid">
-            <p class="no-data">Loading workers...</p>
+    .pulse-header h1 { margin: 0; font-size: 1.5rem; color: var(--primary); }
+
+    .global-stats { display: flex; gap: 30px; }
+    .stat-item { display: flex; flex-direction: column; align-items: center; }
+    .stat-label { font-size: 0.75rem; color: #6c757d; text-transform: uppercase; letter-spacing: 1px; }
+    .stat-value { font-size: 1.2rem; font-weight: 700; color: var(--text-dark); }
+
+    /* Main Grid */
+    .main-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        gap: 20px;
+    }
+
+    .country-card {
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: var(--card-shadow);
+        transition: transform 0.2s;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .country-card:hover { transform: translateY(-5px); }
+
+    .country-header {
+        padding: 15px 20px;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .country-info { display: flex; align-items: center; gap: 12px; }
+    .country-flag { font-size: 1.5rem; }
+    .country-name { font-weight: 600; font-size: 1.1rem; }
+
+    .country-body { padding: 20px; }
+
+    .metrics-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .metric-box {
+        background: var(--bg-light);
+        padding: 12px;
+        border-radius: 10px;
+        text-align: center;
+    }
+
+    .metric-box i { font-size: 1.2rem; margin-bottom: 5px; color: var(--primary); }
+    .metric-box .label { font-size: 0.7rem; color: #6c757d; display: block; }
+    .metric-box .val { font-size: 1.1rem; font-weight: 700; color: var(--text-dark); }
+
+    /* Occupancy Progress */
+    .occupancy-section { margin-bottom: 20px; }
+    .progress-wrapper { height: 10px; background: #eee; border-radius: 5px; margin-top: 8px; overflow: hidden; }
+    .progress-bar { height: 100%; width: 0%; transition: width 0.5s ease; border-radius: 5px; }
+
+    /* System Stats Section */
+    .system-pills { display: flex; justify-content: space-between; font-size: 0.8rem; color: #666; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ddd; }
+    .pill { display: flex; align-items: center; gap: 5px; }
+    .pill i { font-size: 0.7rem; }
+    .pill.success { color: #2ecc71; }
+    .pill.warning { color: #f1c40f; }
+    .pill.danger { color: #e74c3c; }
+
+    /* Event Feed */
+    .event-feed {
+        background: white;
+        border-radius: 15px;
+        box-shadow: var(--card-shadow);
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100vh - 200px);
+    }
+
+    .feed-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid #eee;
+        font-weight: 700;
+        color: var(--text-dark);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .feed-header .pulse-dot {
+        width: 8px;
+        height: 8px;
+        background: #2ecc71;
+        border-radius: 50%;
+        box-shadow: 0 0 8px #2ecc71;
+        animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(0.95); opacity: 0.7; }
+        70% { transform: scale(1.1); opacity: 1; }
+        100% { transform: scale(0.95); opacity: 0.7; }
+    }
+
+    .feed-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px;
+    }
+
+    .event-item {
+        padding: 12px;
+        border-bottom: 1px solid #f8f9fa;
+        display: grid;
+        grid-template-columns: 35px 1fr;
+        gap: 10px;
+        align-items: center;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(10px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    .event-icon {
+        width: 30px;
+        height: 30px;
+        background: var(--bg-light);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+    }
+
+    .event-details { overflow: hidden; }
+    .event-title { font-size: 0.85rem; font-weight: 600; color: #333; margin-bottom: 2px; }
+    .event-meta { font-size: 0.7rem; color: #999; display: flex; justify-content: space-between; }
+
+    /* Legend */
+    .status-badge { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 5px; }
+
+    /* Loading State */
+    .loading-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(255,255,255,0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        display: none;
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="monitor-container">
+    <header class="pulse-header">
+        <div class="brand">
+            <h1><i class="fas fa-satellite-dish"></i> Realtime Command Center</h1>
+            <p style="margin: 5px 0 0; color: #888; font-size: 0.8rem;">
+                Last Scan: <span id="last-update">--:--:--</span> | Status: <span id="connection-status" style="color: #2ecc71;">Live</span>
+            </p>
         </div>
-    </section>
+        
+        <div class="global-stats">
+            <div class="stat-item">
+                <span class="stat-label">Total Req/Min</span>
+                <span class="stat-value" id="global-rpm">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Avg Latency</span>
+                <span class="stat-value" id="global-latency">0ms</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Active Connections</span>
+                <span class="stat-value" id="global-active">0</span>
+            </div>
+            <div class="stat-item">
+                <button id="refresh-btn" class="button" style="height: 40px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-grid" id="country-grid">
+        <!-- Country cards will be injected here -->
+        <div class="no-data" style="grid-column: 1 / -1; text-align: center; padding: 100px;">
+            <i class="fas fa-globe-africa fa-3x" style="color: #ddd; margin-bottom: 20px;"></i>
+            <p style="color: #888;">Synchronizing country data...</p>
+        </div>
+    </main>
+
+    <aside class="event-feed">
+        <div class="feed-header">
+            <span>LIVE SYSTEM EVENTS</span>
+            <div class="pulse-dot"></div>
+        </div>
+        <div class="feed-content" id="event-feed-list">
+            <!-- Events will be injected here -->
+        </div>
+    </aside>
 </div>
 
-<style>
-.realtime-monitor h1 { color: #333; margin-bottom: 10px; }
-.realtime-monitor p { margin-bottom: 20px; color: #666; }
-#refresh-btn {
-    background: #007bff;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-}
-#refresh-btn:hover { background: #0056b3; }
+<div class="loading-overlay" id="loader">
+    <div class="spinner"></div>
+</div>
 
-.dashboard-row {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-    margin-bottom: 30px;
-}
-
-.dashboard-card {
-    flex: 1 1 280px;
-    background: #fff;
-    border: 1px solid #ddd;
-    padding: 18px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.heartbeat-card { border-left: 4px solid #28a745; }
-.resources-card { border-left: 4px solid #007bff; }
-.redis-card { border-left: 4px solid #dc3545; }
-.health-card { border-left: 4px solid #ffc107; }
-
-.dashboard-card h2 { margin-top: 0; color: #495057; font-size: 1.2em; }
-
-.monitor-list dt {
-    float: left;
-    width: 140px;
-    font-weight: 600;
-    color: #6c757d;
-}
-
-.monitor-list dd {
-    margin: 0 0 10px 145px;
-    font-weight: 500;
-}
-
-.status-ok { color: #28a745; }
-.status-error { color: #dc3545; }
-.status-warning { color: #ffc107; }
-.status-disconnected { color: #6c757d; }
-.status-running { color: #17a2b8; }
-
-.no-data { color: #6c757d; font-style: italic; }
-
-.services-section, .workers-section {
-    margin-bottom: 30px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background: #fff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.services-grid, .workers-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 15px;
-    padding: 15px;
-}
-
-.service-card, .worker-card {
-    padding: 12px;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    background: #f8f9fa;
-}
-
-.service-name, .worker-name {
-    font-weight: 600;
-    margin-bottom: 6px;
-    font-size: 0.95em;
-}
-
-.service-status, .worker-status {
-    font-size: 0.85em;
-    padding: 4px 8px;
-    border-radius: 4px;
-    display: inline-block;
-}
-
-.status-success { background: #d4edda; color: #155724; }
-.status-failure { background: #f8d7da; color: #721c24; }
-.status-unknown { background: #e2e3e5; color: #383d41; }
-</style>
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
-document.getElementById('refresh-btn').addEventListener('click', function() {
-    loadMonitorData();
-});
+    const socketUrl = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/admin/realtime-monitor/';
+    let socket = null;
 
-function getStatusClass(statusText) {
-    const text = (statusText || '').toLowerCase();
-    if (text.includes('ok') || text.includes('operational') || text.includes('active') || text.includes('connected')) {
-        return 'status-ok';
-    } else if (text.includes('error') || text.includes('failed') || text.includes('down')) {
-        return 'status-error';
-    } else if (text.includes('warning')) {
-        return 'status-warning';
+    function connect() {
+        console.log('Connecting to realtime feed...');
+        socket = new WebSocket(socketUrl);
+
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            updateUI(data);
+        };
+
+        socket.onclose = function(e) {
+            console.log('Socket closed. Reconnecting in 5s...');
+            document.getElementById('connection-status').textContent = 'Reconnecting...';
+            document.getElementById('connection-status').style.color = '#e67e22';
+            setTimeout(connect, 5000);
+        };
+
+        socket.onerror = function(err) {
+            console.error('Socket error:', err);
+        };
+
+        socket.onopen = function() {
+            console.log('Connected to command center');
+            document.getElementById('connection-status').textContent = 'Live';
+            document.getElementById('connection-status').style.color = '#2ecc71';
+        };
     }
-    return 'status-disconnected';
-}
 
-function loadMonitorData() {
-    document.getElementById('refresh-btn').disabled = true;
-    
-    Promise.all([
-        fetch('{{ api_monitor_url }}').then(r => r.json()),
-        fetch('{{ api_health_url }}').then(r => r.json())
-    ]).then(([monitorData, healthData]) => {
-        updateHeartbeatDisplay(monitorData);
-        updateResourcesDisplay(monitorData);
-        updateRedisDisplay(monitorData);
-        updateHealthDisplay(healthData);
-        updateServicesDisplay(healthData);
-        updateWorkersDisplay(monitorData);
+    function updateUI(data) {
+        console.log('Received monitor update', data);
         
+        // Update Global Stats
+        document.getElementById('global-rpm').textContent = data.requests_per_minute || 0;
+        document.getElementById('global-active').textContent = data.active_connections || 0;
         document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
-        document.getElementById('refresh-btn').disabled = false;
-    }).catch(error => {
-        console.error('Error loading monitor data:', error);
-        document.getElementById('refresh-btn').disabled = false;
-    });
-}
-
-function updateHeartbeatDisplay(data) {
-    const el = document.getElementById('heartbeat-data');
-    const hb = data.celery.heartbeat;
-    
-    if (hb && hb.timestamp) {
-        const timestamp = new Date(hb.timestamp);
-        const ageSeconds = Math.floor((Date.now() - timestamp.getTime()) / 1000);
-        const ageMin = Math.floor(ageSeconds / 60);
-        const ageSec = ageSeconds % 60;
         
-        el.innerHTML = `
-            <dt>Last heartbeat</dt><dd>${timestamp.toLocaleTimeString()}</dd>
-            <dt>Age</dt><dd>${ageMin}m ${ageSec}s ago</dd>
-            <dt>Status</dt><dd class="status-ok">✓ Active</dd>
-        `;
-    } else {
-        el.innerHTML = `<dt>Status</dt><dd class="status-error">✗ No heartbeat</dd>`;
+        // Update Event Feed
+        if (data.event_feed) {
+            updateEventFeed(data.event_feed);
+        }
+
+        // Update Country Grid
+        if (data.country_breakdown) {
+            updateCountryGrid(data.country_breakdown);
+        }
     }
-}
 
-function updateResourcesDisplay(data) {
-    const el = document.getElementById('resources-data');
-    const res = data.resources;
-    
-    el.innerHTML = `
-        <dt>CPU utilization</dt><dd>${res.cpu_percent !== null ? res.cpu_percent.toFixed(1) + '%' : 'N/A'}</dd>
-        <dt>Memory used</dt><dd>${res.memory_used_mb ? res.memory_used_mb.toFixed(2) : 'N/A'} MB</dd>
-        <dt>Memory total</dt><dd>${res.memory_total_mb ? res.memory_total_mb.toFixed(2) : 'N/A'} MB</dd>
-        <dt>Memory load</dt><dd>${res.memory_percent ? res.memory_percent.toFixed(1) : 'N/A'}%</dd>
-    `;
-}
-
-function updateRedisDisplay(data) {
-    const el = document.getElementById('redis-data');
-    const health = data.health;
-    const stats = data.celery.stats;
-    
-    let totalUptime = 0;
-    let workerCount = 0;
-    
-    for (let worker in stats) {
-        workerCount++;
-        totalUptime += (stats[worker].uptime || 0);
-    }
-    
-    const avgUptime = workerCount > 0 ? Math.floor(totalUptime / workerCount) : 0;
-    const uptimeHours = Math.floor(avgUptime / 3600);
-    const uptimeMinutes = Math.floor((avgUptime % 3600) / 60);
-    
-    el.innerHTML = `
-        <dt>Redis status</dt><dd class="${health.redis ? 'status-ok' : 'status-error'}">${health.redis ? '✓ Connected' : '✗ Disconnected'}</dd>
-        <dt>Workers running</dt><dd>${workerCount}</dd>
-        <dt>Avg uptime</dt><dd>${uptimeHours}h ${uptimeMinutes}m</dd>
-    `;
-}
-
-function updateHealthDisplay(data) {
-    const el = document.getElementById('health-data');
-    const res = data.resources;
-    const allOk = res.disk_percent < 90;
-    
-    el.innerHTML = `
-        <dt>Disk usage</dt><dd>${res.disk_percent ? res.disk_percent.toFixed(1) : 'N/A'}%</dd>
-        <dt>Status</dt><dd class="${allOk ? 'status-ok' : 'status-warning'}">${allOk ? '✓ Healthy' : '⚠ Warning'}</dd>
-    `;
-}
-
-function updateServicesDisplay(data) {
-    const el = document.getElementById('services-status');
-    const services = data.services || [];
-    
-    if (services.length === 0) {
-        el.innerHTML = '<p class="no-data">No service data available</p>';
-        return;
-    }
-    
-    el.innerHTML = services.map(service => `
-        <div class="service-card">
-            <div class="service-name">${service.name}</div>
-            <div class="service-status status-${service.color || 'unknown'}">${service.status}</div>
-        </div>
-    `).join('');
-}
-
-function updateWorkersDisplay(data) {
-    const el = document.getElementById('workers-status');
-    const stats = data.celery.stats || {};
-    
-    if (Object.keys(stats).length === 0) {
-        el.innerHTML = '<p class="no-data">No workers running</p>';
-        return;
-    }
-    
-    el.innerHTML = Object.keys(stats).map(workerName => {
-        const workerStats = stats[workerName];
-        const taskCount = Object.keys(workerStats.total || {}).length;
-        const uptime = workerStats.uptime || 0;
-        const uptimeHours = Math.floor(uptime / 3600);
-        const uptimeMinutes = Math.floor((uptime % 3600) / 60);
-        
-        return `
-            <div class="worker-card">
-                <div class="worker-name">${workerName}</div>
-                <div class="worker-status status-running">Running</div>
-                <div style="font-size: 0.8em; margin-top: 8px; color: #666;">
-                    Tasks: ${taskCount}<br>
-                    Uptime: ${uptimeHours}h ${uptimeMinutes}m<br>
-                    PID: ${workerStats.pid || 'N/A'}
+    function updateEventFeed(events) {
+        const list = document.getElementById('event-feed-list');
+        list.innerHTML = events.map(event => {
+            const time = new Date(event.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            return `
+                <div class="event-item">
+                    <div class="event-icon">${event.icon || '🔔'}</div>
+                    <div class="event-details">
+                        <div class="event-title">${event.title}</div>
+                        <div class="event-meta">
+                            <span><i class="fas fa-map-marker-alt"></i> ${event.country} | ${event.zone || 'System'}</span>
+                            <span>${time}</span>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        `;
-    }).join('');
-}
+            `;
+        }).join('');
+    }
 
-document.addEventListener('DOMContentLoaded', function() {
-    loadMonitorData();
-    setInterval(loadMonitorData, 30000);
-});
+    function updateCountryGrid(countries) {
+        const grid = document.getElementById('country-grid');
+        let html = '';
+
+        for (const [code, stats] of Object.entries(countries)) {
+            const occ = stats.business.occupancy_rate;
+            const progressColor = occ > 90 ? '#f72585' : (occ > 70 ? '#f8961e' : '#4cc9f0');
+            
+            html += `
+                <div class="country-card">
+                    <div class="country-header">
+                        <div class="country-info">
+                            <span class="country-flag">${stats.country_flag || '🌍'}</span>
+                            <span class="country-name">${stats.country_name}</span>
+                        </div>
+                        <div class="country-code" style="opacity: 0.7; font-size: 0.8rem;">${code}</div>
+                    </div>
+                    <div class="country-body">
+                        <div class="metrics-row">
+                            <div class="metric-box">
+                                <i class="fas fa-car"></i>
+                                <span class="label">ACTIVE SESSIONS</span>
+                                <span class="val">${stats.business.active_sessions}</span>
+                            </div>
+                            <div class="metric-box">
+                                <i class="fas fa-coins"></i>
+                                <span class="label">REVENUE TODAY</span>
+                                <span class="val">${stats.currency} ${stats.business.revenue_today.toLocaleString()}</span>
+                            </div>
+                        </div>
+
+                        <div class="occupancy-section">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.8rem; font-weight: 600; color: #444;">OCCUPANCY PULSE</span>
+                                <span style="font-size: 0.9rem; font-weight: 700; color: ${progressColor}">${occ}%</span>
+                            </div>
+                            <div class="progress-wrapper">
+                                <div class="progress-bar" style="width: ${occ}%; background: ${progressColor}"></div>
+                            </div>
+                            <div style="margin-top: 5px; font-size: 0.7rem; color: #999; text-align: right;">
+                                ${stats.business.active_sessions} / ${stats.business.total_slots} slots
+                            </div>
+                        </div>
+
+                        <div class="metrics-row" style="margin-bottom: 0;">
+                            <div class="metric-box" style="background: white; border: 1px solid #f0f0f0;">
+                                <span class="label" style="margin-bottom: 3px;">ENFORCEMENT</span>
+                                <span class="val" style="font-size: 1rem; color: #2ecc71;">
+                                    <i class="fas fa-user-shield" style="font-size: 0.8rem; margin-right: 5px;"></i> ${stats.enforcement.online_officers} Online
+                                </span>
+                            </div>
+                            <div class="metric-box" style="background: white; border: 1px solid #f0f0f0;">
+                                <span class="label" style="margin-bottom: 3px;">VIOLATIONS</span>
+                                <span class="val" style="font-size: 1rem; color: #e74c3c;">
+                                    <i class="fas fa-file-invoice-dollar" style="font-size: 0.8rem; margin-right: 5px;"></i> ${stats.enforcement.violations_today}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="system-pills">
+                            <div class="pill ${stats.system.status_5xx > 0 ? 'danger' : 'success'}">
+                                <i class="fas fa-circle"></i> API: ${stats.system.requests_total}
+                            </div>
+                            <div class="pill">
+                                <i class="fas fa-clock"></i> Latency: ${Math.round(stats.system.latency_last * 1000)}ms
+                            </div>
+                            <div class="pill ${stats.system.status_4xx > 5 ? 'warning' : ''}">
+                                <i class="fas fa-exclamation-triangle"></i> Errs: ${stats.system.status_4xx + stats.system.status_5xx}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        grid.innerHTML = html;
+    }
+
+    document.getElementById('refresh-btn').addEventListener('click', function() {
+        document.getElementById('loader').style.display = 'flex';
+        fetch('{{ api_monitor_url }}')
+            .then(r => r.json())
+            .then(data => {
+                updateUI(data);
+                document.getElementById('loader').style.display = 'none';
+            })
+            .catch(e => {
+                console.error(e);
+                document.getElementById('loader').style.display = 'none';
+            });
+    });
+
+    connect();
 </script>
 {% endblock %}

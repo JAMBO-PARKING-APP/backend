@@ -278,7 +278,6 @@ class StartParkingAPIView(APIView):
                         'error': 'No available slots in this zone'
                     }, status=status.HTTP_400_BAD_REQUEST)
 
-                # Try to find a slot without any upcoming reservations
                 from django.db.models import Exists, OuterRef
                 slots_without_res = available_slots.filter(
                     ~Exists(
@@ -293,8 +292,6 @@ class StartParkingAPIView(APIView):
                 parking_slot = slots_without_res.first()
 
                 if not parking_slot:
-                    # All available slots have upcoming reservations.
-                    # Find one where our planned_end < its next reservation's reserved_from
                     for slot in available_slots:
                         next_res = Reservation.objects.filter(
                             parking_slot=slot,
@@ -656,7 +653,6 @@ class StartParkingFromReservationAPIView(APIView):
 
     @transaction.atomic
     def post(self, request, reservation_id):
-        # from apps.common.utils import calculate_distance
         
         try:
             reservation = Reservation.objects.get(

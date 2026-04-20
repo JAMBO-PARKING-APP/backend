@@ -32,3 +32,4 @@ celerybeat-schedule
 celerybeat-schedule-shm
 celerybeat-schedule-wal
 jambo-park-firebase-adminsdk-fbsvc-1bd44851a9.json
+start_dev.bat
