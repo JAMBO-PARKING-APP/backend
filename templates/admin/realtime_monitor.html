@@ -141,73 +141,97 @@
         animation: pulse 1.5s infinite;
     }
 
-    @keyframes pulse {
-        0% { transform: scale(0.95); opacity: 0.7; }
-        70% { transform: scale(1.1); opacity: 1; }
-        100% { transform: scale(0.95); opacity: 0.7; }
-    }
-
-    .feed-content {
-        flex: 1;
-        overflow-y: auto;
-        padding: 10px;
-    }
-
-    .event-item {
-        padding: 12px;
-        border-bottom: 1px solid #f8f9fa;
+    /* Infrastructure Section */
+    .infra-row {
+        grid-column: 1 / -1;
         display: grid;
-        grid-template-columns: 35px 1fr;
-        gap: 10px;
-        align-items: center;
-        animation: slideIn 0.3s ease-out;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
     }
 
-    @keyframes slideIn {
-        from { opacity: 0; transform: translateX(10px); }
-        to { opacity: 1; transform: translateX(0); }
-    }
-
-    .event-icon {
-        width: 30px;
-        height: 30px;
-        background: var(--bg-light);
-        border-radius: 8px;
+    .infra-card {
+        background: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: var(--card-shadow);
         display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.9rem;
+        flex-direction: column;
+        gap: 15px;
+        position: relative;
+        overflow: hidden;
     }
 
-    .event-details { overflow: hidden; }
-    .event-title { font-size: 0.85rem; font-weight: 600; color: #333; margin-bottom: 2px; }
-    .event-meta { font-size: 0.7rem; color: #999; display: flex; justify-content: space-between; }
+    .infra-card::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; height: 4px;
+        background: var(--primary);
+        opacity: 0.8;
+    }
 
-    /* Legend */
-    .status-badge { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 5px; }
+    .infra-card.danger::after { background: var(--danger); }
+    .infra-card.success::after { background: #2ecc71; }
 
-    /* Loading State */
-    .loading-overlay {
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(255,255,255,0.8);
+    .infra-header {
         display: flex;
-        justify-content: center;
+        justify-content: space-between;
         align-items: center;
-        z-index: 1000;
-        display: none;
     }
 
-    .spinner {
-        width: 40px;
-        height: 40px;
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid var(--primary);
+    .infra-label { font-size: 0.85rem; font-weight: 600; color: #666; }
+    .infra-value { font-size: 1.5rem; font-weight: 800; color: var(--text-dark); }
+    
+    .gauge-container {
+        height: 8px;
+        background: #eee;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+
+    .gauge-fill {
+        height: 100%;
+        background: var(--primary);
+        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .infra-details {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        color: #999;
+    }
+
+    .status-pill {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .status-pill.online { background: #e8f5e9; color: #2e7d32; }
+    .status-pill.offline { background: #ffebee; color: #c62828; }
+
+    /* Animations */
+    .count-up { transition: all 0.5s ease; }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+
+    .live-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background: #2ecc71;
         border-radius: 50%;
-        animation: spin 1s linear infinite;
+        margin-right: 5px;
+        animation: pulse 2s infinite;
     }
-
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 </style>
 {% endblock %}
 
@@ -241,6 +265,62 @@
             </div>
         </div>
     </header>
+
+    <div class="infra-row">
+        <div class="infra-card" id="cpu-card">
+            <div class="infra-header">
+                <span class="infra-label"><i class="fas fa-microchip"></i> CPU LOAD</span>
+                <span class="status-pill online" id="cpu-status">Normal</span>
+            </div>
+            <div class="infra-value" id="cpu-val">0%</div>
+            <div class="gauge-container">
+                <div class="gauge-fill" id="cpu-gauge" style="width: 0%"></div>
+            </div>
+            <div class="infra-details">
+                <span>Multi-core Scaling</span>
+                <span id="cpu-cores">-- Cores</span>
+            </div>
+        </div>
+
+        <div class="infra-card" id="mem-card">
+            <div class="infra-header">
+                <span class="infra-label"><i class="fas fa-memory"></i> MEMORY UTILIZATION</span>
+                <span class="status-pill online" id="mem-status">Healthy</span>
+            </div>
+            <div class="infra-value" id="mem-val">0%</div>
+            <div class="gauge-container">
+                <div class="gauge-fill" id="mem-gauge" style="width: 0%"></div>
+            </div>
+            <div class="infra-details">
+                <span id="mem-used">0 MB used</span>
+                <span id="mem-total">0 MB total</span>
+            </div>
+        </div>
+
+        <div class="infra-card" id="redis-card">
+            <div class="infra-header">
+                <span class="infra-label"><i class="fas fa-database"></i> REDIS CLUSTER</span>
+                <span class="status-pill online" id="redis-status">Active</span>
+            </div>
+            <div class="infra-value" id="redis-clients">0</div>
+            <div class="infra-details" style="margin-top: 10px;">
+                <span>Active Clients</span>
+                <span id="redis-mem">-- MB</span>
+            </div>
+        </div>
+
+        <div class="infra-card" id="celery-card">
+            <div class="infra-header">
+                <span class="infra-label"><i class="fas fa-tasks"></i> CELERY WORKERS</span>
+                <span class="status-pill" id="celery-status">Checking...</span>
+            </div>
+            <div class="infra-value" id="celery-active">0</div>
+            <div class="infra-details" style="margin-top: 10px;">
+                <span>Active Tasks</span>
+                <span id="celery-heartbeat">--:--</span>
+            </div>
+        </div>
+    </div>
 
     <main class="main-grid" id="country-grid">
         <!-- Country cards will be injected here -->
@@ -344,23 +424,83 @@
         };
     }
 
+    function countUp(id, value, suffix = '', decimal = 0) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const start = parseFloat(el.textContent) || 0;
+        const duration = 1000;
+        const startTime = performance.now();
+
+        function update(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const current = start + (value - start) * progress;
+            el.textContent = current.toFixed(decimal) + suffix;
+            if (progress < 1) requestAnimationFrame(update);
+        }
+        requestAnimationFrame(update);
+    }
+
     function updateUI(data) {
         console.log('Received monitor update', data);
         
-        // Update Global Stats
-        document.getElementById('global-rpm').textContent = data.requests_per_minute || 0;
-        document.getElementById('global-active').textContent = data.active_connections || 0;
+        // Update Time
         document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+
+        // 1. Global Metrics
+        countUp('global-rpm', data.requests_per_minute || 0);
+        countUp('global-active', data.active_connections || 0);
         
-        // Update Event Feed
-        if (data.event_feed) {
-            updateEventFeed(data.event_feed);
+        // 2. Infrastructure Stats (Resources)
+        if (data.resources) {
+            const res = data.resources;
+            
+            // CPU
+            const cpu = res.cpu_percent || 0;
+            countUp('cpu-val', cpu, '%');
+            document.getElementById('cpu-gauge').style.width = cpu + '%';
+            document.querySelector('#cpu-card').className = 'infra-card' + (cpu > 80 ? ' danger' : '');
+            document.getElementById('cpu-status').textContent = cpu > 80 ? 'Heavy Load' : (cpu > 50 ? 'Moderate' : 'Normal');
+            document.getElementById('cpu-status').className = 'status-pill ' + (cpu > 80 ? 'offline' : 'online');
+
+            // Memory
+            const mem = res.memory_percent || 0;
+            countUp('mem-val', mem, '%');
+            document.getElementById('mem-gauge').style.width = mem + '%';
+            document.getElementById('mem-used').textContent = res.memory_used_mb + ' MB used';
+            document.getElementById('mem-total').textContent = res.memory_total_mb + ' MB total';
+            document.querySelector('#mem-card').className = 'infra-card' + (mem > 85 ? ' danger' : '');
+            document.getElementById('mem-status').textContent = mem > 85 ? 'Critical' : 'Healthy';
+            document.getElementById('mem-status').className = 'status-pill ' + (mem > 85 ? 'offline' : 'online');
         }
 
-        // Update Country Grid
-        if (data.country_breakdown) {
-            updateCountryGrid(data.country_breakdown);
+        // 3. Redis Stats
+        if (data.redis_stats) {
+            countUp('redis-clients', data.redis_stats.connected_clients || 0);
+            document.getElementById('redis-mem').textContent = data.redis_stats.used_memory_human || '--';
         }
+
+        // 4. Celery Stats
+        if (data.celery) {
+            const active = Object.values(data.celery.active || {}).reduce((acc, tasks) => acc + tasks.length, 0);
+            countUp('celery-active', active);
+            
+            const statusEl = document.getElementById('celery-status');
+            const hasWorkers = Object.keys(data.celery.workers || {}).length > 0;
+            statusEl.textContent = hasWorkers ? 'Online' : 'Offline';
+            statusEl.className = 'status-pill ' + (hasWorkers ? 'online' : 'offline');
+            
+            if (data.celery.heartbeat) {
+                const hb = new Date(data.celery.heartbeat.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                document.getElementById('celery-heartbeat').textContent = 'Last Beat: ' + hb;
+            }
+        }
+        
+        // Update Event Feed
+        if (data.event_feed) updateEventFeed(data.event_feed);
+
+        // Update Country Grid
+        if (data.country_breakdown) updateCountryGrid(data.country_breakdown);
     }
 
     function updateEventFeed(events) {

@@ -179,7 +179,12 @@ def send_realtime_monitor_updates():
             'heartbeat': heartbeat,
             'region_data': region_data,
             'trend_data': trend_data,
-            'system_usage': system_usage,
+            'resources': system_usage,
+            'health': {
+                'database': True, # If we got here, DB is likely fine
+                'redis': True,
+                'disk_usage_percent': float(redis_client.get("monitor:disk:percent") or 0),
+            },
             'redis_stats': {
                 'connected_clients': redis_info.get('connected_clients', 0),
                 'used_memory_human': redis_info.get('used_memory_human', 'N/A'),
