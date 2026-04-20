@@ -8,45 +8,708 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
     :root {
-        --primary: #4361ee;
-        --secondary: #3f37c9;
-        --success: #4cc9f0;
-        --danger: #f72585;
-        --warning: #f8961e;
-        --bg-light: #f8f9fa;
-        --text-dark: #212529;
-        --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --secondary: #06b6d4;
+        --accent: #f59e0b;
+        --danger: #ef4444;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --bg-primary: #0f172a;
+        --bg-secondary: #1e293b;
+        --bg-card: #334155;
+        --bg-hover: #475569;
+        --text-primary: #f8fafc;
+        --text-secondary: #cbd5e1;
+        --text-muted: #94a3b8;
+        --border: #475569;
+        --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        --shadow-hover: 0 20px 40px -10px rgba(0, 0, 0, 0.4);
+        --gradient: linear-gradient(135deg, var(--primary), var(--secondary));
+        --radius: 12px;
     }
 
-    #content { background: #f0f2f5; padding: 20px; }
-    
+    body { background: var(--bg-primary); color: var(--text-primary); font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+
+    #content { background: var(--bg-primary); padding: 0; margin: 0; }
+
     .monitor-container {
-        display: grid;
-        grid-template-columns: 1fr 350px;
-        grid-template-rows: auto 1fr;
-        gap: 20px;
-        max-width: 1600px;
+        max-width: 1400px;
         margin: 0 auto;
+        padding: 20px;
     }
 
-    /* Header Pulse */
+    /* Header */
     .pulse-header {
-        grid-column: 1 / -1;
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: white;
-        padding: 15px 25px;
-        border-radius: 12px;
-        box-shadow: var-card-shadow;
+        backdrop-filter: blur(10px);
     }
 
-    .pulse-header h1 { margin: 0; font-size: 1.5rem; color: var(--primary); }
+    .pulse-header h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 700;
+        background: var(--gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
 
-    .global-stats { display: flex; gap: 30px; }
-    .stat-item { display: flex; flex-direction: column; align-items: center; }
-    .stat-label { font-size: 0.75rem; color: #6c757d; text-transform: uppercase; letter-spacing: 1px; }
-    .stat-value { font-size: 1.2rem; font-weight: 700; color: var(--text-dark); }
+    .pulse-header p {
+        margin: 8px 0 0;
+        color: var(--text-muted);
+        font-size: 0.875rem;
+    }
+
+    .global-stats {
+        display: flex;
+        gap: 24px;
+    }
+
+    .stat-item {
+        text-align: center;
+        padding: 16px;
+        background: var(--bg-secondary);
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        transition: all 0.3s ease;
+    }
+
+    .stat-item:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--text-primary);
+    }
+
+    /* Tab Navigation */
+    .tab-nav {
+        display: flex;
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        margin-bottom: 24px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+    }
+
+    .tab-button {
+        flex: 1;
+        padding: 16px 24px;
+        border: none;
+        background: transparent;
+        color: var(--text-secondary);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        font-size: 0.875rem;
+    }
+
+    .tab-button::before {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        width: 0;
+        height: 2px;
+        background: var(--gradient);
+        transition: all 0.3s ease;
+        transform: translateX(-50%);
+    }
+
+    .tab-button:hover::before {
+        width: 100%;
+    }
+
+    .tab-button.active {
+        color: var(--primary);
+        background: rgba(99, 102, 241, 0.1);
+    }
+
+    .tab-button.active::before {
+        width: 100%;
+    }
+
+    /* Tab Content */
+    .tab-content {
+        display: none;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Infrastructure Cards */
+    .infra-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .infra-card {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        padding: 24px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .infra-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--gradient);
+    }
+
+    .infra-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    .infra-card.danger::before { background: var(--danger); }
+    .infra-card.success::before { background: var(--success); }
+
+    .infra-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .infra-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .infra-value {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 12px;
+    }
+
+    .gauge-container {
+        height: 8px;
+        background: var(--bg-secondary);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 12px;
+    }
+
+    .gauge-fill {
+        height: 100%;
+        background: var(--gradient);
+        border-radius: 4px;
+        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+    }
+
+    .infra-details {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .status-pill {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-pill.online {
+        background: rgba(16, 185, 129, 0.2);
+        color: var(--success);
+        border: 1px solid var(--success);
+    }
+
+    .status-pill.offline {
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--danger);
+        border: 1px solid var(--danger);
+    }
+
+    /* Insights Cards */
+    .insights-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .insight-card {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        padding: 24px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .insight-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    .insight-card.success { border-color: var(--success); }
+    .insight-card.danger { border-color: var(--danger); }
+
+    .insight-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .insight-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+
+    .insight-card.success .insight-icon { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+    .insight-card.danger .insight-icon { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+    .insight-card .insight-icon { background: rgba(99, 102, 241, 0.2); color: var(--primary); }
+
+    .insight-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+    }
+
+    .insight-value {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .insight-subtitle {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+
+    /* Throughput Chart */
+    .chart-card {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        padding: 24px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        grid-column: 1 / -1;
+    }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .chart-title {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    /* Country Grid */
+    .main-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 20px;
+    }
+
+    .country-card {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        transition: all 0.3s ease;
+    }
+
+    .country-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    .country-header {
+        padding: 20px;
+        background: var(--gradient);
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .country-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .country-flag {
+        font-size: 1.5rem;
+    }
+
+    .country-name {
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .country-body {
+        padding: 20px;
+    }
+
+    .metrics-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .metric-box {
+        background: var(--bg-secondary);
+        padding: 16px;
+        border-radius: 8px;
+        text-align: center;
+        border: 1px solid var(--border);
+    }
+
+    .metric-box i {
+        font-size: 1.25rem;
+        margin-bottom: 8px;
+        color: var(--primary);
+    }
+
+    .metric-box .label {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+
+    .metric-box .val {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    /* Occupancy Progress */
+    .occupancy-section {
+        margin-bottom: 20px;
+    }
+
+    .progress-wrapper {
+        height: 10px;
+        background: var(--bg-secondary);
+        border-radius: 5px;
+        overflow: hidden;
+        margin-top: 8px;
+        border: 1px solid var(--border);
+    }
+
+    .progress-bar {
+        height: 100%;
+        width: 0%;
+        background: var(--gradient);
+        transition: width 0.5s ease;
+        border-radius: 4px;
+        box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+    }
+
+    .system-pills {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid var(--border);
+    }
+
+    .pill {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .pill i {
+        font-size: 0.7rem;
+    }
+
+    .pill.success {
+        color: var(--success);
+    }
+
+    .pill.warning {
+        color: var(--warning);
+    }
+
+    .pill.danger {
+        color: var(--danger);
+    }
+
+    /* Event Feed */
+    .event-feed {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100vh - 200px);
+        overflow: hidden;
+    }
+
+    .feed-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--border);
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--bg-secondary);
+    }
+
+    .feed-header .pulse-dot {
+        width: 10px;
+        height: 10px;
+        background: var(--success);
+        border-radius: 50%;
+        box-shadow: 0 0 12px var(--success);
+        animation: pulse 1.5s infinite;
+    }
+
+    .feed-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0;
+    }
+
+    .event-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        transition: background 0.2s ease;
+    }
+
+    .event-item:hover {
+        background: var(--bg-hover);
+    }
+
+    .event-item:last-child {
+        border-bottom: none;
+    }
+
+    .event-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: var(--bg-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.125rem;
+        flex-shrink: 0;
+    }
+
+    .event-details {
+        flex: 1;
+    }
+
+    .event-title {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .event-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    /* System Details */
+    .system-details {
+        color: var(--text-primary);
+    }
+
+    .system-details h2 {
+        color: var(--primary);
+        margin-bottom: 20px;
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+
+    .system-card {
+        background: var(--bg-card);
+        border-radius: var(--radius);
+        padding: 24px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        margin-bottom: 20px;
+    }
+
+    #celery-schedule {
+        background: var(--bg-card);
+        padding: 20px;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+    }
+
+    #celery-schedule > div {
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+        transition: background 0.2s ease;
+    }
+
+    #celery-schedule > div:hover {
+        background: var(--bg-hover);
+    }
+
+    #celery-schedule > div:last-child {
+        border-bottom: none;
+    }
+
+    /* Loading Overlay */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 23, 42, 0.8);
+        backdrop-filter: blur(4px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid var(--border);
+        border-top: 4px solid var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Animations */
+    .count-up {
+        transition: all 0.5s ease;
+    }
+
+    .live-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background: var(--success);
+        border-radius: 50%;
+        margin-right: 5px;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.7; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .monitor-container {
+            padding: 10px;
+        }
+
+        .pulse-header {
+            flex-direction: column;
+            gap: 20px;
+            text-align: center;
+        }
+
+        .global-stats {
+            justify-content: center;
+        }
+
+        .tab-nav {
+            flex-direction: column;
+        }
+
+        .infra-row, .insights-row {
+            grid-template-columns: 1fr;
+        }
+
+        .main-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .metrics-row {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
 
     /* Main Grid */
     .main-grid {
@@ -232,6 +895,62 @@
         margin-right: 5px;
         animation: pulse 2s infinite;
     }
+
+    /* Tab Navigation */
+    .tab-nav {
+        display: flex;
+        background: white;
+        border-radius: 12px;
+        box-shadow: var(--card-shadow);
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+
+    .tab-button {
+        flex: 1;
+        padding: 15px 20px;
+        border: none;
+        background: #f8f9fa;
+        color: #666;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-right: 1px solid #e9ecef;
+    }
+
+    .tab-button:last-child { border-right: none; }
+
+    .tab-button.active {
+        background: var(--primary);
+        color: white;
+    }
+
+    .tab-button:hover:not(.active) {
+        background: #e9ecef;
+    }
+
+    /* Tab Content */
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    /* System Details */
+    .system-details h2 {
+        color: var(--primary);
+        margin-bottom: 20px;
+        font-size: 1.5rem;
+    }
+
+    #celery-schedule {
+        background: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: var(--card-shadow);
+    }
 </style>
 {% endblock %}
 
@@ -266,124 +985,175 @@
         </div>
     </header>
 
-    <div class="infra-row">
-        <div class="infra-card" id="cpu-card">
-            <div class="infra-header">
-                <span class="infra-label"><i class="fas fa-microchip"></i> CPU LOAD</span>
-                <span class="status-pill online" id="cpu-status">Normal</span>
+    <!-- Tab Navigation -->
+    <nav class="tab-nav">
+        <button class="tab-button active" data-tab="dashboard">Dashboard</button>
+        <button class="tab-button" data-tab="countries">Countries</button>
+        <button class="tab-button" data-tab="system">System Health</button>
+        <button class="tab-button" data-tab="events">Live Events</button>
+    </nav>
+
+    <!-- Tab Content -->
+    <div id="dashboard" class="tab-content active">
+        <div class="infra-row">
+            <div class="infra-card" id="cpu-card">
+                <div class="infra-header">
+                    <span class="infra-label"><i class="fas fa-microchip"></i> CPU LOAD</span>
+                    <span class="status-pill online" id="cpu-status">Normal</span>
+                </div>
+                <div class="infra-value" id="cpu-val">0%</div>
+                <div class="gauge-container">
+                    <div class="gauge-fill" id="cpu-gauge" style="width: 0%"></div>
+                </div>
+                <div class="infra-details">
+                    <span>Multi-core Scaling</span>
+                    <span id="cpu-cores">-- Cores</span>
+                </div>
             </div>
-            <div class="infra-value" id="cpu-val">0%</div>
-            <div class="gauge-container">
-                <div class="gauge-fill" id="cpu-gauge" style="width: 0%"></div>
+
+            <div class="infra-card" id="mem-card">
+                <div class="infra-header">
+                    <span class="infra-label"><i class="fas fa-memory"></i> MEMORY UTILIZATION</span>
+                    <span class="status-pill online" id="mem-status">Healthy</span>
+                </div>
+                <div class="infra-value" id="mem-val">0%</div>
+                <div class="gauge-container">
+                    <div class="gauge-fill" id="mem-gauge" style="width: 0%"></div>
+                </div>
+                <div class="infra-details">
+                    <span id="mem-used">0 MB used</span>
+                    <span id="mem-total">0 MB total</span>
+                </div>
             </div>
-            <div class="infra-details">
-                <span>Multi-core Scaling</span>
-                <span id="cpu-cores">-- Cores</span>
+
+            <div class="infra-card" id="redis-card">
+                <div class="infra-header">
+                    <span class="infra-label"><i class="fas fa-database"></i> REDIS CLUSTER</span>
+                    <span class="status-pill online" id="redis-status">Active</span>
+                </div>
+                <div class="infra-value" id="redis-clients">0</div>
+                <div class="infra-details" style="margin-top: 10px;">
+                    <span>Active Clients</span>
+                    <span id="redis-mem">-- MB</span>
+                </div>
+            </div>
+
+            <div class="infra-card" id="celery-card">
+                <div class="infra-header">
+                    <span class="infra-label"><i class="fas fa-tasks"></i> CELERY WORKERS</span>
+                    <span class="status-pill" id="celery-status">Checking...</span>
+                </div>
+                <div class="infra-value" id="celery-active">0</div>
+                <div class="infra-details" style="margin-top: 10px;">
+                    <span>Active Tasks</span>
+                    <span id="celery-heartbeat">--:--</span>
+                </div>
             </div>
         </div>
 
-        <div class="infra-card" id="mem-card">
-            <div class="infra-header">
-                <span class="infra-label"><i class="fas fa-memory"></i> MEMORY UTILIZATION</span>
-                <span class="status-pill online" id="mem-status">Healthy</span>
+        <!-- Insights Row -->
+        <div class="insights-row">
+            <div class="insight-card success">
+                <div class="insight-header">
+                    <div class="insight-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div>
+                        <div class="insight-title">GLOBAL REVENUE (24H)</div>
+                        <div class="insight-value" id="global-revenue">$0.00</div>
+                        <div class="insight-subtitle">Sum of all active markets</div>
+                    </div>
+                </div>
             </div>
-            <div class="infra-value" id="mem-val">0%</div>
-            <div class="gauge-container">
-                <div class="gauge-fill" id="mem-gauge" style="width: 0%"></div>
+
+            <div class="insight-card">
+                <div class="insight-header">
+                    <div class="insight-icon">
+                        <i class="fas fa-car"></i>
+                    </div>
+                    <div>
+                        <div class="insight-title">GLOBAL ACTIVE SESSIONS</div>
+                        <div class="insight-value" id="global-sessions">0</div>
+                        <div class="insight-subtitle" id="global-occupancy">0% Avg Occupancy</div>
+                    </div>
+                </div>
             </div>
-            <div class="infra-details">
-                <span id="mem-used">0 MB used</span>
-                <span id="mem-total">0 MB total</span>
+
+            <div class="insight-card danger">
+                <div class="insight-header">
+                    <div class="insight-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div>
+                        <div class="insight-title">TOTAL VIOLATIONS</div>
+                        <div class="insight-value" id="global-violations">0</div>
+                        <div class="insight-subtitle" id="vio-rate">-- per hour</div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="infra-card" id="redis-card">
-            <div class="infra-header">
-                <span class="infra-label"><i class="fas fa-database"></i> REDIS CLUSTER</span>
-                <span class="status-pill online" id="redis-status">Active</span>
+        <!-- Throughput Chart -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3 class="chart-title">
+                    <i class="fas fa-chart-line" style="margin-right: 8px;"></i>
+                    SYSTEM THROUGHPUT (RPM)
+                </h3>
             </div>
-            <div class="infra-value" id="redis-clients">0</div>
-            <div class="infra-details" style="margin-top: 10px;">
-                <span>Active Clients</span>
-                <span id="redis-mem">-- MB</span>
-            </div>
-        </div>
-
-        <div class="infra-card" id="celery-card">
-            <div class="infra-header">
-                <span class="infra-label"><i class="fas fa-tasks"></i> CELERY WORKERS</span>
-                <span class="status-pill" id="celery-status">Checking...</span>
-            </div>
-            <div class="infra-value" id="celery-active">0</div>
-            <div class="infra-details" style="margin-top: 10px;">
-                <span>Active Tasks</span>
-                <span id="celery-heartbeat">--:--</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Insights Row -->
-    <div class="infra-row" style="margin-bottom: 30px;">
-        <div class="infra-card success">
-            <div class="infra-header">
-                <span class="infra-label"><i class="fas fa-dollar-sign"></i> GLOBAL REVENUE (24H)</span>
-            </div>
-            <div class="infra-value" id="global-revenue">$0.00</div>
-            <div class="infra-details">
-                <span>Sum of all active markets</span>
-                <span id="revenue-trend">Stable</span>
-            </div>
-        </div>
-
-        <div class="infra-card">
-            <div class="infra-header">
-                <span class="infra-label"><i class="fas fa-car"></i> GLOBAL ACTIVE SESSIONS</span>
-            </div>
-            <div class="infra-value" id="global-sessions">0</div>
-            <div class="infra-details">
-                <span id="global-occupancy">0% Avg Occupancy</span>
-                <span id="sessions-total">/ 0 Slots</span>
-            </div>
-        </div>
-
-        <div class="infra-card danger">
-            <div class="infra-header">
-                <span class="infra-label"><i class="fas fa-exclamation-triangle"></i> TOTAL VIOLATIONS</span>
-            </div>
-            <div class="infra-value" id="global-violations">0</div>
-            <div class="infra-details">
-                <span>Enforcement Pulse</span>
-                <span id="vio-rate">-- per hour</span>
-            </div>
-        </div>
-
-        <div class="infra-card" style="flex: 2;">
-            <div class="infra-header">
-                <span class="infra-label"><i class="fas fa-chart-line"></i> SYSTEM THROUGHPUT (RPM)</span>
-            </div>
-            <div style="height: 60px; margin-top: 10px;">
+            <div style="height: 200px;">
                 <canvas id="throughputChart"></canvas>
             </div>
         </div>
     </div>
 
-    <main class="main-grid" id="country-grid">
-        <!-- Country cards will be injected here -->
-        <div class="no-data" style="grid-column: 1 / -1; text-align: center; padding: 100px;">
-            <i class="fas fa-globe-africa fa-3x" style="color: #ddd; margin-bottom: 20px;"></i>
-            <p style="color: #888;">Synchronizing country data...</p>
-        </div>
-    </main>
+    <div id="countries" class="tab-content">
+        <main class="main-grid" id="country-grid">
+            <!-- Country cards will be injected here -->
+            <div class="no-data" style="grid-column: 1 / -1; text-align: center; padding: 100px; color: var(--text-muted);">
+                <i class="fas fa-globe-africa fa-3x" style="margin-bottom: 20px; opacity: 0.5;"></i>
+                <p style="font-size: 1.125rem; margin-bottom: 8px;">Synchronizing country data...</p>
+                <p style="font-size: 0.875rem;">Real-time metrics will appear here shortly</p>
+            </div>
+        </main>
+    </div>
 
-    <aside class="event-feed">
-        <div class="feed-header">
-            <span>LIVE SYSTEM EVENTS</span>
-            <div class="pulse-dot"></div>
+    <div id="system" class="tab-content">
+        <div class="system-details">
+            <h2><i class="fas fa-server" style="margin-right: 8px;"></i>System Resources</h2>
+            <div class="infra-row">
+                <div class="system-card">
+                    <div class="infra-header">
+                        <span class="infra-label"><i class="fas fa-info-circle"></i> SERVER INFO</span>
+                    </div>
+                    <div class="infra-value" id="server-info">Loading...</div>
+                </div>
+                <div class="system-card">
+                    <div class="infra-header">
+                        <span class="infra-label"><i class="fas fa-hdd"></i> DISK USAGE</span>
+                    </div>
+                    <div class="infra-value" id="disk-usage">0%</div>
+                    <div class="gauge-container">
+                        <div class="gauge-fill" id="disk-gauge" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            <h2><i class="fas fa-tasks" style="margin-right: 8px;"></i>Celery Task Schedule</h2>
+            <div id="celery-schedule">Loading...</div>
         </div>
-        <div class="feed-content" id="event-feed-list">
-            <!-- Events will be injected here -->
-        </div>
-    </aside>
+    </div>
+
+    <div id="events" class="tab-content">
+        <aside class="event-feed">
+            <div class="feed-header">
+                <span>LIVE SYSTEM EVENTS</span>
+                <div class="pulse-dot"></div>
+            </div>
+            <div class="feed-content" id="event-feed-list">
+                <!-- Events will be injected here -->
+            </div>
+        </aside>
+    </div>
 </div>
 
 <div class="loading-overlay" id="loader">
@@ -403,12 +1173,12 @@
             .then(data => {
                 updateUI(data);
                 document.getElementById('connection-status').textContent = 'Live (Polling)';
-                document.getElementById('connection-status').style.color = '#4cc9f0';
+                document.getElementById('connection-status').style.color = 'var(--success)';
             })
             .catch(e => {
                 console.error('Polling error:', e);
                 document.getElementById('connection-status').textContent = 'Connection Error';
-                document.getElementById('connection-status').style.color = '#f72585';
+                document.getElementById('connection-status').style.color = 'var(--danger)';
             });
     }
 
@@ -448,7 +1218,7 @@
         socket.onclose = function(e) {
             console.log('Socket closed. Reconnecting in 10s...');
             document.getElementById('connection-status').textContent = 'Retrying WebSocket...';
-            document.getElementById('connection-status').style.color = '#e67e22';
+            document.getElementById('connection-status').style.color = 'var(--warning)';
             
             // Start polling as fallback
             startPolling();
@@ -464,7 +1234,7 @@
         socket.onopen = function() {
             console.log('Connected to command center');
             document.getElementById('connection-status').textContent = 'Live (WS)';
-            document.getElementById('connection-status').style.color = '#2ecc71';
+            document.getElementById('connection-status').style.color = 'var(--success)';
             stopPolling();
         };
     }
@@ -478,24 +1248,43 @@
             datasets: [{
                 label: 'RPM',
                 data: Array(20).fill(0),
-                borderColor: '#4cc9f0',
-                backgroundColor: 'rgba(76, 201, 240, 0.1)',
-                borderWidth: 2,
+                borderColor: 'var(--primary)',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                borderWidth: 3,
                 tension: 0.4,
                 pointRadius: 0,
-                fill: true
+                fill: true,
+                shadowColor: 'rgba(99, 102, 241, 0.5)',
+                shadowBlur: 10
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: { 
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'var(--bg-card)',
+                    titleColor: 'var(--text-primary)',
+                    bodyColor: 'var(--text-secondary)',
+                    borderColor: 'var(--border)',
+                    borderWidth: 1
+                }
+            },
             scales: {
-                x: { display: false },
+                x: { 
+                    display: false,
+                    grid: { display: false }
+                },
                 y: { 
                     display: false,
+                    grid: { display: false },
                     beginAtZero: true
                 }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeInOutQuart'
             }
         }
     });
@@ -607,14 +1396,44 @@
 
         // Update Country Grid
         if (data.country_breakdown) updateCountryGrid(data.country_breakdown);
+
+        // Update System Details
+        updateSystemDetails(data);
+    }
+
+    function updateSystemDetails(data) {
+        // Server Info
+        const serverInfo = `Python ${data.python_version || 'Unknown'} | Django ${data.django_version || 'Unknown'}`;
+        document.getElementById('server-info').textContent = serverInfo;
+
+        // Disk Usage
+        if (data.health && data.health.disk_usage_percent !== null) {
+            const disk = data.health.disk_usage_percent;
+            countUp('disk-usage', disk, '%');
+            document.getElementById('disk-gauge').style.width = disk + '%';
+        }
+
+        // Celery Schedule
+        if (data.schedule && data.schedule.length > 0) {
+            const scheduleHtml = data.schedule.map(task => `
+                <div style="padding: 10px; border-bottom: 1px solid #eee;">
+                    <strong>${task.name}</strong> - ${task.task} (${task.schedule})
+                </div>
+            `).join('');
+            document.getElementById('celery-schedule').innerHTML = scheduleHtml;
+        } else {
+            document.getElementById('celery-schedule').innerHTML = '<p>No scheduled tasks configured.</p>';
+        }
     }
 
     function updateEventFeed(events) {
         const list = document.getElementById('event-feed-list');
         if (!events || events.length === 0) {
             list.innerHTML = `
-                <div style="padding: 20px; text-align: center; color: #999; font-size: 0.8rem;">
-                    <i class="fas fa-info-circle"></i> No recent activity detected
+                <div style="padding: 40px; text-align: center; color: var(--text-muted);">
+                    <i class="fas fa-info-circle fa-2x" style="margin-bottom: 16px; opacity: 0.5;"></i>
+                    <p style="font-size: 1rem; margin-bottom: 8px;">No recent activity detected</p>
+                    <p style="font-size: 0.875rem;">System events will appear here in real-time</p>
                 </div>
             `;
             return;
@@ -725,6 +1544,20 @@
                 console.error(e);
                 document.getElementById('loader').style.display = 'none';
             });
+    });
+
+    // Tab Switching
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', () => {
+            // Remove active class from all buttons and contents
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            // Add active class to clicked button and corresponding content
+            button.classList.add('active');
+            const tabId = button.getAttribute('data-tab');
+            document.getElementById(tabId).classList.add('active');
+        });
     });
 
     connect();
