@@ -2,6 +2,7 @@ from django.urls import path
 from . import api_views, owner_views, invoice_views, qr_payment_views
 
 urlpatterns = [
+    path('public/stats/', api_views.PublicStatsAPIView.as_view(), name='public-stats'),
     path('zones/', api_views.ZoneListView.as_view(), name='zones'),
     path('zones/<uuid:zone_id>/availability/', api_views.ZoneAvailabilityView.as_view(), name='zone-availability'),
     path('sessions/start/', api_views.StartParkingView.as_view(), name='start-parking'),

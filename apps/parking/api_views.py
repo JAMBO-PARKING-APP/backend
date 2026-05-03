@@ -205,4 +205,38 @@ class ZoneApplicationCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(user=self.request.user)
+
+from rest_framework.permissions import AllowAny
+
+class PublicStatsAPIView(APIView):
+    """Public endpoint for landing page live stats and maps"""
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        country_code = request.query_params.get('country')
+        zones = Zone.objects.filter(is_active=True)
+        sessions = ParkingSession.objects.filter(status=ParkingStatus.COMPLETED)
+        
+        if country_code:
+            # Assumes country is linked via RegionalModel.country -> Country.iso_code
+            zones = zones.filter(country__iso_code__iexact=country_code)
+            sessions = sessions.filter(zone__country__iso_code__iexact=country_code)
+            
+        total_zones = zones.count()
+        total_sessions = sessions.count()
+        
+        zone_data = [{
+            'id': z.id,
+            'name': z.name,
+            'latitude': z.latitude,
+            'longitude': z.longitude,
+            'hourly_rate': z.hourly_rate,
+            'google_maps_url': z.google_maps_url
+        } for z in zones]
+        
+        return Response({
+            'total_zones': total_zones,
+            'total_sessions': total_sessions,
+            'zones': zone_data
+        })
