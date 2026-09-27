@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:parking_user_app/core/analytics_service.dart';
+import 'package:parking_user_app/core/location_service.dart';
 import 'package:parking_user_app/features/parking/models/reservation_model.dart';
 import 'package:parking_user_app/features/parking/services/reservation_service.dart';
 
@@ -40,12 +42,26 @@ class ReservationProvider with ChangeNotifier {
 
   Future<bool> startReservation(String reservationId) async {
     try {
-      // In a real app we'd get actual location, but for now plug in 0,0 or current location
-      // Using dummy location so it passes backend logic if required
-      await _reservationService.startParkingFromReservation(reservationId, 0.0, 0.0);
+      final position = await LocationService().getCurrentPosition();
+      if (position == null) {
+        throw StateError('Location is required to start a reserved session.');
+      }
+      await _reservationService.startParkingFromReservation(
+        reservationId,
+        position.latitude,
+        position.longitude,
+      );
       await fetchReservations();
+      AnalyticsService.logEvent(
+        name: 'reservation_started',
+        parameters: const {'success': true},
+      );
       return true;
     } catch (e) {
+      AnalyticsService.logEvent(
+        name: 'reservation_started',
+        parameters: const {'success': false},
+      );
       _errorMessage = e.toString();
       notifyListeners();
       return false;
@@ -73,12 +89,27 @@ class ReservationProvider with ChangeNotifier {
         paymentMethod: paymentMethod,
       );
       await fetchReservations();
+      AnalyticsService.logEvent(
+        name: 'reservation_created',
+        parameters: {
+          'payment_method': paymentMethod,
+          'confirmed_immediately': confirmImmediately,
+          'success': true,
+        },
+      );
       return true;
     } catch (e) {
+      AnalyticsService.logEvent(
+        name: 'reservation_created',
+        parameters: {
+          'payment_method': paymentMethod,
+          'confirmed_immediately': confirmImmediately,
+          'success': false,
+        },
+      );
       _errorMessage = e.toString();
       notifyListeners();
       return false;
     }
   }
 }
-

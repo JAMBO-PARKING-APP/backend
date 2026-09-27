@@ -306,7 +306,12 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='union.crm.products@gmail.com')
-FIREBASE_CREDENTIALS_PATH = BASE_DIR / 'jambo-park-firebase-adminsdk-fbsvc-1bd44851a9.json'
+FIREBASE_CREDENTIALS_PATH = Path(
+    config(
+        'FIREBASE_CREDENTIALS_PATH',
+        default=str(BASE_DIR / 'jambo-park-firebase-adminsdk-fbsvc-1bd44851a9.json'),
+    )
+)
 FIREBASE_ENABLED = config('FIREBASE_ENABLED', default=True, cast=bool)
 GOOGLE_API_KEY = config('GOOGLE_API_KEY', default='')
 

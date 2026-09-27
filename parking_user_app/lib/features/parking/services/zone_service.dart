@@ -5,34 +5,27 @@ class ZoneService {
   final ApiClient _apiClient = ApiClient();
 
   Future<List<Zone>> getZones() async {
-    try {
-      final response = await _apiClient.get('user/zones/');
-      if (response.statusCode == 200) {
-        final dynamic payload = response.data;
-        final List<dynamic> data;
-        if (payload is List) {
-          data = payload;
-        } else if (payload is Map && payload['results'] is List) {
-          data = payload['results'] as List<dynamic>;
-        } else {
-          data = [];
-        }
-
-        return data.map((z) => Zone.fromJson(z as Map<String, dynamic>)).toList();
-      }
-    } catch (e) {
-      return [];
+    final response = await _apiClient.get('user/zones/');
+    final dynamic payload = response.data;
+    final List<dynamic> data;
+    if (payload is List) {
+      data = payload;
+    } else if (payload is Map && payload['results'] is List) {
+      data = payload['results'] as List<dynamic>;
+    } else {
+      throw const FormatException('The zones response was not a list.');
     }
-    return [];
+    return data
+        .whereType<Map>()
+        .map((zone) => Zone.fromJson(zone.cast<String, dynamic>()))
+        .toList(growable: false);
   }
 
   Future<Zone?> getZoneDetail(String zoneId) async {
-    try {
-      final response = await _apiClient.get('user/zones/$zoneId/');
-      if (response.statusCode == 200 && response.data is Map) {
-        return Zone.fromJson(response.data as Map<String, dynamic>);
-      }
-    } catch (_) {}
-    return null;
+    final response = await _apiClient.get('user/zones/$zoneId/');
+    if (response.data is! Map) {
+      throw const FormatException('The zone detail response was invalid.');
+    }
+    return Zone.fromJson((response.data as Map).cast<String, dynamic>());
   }
 }

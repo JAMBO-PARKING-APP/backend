@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:parking_officer_app/core/analytics_service.dart';
 import 'package:parking_officer_app/core/app_theme.dart';
 import 'package:parking_officer_app/core/fcm_service.dart';
 import 'package:parking_officer_app/features/auth/providers/auth_provider.dart';
@@ -19,14 +20,11 @@ void main() async {
     WidgetsFlutterBinding.ensureInitialized();
     debugPrint('[Main] WidgetsFlutterBinding initialized');
 
-    // Initialize Firebase first (mandatory for Firebase services)
-    await Firebase.initializeApp().timeout(
-      const Duration(seconds: 10),
-      onTimeout: () {
-        debugPrint('[Main] Firebase initialization timed out');
-        throw Exception('Firebase initialization timed out');
-      },
-    );
+    try {
+      await Firebase.initializeApp().timeout(const Duration(seconds: 10));
+    } catch (error) {
+      debugPrint('[Main] Firebase unavailable; continuing without push: $error');
+    }
 
     unawaited(
       FCMService().initialize().catchError((e) {
@@ -73,6 +71,7 @@ class SpaceOfficerApp extends StatelessWidget {
       builder: (context, settings, _) {
         return MaterialApp(
           navigatorKey: navigatorKey,
+          navigatorObservers: AnalyticsService.navigatorObservers,
           title: 'Space Officer',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.officerTheme,

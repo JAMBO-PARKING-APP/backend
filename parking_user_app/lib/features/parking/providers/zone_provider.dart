@@ -10,6 +10,7 @@ class ZoneProvider with ChangeNotifier {
 
   List<Zone> _zones = [];
   bool _isLoading = false;
+  String? _errorMessage;
 
   Zone? _selectedZone;
   // Compatibility: some copied officer widgets still reference this.
@@ -20,31 +21,41 @@ class ZoneProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   Zone? get selectedZone => _selectedZone;
   List<ParkingSession> get activeSessions => _activeSessions;
+  String? get errorMessage => _errorMessage;
 
   Future<void> fetchZones() async {
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
-
-    final fetched = await _zoneService.getZones();
-    final pos = await LocationService().getCurrentPosition();
-    if (pos != null) {
-      _zones = fetched
-          .map((z) => z.copyWith(
-                distanceKm: _haversineKm(
-                  pos.latitude,
-                  pos.longitude,
-                  z.latitude,
-                  z.longitude,
-                ),
-              ))
-          .toList()
-        ..sort((a, b) => (a.distanceKm ?? 1e9).compareTo(b.distanceKm ?? 1e9));
-    } else {
-      _zones = fetched;
+    try {
+      final fetched = await _zoneService.getZones();
+      final pos = await LocationService().getCurrentPosition();
+      if (pos != null) {
+        _zones =
+            fetched
+                .map(
+                  (z) => z.copyWith(
+                    distanceKm: _haversineKm(
+                      pos.latitude,
+                      pos.longitude,
+                      z.latitude,
+                      z.longitude,
+                    ),
+                  ),
+                )
+                .toList()
+              ..sort(
+                (a, b) => (a.distanceKm ?? 1e9).compareTo(b.distanceKm ?? 1e9),
+              );
+      } else {
+        _zones = fetched;
+      }
+    } catch (error) {
+      _errorMessage = 'Unable to load parking zones: $error';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-
-    _isLoading = false;
-    notifyListeners();
   }
 
   Future<void> selectZone(String zoneId) async {
@@ -63,7 +74,8 @@ class ZoneProvider with ChangeNotifier {
     const r = 6371.0;
     final dLat = _degToRad(lat2 - lat1);
     final dLon = _degToRad(lon2 - lon1);
-    final a = math.pow(math.sin(dLat / 2), 2) +
+    final a =
+        math.pow(math.sin(dLat / 2), 2) +
         math.cos(_degToRad(lat1)) *
             math.cos(_degToRad(lat2)) *
             math.pow(math.sin(dLon / 2), 2);

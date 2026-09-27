@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parking_user_app/core/analytics_service.dart';
 import 'package:parking_user_app/features/auth/models/user_model.dart';
 import 'package:parking_user_app/features/auth/services/auth_service.dart';
 import 'package:parking_user_app/core/storage_manager.dart';
@@ -64,6 +65,10 @@ class AuthProvider with ChangeNotifier {
 
       if (result['success']) {
         _user = result['user'];
+        AnalyticsService.logEvent(
+          name: 'login',
+          parameters: const {'method': 'phone', 'success': true},
+        );
         print('✅ AuthProvider: User logged in successfully');
         print('   - User ID: ${_user?.id}');
         print('   - Phone: ${_user?.phone}');
@@ -76,6 +81,10 @@ class AuthProvider with ChangeNotifier {
         notifyListeners();
         return true;
       } else {
+        AnalyticsService.logEvent(
+          name: 'login',
+          parameters: const {'method': 'phone', 'success': false},
+        );
         _status = AuthStatus.unauthenticated;
         _errorMessage = result['message'];
         print('❌ AuthProvider: Login failed - ${result['message']}');
@@ -83,6 +92,10 @@ class AuthProvider with ChangeNotifier {
         return false;
       }
     } catch (e) {
+      AnalyticsService.logEvent(
+        name: 'login',
+        parameters: const {'method': 'phone', 'success': false},
+      );
       debugPrint('[AuthProvider] Error in login: $e');
       _status = AuthStatus.unauthenticated;
       _errorMessage = 'An error occurred during login. Please try again.';
@@ -116,6 +129,10 @@ class AuthProvider with ChangeNotifier {
 
       if (result['success'] == true) {
         _user = result['user'];
+        AnalyticsService.logEvent(
+          name: 'sign_up',
+          parameters: const {'method': 'phone', 'success': true},
+        );
         _status = AuthStatus.authenticated;
         await FCMService().syncTokenWithBackend();
         notifyListeners();
@@ -124,9 +141,17 @@ class AuthProvider with ChangeNotifier {
 
       _status = AuthStatus.unauthenticated;
       _errorMessage = result['message']?.toString();
+      AnalyticsService.logEvent(
+        name: 'sign_up',
+        parameters: const {'method': 'phone', 'success': false},
+      );
       notifyListeners();
       return false;
     } catch (e) {
+      AnalyticsService.logEvent(
+        name: 'sign_up',
+        parameters: const {'method': 'phone', 'success': false},
+      );
       _status = AuthStatus.unauthenticated;
       _errorMessage = 'An error occurred during registration. Please try again.';
       notifyListeners();
@@ -136,6 +161,7 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> logout() async {
     await _authService.logout();
+    AnalyticsService.logEvent(name: 'logout');
     _user = null;
     _status = AuthStatus.unauthenticated;
     notifyListeners();

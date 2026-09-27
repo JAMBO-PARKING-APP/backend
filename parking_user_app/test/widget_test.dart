@@ -6,15 +6,25 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:parking_officer_app/main.dart';
+import 'package:parking_user_app/core/providers/connectivity_provider.dart';
+import 'package:parking_user_app/core/settings_provider.dart';
+import 'package:parking_user_app/main.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const SpaceOfficerApp());
-
-    // Verify that our app starts.
-    expect(find.byType(SpaceOfficerApp), findsOneWidget);
+  testWidgets('user app root can be built', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => SettingsProvider()),
+          ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
+        ],
+        child: const SpaceUserApp(),
+      ),
+    );
+    await tester.pump();
+    expect(find.byType(SpaceUserApp), findsOneWidget);
   });
 }

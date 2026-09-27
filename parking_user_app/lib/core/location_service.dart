@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:parking_user_app/core/api_client.dart';
-import 'package:parking_user_app/core/websocket_service.dart';
 
 class LocationService {
   static final LocationService _instance = LocationService._internal();
@@ -15,8 +14,7 @@ class LocationService {
   static Position? currentPosition;
 
   static const int _updateIntervalSeconds = 60;
-  static const int _distanceFilterMeters =
-      30;
+  static const int _distanceFilterMeters = 30;
 
   Future<void> startTracking() async {
     bool serviceEnabled;
@@ -66,15 +64,12 @@ class LocationService {
     final now = DateTime.now();
     if (_lastUpdateTime != null &&
         now.difference(_lastUpdateTime!).inSeconds < _updateIntervalSeconds) {
-      return; 
+      return;
     }
 
     _sendLocationUpdate(position);
     _lastUpdateTime = now;
     currentPosition = position;
-    
-    // Also send via WebSocket if connected
-    WebSocketService().sendLocation(position.latitude, position.longitude);
   }
 
   Future<void> _sendLocationUpdate(Position position) async {
@@ -87,7 +82,9 @@ class LocationService {
           'accuracy': position.accuracy,
         },
       );
-      debugPrint('[User] Location updated: ${position.latitude}, ${position.longitude}');
+      debugPrint(
+        '[User] Location updated: ${position.latitude}, ${position.longitude}',
+      );
     } catch (e) {
       debugPrint('[User] Failed to send location update: $e');
     }
@@ -98,7 +95,7 @@ class LocationService {
       final pos = await Geolocator.getCurrentPosition(
         timeLimit: const Duration(seconds: 10),
       );
-      if (pos != null) currentPosition = pos;
+      currentPosition = pos;
       return pos;
     } catch (e) {
       debugPrint('Error getting current position: $e');

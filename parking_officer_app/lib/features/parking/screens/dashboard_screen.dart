@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import 'package:provider/provider.dart';
 import 'package:parking_officer_app/features/parking/providers/zone_provider.dart';
 import 'package:parking_officer_app/features/parking/models/parking_session_model.dart';
 import 'package:parking_officer_app/features/enforcement/providers/officer_provider.dart';
 import 'package:parking_officer_app/core/app_theme.dart';
-import 'package:parking_officer_app/features/parking/screens/zone_detail_screen.dart';
 import 'package:parking_officer_app/features/enforcement/screens/activity_history_screen.dart';
 import 'package:parking_officer_app/features/auth/screens/profile_screen.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:parking_officer_app/features/parking/screens/verification_hub_screen.dart';
 import 'package:parking_officer_app/core/location_service.dart';
 
@@ -467,131 +463,4 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildZoneSummaryOverlay() {
-    return Consumer<ZoneProvider>(
-      builder: (context, zoneProvider, _) {
-        if (zoneProvider.isLoading || zoneProvider.zones.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        final zone = zoneProvider.zones.first; 
-
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.95),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: AppTheme.borderColor,
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            zone.name.toUpperCase(),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 18,
-                              color: AppTheme.primaryColor,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                        ],
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ZoneDetailScreen(zone: zone),
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryDark,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                      ),
-                      child: const Text('DETAILS'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    _buildMiniStatBox(
-                      'TOTAL',
-                      '${zone.totalSlots}',
-                      Colors.blueGrey,
-                    ),
-                    const SizedBox(width: 12),
-                    _buildMiniStatBox(
-                      'OCCUPIED',
-                      '${zone.occupiedSlots}',
-                      AppTheme.accentColor,
-                    ),
-                    const SizedBox(width: 12),
-                    _buildMiniStatBox(
-                      'OPEN',
-                      '${zone.availableSlots}',
-                      AppTheme.successColor,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildMiniStatBox(String label, String value, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.1)),
-        ),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            Text(
-              label,
-              style: TextStyle(
-                color: color.withValues(alpha: 0.6),
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

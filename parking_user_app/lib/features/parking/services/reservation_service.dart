@@ -35,7 +35,10 @@ class ReservationService {
   }
 
   Future<void> confirmWallet(String reservationId) async {
-    await _apiClient.post('user/reservations/$reservationId/confirm-wallet/', data: {});
+    await _apiClient.post(
+      'user/reservations/$reservationId/confirm-wallet/',
+      data: {},
+    );
   }
 
   Future<ReservationModel> createReservation({
@@ -51,7 +54,6 @@ class ReservationService {
       data: {
         'vehicle_id': vehicleId,
         'zone_id': zoneId,
-        // Backend serializer accepts either reserved_from/reserved_until or start_time/end_time.
         'reserved_from': reservedFrom.toIso8601String(),
         'reserved_until': reservedUntil.toIso8601String(),
         'confirm_immediately': confirmImmediately,
@@ -62,7 +64,9 @@ class ReservationService {
     if (response.statusCode == 201 || response.statusCode == 200) {
       final data = response.data;
       if (data is Map && data['reservation'] is Map<String, dynamic>) {
-        return ReservationModel.fromJson(data['reservation'] as Map<String, dynamic>);
+        return ReservationModel.fromJson(
+          data['reservation'] as Map<String, dynamic>,
+        );
       }
       if (data is Map<String, dynamic>) {
         // Some implementations may return reservation at top-level.
@@ -76,15 +80,16 @@ class ReservationService {
       type: DioExceptionType.badResponse,
     );
   }
-  Future<Map<String, dynamic>> startParkingFromReservation(String reservationId, double lat, double lng) async {
+
+  Future<Map<String, dynamic>> startParkingFromReservation(
+    String reservationId,
+    double lat,
+    double lng,
+  ) async {
     final response = await _apiClient.post(
       'user/reservations/$reservationId/start/',
-      data: {
-        'lat': lat,
-        'lng': lng,
-      },
+      data: {'latitude': lat, 'longitude': lng},
     );
     return response.data as Map<String, dynamic>;
   }
 }
-

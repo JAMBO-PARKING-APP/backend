@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:parking_user_app/core/app_theme.dart';
+import 'package:parking_user_app/core/analytics_service.dart';
 import 'package:parking_user_app/core/country_payment_config_provider.dart';
 import 'package:parking_user_app/core/fcm_service.dart';
 import 'package:parking_user_app/core/localizations.dart';
@@ -10,7 +11,6 @@ import 'package:parking_user_app/core/location_service.dart';
 import 'package:parking_user_app/core/providers/connectivity_provider.dart';
 import 'package:parking_user_app/core/settings_provider.dart';
 import 'package:parking_user_app/core/system_config_service.dart';
-import 'package:parking_user_app/core/websocket_service.dart';
 import 'package:parking_user_app/core/widgets/network_error_widget.dart';
 import 'package:parking_user_app/features/app/screens/app_shell_screen.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
@@ -63,6 +63,7 @@ class SpaceUserApp extends StatelessWidget {
         return MaterialApp(
           title: 'SPACE',
           debugShowCheckedModeBanner: false,
+          navigatorObservers: AnalyticsService.navigatorObservers,
           theme: AppTheme.officerTheme,
           locale: settings.currentLocale,
           supportedLocales: settings.supportedLocales,
@@ -101,7 +102,8 @@ class AppBootstrapper extends StatefulWidget {
   State<AppBootstrapper> createState() => _AppBootstrapperState();
 }
 
-class _AppBootstrapperState extends State<AppBootstrapper> with WidgetsBindingObserver {
+class _AppBootstrapperState extends State<AppBootstrapper>
+    with WidgetsBindingObserver {
   bool _updateChecked = false;
   bool _updateRequired = false;
   Timer? _updateTimer;
@@ -132,10 +134,10 @@ class _AppBootstrapperState extends State<AppBootstrapper> with WidgetsBindingOb
   Future<void> _checkForUpdate() async {
     try {
       final config = await SystemConfigService().fetchSystemConfig();
-      
+
       const currentVersion = '1.0.0';
       bool needsUpdate = config.forceUpdate;
-      
+
       if (!needsUpdate && config.minVersion.isNotEmpty) {
         // App is outdated if minVersion from backend is alphanumerically greater than current
         if (config.minVersion.compareTo(currentVersion) > 0) {
@@ -154,7 +156,14 @@ class _AppBootstrapperState extends State<AppBootstrapper> with WidgetsBindingOb
 
   bool _isLanguageValid(Locale? locale) {
     if (locale == null) return false;
-    return const ['en', 'fr', 'de', 'sw', 'es', 'ar'].contains(locale.languageCode);
+    return const [
+      'en',
+      'fr',
+      'de',
+      'sw',
+      'es',
+      'ar',
+    ].contains(locale.languageCode);
   }
 
   @override
@@ -165,7 +174,8 @@ class _AppBootstrapperState extends State<AppBootstrapper> with WidgetsBindingOb
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    if (!settings.hasSelectedLanguage || !_isLanguageValid(settings.currentLocale)) {
+    if (!settings.hasSelectedLanguage ||
+        !_isLanguageValid(settings.currentLocale)) {
       return const LanguageSelectionScreen();
     }
 
@@ -231,7 +241,6 @@ class _AuthenticatedShellState extends State<_AuthenticatedShell> {
     _started = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CountryPaymentConfigProvider>().loadConfig('');
-      WebSocketService().connect();
       LocationService().startTracking();
     });
   }

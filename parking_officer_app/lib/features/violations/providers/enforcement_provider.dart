@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:parking_officer_app/core/analytics_service.dart';
 import 'package:parking_officer_app/features/violations/services/enforcement_service.dart';
 
 class EnforcementProvider with ChangeNotifier {
@@ -37,6 +38,14 @@ class EnforcementProvider with ChangeNotifier {
     );
 
     _isProcessing = false;
+    AnalyticsService.logEvent(
+      name: 'violation_issued',
+      parameters: {
+        'violation_type': type,
+        'has_evidence': evidence?.isNotEmpty ?? false,
+        'success': success,
+      },
+    );
     notifyListeners();
     return success;
   }

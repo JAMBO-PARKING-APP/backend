@@ -7,6 +7,8 @@ class Zone {
   final int totalSlots;
   final int availableSlots;
   final int occupiedSlots;
+  final double hourlyRate;
+  final double maxDurationHours;
 
   Zone({
     required this.id,
@@ -17,6 +19,8 @@ class Zone {
     required this.totalSlots,
     required this.availableSlots,
     required this.occupiedSlots,
+    this.hourlyRate = 0,
+    this.maxDurationHours = 24,
   });
 
   factory Zone.fromJson(Map<String, dynamic> json) {
@@ -29,6 +33,9 @@ class Zone {
       totalSlots: json['total_slots'] ?? 0,
       availableSlots: json['available_slots'] ?? 0,
       occupiedSlots: json['occupied_slots'] ?? 0,
+      hourlyRate: double.tryParse(json['hourly_rate']?.toString() ?? '') ?? 0,
+      maxDurationHours:
+          double.tryParse(json['max_duration_hours']?.toString() ?? '') ?? 24,
     );
   }
 }

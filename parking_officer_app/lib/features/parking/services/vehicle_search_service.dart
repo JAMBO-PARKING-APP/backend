@@ -133,7 +133,7 @@ class VehicleSearchService {
   }) async {
     try {
       final response = await _apiClient.post(
-        'officer/parking/guest/',
+        'officer/sessions/non-app-user/',
         data: {
           'license_plate': licensePlate,
           'driver_name': driverName,
@@ -144,15 +144,22 @@ class VehicleSearchService {
       );
 
       if (response.statusCode == 201) {
+        final data = Map<String, dynamic>.from(response.data as Map);
         return {
           'success': true,
-          'message': 'Guest session created successfully',
-          'session': response.data['session'],
+          'message': data['message'] ?? 'Guest session created successfully',
+          'session': data['session'],
+          'session_id': data['session_id'] ?? data['session']?['id'],
+          'amount_due': data['amount_due'] ?? 0,
+          'requires_payment': data['requires_payment'] ?? false,
         };
       }
       return {
         'success': false,
-        'message': response.data['error'] ?? 'Failed to create guest session',
+        'message': _errorMessage(
+          response.data,
+          'Failed to create guest session',
+        ),
       };
     } catch (e) {
       return {
@@ -161,5 +168,57 @@ class VehicleSearchService {
       };
     }
   }
-}
 
+  Future<Map<String, dynamic>> initiateGuestPayment({
+    required String sessionId,
+    required String phoneNumber,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        'officer/payments/pesapal/initiate/',
+        data: {'session_id': sessionId, 'phone_number': phoneNumber},
+      );
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          ...Map<String, dynamic>.from(response.data as Map),
+        };
+      }
+      return {
+        'success': false,
+        'message': _errorMessage(response.data, 'Failed to initiate payment'),
+      };
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  Future<Map<String, dynamic>> confirmGuestSessionPayment(
+    String sessionId,
+  ) async {
+    try {
+      final response = await _apiClient.post(
+        'officer/sessions/$sessionId/confirm-payment/',
+      );
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          ...Map<String, dynamic>.from(response.data as Map),
+        };
+      }
+      return {
+        'success': false,
+        'message': _errorMessage(response.data, 'Payment is not confirmed yet'),
+      };
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  String _errorMessage(dynamic data, String fallback) {
+    if (data is Map) {
+      return (data['error'] ?? data['message'] ?? fallback).toString();
+    }
+    return fallback;
+  }
+}

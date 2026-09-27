@@ -5,7 +5,6 @@ import 'package:parking_user_app/core/location_service.dart';
 import 'package:parking_user_app/core/constants.dart';
 import 'package:parking_user_app/core/storage_manager.dart';
 import 'package:parking_user_app/core/app_logger.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 
 class ApiClient {
   late Dio dio;
@@ -18,9 +17,6 @@ class ApiClient {
         baseUrl: AppConstants.baseUrl,
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 15),
-        validateStatus: (status) {
-          return status != null;
-        },
       ),
     );
 
@@ -48,7 +44,7 @@ class ApiClient {
           // Attach Country header to all requests for regional isolation
           // 1. Prioritize manual user selection
           String? country = await _storageManager.getSelectedCountryCode();
-          
+
           // 2. Fallback to profile country if no manual selection
           if (country == null || country.isEmpty || country == 'null') {
             final userJson = await _storageManager.getUserJson();
@@ -62,9 +58,9 @@ class ApiClient {
 
           if (country != null && country.isNotEmpty && country != 'null') {
             if (country.length == 2) {
-               options.headers['X-Country-Code'] = country;
+              options.headers['X-Country-Code'] = country;
             } else {
-               options.headers['X-Country-ID'] = country;
+              options.headers['X-Country-ID'] = country;
             }
           }
 
@@ -79,14 +75,17 @@ class ApiClient {
           return handler.next(options);
         },
         onResponse: (response, handler) {
-          _logger.info('Response ${response.statusCode}: ${response.requestOptions.path}');
+          _logger.info(
+            'Response ${response.statusCode}: ${response.requestOptions.path}',
+          );
           return handler.next(response);
         },
         onError: (DioException e, handler) async {
-          final isNoInternet = e.type == DioExceptionType.connectionError || 
-                             e.type == DioExceptionType.connectionTimeout ||
-                             e.type == DioExceptionType.sendTimeout ||
-                             e.type == DioExceptionType.receiveTimeout;
+          final isNoInternet =
+              e.type == DioExceptionType.connectionError ||
+              e.type == DioExceptionType.connectionTimeout ||
+              e.type == DioExceptionType.sendTimeout ||
+              e.type == DioExceptionType.receiveTimeout;
 
           _logger.error(
             'API Error: ${e.type} - ${e.message}\n'
@@ -114,7 +113,9 @@ class ApiClient {
             try {
               final refreshToken = await _storageManager.getRefreshToken();
               if (refreshToken != null) {
-                final refreshDio = Dio(BaseOptions(baseUrl: AppConstants.baseUrl));
+                final refreshDio = Dio(
+                  BaseOptions(baseUrl: AppConstants.baseUrl),
+                );
                 final refreshResponse = await refreshDio.post(
                   'user/auth/token/refresh/',
                   data: {'refresh': refreshToken},
@@ -122,21 +123,25 @@ class ApiClient {
 
                 if (refreshResponse.statusCode == 200) {
                   final newAccess = refreshResponse.data['access'];
-                  final newRefresh = refreshResponse.data['refresh'] ?? refreshToken;
+                  final newRefresh =
+                      refreshResponse.data['refresh'] ?? refreshToken;
                   await _storageManager.saveTokens(newAccess, newRefresh);
 
                   final retryOptions = e.requestOptions;
                   retryOptions.headers['Authorization'] = 'Bearer $newAccess';
-                  
-                  final cloneReq = await Dio(BaseOptions(baseUrl: AppConstants.baseUrl)).request(
-                    retryOptions.path,
-                    options: Options(
-                      method: retryOptions.method,
-                      headers: retryOptions.headers,
-                    ),
-                    data: retryOptions.data,
-                    queryParameters: retryOptions.queryParameters,
-                  );
+
+                  final cloneReq =
+                      await Dio(
+                        BaseOptions(baseUrl: AppConstants.baseUrl),
+                      ).request(
+                        retryOptions.path,
+                        options: Options(
+                          method: retryOptions.method,
+                          headers: retryOptions.headers,
+                        ),
+                        data: retryOptions.data,
+                        queryParameters: retryOptions.queryParameters,
+                      );
                   return handler.resolve(cloneReq);
                 }
               }
