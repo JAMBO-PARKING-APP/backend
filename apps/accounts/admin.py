@@ -36,30 +36,21 @@ class UserAdmin(RegionalAdminMixin, BaseUserAdmin):
         from django.contrib import messages
         from decimal import Decimal
         from django.db import transaction as db_transaction
-        from .models import Wallet
-        
+        from apps.common.models import get_current_country
+
         amount = Decimal('10000.00')
         count = 0
+        country = get_current_country()
         
         with db_transaction.atomic():
             for user in queryset:
-                if user.country:
-                    wallet, _ = Wallet.objects.get_or_create(user=user, country=user.country)
-                    wallet.balance += amount
-                    wallet.save()
-                else:
-                    user.wallet_balance_legacy += amount
-                    user.save(update_fields=['wallet_balance_legacy'])
-                
-                count += 1
-                from apps.payments.models import WalletTransaction
-                WalletTransaction.objects.create(
-                    user=user,
-                    amount=amount,
+                user.adjust_wallet_balance(
+                    amount,
+                    country=user.country or country,
                     transaction_type='topup',
-                    status='completed',
-                    description=f'Admin top-up by {request.user.phone}'
+                    description=f'Admin top-up by {request.user.phone}',
                 )
+                count += 1
         
         self.message_user(
             request,

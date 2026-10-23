@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:parking_officer_app/core/analytics_service.dart';
 import 'package:parking_officer_app/core/app_theme.dart';
 import 'package:parking_officer_app/core/fcm_service.dart';
+import 'package:parking_officer_app/core/startup_permission_service.dart';
 import 'package:parking_officer_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_officer_app/features/auth/screens/login_screen.dart';
 import 'package:parking_officer_app/features/parking/providers/zone_provider.dart';
@@ -16,48 +20,35 @@ import 'package:parking_officer_app/core/localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => ZoneProvider()),
+        ChangeNotifierProvider(create: (_) => OfficerProvider()),
+        ChangeNotifierProvider(create: (_) => VehicleSearchProvider()),
+        ChangeNotifierProvider(create: (_) => EnforcementProvider()),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+      ],
+      child: const SpaceOfficerApp(),
+    ),
+  );
+
+  unawaited(_initializeFirebaseServices());
+}
+
+Future<void> _initializeFirebaseServices() async {
   try {
-    WidgetsFlutterBinding.ensureInitialized();
-    debugPrint('[Main] WidgetsFlutterBinding initialized');
-
-    try {
-      await Firebase.initializeApp().timeout(const Duration(seconds: 10));
-    } catch (error) {
-      debugPrint('[Main] Firebase unavailable; continuing without push: $error');
-    }
-
-    unawaited(
-      FCMService().initialize().catchError((e) {
-        debugPrint('[Main] Error initializing FCM: $e');
-      }),
-    );
-
-    runApp(
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_) => AuthProvider()),
-          ChangeNotifierProvider(create: (_) => ZoneProvider()),
-          ChangeNotifierProvider(create: (_) => OfficerProvider()),
-          ChangeNotifierProvider(create: (_) => VehicleSearchProvider()),
-          ChangeNotifierProvider(create: (_) => EnforcementProvider()),
-          ChangeNotifierProvider(create: (_) => SettingsProvider()),
-        ],
-        child: const SpaceOfficerApp(),
-      ),
-    );
-  } catch (e, stack) {
-    debugPrint('[Main] FATAL ERROR: $e');
-    debugPrint(stack.toString());
-    // Fallback if something fails before runApp
-    runApp(
-      MaterialApp(
-        home: Scaffold(body: Center(child: Text('Error starting app: $e'))),
-      ),
+    await Firebase.initializeApp().timeout(const Duration(seconds: 10));
+    await FCMService().initialize().timeout(const Duration(seconds: 10));
+  } catch (error) {
+    debugPrint(
+      '[Main] Firebase or push notifications are unavailable; '
+      'the app will continue without them: $error',
     );
   }
 }
-
-void unawaited(Future<void> future) {}
 
 class SpaceOfficerApp extends StatelessWidget {
   const SpaceOfficerApp({super.key});
@@ -102,8 +93,19 @@ class _AuthWrapperState extends State<AuthWrapper> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AuthProvider>().checkAuth();
+      _initialize();
     });
+  }
+
+  Future<void> _initialize() async {
+    try {
+      await StartupPermissionService.requestOnFirstLaunch(context);
+    } on PlatformException catch (error) {
+      debugPrint('Startup permission setup failed: $error');
+    }
+    if (mounted) {
+      await context.read<AuthProvider>().checkAuth();
+    }
   }
 
   @override

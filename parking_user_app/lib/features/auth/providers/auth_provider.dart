@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:parking_user_app/core/analytics_service.dart';
 import 'package:parking_user_app/features/auth/models/user_model.dart';
@@ -37,7 +38,7 @@ class AuthProvider with ChangeNotifier {
           print('   - Country Name: ${_user?.countryName}');
           print('   - Country Identifier: ${_user?.countryIdentifier}');
           _status = AuthStatus.authenticated;
-          await FCMService().syncTokenWithBackend();
+          await _syncPushTokenSafely();
         } catch (e) {
           debugPrint('[AuthProvider] Error parsing user JSON: $e');
           print('❌ AuthProvider: Failed to parse stored user data - $e');
@@ -77,7 +78,7 @@ class AuthProvider with ChangeNotifier {
         print('   - Country Name: ${_user?.countryName}');
         print('   - Country Identifier: ${_user?.countryIdentifier}');
         _status = AuthStatus.authenticated;
-        await FCMService().syncTokenWithBackend();
+        await _syncPushTokenSafely();
         notifyListeners();
         return true;
       } else {
@@ -134,7 +135,7 @@ class AuthProvider with ChangeNotifier {
           parameters: const {'method': 'phone', 'success': true},
         );
         _status = AuthStatus.authenticated;
-        await FCMService().syncTokenWithBackend();
+        await _syncPushTokenSafely();
         notifyListeners();
         return true;
       }
@@ -153,9 +154,21 @@ class AuthProvider with ChangeNotifier {
         parameters: const {'method': 'phone', 'success': false},
       );
       _status = AuthStatus.unauthenticated;
-      _errorMessage = 'An error occurred during registration. Please try again.';
+      _errorMessage =
+          'An error occurred during registration. Please try again.';
       notifyListeners();
       return false;
+    }
+  }
+
+  Future<void> _syncPushTokenSafely() async {
+    if (Firebase.apps.isEmpty) return;
+    try {
+      await FCMService().syncTokenWithBackend().timeout(
+        const Duration(seconds: 8),
+      );
+    } catch (error) {
+      debugPrint('[AuthProvider] Push-token sync failed: $error');
     }
   }
 
@@ -173,17 +186,19 @@ class AuthProvider with ChangeNotifier {
       if (fresh != null) {
         _user = fresh;
         final storage = StorageManager();
-        await storage.saveUserJson(json.encode({
-          'id': fresh.id,
-          'phone': fresh.phone,
-          'first_name': fresh.firstName,
-          'last_name': fresh.lastName,
-          'email': fresh.email,
-          'role': fresh.role,
-          'profile_photo': fresh.profilePhoto,
-          'country': fresh.country,
-          'country_name': fresh.countryName,
-        }));
+        await storage.saveUserJson(
+          json.encode({
+            'id': fresh.id,
+            'phone': fresh.phone,
+            'first_name': fresh.firstName,
+            'last_name': fresh.lastName,
+            'email': fresh.email,
+            'role': fresh.role,
+            'profile_photo': fresh.profilePhoto,
+            'country': fresh.country,
+            'country_name': fresh.countryName,
+          }),
+        );
         notifyListeners();
       }
     } catch (_) {}

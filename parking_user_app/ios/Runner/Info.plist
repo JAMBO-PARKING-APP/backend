@@ -7,11 +7,21 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Space Officer</string>
+	<string>SPACE</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
+	<key>NSCameraUsageDescription</key>
+	<string>SPACE uses the camera when you choose to take a photo for your profile. You can also select an existing photo from your library.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>SPACE lets you choose an existing photo from your library to use as your profile picture.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>SPACE uses your location while you use the app to find nearby parking zones, choose a parking area, and share your location for active parking services.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>SPACE uses your location to find nearby parking zones, choose a parking area, and share your location for active parking services. Location is accessed only while you use the app.</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

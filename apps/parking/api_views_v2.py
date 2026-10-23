@@ -221,7 +221,30 @@ class StartParkingAPIView(APIView):
         
         try:
             vehicle = request.user.vehicles.get(id=serializer.validated_data['vehicle_id'], is_active=True)
-            zone = Zone.objects.get(id=serializer.validated_data['zone_id'], is_active=True)
+            zone_id = serializer.validated_data['zone_id']
+            try:
+                zone = Zone.objects.get(id=zone_id, is_active=True)
+            except Zone.DoesNotExist:
+                logger = logging.getLogger(__name__)
+                zone_exists = Zone.all_objects.filter(
+                    id=zone_id,
+                    is_active=True,
+                ).exists()
+                logger.warning(
+                    'Parking start rejected for unavailable zone %s (exists outside current country: %s)',
+                    zone_id,
+                    zone_exists,
+                )
+                return Response(
+                    {
+                        'error': (
+                            'The selected parking zone is no longer available '
+                            'in your current country. Refresh the zone list and '
+                            'select an available zone.'
+                        )
+                    },
+                    status=status.HTTP_404_NOT_FOUND,
+                )
             duration_hours = float(serializer.validated_data.get('duration_hours', 1))
             logger = logging.getLogger(__name__)
             

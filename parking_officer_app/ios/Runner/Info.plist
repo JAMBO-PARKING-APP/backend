@@ -12,6 +12,14 @@
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Space Officer uses the camera to scan parking QR codes and photograph evidence when recording parking violations.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Space Officer uses your location while you use the app to show nearby parking zones, update your on-duty location, and record enforcement report locations.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Space Officer uses your location to show nearby parking zones, update your on-duty location, and record enforcement report locations. Location access is requested while you use the app.</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

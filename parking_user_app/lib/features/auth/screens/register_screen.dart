@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:parking_user_app/features/common/models/country_model.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:parking_user_app/features/parking/providers/country_provider.dart';
@@ -18,15 +19,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _confirm = TextEditingController();
-  String _countryCode = '+256';
+  String _countryCode = 'UG';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CountryProvider>().loadCountries();
+      _loadCountries();
     });
   }
+
+  Future<void> _loadCountries() async {
+    final countryProvider = context.read<CountryProvider>();
+    await countryProvider.loadCountries();
+    if (!mounted) return;
+
+    final countries = _countriesWithDialCodes(countryProvider.countries);
+    if (countries.isNotEmpty &&
+        !countries.any((country) => country.code == _countryCode)) {
+      setState(() {
+        _countryCode = countries.any((country) => country.code == 'UG')
+            ? 'UG'
+            : countries.first.code;
+      });
+    }
+  }
+
+  List<Country> _countriesWithDialCodes(List<Country> countries) => countries
+      .where((country) => country.phoneCode.trim().isNotEmpty)
+      .toList();
 
   @override
   void dispose() {
@@ -54,33 +75,60 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextFormField(
                   controller: _firstName,
                   decoration: const InputDecoration(labelText: 'First name'),
-                  validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                  validator: (value) =>
+                      value == null || value.trim().isEmpty ? 'Required' : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _lastName,
                   decoration: const InputDecoration(labelText: 'Last name'),
-                  validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                  validator: (value) =>
+                      value == null || value.trim().isEmpty ? 'Required' : null,
                 ),
                 const SizedBox(height: 12),
                 Consumer<CountryProvider>(
                   builder: (context, countryProv, _) {
-                    if (countryProv.countries.isEmpty) {
+                    if (countryProv.isLoading &&
+                        countryProv.countries.isEmpty) {
                       return const SizedBox(
                         height: 50,
                         child: Center(child: CircularProgressIndicator()),
                       );
                     }
-                    if (!countryProv.countries.any((c) => c.code == _countryCode)) {
-                      _countryCode = countryProv.countries.first.code;
+                    final countries = _countriesWithDialCodes(
+                      countryProv.countries,
+                    );
+                    if (countries.isEmpty) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            countryProv.errorMessage ??
+                                'No countries with phone codes are available.',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: countryProv.isLoading
+                                ? null
+                                : _loadCountries,
+                            child: const Text('Retry loading countries'),
+                          ),
+                        ],
+                      );
                     }
+                    final selectedCode =
+                        countries.any((country) => country.code == _countryCode)
+                        ? _countryCode
+                        : countries.first.code;
                     return DropdownButtonFormField<String>(
-                      value: _countryCode,
-                      decoration: const InputDecoration(labelText: 'Country code'),
-                      items: countryProv.countries.map((c) {
+                      initialValue: selectedCode,
+                      decoration: const InputDecoration(labelText: 'Country'),
+                      items: countries.map((c) {
                         return DropdownMenuItem(
                           value: c.code,
-                          child: Text('${c.flag} ${c.name} (${c.code})'),
+                          child: Text('${c.flag} ${c.name} (${c.phoneCode})'),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -92,34 +140,56 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _phone,
-                  decoration: const InputDecoration(labelText: 'Phone number'),
-                  validator: (value) => value == null || value.trim().length < 9 ? 'Valid phone required' : null,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone number',
+                    hintText: 'Local number without country code',
+                  ),
+                  validator: (value) {
+                    final digits = value?.replaceAll(RegExp(r'\D'), '') ?? '';
+                    return digits.length < 6
+                        ? 'Enter a valid phone number'
+                        : null;
+                  },
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _email,
                   decoration: const InputDecoration(labelText: 'Email'),
-                  validator: (value) => value == null || !value.contains('@') ? 'Valid email required' : null,
+                  validator: (value) {
+                    final email = value?.trim() ?? '';
+                    if (email.isNotEmpty && !email.contains('@')) {
+                      return 'Enter a valid email address';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _password,
                   obscureText: true,
                   decoration: const InputDecoration(labelText: 'Password'),
-                  validator: (value) => value == null || value.length < 6 ? 'Minimum 6 characters' : null,
+                  validator: (value) => value == null || value.length < 6
+                      ? 'Minimum 6 characters'
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _confirm,
                   obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Confirm password'),
-                  validator: (value) => value != _password.text ? 'Passwords do not match' : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Confirm password',
+                  ),
+                  validator: (value) =>
+                      value != _password.text ? 'Passwords do not match' : null,
                 ),
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                    onPressed: auth.status == AuthStatus.authenticating ? null : _submit,
+                    onPressed: auth.status == AuthStatus.authenticating
+                        ? null
+                        : _submit,
                     child: const Text('Create account'),
                   ),
                 ),
@@ -133,26 +203,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    
-    final selectedCountry = context.read<CountryProvider>().countries.firstWhere(
-        (c) => c.code == _countryCode,
-        orElse: () => context.read<CountryProvider>().countries.first,
+
+    final countries = _countriesWithDialCodes(
+      context.read<CountryProvider>().countries,
     );
-    
+    if (countries.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Load a country before creating an account.'),
+        ),
+      );
+      return;
+    }
+    final selectedCountry = countries.firstWhere(
+      (country) => country.code == _countryCode,
+      orElse: () => countries.first,
+    );
+    final enteredPhone = _phone.text.trim();
+    final phoneDigits = enteredPhone.replaceAll(RegExp(r'\D'), '');
+    final phoneNumber = enteredPhone.startsWith('+')
+        ? '+$phoneDigits'
+        : '${selectedCountry.phoneCode}'
+              '${selectedCountry.code == 'UG' && phoneDigits.startsWith('0') ? phoneDigits.substring(1) : phoneDigits}';
+
     final success = await context.read<AuthProvider>().register(
-          phoneNumber: '${selectedCountry.phoneCode}${_phone.text.trim()}',
-          firstName: _firstName.text.trim(),
-          lastName: _lastName.text.trim(),
-          email: _email.text.trim(),
-          password: _password.text,
-          passwordConfirm: _confirm.text,
-        );
+      phoneNumber: phoneNumber,
+      firstName: _firstName.text.trim(),
+      lastName: _lastName.text.trim(),
+      email: _email.text.trim(),
+      password: _password.text,
+      passwordConfirm: _confirm.text,
+    );
     if (!mounted) return;
     if (success) {
       Navigator.of(context).pop();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.read<AuthProvider>().errorMessage ?? 'Registration failed')),
+        SnackBar(
+          content: Text(
+            context.read<AuthProvider>().errorMessage ?? 'Registration failed',
+          ),
+        ),
       );
     }
   }

@@ -61,10 +61,7 @@ class AuthService {
         await _storageManager.saveTokens(access, refresh);
         await _storageManager.saveUserJson(jsonEncode(userData));
 
-        return {
-          'success': true,
-          'user': User.fromJson(userData),
-        };
+        return {'success': true, 'user': User.fromJson(userData)};
       }
 
       return {
@@ -72,7 +69,7 @@ class AuthService {
         'message': 'Registration failed. Please try again.',
       };
     } on DioException catch (e) {
-      final message = _handleDioError(e);
+      final message = _handleDioError(e, operation: 'creating your account');
       return {'success': false, 'message': message};
     } catch (e) {
       return {
@@ -98,9 +95,9 @@ class AuthService {
       }
 
       final response = await _apiClient.post(
-        'user/auth/login/', 
+        'user/auth/login/',
         data: {
-          'phone': phoneNumber, 
+          'phone': phoneNumber,
           'password': password,
           'device_model': deviceModel,
           'app_version': AppConstants.appVersion,
@@ -138,7 +135,7 @@ class AuthService {
     return {'success': false, 'message': 'Unknown error'};
   }
 
-  String _handleDioError(DioException e) {
+  String _handleDioError(DioException e, {String operation = 'signing in'}) {
     if (e.type == DioExceptionType.connectionTimeout) {
       return 'Connection timeout. Please check your internet connection.';
     }
@@ -154,25 +151,63 @@ class AuthService {
 
     switch (statusCode) {
       case 401:
-        return data?['detail'] ??
-            data?['error'] ??
+        return _messageFromResponse(data, fields: const ['detail', 'error']) ??
             'Invalid phone number or password.';
       case 400:
-        final errors =
-            data?['error'] ?? data?['detail'] ?? 'Invalid input provided.';
-        if (errors is Map) {
-          return errors.values.first.toString();
+        final responseMessage = _messageFromResponse(
+          data,
+          fields: const ['error', 'detail'],
+        );
+        if (responseMessage?.toLowerCase().contains(
+                  'with this phone number already exists',
+                ) ==
+                true ||
+            responseMessage?.toLowerCase().contains(
+                  'phone number already exists',
+                ) ==
+                true) {
+          return 'An account with this phone number already exists. '
+              'Sign in instead, or use a different phone number.';
         }
-        return errors.toString();
+        return responseMessage ?? 'Please check your details and try again.';
       case 404:
-        return 'User not found or service unavailable.';
+        return operation == 'creating your account'
+            ? 'Account registration is unavailable right now. Please try again later.'
+            : 'User not found or service unavailable.';
       case 500:
         return 'Server error. Please try again later.';
       default:
-        return data?['error'] ??
-            data?['detail'] ??
-            'Login failed. Please try again.';
+        return _messageFromResponse(data, fields: const ['error', 'detail']) ??
+            'There was a problem $operation. Please try again.';
     }
+  }
+
+  String? _messageFromResponse(dynamic data, {required List<String> fields}) {
+    if (data is Map) {
+      for (final field in fields) {
+        final value = data[field];
+        if (value is String && value.trim().isNotEmpty) return value.trim();
+      }
+
+      final details = data['details'];
+      if (details is Map) {
+        final messages = <String>[];
+        for (final entry in details.entries) {
+          final value = entry.value;
+          final fieldMessages = value is List ? value : [value];
+          for (final message in fieldMessages) {
+            final text = message.toString().trim();
+            if (text.isNotEmpty) {
+              messages.add('${entry.key}: $text');
+            }
+          }
+        }
+        if (messages.isNotEmpty) return messages.join('\n');
+      }
+    } else if (data is String && data.trim().isNotEmpty) {
+      return data.trim();
+    }
+    return null;
   }
 
   Future<void> logout() async {

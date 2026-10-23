@@ -28,11 +28,8 @@ class LocationService {
 
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        debugPrint('Location permissions are denied');
-        return;
-      }
+      debugPrint('Location permissions are denied; location tracking skipped.');
+      return;
     }
 
     if (permission == LocationPermission.deniedForever) {

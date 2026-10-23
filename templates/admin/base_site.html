@@ -8,11 +8,3 @@
     </a>
 </h1>
 {% endblock %}
-
-{% block extrastyle %}
-    {{ block.super }}
-    <style>
-        /* Extra safety if base.html didn't catch it */
-        #nav-sidebar { display: none !important; }
-    </style>
-{% endblock %}

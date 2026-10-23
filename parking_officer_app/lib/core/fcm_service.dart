@@ -28,42 +28,27 @@ class FCMService {
 
   Future<void> initialize() async {
     try {
- 
       await Firebase.initializeApp();
 
       await _initializeLocalNotifications();
 
-      NotificationSettings settings = await _firebaseMessaging
-          .requestPermission(
-            alert: true,
-            badge: true,
-            sound: true,
-            provisional: false,
-          );
+      _fcmToken = await _firebaseMessaging.getToken();
+      debugPrint('Officer FCM Token: $_fcmToken');
 
-      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-        debugPrint('Officer app: User granted notification permission');
-
-        _fcmToken = await _firebaseMessaging.getToken();
-        debugPrint('Officer FCM Token: $_fcmToken');
-
-        if (_fcmToken != null) {
-          await _registerTokenWithBackend(_fcmToken!);
-        }
-
-        _firebaseMessaging.onTokenRefresh.listen((newToken) {
-          _fcmToken = newToken;
-          _registerTokenWithBackend(newToken);
-        });
-
-        _setupMessageHandlers();
-
-        FirebaseMessaging.onBackgroundMessage(
-          _firebaseMessagingBackgroundHandler,
-        );
-      } else {
-        debugPrint('Officer app: User declined notification permission');
+      if (_fcmToken != null) {
+        await _registerTokenWithBackend(_fcmToken!);
       }
+
+      _firebaseMessaging.onTokenRefresh.listen((newToken) {
+        _fcmToken = newToken;
+        _registerTokenWithBackend(newToken);
+      });
+
+      _setupMessageHandlers();
+
+      FirebaseMessaging.onBackgroundMessage(
+        _firebaseMessagingBackgroundHandler,
+      );
     } catch (e) {
       debugPrint('Error initializing FCM: $e');
     }
@@ -74,9 +59,9 @@ class FCMService {
       '@mipmap/ic_launcher',
     );
     const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
     );
 
     const initSettings = InitializationSettings(

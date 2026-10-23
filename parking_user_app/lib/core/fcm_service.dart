@@ -14,23 +14,16 @@ class FCMService {
       FlutterLocalNotificationsPlugin();
 
   Future<void> initialize() async {
-    // 1. Request permissions (iOS)
-    NotificationSettings settings = await _fcm.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-
-    if (settings.authorizationStatus == AuthorizationStatus.denied) {
-      debugPrint('[FCM] User denied permissions');
-      return;
-    }
-
-    // 2. Initialize local notifications for foreground display
+    // StartupPermissionService owns the user-facing permission prompt.
+    // Initialize notification delivery here without prompting a second time.
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const DarwinInitializationSettings iosSettings =
-        DarwinInitializationSettings();
+        DarwinInitializationSettings(
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
+        );
     const InitializationSettings initSettings = InitializationSettings(
       android: androidSettings,
       iOS: iosSettings,
@@ -38,10 +31,10 @@ class FCMService {
 
     await _localNotifications.initialize(initSettings);
 
-    // 3. Handle token registration
+    // Handle token registration
     await syncTokenWithBackend();
 
-    // 4. Set up message listeners
+    // Set up message listeners
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint(
         '[FCM] Received foreground message: ${message.notification?.title}',

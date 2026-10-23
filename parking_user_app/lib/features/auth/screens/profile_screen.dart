@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/features/auth/providers/auth_provider.dart';
 import 'package:parking_user_app/features/auth/providers/vehicle_provider.dart';
@@ -70,13 +72,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       CircleAvatar(
                         radius: 36,
                         backgroundColor: AppTheme.primaryColor,
-                        backgroundImage: (user?.profilePhoto != null && user!.profilePhoto!.isNotEmpty)
+                        backgroundImage:
+                            (user?.profilePhoto != null &&
+                                user!.profilePhoto!.isNotEmpty)
                             ? NetworkImage(user.profilePhoto!)
                             : null,
-                        child: (user?.profilePhoto == null || user!.profilePhoto!.isEmpty)
+                        child:
+                            (user?.profilePhoto == null ||
+                                user!.profilePhoto!.isEmpty)
                             ? Text(
-                                (user?.firstName.isNotEmpty == true ? user!.firstName[0] : 'U').toUpperCase(),
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 24),
+                                (user?.firstName.isNotEmpty == true
+                                        ? user!.firstName[0]
+                                        : 'U')
+                                    .toUpperCase(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 24,
+                                ),
                               )
                             : null,
                       ),
@@ -93,9 +106,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ? const SizedBox(
                                   width: 16,
                                   height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
                                 )
-                              : const Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
+                              : const Icon(
+                                  Icons.camera_alt_rounded,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
                         ),
                       ),
                     ],
@@ -106,7 +126,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(user?.fullName ?? 'User', style: Theme.of(context).textTheme.titleLarge),
+                      Text(
+                        user?.fullName ?? 'User',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
                       const SizedBox(height: 4),
                       Text(user?.phone ?? ''),
                       if ((user?.email ?? '').isNotEmpty) Text(user!.email!),
@@ -126,31 +149,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Consumer<CountryProvider>(
                   builder: (context, prov, _) {
                     if (prov.countries.isEmpty) return const SizedBox.shrink();
-                    final sortedCountries = prov.countries.where((c) => c.isActive).toList();
+                    final sortedCountries = prov.countries
+                        .where((c) => c.isActive)
+                        .toList();
                     if (sortedCountries.isEmpty) return const SizedBox.shrink();
-                    
+
                     return DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: 'Active Country/Region'),
+                      decoration: const InputDecoration(
+                        labelText: 'Active Country/Region',
+                      ),
                       value: _selectedCountryCode,
-                      items: sortedCountries.map((c) => DropdownMenuItem(
-                        value: c.code,
-                        child: Text('${c.flag} ${c.name}'),
-                      )).toList(),
+                      items: sortedCountries
+                          .map(
+                            (c) => DropdownMenuItem(
+                              value: c.code,
+                              child: Text('${c.flag} ${c.name}'),
+                            ),
+                          )
+                          .toList(),
                       onChanged: (newCode) async {
                         if (newCode != null) {
                           setState(() => _selectedCountryCode = newCode);
-                          await StorageManager().saveSelectedCountryCode(newCode);
+                          await StorageManager().saveSelectedCountryCode(
+                            newCode,
+                          );
                           if (!mounted) return;
-                          
+
                           // Refresh all app state for new country context
                           context.read<ZoneProvider>().fetchZones();
-                          context.read<ParkingSessionProvider>().fetchSessions();
-                          context.read<ReservationProvider>().fetchReservations();
+                          context
+                              .read<ParkingSessionProvider>()
+                              .fetchSessions();
+                          context
+                              .read<ReservationProvider>()
+                              .fetchReservations();
                           context.read<WalletProvider>().loadWallet();
                           context.read<NotificationProvider>().fetchAll();
-                          
+
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('App region updated securely.')),
+                            const SnackBar(
+                              content: Text('App region updated securely.'),
+                            ),
                           );
                         }
                       },
@@ -158,14 +197,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
-                _ProfileRow(label: 'Phone verified', value: user?.isPhoneVerified == true ? 'Yes' : 'No'),
+                _ProfileRow(
+                  label: 'Phone verified',
+                  value: user?.isPhoneVerified == true ? 'Yes' : 'No',
+                ),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton.icon(
                     onPressed: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => const LanguageSelectionScreen(allowBack: true),
+                          builder: (_) =>
+                              const LanguageSelectionScreen(allowBack: true),
                         ),
                       );
                     },
@@ -187,15 +230,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ? const Text('No vehicles added yet.')
                 : Column(
                     children: vehicles
-                        .map((vehicle) => ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(vehicle.licensePlate),
-                              subtitle: Text('${vehicle.make} ${vehicle.model} - ${vehicle.color}'),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.delete_outline_rounded),
-                                onPressed: () => context.read<VehicleProvider>().deleteVehicle(vehicle.id),
-                              ),
-                            ))
+                        .map(
+                          (vehicle) => ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(vehicle.licensePlate),
+                            subtitle: Text(
+                              '${vehicle.make} ${vehicle.model} - ${vehicle.color}',
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete_outline_rounded),
+                              onPressed: () => context
+                                  .read<VehicleProvider>()
+                                  .deleteVehicle(vehicle.id),
+                            ),
+                          ),
+                        )
                         .toList(),
                   ),
           ),
@@ -222,12 +271,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: _confirmDeleteAccount,
-                  icon: const Icon(Icons.delete_forever_rounded, color: AppTheme.errorColor),
-                  label: const Text('Delete Account', style: TextStyle(color: AppTheme.errorColor)),
-                  style: OutlinedButton.styleFrom(side: const BorderSide(color: AppTheme.errorColor)),
+                  icon: const Icon(
+                    Icons.delete_forever_rounded,
+                    color: AppTheme.errorColor,
+                  ),
+                  label: const Text(
+                    'Delete Account',
+                    style: TextStyle(color: AppTheme.errorColor),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppTheme.errorColor),
+                  ),
                 ),
                 const SizedBox(height: 24),
-                Text('App Version: ${AppConstants.appVersion}', style: const TextStyle(color: Colors.grey)),
+                Text(
+                  'App Version: ${AppConstants.appVersion}',
+                  style: const TextStyle(color: Colors.grey),
+                ),
               ],
             ),
           ),
@@ -256,17 +316,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: plate, decoration: const InputDecoration(labelText: 'License plate')),
+              TextField(
+                controller: plate,
+                decoration: const InputDecoration(labelText: 'License plate'),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: make, decoration: const InputDecoration(labelText: 'Make')),
+              TextField(
+                controller: make,
+                decoration: const InputDecoration(labelText: 'Make'),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: model, decoration: const InputDecoration(labelText: 'Model')),
+              TextField(
+                controller: model,
+                decoration: const InputDecoration(labelText: 'Model'),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: color, decoration: const InputDecoration(labelText: 'Color')),
+              TextField(
+                controller: color,
+                decoration: const InputDecoration(labelText: 'Color'),
+              ),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () async {
-                  final ok = await context.read<VehicleProvider>().createVehicle(
+                  final ok = await context
+                      .read<VehicleProvider>()
+                      .createVehicle(
                         licensePlate: plate.text.trim(),
                         make: make.text.trim(),
                         model: model.text.trim(),
@@ -275,9 +349,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   if (!mounted) return;
                   Navigator.of(context).pop();
                   if (ok) {
-                    DialogHelper.showSuccess(context, 'Success', 'Vehicle added.');
+                    DialogHelper.showSuccess(
+                      context,
+                      'Success',
+                      'Vehicle added.',
+                    );
                   } else {
-                    DialogHelper.showError(context, 'Failed', 'Failed to add vehicle.');
+                    DialogHelper.showError(
+                      context,
+                      'Failed',
+                      'Failed to add vehicle.',
+                    );
                   }
                 },
                 child: const Text('Save vehicle'),
@@ -294,7 +376,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Account'),
-        content: const Text('Are you sure you want to permanently delete your account? This action cannot be undone.'),
+        content: const Text(
+          'Are you sure you want to permanently delete your account? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -314,32 +398,112 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final result = await AuthService().deleteAccount();
       if (!mounted) return;
       if (result['success'] == true) {
-        DialogHelper.showSuccess(context, 'Account Deleted', 'Your account has been deleted.');
+        DialogHelper.showSuccess(
+          context,
+          'Account Deleted',
+          'Your account has been deleted.',
+        );
       } else {
-        DialogHelper.showError(context, 'Delete Failed', result['message'] ?? 'Failed to delete account.');
+        DialogHelper.showError(
+          context,
+          'Delete Failed',
+          result['message'] ?? 'Failed to delete account.',
+        );
       }
     }
   }
 
   Future<void> _pickAndUploadProfilePic() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Take a photo'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from library'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!context.mounted || source == null) return;
+
+    if (source == ImageSource.camera) {
+      PermissionStatus status;
+      try {
+        status = await Permission.camera.request();
+      } on PlatformException catch (error) {
+        debugPrint('Unable to request camera permission: $error');
+        status = PermissionStatus.denied;
+      }
+      if (!mounted) return;
+      if (!status.isGranted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Camera access is unavailable. Choose a photo from your '
+              'library or enable camera access in Settings.',
+            ),
+          ),
+        );
+        return;
+      }
+    }
+
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery, maxWidth: 800, imageQuality: 80);
-    
+    XFile? pickedFile;
+    try {
+      pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 800,
+        imageQuality: 80,
+      );
+    } on PlatformException catch (error) {
+      debugPrint('Unable to select profile photo: $error');
+      if (mounted) {
+        DialogHelper.showError(
+          context,
+          'Photo unavailable',
+          'Unable to access the selected photo source. You can choose '
+              'another option or review permissions in Settings.',
+        );
+      }
+      return;
+    }
+
     if (pickedFile != null) {
       if (!mounted) return;
       setState(() => _isUploadingProfilePic = true);
       try {
         final authService = AuthService();
-        final result = await authService.uploadProfilePicture(File(pickedFile.path));
-        
+        final result = await authService.uploadProfilePicture(
+          File(pickedFile.path),
+        );
+
         if (result['success'] == true) {
           if (mounted) {
             await context.read<AuthProvider>().checkAuth();
-            DialogHelper.showSuccess(context, 'Success', 'Profile picture updated.');
+            if (!mounted) return;
+            DialogHelper.showSuccess(
+              context,
+              'Success',
+              'Profile picture updated.',
+            );
           }
         } else {
           if (mounted) {
-            DialogHelper.showError(context, 'Failed', result['message'] ?? 'Upload failed.');
+            DialogHelper.showError(
+              context,
+              'Failed',
+              result['message'] ?? 'Upload failed.',
+            );
           }
         }
       } catch (e) {
@@ -354,11 +518,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 }
 
 class _ProfileCard extends StatelessWidget {
-  const _ProfileCard({
-    required this.title,
-    required this.child,
-    this.action,
-  });
+  const _ProfileCard({required this.title, required this.child, this.action});
 
   final String title;
   final Widget child;
@@ -378,7 +538,12 @@ class _ProfileCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(child: Text(title, style: Theme.of(context).textTheme.titleLarge)),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
               if (action != null) action!,
             ],
           ),

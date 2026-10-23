@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:parking_officer_app/features/violations/providers/enforcement_provider.dart';
 import 'package:parking_officer_app/features/violations/screens/violation_form_screen.dart';
@@ -20,14 +24,19 @@ class _ScannerScreenState extends State<ScannerScreen>
   ScanMode _scanMode = ScanMode.qr;
   bool _isProcessing = false;
 
-  final MobileScannerController _scannerController = MobileScannerController();
+  final MobileScannerController _scannerController = MobileScannerController(
+    autoStart: false,
+  );
   final TextEditingController _manualPlateController = TextEditingController();
+  bool _cameraStarting = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _scannerController.start();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_startCamera());
+    });
   }
 
   @override
@@ -38,15 +47,76 @@ class _ScannerScreenState extends State<ScannerScreen>
     super.dispose();
   }
 
-  void _toggleMode(ScanMode mode) async {
+  Future<bool> _startCamera() async {
+    if (!await Permission.camera.isGranted) {
+      _switchToManual(
+        'Camera access is unavailable. Enter the plate manually or enable '
+        'camera access in Settings.',
+      );
+      return false;
+    }
+
+    if (_cameraStarting || _scannerController.value.isRunning) return true;
+    _cameraStarting = true;
+    try {
+      await _scannerController.start();
+      return true;
+    } on MobileScannerException catch (error) {
+      debugPrint('Unable to start parking QR scanner: $error');
+    } on PlatformException catch (error) {
+      debugPrint('Unable to start parking QR scanner: $error');
+    } finally {
+      _cameraStarting = false;
+    }
+
+    _switchToManual('QR scanning is unavailable. Enter the plate manually.');
+    return false;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_scanMode != ScanMode.qr) return;
+
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_startCamera());
+    } else if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.paused) {
+      unawaited(_stopCamera());
+    }
+  }
+
+  Future<void> _stopCamera() async {
+    try {
+      await _scannerController.stop();
+    } on MobileScannerException catch (error) {
+      debugPrint('Unable to stop parking QR scanner: $error');
+    } on PlatformException catch (error) {
+      debugPrint('Unable to stop parking QR scanner: $error');
+    }
+  }
+
+  void _switchToManual(String message) {
+    if (!mounted) return;
+    setState(() {
+      _scanMode = ScanMode.manual;
+      _isProcessing = false;
+    });
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _toggleMode(ScanMode mode) async {
     if (_scanMode == mode) return;
 
     if (mode == ScanMode.qr) {
-      await _scannerController.start();
+      if (!await _startCamera()) return;
     } else {
-      await _scannerController.stop();
+      await _stopCamera();
     }
 
+    if (!mounted) return;
     setState(() {
       _scanMode = mode;
       _isProcessing = false;
@@ -342,7 +412,6 @@ class _ScannerScreenState extends State<ScannerScreen>
               labelText: 'Enter License Plate',
               hintText: 'e.g. UBK 123X',
               prefixIcon: const Icon(Icons.directions_car),
-              
             ),
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,

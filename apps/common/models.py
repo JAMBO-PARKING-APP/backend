@@ -1,5 +1,6 @@
 import uuid
 from django.db import models
+from django.db import IntegrityError
 from django.utils.translation import gettext_lazy as _
 from apps.common.constants import Currency, DEFAULT_CURRENCY
 
@@ -106,7 +107,10 @@ class SystemConfiguration(RegionalModel, models.Model):
         if not country:
             config = cls.all_objects.first()
             if not config:
-                config = cls.all_objects.create(pk=1)
+                try:
+                    config, _ = cls.all_objects.get_or_create(pk=1)
+                except IntegrityError:
+                    config = cls.all_objects.get(pk=1)
             return config
             
         config, created = cls.objects.get_or_create(country=country)

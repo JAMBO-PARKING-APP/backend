@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:parking_user_app/core/app_theme.dart';
 import 'package:parking_user_app/core/analytics_service.dart';
@@ -10,6 +11,7 @@ import 'package:parking_user_app/core/localizations.dart';
 import 'package:parking_user_app/core/location_service.dart';
 import 'package:parking_user_app/core/providers/connectivity_provider.dart';
 import 'package:parking_user_app/core/settings_provider.dart';
+import 'package:parking_user_app/core/startup_permission_service.dart';
 import 'package:parking_user_app/core/system_config_service.dart';
 import 'package:parking_user_app/core/widgets/network_error_widget.dart';
 import 'package:parking_user_app/features/app/screens/app_shell_screen.dart';
@@ -28,11 +30,6 @@ import 'package:provider/provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await Firebase.initializeApp().timeout(const Duration(seconds: 10));
-  } catch (_) {}
-  await FCMService().initialize().catchError((_) {});
-
   runApp(
     MultiProvider(
       providers: [
@@ -51,6 +48,26 @@ Future<void> main() async {
       child: const SpaceUserApp(),
     ),
   );
+
+  unawaited(_initializeFirebaseServices());
+}
+
+Future<void> _initializeFirebaseServices() async {
+  try {
+    await Firebase.initializeApp().timeout(const Duration(seconds: 10));
+  } catch (error) {
+    debugPrint(
+      '[Main] Firebase is unavailable; the app will continue without '
+      'analytics and push notifications: $error',
+    );
+    return;
+  }
+
+  try {
+    await FCMService().initialize().timeout(const Duration(seconds: 10));
+  } catch (error) {
+    debugPrint('[Main] Push notification setup failed: $error');
+  }
 }
 
 class SpaceUserApp extends StatelessWidget {
@@ -77,7 +94,7 @@ class SpaceUserApp extends StatelessWidget {
           builder: (context, child) {
             return Stack(
               children: [
-                if (child != null) child,
+                ?child,
                 Consumer<ConnectivityProvider>(
                   builder: (context, connectivity, _) {
                     if (connectivity.isOffline) {
@@ -204,8 +221,21 @@ class _AuthWrapperState extends State<AuthWrapper> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AuthProvider>().checkAuth();
+      _initialize();
     });
+  }
+
+  Future<void> _initialize() async {
+    try {
+      await StartupPermissionService.requestOnFirstLaunch(context);
+    } on PlatformException catch (error) {
+      debugPrint('Startup location permission setup failed: $error');
+    } catch (error) {
+      debugPrint('Startup permissions setup failed: $error');
+    }
+    if (mounted) {
+      await context.read<AuthProvider>().checkAuth();
+    }
   }
 
   @override
